@@ -26,4 +26,3 @@ export interface FlowFieldPatternContext {
   kaleidoscopeParticleDensity?: number;
   kaleidoscopeColorShift?: number;
 }
-
