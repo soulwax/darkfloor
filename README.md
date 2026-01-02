@@ -2,46 +2,148 @@
 
 ![darkfloor.art Banner](.github/assets/emily-the-strange_vivid.png)
 
-*An attempt at amodern full-stack music search & streaming interface.*
+*A modern full-stack music streaming and discovery platform with intelligent recommendations, advanced audio features, and beautiful visualizations.*
+
+**Current Version:** 0.7.3  
+**License:** GPLv3
 
 ---
 
 ## ✨ Project Status
 
-**Development Stage**: This is an early-stage music streaming interface built as a proof-of-concept. The project should display a modern full-stack architecture with Next.js, TypeScript, and TailwindCSS, suitable as foundation for music discovery and playback.
+**Production Ready**: This is a fully-featured music streaming platform with a complete feature set including music playback, playlists, user accounts, audio visualizations, and smart recommendations. The application is deployed and actively maintained.
 
 ## 📋 Core Features
 
-### Current Implementation
+### Music Player
 
-- **Music Search Interface**: Type-safe search functionality integrated with backend API endpoints
-- **Type-Safe Environment Validation**: Strict environment variable management using `@t3-oss/env-nextjs`
-- **Responsive UI**: Flat design with neon indigo accents, built with TailwindCSS v4
-- **HTML5 Audio Playback**: Lightweight audio player components using native browser APIs (no external player libraries)
-- **NextAuth Integration Ready**: OAuth 2.0 infrastructure configured for Discord authentication
-- **Database Schema Support**: Drizzle ORM configuration for PostgreSQL integration
+- **Full-Featured Audio Player**: HTML5 audio playback with advanced controls
+  - Play/pause, skip forward/backward, seek controls
+  - Volume control with mute functionality
+  - Playback rate adjustment (0.5x - 2.0x)
+  - Shuffle and repeat modes (none, one, all)
+  - Persistent playback state across sessions
+  - Cross-device synchronization via database
 
-### Capabilities
+- **Queue Management**: Advanced queue system with drag-and-drop reordering
+  - Visual queue panel with track management
+  - Smart queue auto-population when queue runs low
+  - Queue history tracking
+  - Original queue order preservation for unshuffle
 
-The application provides:
+- **10-Band Equalizer**: Professional audio equalizer with presets
+  - Customizable frequency bands
+  - Multiple preset configurations
+  - Real-time audio processing
+  - Per-user preference storage
 
-- Pre-configured search UI components for music discovery
-- Player component scaffolding for audio preview playback
-- Type-safe React components with full TypeScript coverage
-- Environment management for multiple deployment stages
-- Responsive design system with CSS animations
+### Music Discovery
+
+- **Advanced Search**: Type-safe search integrated with Deezer API
+  - Real-time search results
+  - Search history tracking
+  - Filtered and sorted results
+
+- **Smart Recommendations**: Hybrid recommendation system
+  - API-based recommendations (Deezer)
+  - Audio feature-based recommendations (when enabled)
+  - Multi-seed recommendation support
+  - Recommendation caching for performance
+  - Configurable similarity preferences (strict, balanced, diverse)
+
+- **Listening History**: Complete playback tracking
+  - Track play history with timestamps
+  - Duration tracking
+  - Analytics and insights
+
+### Playlist Management
+
+- **Full Playlist System**: Create, edit, and manage playlists
+  - Create unlimited playlists
+  - Add/remove tracks with quick-add buttons
+  - Drag-and-drop track reordering
+  - Public/private playlist settings
+  - Track count display
+  - Playlist sharing via user profiles
+
+### Audio Visualizations
+
+- **80+ Visualization Patterns**: Extensive collection of audio-reactive visualizations
+  - Kaleidoscope effects
+  - Sacred geometry patterns (Flower of Life, Metatron's Cube, Sri Yantra)
+  - Particle systems (fireworks, bubbles, starfield, swarm)
+  - Fractal patterns (Mandelbrot, Julia sets)
+  - Galaxy and cosmic effects
+  - Portal and vortex effects
+  - Real-time audio reactivity
+  - Smooth pattern transitions
+  - Pattern controls and customization
+
+- **Background Visualizations**: Immersive full-screen visual experiences
+  - Flow field backgrounds
+  - Lightweight particle systems
+  - Audio-reactive color schemes
+
+### User Features
+
+- **Authentication**: Discord OAuth 2.0 integration via NextAuth.js
+  - Secure session management
+  - User profile pages with custom URLs
+  - Public/private profile settings
+  - Bio and profile customization
+
+- **User Preferences**: Comprehensive preference system
+  - Volume, playback rate, repeat mode, shuffle
+  - Equalizer settings and presets
+  - Visualizer preferences (type, enabled state)
+  - Smart queue settings
+  - Theme preferences
+  - UI layout preferences (compact mode, panel states)
+
+- **Favorites System**: Save and manage favorite tracks
+  - Quick favorite/unfavorite actions
+  - Favorites library view
+
+### Technical Capabilities
+
+- **Type-Safe Architecture**: End-to-end type safety
+  - TypeScript with strict mode
+  - tRPC for type-safe API calls
+  - Zod validation schemas
+  - Type-safe environment variables
+
+- **Responsive Design**: Mobile-first responsive UI
+  - Separate mobile and desktop player components
+  - Touch-optimized gestures
+  - Haptic feedback on mobile
+  - Pull-to-refresh support
+  - Swipeable track cards
+
+- **Performance Optimizations**:
+  - React Virtual for large lists
+  - Code splitting and lazy loading
+  - Optimized bundle imports
+  - Object pooling for visualizations
+  - Recommendation caching
+  - Standalone Next.js builds
 
 ## 🧱 Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Framework** | Next.js 15 (App Router) | Server-side rendering & routing |
-| **Language** | TypeScript | Type-safe development |
+| **Language** | TypeScript 5.9 | Type-safe development with strict mode |
 | **Styling** | TailwindCSS v4 | Utility-first CSS framework |
+| **API Layer** | tRPC v11 | End-to-end type-safe API |
+| **Database** | PostgreSQL + Drizzle ORM | Type-safe database queries & migrations |
+| **Authentication** | NextAuth.js v5 | Discord OAuth 2.0 / Session management |
+| **State Management** | React Context + TanStack Query | Global state & server state |
+| **Audio** | HTML5 Audio API + Tone.js | Native playback + advanced audio processing |
+| **Visualizations** | Canvas2D | 80+ audio-reactive patterns |
+| **UI Libraries** | Framer Motion, Lucide React, @dnd-kit | Animations, icons, drag & drop |
+| **Desktop** | Electron | Cross-platform desktop application |
+| **Deployment** | PM2 + Standalone Next.js | Production process management |
 | **Environment** | @t3-oss/env-nextjs | Type-safe environment configuration |
-| **Authentication** | NextAuth.js | OAuth 2.0 / Session management |
-| **Database** | Drizzle ORM | PostgreSQL schema & queries |
-| **Audio** | HTML5 Audio API | Native playback control |
 
 ## 🚀 Getting Started
 
@@ -70,13 +172,26 @@ The application provides:
     AUTH_SECRET=generate-with->npx auth secret
     AUTH_DISCORD_ID="your-discord-app-id"
     AUTH_DISCORD_SECRET="your-discord-app-secret"
+    NEXTAUTH_URL="http://localhost:3222"  # Optional, defaults to auto-detect
 
-    # Database
+    # Database Configuration
     DATABASE_URL="postgres://user:password@host:port/dbname?sslmode=require"
+    DB_HOST="localhost"
+    DB_PORT="5432"
+    DB_NAME="darkfloor"
+    DB_ADMIN_USER="postgres"
+    DB_ADMIN_PASSWORD="your-password"
+    DB_SSL_CA=""  # Optional: Path to SSL CA certificate
 
     # API Configuration
-    API_URL="https://your-music-api.com/"
+    NEXT_PUBLIC_API_URL="https://api.deezer.com/"
     STREAMING_KEY="your-secure-stream-key"
+    SONGBIRD_API_KEY=""  # Optional: For enhanced features
+    NEXT_PUBLIC_SONGBIRD_API_URL=""  # Optional: For enhanced features
+
+    # Server Configuration
+    NODE_ENV="development"
+    PORT="3222"  # Default port for the application
     ```
 
     **Generate NextAuth Secret:**
@@ -85,56 +200,108 @@ The application provides:
     npx auth secret
     ```
 
-3. **Database Setup (Optional)**
+3. **Database Setup**
 
-    For database operations, create `drizzle.env.ts`:
+    The application requires PostgreSQL. Set up your database:
 
-    ```typescript
-    // File: drizzle.env.ts
-    import "dotenv/config";
+    ```bash
+    # Create database (if not exists)
+    createdb darkfloor
 
-    const required = (key: string) => {
-      const val = process.env[key];
-      if (!val) throw new Error(`Missing required env var: ${key}`);
-      return val;
-    };
-
-    const config = {
-      DB_HOST: required("DB_HOST"),
-      DB_PORT: required("DB_PORT"),
-      DB_ADMIN_USER: required("DB_ADMIN_USER"),
-      DB_ADMIN_PASSWORD: required("DB_ADMIN_PASSWORD"),
-      DB_NAME: required("DB_NAME"),
-    };
-
-    export default config;
+    # Run migrations
+    npm run db:generate  # Generate migration files
+    npm run db:migrate   # Run migrations
+    npm run db:push      # Push schema changes (alternative to migrate)
     ```
 
-4. **Run Development Server**
+    For database operations, the `drizzle.env.ts` file is already configured to read from your `.env.local` file.
 
-  ```bash
-  npm run dev
-  ```
+4. **SSL Certificates (Optional)**
 
-  Visit `http://localhost:3000` to see the application.
+    For production with SSL-enabled databases, place your CA certificate at:
+    ```
+    certs/ca.pem
+    ```
+
+    Or generate self-signed certificates:
+    ```bash
+    npm run generate:ssl
+    ```
+
+5. **Run Development Server**
+
+    ```bash
+    npm run dev
+    ```
+
+    Visit `http://localhost:3222` to see the application.
+
+    **Note**: The default port is `3222` (not 3000) as configured in the project.
 
 ## 📁 Project Structure
 
 ```shell
-src/
-├── app/
-│   ├── layout.tsx          # Root layout with App Router setup
-│   └── page.tsx            # Main application page
-├── components/
-│   ├── Player.tsx          # Audio playback component
-│   └── TrackCard.tsx       # Individual track display
-├── styles/
-│   └── globals.css         # TailwindCSS v4 theme & animations
-├── utils/
-│   └── api.ts              # Type-safe API client functions
-├── types/
-│   └── index.ts            # Shared TypeScript interfaces
-└── env.js                  # Typed environment validation
+darkfloor-player/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── [userhash]/         # User profile pages
+│   │   ├── api/                # API routes (health, OG images)
+│   │   ├── library/            # User library page
+│   │   ├── playlists/          # Playlist management pages
+│   │   ├── layout.tsx          # Root layout
+│   │   └── page.tsx            # Home page
+│   │
+│   ├── components/             # React components
+│   │   ├── visualizers/        # Audio visualizations (80+ patterns)
+│   │   │   └── FlowFieldRenderer.ts  # Main visualization engine
+│   │   ├── Player.tsx          # Desktop audio player
+│   │   ├── MobilePlayer.tsx    # Mobile audio player
+│   │   ├── PersistentPlayer.tsx # Global player wrapper
+│   │   ├── EnhancedQueue.tsx   # Queue management
+│   │   ├── Equalizer.tsx       # Audio equalizer
+│   │   ├── TrackCard.tsx       # Track display component
+│   │   └── ... (50+ components)
+│   │
+│   ├── server/
+│   │   ├── api/
+│   │   │   ├── routers/        # tRPC routers
+│   │   │   │   ├── music.ts    # Music operations
+│   │   │   │   ├── preferences.ts
+│   │   │   │   └── equalizer.ts
+│   │   │   └── root.ts         # Main router
+│   │   ├── auth/               # NextAuth configuration
+│   │   └── db/
+│   │       ├── schema.ts       # Drizzle schema (15+ tables)
+│   │       └── index.ts        # Database connection
+│   │
+│   ├── contexts/                # React contexts
+│   │   ├── AudioPlayerContext.tsx
+│   │   ├── MenuContext.tsx
+│   │   └── ToastContext.tsx
+│   │
+│   ├── services/               # Business logic
+│   │   ├── smartQueue.ts       # Auto-queue recommendations
+│   │   ├── songbird.ts         # External API integration
+│   │   └── storage.ts          # Storage utilities
+│   │
+│   ├── trpc/                   # tRPC client setup
+│   ├── types/                   # TypeScript definitions
+│   ├── utils/                   # Utility functions
+│   ├── styles/                  # Global styles
+│   └── env.js                   # Typed environment validation
+│
+├── electron/                    # Electron main process
+│   ├── main.cjs                 # Electron entry point
+│   ├── preload.cjs              # Preload script
+│   └── prepare-package.js      # Build preparation
+│
+├── drizzle/                    # Database migrations
+├── scripts/                     # Build & deployment scripts
+│   ├── server.js                # Production server wrapper
+│   └── ensure-build.js          # Build validation
+├── public/                      # Static assets
+├── certs/                       # SSL certificates (optional)
+└── logs/                        # PM2 logs
 ```
 
 ## 🎨 Design System
@@ -161,70 +328,96 @@ Available in `src/styles/globals.css`:
 }
 ```
 
-## 🔌 API Integration
+## 🔌 API Architecture
 
-### Required Backend API
+### tRPC API
 
-To function, this frontend requires a backend music API that provides:
+The application uses **tRPC** for end-to-end type-safe API communication. All API calls are type-safe from client to server.
 
-1. **Search Endpoint**
+#### Main API Routers
 
-   ```plaintext
-   GET /music/search?q={query}
-   ```
+1. **musicRouter** - Music operations
+   - `search` - Search tracks
+   - `getRecommendations` - Get track recommendations
+   - `getPlaylists` - Get user playlists
+   - `createPlaylist` - Create new playlist
+   - `addToPlaylist` - Add track to playlist
+   - `removeFromPlaylist` - Remove track from playlist
+   - `reorderPlaylistTracks` - Reorder playlist tracks
+   - `getFavorites` - Get user favorites
+   - `addFavorite` - Add track to favorites
+   - `removeFavorite` - Remove track from favorites
+   - `getListeningHistory` - Get playback history
+   - `getSmartQueueRecommendations` - Get smart queue suggestions
 
-   Returns: Array of track objects
+2. **preferencesRouter** - User preferences
+   - `get` - Get user preferences
+   - `update` - Update user preferences
+   - `updateEqualizer` - Update equalizer settings
+   - `updateVisualizer` - Update visualizer preferences
 
-2. **Streaming Endpoint** (Optional)
+3. **equalizerRouter** - Audio equalizer
+   - `getBands` - Get current EQ bands
+   - `updateBands` - Update EQ bands
+   - `getPresets` - Get available presets
 
-   ```plaintext
-   GET /music/stream?key={KEY}&q={query}
-   ```
+### External API Integration
 
-   Returns: Audio stream or preview URL
+The application integrates with the **Deezer API** for music search and streaming:
 
-### Supported API Formats
+- **Search**: Uses Deezer search API via `NEXT_PUBLIC_API_URL`
+- **Track Data**: Fetches track metadata, album art, and preview URLs
+- **Recommendations**: Uses Deezer recommendations API
+- **Streaming**: Uses Deezer preview URLs for audio playback
 
-The application expects JSON responses compatible with **Deezer API format**:
+### Type-Safe API Usage
 
-```json
-{
-  "data": [
-    {
-      "id": "123456",
-      "title": "Track Name",
-      "artist": {
-        "name": "Artist Name"
-      },
-      "album": {
-        "title": "Album Name",
-        "cover": "https://..."
-      },
-      "preview": "https://..."
-    }
-  ]
-}
-```
-
-### Type-Safe API Functions
-
-Example usage in `src/utils/api.ts`:
+Example usage with tRPC:
 
 ```typescript
-import { env } from "@/env";
-import type { SearchResponse, Track } from "@/types";
+import { api } from "@/trpc/react";
 
-export async function searchTracks(query: string): Promise<Track[]> {
-  const url = new URL("music/search", env.API_URL);
-  url.searchParams.set("q", query);
+function MyComponent() {
+  // Type-safe query
+  const { data: playlists } = api.music.getPlaylists.useQuery();
   
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("Search failed");
+  // Type-safe mutation
+  const addToPlaylist = api.music.addToPlaylist.useMutation({
+    onSuccess: () => {
+      // Automatically refetch playlists
+      utils.music.getPlaylists.invalidate();
+    },
+  });
   
-  const json: SearchResponse = await res.json();
-  return json.data;
+  const handleAdd = () => {
+    addToPlaylist.mutate({
+      playlistId: "123",
+      track: { /* track data */ },
+    });
+  };
+  
+  return <div>{/* ... */}</div>;
 }
 ```
+
+### Database Schema
+
+The application uses **PostgreSQL** with **Drizzle ORM** for data persistence:
+
+**Key Tables:**
+- `users` - User accounts and profiles
+- `playlists` - User playlists
+- `playlist_tracks` - Playlist-track relationships
+- `favorites` - User favorite tracks
+- `listening_history` - Playback history
+- `user_preferences` - User settings and preferences
+- `playback_state` - Current playback state
+- `listening_analytics` - Analytics data
+- `audio_features` - Audio analysis data (BPM, key, energy)
+- `recommendation_cache` - Cached recommendations
+- And more...
+
+See `src/server/db/schema.ts` for the complete schema.
 
 ## ⚖️ Legal & Licensing
 
