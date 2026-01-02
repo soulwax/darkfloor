@@ -442,21 +442,120 @@ This project is licensed under the **GPL-3.0 License**. See the LICENSE file for
 
 ### Available Scripts
 
+#### Development
 ```bash
 # Development server with hot reload
 npm run dev
 
+# Development server (Windows)
+npm run dev:win
+
+# Next.js dev server only (port 3222)
+npm run dev:next
+```
+
+#### Building
+```bash
 # Build for production
 npm run build
 
-# Start production server
-npm start
+# Build with bundle analyzer
+npm run build:analyzer
 
+# Preview production build
+npm run preview
+```
+
+#### Database
+```bash
+# Generate migration files
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+
+# Push schema changes (alternative to migrate)
+npm run db:push
+
+# Open Drizzle Studio (database GUI)
+npm run db:studio
+```
+
+#### Type Checking & Linting
+```bash
 # Type checking
-npm run type-check
+npm run typecheck
 
-# Linting (if configured)
+# ESLint check
 npm run lint
+
+# ESLint fix
+npm run lint:fix
+
+# Format check
+npm run format:check
+
+# Format write
+npm run format:write
+
+# Full check (lint + typecheck)
+npm run check
+```
+
+#### Electron (Desktop App)
+```bash
+# Development mode
+npm run electron:dev
+
+# Development mode (Windows)
+npm run electron:dev:win
+
+# Production build
+npm run electron:build
+
+# Platform-specific builds
+npm run electron:build:win
+npm run electron:build:mac
+npm run electron:build:linux
+```
+
+#### Production Deployment (PM2)
+```bash
+# Start production server
+npm run pm2:start
+
+# Start development server with PM2
+npm run pm2:dev
+
+# Reload with zero-downtime
+npm run pm2:reload
+
+# Restart server
+npm run pm2:restart
+
+# Stop server
+npm run pm2:stop
+
+# View logs
+npm run pm2:logs
+npm run pm2:logs:dev
+npm run pm2:logs:error
+
+# View status
+npm run pm2:status
+
+# Deploy (build + reload)
+npm run deploy
+```
+
+#### Utilities
+```bash
+# Generate SSL certificates
+npm run generate:ssl
+
+# Clean build artifacts
+npm run clean
+npm run clean:win  # Windows
 ```
 
 ## 🚀 Production Deployment & Server Management
