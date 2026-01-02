@@ -1152,7 +1152,9 @@ DB_ADMIN_USER="postgres"
 DB_ADMIN_PASSWORD="password"
 
 # API
-NEXT_PUBLIC_API_URL="https://api.deezer.com/"
+# Use production APIs or local development APIs
+# Production: https://songbird.darkfloor.art and https://api.darkfloor.art
+NEXT_PUBLIC_API_URL="https://songbird.darkfloor.art"
 STREAMING_KEY="dev-key"
 
 # Server
