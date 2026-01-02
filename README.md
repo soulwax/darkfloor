@@ -328,6 +328,94 @@ Available in `src/styles/globals.css`:
 }
 ```
 
+## 🏗️ How It Works
+
+### Architecture Overview
+
+**darkfloor.art** is built as a full-stack Next.js application with the following architecture:
+
+1. **Frontend (Next.js App Router)**
+   - Server-side rendering for initial page loads
+   - Client-side React for interactive features
+   - Global audio player context for state management
+   - Real-time audio visualizations
+
+2. **API Layer (tRPC)**
+   - Type-safe API calls between client and server
+   - Automatic request/response validation
+   - Optimistic updates with React Query
+   - Server-side data fetching
+
+3. **Database (PostgreSQL + Drizzle ORM)**
+   - Type-safe database queries
+   - Automatic migrations
+   - Connection pooling
+   - SSL support for secure connections
+
+4. **Authentication (NextAuth.js)**
+   - Discord OAuth 2.0 integration
+   - Secure session management
+   - Protected API routes
+   - User profile management
+
+### Key Workflows
+
+#### Music Playback Flow
+1. User searches for tracks via tRPC `music.search`
+2. Results displayed with track cards
+3. User clicks play → track added to global player context
+4. HTML5 Audio element handles playback
+5. Audio data analyzed for visualizations
+6. Playback state synced to database (if authenticated)
+7. Listening history recorded
+
+#### Playlist Management Flow
+1. User creates playlist via tRPC `music.createPlaylist`
+2. Playlist stored in database with user association
+3. User adds tracks via `music.addToPlaylist`
+4. Tracks can be reordered via drag-and-drop
+5. Playlist state persisted in database
+6. Playlists accessible via user profile pages
+
+#### Smart Queue Flow
+1. User enables auto-queue in preferences
+2. When queue drops below threshold, system triggers recommendations
+3. Recommendations fetched from Deezer API or audio features (if enabled)
+4. Tracks filtered and shuffled for diversity
+5. Recommendations cached for performance
+6. Tracks automatically added to queue
+
+#### Visualization Flow
+1. Audio element provides audio data via Web Audio API
+2. Frequency data extracted and normalized
+3. Visualization patterns receive audio data as input
+4. Canvas2D renders patterns in real-time (60fps target)
+5. Patterns transition smoothly when changed
+6. Audio-reactive effects respond to bass, mid, treble frequencies
+
+### State Management
+
+- **Global Player State**: React Context (`AudioPlayerContext`)
+  - Current track, queue, playback state
+  - Persisted to localStorage and database
+  
+- **Server State**: TanStack Query
+  - Playlists, favorites, recommendations
+  - Automatic caching and refetching
+  
+- **UI State**: React Context
+  - Menu state, toast notifications
+  - Panel visibility (queue, equalizer)
+
+### Performance Optimizations
+
+- **Code Splitting**: Automatic route-based splitting
+- **Virtual Scrolling**: React Virtual for large track lists
+- **Object Pooling**: Reused objects in visualizations
+- **Recommendation Caching**: Cached API responses
+- **Standalone Builds**: Optimized Next.js standalone output
+- **Bundle Optimization**: Tree-shaking and optimized imports
+
 ## 🔌 API Architecture
 
 ### tRPC API
@@ -363,7 +451,22 @@ The application uses **tRPC** for end-to-end type-safe API communication. All AP
 
 ### External API Integration
 
-The application integrates with the **Deezer API** for music search and streaming:
+The application integrates with multiple APIs for music search, streaming, and enhanced features:
+
+#### Backend APIs
+
+- **[Songbird API](https://songbird.darkfloor.art)** - Main music backend API
+  - Music search and discovery
+  - Track metadata and streaming
+  - Enhanced recommendations
+  
+- **[Darkfloor API](https://api.darkfloor.art)** - Additional API services
+  - Extended features and integrations
+  - Additional music services
+
+#### Deezer API
+
+The application also integrates with the **Deezer API** for music search and streaming:
 
 - **Search**: Uses Deezer search API via `NEXT_PUBLIC_API_URL`
 - **Track Data**: Fetches track metadata, album art, and preview URLs
@@ -418,6 +521,44 @@ The application uses **PostgreSQL** with **Drizzle ORM** for data persistence:
 - And more...
 
 See `src/server/db/schema.ts` for the complete schema.
+
+## 🖥️ Desktop Application (Electron)
+
+The application can be built as a cross-platform desktop application using Electron.
+
+### Building Desktop Apps
+
+```bash
+# Development mode (runs Next.js dev server + Electron)
+npm run electron:dev
+
+# Production build (all platforms)
+npm run electron:build
+
+# Platform-specific builds
+npm run electron:build:win    # Windows (NSIS installer + portable)
+npm run electron:build:mac    # macOS (DMG)
+npm run electron:build:linux   # Linux (AppImage + DEB)
+```
+
+### Electron Features
+
+- **Standalone Next.js Server**: Bundled Next.js server runs locally
+- **Window Management**: Custom window state persistence
+- **Code Signing**: Windows code signing support (see `electron/SIGNING.md`)
+- **Auto-Updates**: Ready for auto-update integration
+- **Native Menus**: Context menus and native OS integration
+- **Storage**: Electron-specific storage initialization
+
+### Electron Configuration
+
+The Electron app uses:
+- **Main Process**: `electron/main.cjs`
+- **Preload Script**: `electron/preload.cjs`
+- **Build Config**: Defined in `package.json` build section
+- **Icons**: Platform-specific icons in `public/`
+
+See `electron/README.md` for detailed Electron setup instructions.
 
 ## ⚖️ Legal & Licensing
 
@@ -584,7 +725,7 @@ pm2 start ecosystem.config.cjs --env production
 npm run pm2:dev
 
 # Or manually:
-pm2 start ecosystem.config.cjs --only darkfloor-art-dev --env development
+pm2 start ecosystem.config.cjs --only songbird-frontend-dev --env development
 ```
 
 #### Stopping the Server
@@ -594,8 +735,8 @@ pm2 start ecosystem.config.cjs --only darkfloor-art-dev --env development
 npm run pm2:stop
 
 # Stop specific process
-pm2 stop darkfloor-art-prod
-pm2 stop darkfloor-art-dev
+pm2 stop songbird-frontend-prod
+pm2 stop songbird-frontend-dev
 
 # Delete processes from PM2
 npm run pm2:delete
@@ -612,7 +753,7 @@ npm run pm2:restart
 
 # Or manually:
 pm2 reload ecosystem.config.cjs --env production --update-env
-pm2 restart darkfloor-art-prod --update-env
+pm2 restart songbird-frontend-prod --update-env
 ```
 
 ### Server Startup Mechanism
@@ -658,7 +799,7 @@ PM2 handles graceful shutdown through:
 #### Force Shutdown
 If graceful shutdown fails:
 ```bash
-pm2 delete darkfloor-art-prod  # Force remove
+pm2 delete songbird-frontend-prod  # Force remove
 pm2 kill  # Kill PM2 daemon (use with caution)
 ```
 
@@ -679,7 +820,7 @@ npm run pm2:logs:error
 npm run pm2:monit
 
 # View last N lines
-pm2 logs darkfloor-art-prod --lines 100
+pm2 logs songbird-frontend-prod --lines 100
 ```
 
 #### Check Status
@@ -688,10 +829,10 @@ pm2 logs darkfloor-art-prod --lines 100
 npm run pm2:status
 
 # Detailed process info
-pm2 describe darkfloor-art-prod
+pm2 describe songbird-frontend-prod
 
 # Process metrics
-pm2 show darkfloor-art-prod
+pm2 show songbird-frontend-prod
 ```
 
 #### Log Files
@@ -792,14 +933,14 @@ HOSTNAME=0.0.0.0
 #### Process Won't Start
 1. Check if build exists: `test -f .next/BUILD_ID`
 2. Build manually: `npm run build`
-3. Check logs: `pm2 logs darkfloor-art-prod --err`
+3. Check logs: `pm2 logs songbird-frontend-prod --err`
 4. Verify port is available: `netstat -tlnp | grep 3222`
 
 #### Process Keeps Restarting
 1. Check error logs: `pm2 logs --err`
 2. Verify build is complete: Check `.next/BUILD_ID` exists
 3. Check memory usage: `pm2 monit`
-4. Review restart count: `pm2 describe darkfloor-art-prod`
+4. Review restart count: `pm2 describe songbird-frontend-prod`
 
 #### Health Check Failing
 1. Test endpoint manually: `curl http://localhost:3222/api/health`
@@ -889,7 +1030,7 @@ This project uses **TailwindCSS v4** with pure CSS Variables (no `@apply` direct
 2. **Check if port is listening**: `netstat -tlnp | grep 3222`
 3. **Verify process is actually running**: `ps aux | grep "next start"`
 4. **Check PM2 logs for startup errors**: `pm2 logs --lines 50`
-5. **Restart the process**: `pm2 restart darkfloor-art-prod`
+5. **Restart the process**: `pm2 restart songbird-frontend-prod`
 
 ### Issue: Build fails during deployment
 
@@ -904,41 +1045,119 @@ This project uses **TailwindCSS v4** with pure CSS Variables (no `@apply` direct
 
 ## 📈 Future Roadmap
 
-Potential enhancements for this project:
+### Planned Enhancements
 
-- **Playlist Management** - Create and save playlists
-- **User Accounts** - Persist user preferences and favorites
-- **Advanced Search** - Filters by genre, artist, release date
-- **Audio Visualization** - Waveform display during playback
-- **Queue System** - Manage upcoming tracks
-- **Social Features** - Share playlists and recommendations
-- **Responsive Audio Player** - Enhanced mobile UI
-- **Dark/Light Theme Toggle** - User preference saving
-- **Offline Mode** - Cache downloaded tracks
+#### WebGL Visualization Migration (Major)
+- **Status**: Planned (see `ROADMAP.md` for details)
+- **Goal**: Migrate 80+ Canvas2D patterns to WebGL shaders
+- **Benefits**: 
+  - 60fps at 4K resolution
+  - Reduced CPU usage (60% reduction)
+  - Better mobile battery life
+  - GPU-accelerated post-processing effects
+- **Timeline**: 3-4 months estimated
+
+#### Audio Features Integration
+- **Essentia Microservice**: Integration for advanced audio analysis
+- **BPM/Key Matching**: Smooth transitions based on audio features
+- **Audio-Based Recommendations**: Enhanced recommendations using audio similarity
+- **Feature Display**: Show BPM, key, energy in track details
+
+#### Social Features
+- **Playlist Sharing**: Enhanced sharing capabilities
+- **Social Recommendations**: Recommendations from friends
+- **Collaborative Playlists**: Multi-user playlist editing
+- **Activity Feed**: Recent activity from followed users
+
+#### Additional Features
+- **Advanced Search Filters**: Filter by genre, artist, release date, BPM, key
+- **Lyrics Integration**: Display synchronized lyrics
+- **Offline Mode**: Cache downloaded tracks for offline playback
+- **Light Theme**: Dark/light theme toggle (currently dark only)
+- **Keyboard Shortcuts**: Global keyboard controls
+- **Media Session API**: Better integration with OS media controls
 
 ## 📝 Configuration Examples
 
-### Minimal Setup (No Database)
+### Minimal Setup (Search Only)
 
-For a basic search-only interface:
+For a basic search-only interface without user accounts:
 
 ```yaml
-AUTH_SECRET="your-secret"
-API_URL="https://api.deezer.com/"
-STREAMING_KEY="optional"
+# Required
+AUTH_SECRET="your-secret"  # Generate with: npx auth secret
+# API URLs: https://songbird.darkfloor.art (main) or https://api.darkfloor.art
+NEXT_PUBLIC_API_URL="https://songbird.darkfloor.art"
+STREAMING_KEY="your-secure-stream-key"
+
+# Database (minimal - for basic functionality)
+DATABASE_URL="postgres://user:pass@localhost:5432/darkfloor?sslmode=require"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_NAME="darkfloor"
+DB_ADMIN_USER="postgres"
+DB_ADMIN_PASSWORD="password"
 ```
 
 ### Full Production Setup
 
+Complete setup with all features enabled:
+
 ```yaml
-AUTH_SECRET="your-secret"
-AUTH_DISCORD_ID="discord-app-id"
-AUTH_DISCORD_SECRET="discord-app-secret"
+# Authentication
+AUTH_SECRET="your-secret"  # Generate with: npx auth secret
+AUTH_DISCORD_ID="your-discord-app-id"
+AUTH_DISCORD_SECRET="your-discord-app-secret"
+NEXTAUTH_URL="https://darkfloor.art"  # Your production URL
 
-DATABASE_URL="postgres://prod_user:prod_pass@prod-host:5432/starchild?sslmode=require"
+# Database
+DATABASE_URL="postgres://prod_user:prod_pass@prod-host:5432/darkfloor?sslmode=require"
+DB_HOST="prod-host"
+DB_PORT="5432"
+DB_NAME="darkfloor"
+DB_ADMIN_USER="prod_user"
+DB_ADMIN_PASSWORD="prod_pass"
+DB_SSL_CA=""  # Optional: Path to SSL CA certificate
 
-API_URL="https://your-music-api.com/"
-STREAMING_KEY="your-secure-key"
+# API Configuration
+# Main music backend API: https://songbird.darkfloor.art
+# Additional API services: https://api.darkfloor.art
+NEXT_PUBLIC_API_URL="https://songbird.darkfloor.art"
+STREAMING_KEY="your-secure-stream-key"
+SONGBIRD_API_KEY=""  # Optional: For enhanced features
+NEXT_PUBLIC_SONGBIRD_API_URL="https://api.darkfloor.art"  # Optional: For enhanced features
+
+# Server
+NODE_ENV="production"
+PORT="3222"
+```
+
+### Development Setup
+
+Development configuration with hot reload:
+
+```yaml
+# Authentication (can use test credentials)
+AUTH_SECRET="dev-secret"
+AUTH_DISCORD_ID="dev-discord-id"
+AUTH_DISCORD_SECRET="dev-discord-secret"
+NEXTAUTH_URL="http://localhost:3222"
+
+# Database (local)
+DATABASE_URL="postgres://postgres:password@localhost:5432/darkfloor_dev"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_NAME="darkfloor_dev"
+DB_ADMIN_USER="postgres"
+DB_ADMIN_PASSWORD="password"
+
+# API
+NEXT_PUBLIC_API_URL="https://api.deezer.com/"
+STREAMING_KEY="dev-key"
+
+# Server
+NODE_ENV="development"
+PORT="3222"
 ```
 
 ## 🤝 Contributing
