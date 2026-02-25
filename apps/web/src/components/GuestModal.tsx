@@ -388,51 +388,6 @@ export function GuestModal({
       : null;
 
   useEffect(() => {
-    if (typeof document === "undefined" || !isOpen) return;
-
-    const { body, documentElement } = document;
-    const scrollY = window.scrollY;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPosition = body.style.position;
-    const previousBodyTop = body.style.top;
-    const previousBodyLeft = body.style.left;
-    const previousBodyRight = body.style.right;
-    const previousBodyWidth = body.style.width;
-    const previousBodyPaddingRight = body.style.paddingRight;
-    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
-    const previousHtmlOverflow = documentElement.style.overflow;
-    const previousHtmlOverscrollBehavior = documentElement.style.overscrollBehavior;
-    const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
-
-    body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    body.style.overscrollBehavior = "none";
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-    documentElement.style.overflow = "hidden";
-    documentElement.style.overscrollBehavior = "none";
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      body.style.position = previousBodyPosition;
-      body.style.top = previousBodyTop;
-      body.style.left = previousBodyLeft;
-      body.style.right = previousBodyRight;
-      body.style.width = previousBodyWidth;
-      body.style.paddingRight = previousBodyPaddingRight;
-      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
-      documentElement.style.overflow = previousHtmlOverflow;
-      documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
-      window.scrollTo({ top: scrollY, behavior: "auto" });
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     let isMounted = true;
 
     void getGenres(80)
@@ -527,7 +482,7 @@ export function GuestModal({
       }}
     >
       <DialogContent
-        overlayClassName="!bg-transparent !backdrop-blur-none"
+        hideOverlay
         className={cn(
           "max-h-[90vh] overflow-hidden border-white/12 bg-[#0F1528]/95 p-0 text-white shadow-[0_30px_90px_rgba(0,0,0,0.6)] focus:outline-none",
           isMobile
