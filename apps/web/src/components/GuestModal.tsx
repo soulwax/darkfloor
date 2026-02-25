@@ -590,7 +590,7 @@ export function GuestModal({
               "text-sm sm:px-5",
             )}
           >
-            <section className="space-y-3 rounded-2xl border border-white/12 bg-white/[0.03] p-2.5 sm:p-3">
+            <section className="space-y-3 rounded-2xl border border-white/12 p-2.5 sm:p-3">
               <p className="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">
                 Tune Start Page
               </p>
