@@ -1,0 +1,8 @@
+# File: pnpm-workspace.yaml
+
+onlyBuiltDependencies:
+  - electron
+  - electron-winstaller
+  - esbuild
+  - sharp
+  - unrs-resolver

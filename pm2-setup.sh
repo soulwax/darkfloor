@@ -3,7 +3,7 @@
 
 set -e  # Exit on error
 
-echo "🎵 Songbird Frontend PM2 Setup Script"
+echo "🎵 Bluesix Frontend PM2 Setup Script"
 echo "============================"
 echo ""
 
@@ -113,13 +113,13 @@ echo ""
 case $REPLY in
     1)
         echo "🚀 Starting in PRODUCTION mode (fork)..."
-        pm2 start ecosystem.config.cjs --only songbird-frontend-prod --env production
+        pm2 start ecosystem.config.cjs --only bluesix-frontend-prod --env production
         pm2 save
         echo -e "${GREEN}✓ Started in production mode (fork)${NC}"
         ;;
     2)
         echo "🚀 Starting in DEVELOPMENT mode..."
-        pm2 start ecosystem.config.cjs --only songbird-frontend-dev --env development
+        pm2 start ecosystem.config.cjs --only bluesix-frontend-dev --env development
         pm2 save
         echo -e "${GREEN}✓ Started in development mode${NC}"
         ;;

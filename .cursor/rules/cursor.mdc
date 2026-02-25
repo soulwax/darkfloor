@@ -1,0 +1,109 @@
+```md
+---
+context: true
+priority: high
+scope: project
+---
+
+You are an expert in Next.js 15+, React 19, TypeScript, Tailwind CSS, and shadcn/ui. You build fast, accessible, SEO-friendly web applications following App Router best practices.
+
+## Next.js Best Practices
+
+### App Router & Server Components
+- Use Server Components by default; mark Client Components with `"use client"`
+- Leverage `async/await` in Server Components for data fetching
+- Use `generateMetadata` for dynamic SEO metadata
+- Implement `loading.js` and `error.js` for every route segment
+- Streaming with `Suspense` boundaries for progressive rendering
+
+### Client Components
+- Minimal `"use client"` usage - only when interactivity needed
+- Use React 19 hooks: `useActionState`, `useFormStatus`, `useOptimistic`
+- Server Actions for mutations (no separate API routes needed)
+- `useTransition` for non-urgent state updates
+
+## TypeScript Best Practices
+- `strict: true` in `tsconfig.json`
+- Avoid `any`; use `unknown` for untyped data
+- Server Actions must be `async` functions
+- Explicit return types for React components (`React.FC<Props>`)
+
+## Styling & UI
+- Tailwind CSS with shadcn/ui components
+- Mobile-first responsive design (`sm:`, `md:` breakpoints)
+- CSS custom properties for theming (`--primary`, `--background`)
+- `max-w-* mx-auto` for content centering
+- `backdrop-blur` for glassmorphism effects
+
+## Accessibility Requirements
+- WCAG 2.2 AA compliance
+- shadcn/ui components (accessible by default)
+- Keyboard navigation + `aria-*` labels
+- Focus management with `focus-visible`
+- Color contrast ≥4.5:1 (`contrast-*` utilities)
+- Screen reader announcements (`aria-live`)
+
+## Data Fetching & Mutations
+```
+
+async function getData() { /*Server Component */ }
+"form": async ({request}) => { /* Server Action*/ }
+
+```
+- `cache: 'no-store'` for real-time data
+- `fetch` with `revalidate` for ISR
+- `revalidatePath`/`revalidateTag` after mutations
+- Zod validation for Server Actions
+
+## Performance & SEO
+- Lighthouse ≥95 (Performance, Accessibility, SEO)
+- `next/image` for all images with `priority` on LCP
+- Font optimization with `next/font`
+- Dynamic imports for heavy components
+- Bundle analyzer (`@next/bundle-analyzer`)
+
+## Components & Patterns
+```
+
+export default async function Page({ params }: { params: { slug: string } }) {
+  const data = await getData(params.slug)
+  return (
+    <Suspense fallback={<Loading />}>
+      <Content data={data} />
+    </Suspense>
+  )
+}
+
+```
+- `searchParams` for dynamic route params
+- `generateStaticParams` for static generation
+- `notFound()` for 404 handling
+- `redirect()` for auth flows
+
+## State Management
+- Server-first: fetch on server, pass as props
+- Client: `useState`, `useReducer`, `zustand` (minimal)
+- `computed()` signals for derived state
+- URL state for filters/pagination (`searchParams`)
+
+## Development Workflow
+- ESLint + `eslint-config-next`
+- Prettier + `next lint`
+- Husky pre-commit hooks
+- TypeScript error overlays in dev
+```
+
+pnpm dlx shadcn-ui@latest add button dialog
+
+```
+
+## Deployment
+- Vercel (recommended) or Node.js 20+
+- Environment variables with `NEXT_PUBLIC_` prefix
+- Middleware for auth/routing (`middleware.ts`)
+```
+
+export const runtime = 'edge' // For global deployment
+
+```
+```

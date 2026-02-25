@@ -1,0 +1,6 @@
+{
+  "name": "@starchild/eslint-config",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Planned shared ESLint config workspace"
+}

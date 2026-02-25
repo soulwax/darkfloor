@@ -1,50 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)",
-      "Bash(tree:*)",
-      "Bash(source ~/.zshrc)",
-      "Bash(npm run build:*)",
-      "Bash(cat:*)",
-      "Bash(npx tsx:*)",
-      "Bash(curl:*)",
-      "Bash(command -v:*)",
-      "Bash(npm run db:generate:*)",
-      "Bash(find:*)",
-      "Bash(dir:*)",
-      "Bash(test:*)",
-      "Bash(node electron/prepare-package.js:*)",
-      "Bash(grep:*)",
-      "Bash(npm run format:write:*)",
-      "Bash(npx tsc:*)",
-      "Bash(npm install:*)",
-      "Bash(pm2 status:*)",
-      "Bash(pm2 delete:*)",
-      "Bash(pm2 start:*)",
-      "Bash(pm2 logs:*)",
-      "Bash(pm2 restart:*)",
-      "Bash(lsof:*)",
-      "Bash(xargs:*)",
-      "Bash(git restore:*)",
-      "Bash(1)",
-      "Bash(ls:*)",
-      "Bash(wc:*)",
-      "Bash(pm2 stop:*)",
-      "Bash(rm:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(cp:*)",
-      "Bash(node -c:*)",
-      "Bash(electron-builder --win:*)",
-      "Bash(electron-builder --mac:*)",
-      "Bash(electron-builder --linux:*)",
-      "Bash(pm2 describe:*)",
-      "Bash(pm2 flush:*)",
-      "Bash(pm2 monit:*)",
-      "Bash(pm2 list:*)",
-      "Bash(npm run pm2:start:*)",
-      "Bash(pm2 save:*)"
-    ],
-    "deny": [],
-    "ask": []
+      "Bash(wc:*)"
+    ]
   }
 }

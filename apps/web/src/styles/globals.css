@@ -1,0 +1,4570 @@
+/* File: apps/web/src/styles/globals.css */
+
+@import "tailwindcss";
+
+/* ------------------------------------------------------------
+   🌟 Starchild Music – Global Theme (dark, vivid, flat)
+------------------------------------------------------------- */
+
+:root {
+  --color-bg: #0b1118;
+  --color-surface: #131a24;
+  --color-surface-hover: #1b2431;
+  --color-surface-2: #0f141d;
+  --color-accent: #f4b266;
+  --color-accent-light: #ffd6a0;
+  --color-accent-strong: #58c6b1;
+  --color-secondary-accent: #4ab8a3;
+  --color-secondary-accent-strong: #58c6b1;
+  --color-text: #f5f1e8;
+  --color-subtext: #a5afbf;
+  --color-muted: #7f8897;
+  --color-border: #1f2835;
+  --color-on-accent: #0f141d;
+  --color-success: #58c6b1;
+  --color-danger: #f28b82;
+  --color-warning: #f2c761;
+
+  --color-slider-track: rgba(255, 255, 255, 0.14);
+  --color-slider-fill: #f4b266;
+  --color-slider-thumb: #f4b266;
+
+  --radius-lg: 1rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+
+  --shadow-md: 0 8px 24px rgba(5, 10, 18, 0.45);
+  --shadow-lg: 0 16px 48px rgba(5, 10, 18, 0.6);
+  --ring: 0 0 0 4px rgba(244, 178, 102, 0.2);
+  --glow-ambient: 0 0 32px rgba(88, 198, 177, 0.25);
+  --accent-btn-shadow: 0 12px 28px rgba(244, 178, 102, 0.25);
+  --accent-btn-shadow-hover: 0 16px 34px rgba(244, 178, 102, 0.35);
+
+  /* Audio-reactive variables - updated by useAudioReactiveBackground hook */
+  --audio-intensity: 0;
+  --audio-bass: 0;
+  --audio-energy: 0;
+  --audio-treble: 0;
+  --audio-hue: 0;
+  --audio-strobe: 0;
+
+  /* Electron chrome sync */
+  --color-chrome-solid: #0a1018;
+  --color-chrome-symbol: #f5f1e8;
+  --electron-titlebar-height: 0px;
+  --electron-header-height: var(--electron-titlebar-height);
+  --electron-titlebar-inset-left: 0px;
+  --electron-titlebar-inset-right: 0px;
+  --electron-sidebar-width: 0px;
+  --electron-sidebar-bottom-padding: 0.75rem;
+}
+
+/* ------------------------------------------------------------
+   ☀️ Light Theme Variables & Base
+------------------------------------------------------------- */
+
+html.theme-light {
+  --color-bg: #eef1f5;
+  --color-surface: #ffffff;
+  --color-surface-hover: #e4e8ef;
+  --color-surface-2: #e8ecf1;
+  --color-accent: #c9822e;
+  --color-accent-light: #d9933d;
+  --color-accent-strong: #3da88a;
+  --color-secondary-accent: #3da88a;
+  --color-secondary-accent-strong: #2d9d7f;
+  --color-text: #0f1419;
+  --color-subtext: #374151;
+  --color-muted: #4b5563;
+  --color-border: #c5cdd9;
+  --color-on-accent: #0f1419;
+  --color-success: #2d9d7f;
+  --color-danger: #c45a4e;
+  --color-warning: #b8861e;
+
+  --color-slider-track: #a8b4c4;
+  --color-slider-fill: #c9822e;
+  --color-slider-thumb: #c9822e;
+
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.14);
+  --ring: 0 0 0 3px rgba(201, 130, 46, 0.4);
+  --glow-ambient: 0 0 24px rgba(61, 168, 138, 0.12);
+  --accent-btn-shadow: 0 6px 20px rgba(201, 130, 46, 0.25);
+  --accent-btn-shadow-hover: 0 10px 24px rgba(201, 130, 46, 0.32);
+
+  /* Electron chrome sync */
+  --color-chrome-solid: #ffffff;
+  --color-chrome-symbol: #0f1419;
+
+  background: #eef1f5;
+}
+
+html.theme-light::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse 120% 80% at 50% -20%,
+    rgba(61, 168, 138, 0.06) 0%,
+    rgba(212, 147, 61, 0.03) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+html.theme-light::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse 100% 60% at 50% 100%,
+    rgba(212, 147, 61, 0.04) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Prevent bounce scrolling on mobile */
+  overscroll-behavior: none;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Disable backgrounds when visualizer is off */
+html.visualizer-disabled::before,
+html.visualizer-disabled::after {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+body.visualizer-disabled::before,
+body.visualizer-disabled::after {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+/* Dark theme only: base background and overlays */
+html:not(.theme-light) {
+  background-color: #0a0a0f;
+  background: radial-gradient(ellipse at center, #0a0612 0%, #000000 100%);
+}
+
+html:not(.theme-light)::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background: radial-gradient(
+    ellipse at top center,
+    rgba(88, 198, 177, 0.15) 0%,
+    rgba(139, 92, 246, 0.1) 30%,
+    rgba(168, 85, 247, 0.08) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  animation: arcane-pulse 8s ease-in-out infinite;
+}
+
+html:not(.theme-light)::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse at bottom center,
+    rgba(244, 178, 102, 0.12) 0%,
+    rgba(236, 72, 153, 0.08) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+  mix-blend-mode: screen;
+  animation: arcane-glow 10s ease-in-out infinite alternate;
+}
+
+@keyframes arcane-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes arcane-glow {
+  0% {
+    opacity: 0.4;
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    opacity: 0.7;
+    filter: hue-rotate(30deg);
+  }
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  position: relative;
+  background: transparent;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Ubuntu,
+    Cantarell,
+    Noto Sans,
+    "Helvetica Neue",
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
+  min-height: 100vh;
+}
+
+/* Dark theme only: floating energy particles */
+html:not(.theme-light) body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(2px 2px at 60% 70%, rgba(139, 92, 246, 0.2), transparent),
+    radial-gradient(2px 2px at 50% 50%, rgba(88, 198, 177, 0.15), transparent),
+    radial-gradient(3px 3px at 80% 10%, rgba(244, 178, 102, 0.2), transparent),
+    radial-gradient(2px 2px at 90% 60%, rgba(236, 72, 153, 0.15), transparent),
+    radial-gradient(2px 2px at 33% 90%, rgba(168, 85, 247, 0.18), transparent);
+  background-size: 200% 200%;
+  background-position: 50% 50%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.4;
+  animation: mystical-drift 60s ease-in-out infinite;
+}
+
+/* Dark theme only: shimmer overlay */
+html:not(.theme-light) body::after {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    transparent 30%,
+    rgba(139, 92, 246, 0.03) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+  animation: arcane-rotation 120s linear infinite;
+}
+
+@keyframes mystical-drift {
+  0%,
+  100% {
+    background-position: 0% 0%;
+    opacity: 0.3;
+  }
+  25% {
+    background-position: 100% 0%;
+    opacity: 0.5;
+  }
+  50% {
+    background-position: 100% 100%;
+    opacity: 0.4;
+  }
+  75% {
+    background-position: 0% 100%;
+    opacity: 0.5;
+  }
+}
+
+@keyframes arcane-rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* Scoped link styles - apply .content wrapper to use these */
+.content a,
+.link {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.content a:hover,
+.link:hover {
+  color: var(--color-accent-light);
+}
+
+/* Accessibility: visible focus styles */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-md);
+}
+
+input,
+button {
+  outline: none;
+}
+
+/* ------------------------------------------------------------
+   Components (keine @apply → v4-sicher)
+------------------------------------------------------------- */
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-strong)
+  );
+  color: var(--color-on-accent);
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  border: 0;
+  border-radius: 0.6rem; /* rounded-md */
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(244, 178, 102, 0.25);
+}
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-light),
+    var(--color-accent)
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.btn-primary:hover::before {
+  opacity: 1;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(244, 178, 102, 0.35);
+}
+
+html:not(.theme-light) .btn-primary:hover,
+html:not(.theme-light) .btn-primary:hover > * {
+  color: #0f141d;
+}
+html:not(.theme-light) .btn-primary:hover::before {
+  opacity: 0.5;
+}
+.btn-primary:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 4px 14px rgba(244, 178, 102, 0.25);
+}
+.btn-primary:focus-visible {
+  box-shadow: var(--ring);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-primary > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.theme-light .btn-primary,
+html.theme-light .btn-primary:hover,
+html.theme-light .btn-primary:focus-visible {
+  background: linear-gradient(135deg, #e8b050, #5bc4a8);
+  color: var(--color-on-accent);
+  box-shadow: 0 6px 20px rgba(232, 176, 80, 0.22);
+}
+html.theme-light .btn-primary:hover {
+  background: linear-gradient(135deg, #eeb860, #66d0b4);
+  box-shadow: 0 10px 24px rgba(232, 176, 80, 0.28);
+  color: #0f1419;
+}
+html.theme-light .btn-primary::before {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.15)
+  );
+}
+html.theme-light .btn-primary:hover::before {
+  opacity: 0.6;
+}
+html.theme-light .btn-primary > *,
+html.theme-light .btn-primary:hover > * {
+  color: inherit;
+}
+html.theme-light .btn-primary:active {
+  background: linear-gradient(135deg, #e0a848, #52c4a4);
+  box-shadow: 0 4px 14px rgba(232, 176, 80, 0.2);
+}
+
+html.theme-light .desktop-play-btn {
+  background: linear-gradient(135deg, #e8b050, #5bc4a8) !important;
+  color: #0f1419;
+  box-shadow: 0 8px 24px rgba(232, 176, 80, 0.28);
+}
+html.theme-light .desktop-play-btn:hover {
+  background: linear-gradient(135deg, #eeb860, #66d0b4) !important;
+  box-shadow: 0 10px 28px rgba(232, 176, 80, 0.32);
+}
+
+/* Secondary and ghost variants for consistent controls */
+.btn-secondary {
+  background: linear-gradient(
+    135deg,
+    rgba(24, 33, 44, 0.9),
+    rgba(16, 22, 31, 0.9)
+  );
+  color: var(--color-text);
+  border: 1px solid rgba(244, 178, 102, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 0.6rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(5, 10, 18, 0.4);
+}
+.btn-secondary:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(28, 39, 52, 0.95),
+    rgba(17, 25, 34, 0.95)
+  );
+  border-color: rgba(244, 178, 102, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(5, 10, 18, 0.55);
+}
+.btn-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.btn-secondary:focus-visible {
+  box-shadow: var(--ring);
+}
+
+html.theme-light .btn-secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+html.theme-light .btn-secondary:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-lg);
+}
+
+html.theme-light .btn-github {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  --tw-ring-shadow: none;
+}
+html.theme-light .btn-github:hover {
+  background: var(--color-surface-2);
+  border-color: var(--color-subtext);
+  box-shadow: none;
+  --tw-ring-shadow: none;
+}
+
+html.theme-light .btn-ghost:hover {
+  background: rgba(212, 147, 61, 0.08);
+  border-color: rgba(212, 147, 61, 0.2);
+}
+
+.btn-danger {
+  background: rgba(242, 139, 130, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(242, 139, 130, 0.35);
+  padding: 0.5rem 1rem;
+  border-radius: 0.6rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(242, 139, 130, 0.25);
+}
+.btn-danger:hover {
+  background: rgba(242, 139, 130, 0.18);
+  border-color: rgba(242, 139, 130, 0.48);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(242, 139, 130, 0.32);
+}
+.btn-danger:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(242, 139, 130, 0.25);
+}
+.btn-danger:focus-visible {
+  box-shadow: 0 0 0 4px rgba(242, 139, 130, 0.25);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-ghost:hover {
+  background: rgba(244, 178, 102, 0.08);
+  border-color: rgba(244, 178, 102, 0.2);
+  transform: scale(1.05);
+}
+.btn-ghost:active {
+  transform: scale(0.98);
+}
+
+.card {
+  background: linear-gradient(
+    145deg,
+    rgba(18, 27, 37, 0.92),
+    rgba(11, 17, 24, 0.92)
+  );
+  border: 1px solid rgba(244, 178, 102, 0.08);
+  border-radius: 0.9rem; /* rounded-lg */
+  box-shadow: var(--shadow-md);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(22px);
+}
+.card:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(20, 30, 42, 0.95),
+    rgba(13, 20, 29, 0.95)
+  );
+  border-color: rgba(244, 178, 102, 0.18);
+  box-shadow: var(--shadow-lg), var(--glow-ambient);
+  transform: translateY(-2px);
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent),
+    var(--color-accent-strong),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.card:hover::before {
+  opacity: 0.35;
+}
+
+html.theme-light .card {
+  background: linear-gradient(145deg, #ffffff, var(--color-surface-hover));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+html.theme-light .card:hover {
+  background: linear-gradient(145deg, #ffffff, var(--color-surface-hover));
+  border-color: rgba(212, 147, 61, 0.35);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Centered page container with consistent max width */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+/* Accent helper for components */
+.text-accent {
+  color: var(--color-accent);
+}
+
+.input-text {
+  width: 100%;
+  padding: 0.625rem 1rem; /* Slightly larger padding */
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.9375rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.input-text::placeholder {
+  color: var(--color-subtext);
+  opacity: 0.7;
+}
+.input-text:hover {
+  border-color: rgba(244, 178, 102, 0.3);
+}
+.input-text:focus {
+  box-shadow:
+    var(--ring),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  outline: none;
+}
+
+html.theme-light .input-text {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+html.theme-light .input-text:focus {
+  box-shadow:
+    var(--ring),
+    inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.form-label {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  color: var(--color-subtext);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.form-help {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-subtext);
+  font-size: 0.8rem;
+}
+
+/* Animated gradient title (used by .accent-gradient) */
+.accent-gradient {
+  background-image: linear-gradient(
+    92deg,
+    var(--color-accent),
+    var(--color-accent-strong),
+    #8ca7ff
+  );
+  background-size: 200% 200%;
+  animation: gradientFlow 6s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html.theme-light .accent-gradient {
+  background-image: linear-gradient(
+    92deg,
+    var(--color-accent),
+    var(--color-accent-strong)
+  );
+}
+
+/* Subtle glow helper */
+.text-glow {
+  text-shadow: 0 0 18px rgba(244, 178, 102, 0.55);
+}
+
+html.theme-light .text-glow {
+  text-shadow: 0 0 20px rgba(212, 147, 61, 0.35);
+}
+
+/* Shared surface treatments */
+.surface-panel {
+  background: linear-gradient(
+    145deg,
+    rgba(19, 27, 38, 0.94),
+    rgba(10, 16, 24, 0.94)
+  );
+  border: 1px solid rgba(244, 178, 102, 0.14);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.surface-panel:hover {
+  border-color: rgba(244, 178, 102, 0.28);
+  box-shadow: var(--shadow-lg), var(--glow-ambient);
+  transform: translateY(-3px);
+}
+
+html.theme-light .surface-panel {
+  background: linear-gradient(145deg, #ffffff, var(--color-surface-hover));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+html.theme-light .surface-panel:hover {
+  border-color: rgba(212, 147, 61, 0.4);
+  box-shadow: var(--shadow-lg);
+}
+
+.surface-muted {
+  background: rgba(13, 19, 28, 0.85);
+  border: 1px solid rgba(244, 178, 102, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 6px 24px rgba(5, 10, 18, 0.5);
+}
+
+html.theme-light .surface-muted {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-strong)
+  );
+  color: var(--color-on-accent);
+  box-shadow: 0 6px 22px rgba(244, 178, 102, 0.28);
+}
+
+html.theme-light .badge-accent {
+  box-shadow: 0 4px 16px rgba(212, 147, 61, 0.2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: rgba(244, 178, 102, 0.08);
+  border: 1px solid rgba(244, 178, 102, 0.16);
+}
+
+html.theme-light .chip {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+}
+
+.player-backdrop {
+  width: 100%;
+  border-top: 1px solid rgba(244, 178, 102, 0.16);
+  background: linear-gradient(
+    135deg,
+    rgba(18, 26, 38, 0.96),
+    rgba(11, 17, 24, 0.96)
+  );
+  box-shadow: 0 -12px 32px rgba(5, 10, 18, 0.6);
+  backdrop-filter: blur(24px);
+  position: relative;
+}
+.player-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 80% at 15% 0%,
+      rgba(244, 178, 102, 0.18),
+      transparent 70%
+    ),
+    radial-gradient(
+      100% 70% at 85% -10%,
+      rgba(88, 198, 177, 0.14),
+      transparent 65%
+    );
+  pointer-events: none;
+  opacity: 0.75;
+}
+.player-backdrop-inner {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+  width: min(1180px, 100%);
+  padding: 1rem 1.5rem 1.25rem;
+}
+
+html.theme-light .player-backdrop::before {
+  background:
+    radial-gradient(
+      120% 80% at 15% 0%,
+      rgba(212, 147, 61, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      100% 70% at 85% -10%,
+      rgba(61, 168, 138, 0.08),
+      transparent 65%
+    );
+  opacity: 0.85;
+}
+
+html.theme-light .player-backdrop {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.98),
+    var(--color-surface-hover)
+  );
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+}
+html.theme-light .player-backdrop::before {
+  opacity: 0.4;
+}
+
+.page-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      ellipse 150% 100% at 20% -10%,
+      rgba(200, 50, 30, 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 140% 90% at 80% -20%,
+      rgba(244, 178, 102, 0.15),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle 100% at 50% 50%,
+      rgba(180, 40, 50, 0.08),
+      transparent 70%
+    ),
+    var(--color-bg);
+}
+.page-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(18, 26, 38, 0.4), transparent 70%),
+    radial-gradient(
+      ellipse 200% 100% at 30% 50%,
+      rgba(200, 50, 30, 0.05),
+      transparent 60%
+    );
+  pointer-events: none;
+  z-index: -1;
+  animation: toreadorFlow 30s ease-in-out infinite;
+}
+
+html.theme-light .page-shell {
+  background: var(--color-bg);
+}
+html.theme-light .page-shell::before {
+  background: radial-gradient(
+    120% 70% at 50% 0%,
+    rgba(61, 168, 138, 0.04),
+    transparent 60%
+  );
+  animation: none;
+}
+
+/* ------------------------------------------------------------
+   Simple motion helpers used by your pages
+------------------------------------------------------------- */
+
+.fade-in {
+  animation: fadeIn 0.4s ease-in-out forwards;
+}
+.slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes heartPulse {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-heart-pulse {
+  animation: heartPulse 0.6s ease-in-out;
+}
+
+/* ------------------------------------------------------------
+   🎚️ Equalizer Vertical Sliders
+------------------------------------------------------------- */
+
+.vertical-slider {
+  /* Hide default slider appearance */
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Webkit (Chrome, Safari, Edge) - Thumb */
+.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-slider-thumb),
+    var(--color-accent-strong)
+  );
+  box-shadow:
+    0 0 16px rgba(244, 178, 102, 0.5),
+    0 0 34px rgba(88, 198, 177, 0.35),
+    0 2px 10px rgba(5, 10, 18, 0.5);
+  cursor: grab;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(15, 20, 29, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+.vertical-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 26px rgba(244, 178, 102, 0.7),
+    0 0 54px rgba(88, 198, 177, 0.4),
+    0 4px 14px rgba(5, 10, 18, 0.6);
+  border-color: rgba(15, 20, 29, 0.45);
+}
+
+.vertical-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.vertical-slider:disabled::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #394352, #475062);
+  box-shadow: 0 0 8px rgba(63, 73, 92, 0.35);
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Firefox - Thumb */
+.vertical-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-slider-thumb),
+    var(--color-accent-strong)
+  );
+  box-shadow:
+    0 0 16px rgba(244, 178, 102, 0.5),
+    0 0 34px rgba(88, 198, 177, 0.35),
+    0 2px 10px rgba(5, 10, 18, 0.5);
+  cursor: grab;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(15, 20, 29, 0.3);
+}
+
+.vertical-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 26px rgba(244, 178, 102, 0.7),
+    0 0 54px rgba(88, 198, 177, 0.4),
+    0 4px 14px rgba(5, 10, 18, 0.6);
+  border-color: rgba(15, 20, 29, 0.45);
+}
+
+.vertical-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.vertical-slider:disabled::-moz-range-thumb {
+  background: linear-gradient(135deg, #394352, #475062);
+  box-shadow: 0 0 8px rgba(63, 73, 92, 0.35);
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Equalizer slider track visual */
+.eq-slider-track {
+  width: 6px;
+  height: 100%;
+  background: var(--color-slider-track);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+  box-shadow: inset 0 2px 4px rgba(5, 10, 18, 0.45);
+}
+
+.eq-slider-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  border-radius: 3px;
+}
+
+/* Active fill for the slider */
+.eq-slider-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  background: linear-gradient(
+    180deg,
+    var(--color-slider-fill),
+    var(--color-accent-strong)
+  );
+  box-shadow:
+    0 0 14px rgba(244, 178, 102, 0.45),
+    0 0 28px rgba(88, 198, 177, 0.25),
+    inset 0 1px 2px rgba(255, 255, 255, 0.24);
+}
+
+.eq-slider-fill.disabled {
+  background: linear-gradient(180deg, #596170, #444c5b);
+  box-shadow: 0 0 8px rgba(86, 96, 110, 0.35);
+}
+
+/* Center indicator line */
+.eq-slider-center {
+  position: absolute;
+  top: 50%;
+  left: -4px;
+  right: -4px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-50%);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
+}
+
+html.theme-light .eq-slider-center {
+  background: var(--color-slider-track);
+  box-shadow: none;
+}
+html.theme-light .eq-slider-track {
+  background: var(--color-slider-track);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+html.theme-light .eq-slider-fill {
+  box-shadow:
+    0 0 8px rgba(212, 147, 61, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+html.theme-light .eq-freq-label,
+html.theme-light .eq-gain-label {
+  text-shadow: none;
+}
+html.theme-light .vertical-slider::-webkit-slider-thumb,
+html.theme-light .vertical-slider::-moz-range-thumb {
+  background: linear-gradient(
+    135deg,
+    var(--color-slider-thumb),
+    var(--color-accent-strong)
+  );
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Frequency band labels with glow */
+.eq-freq-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-subtext);
+  text-shadow: 0 0 10px rgba(244, 178, 102, 0.25);
+  transition: all 0.2s ease;
+}
+
+.eq-gain-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-shadow: 0 0 12px rgba(244, 178, 102, 0.35);
+  min-width: 3rem;
+  transition: all 0.2s ease;
+}
+
+.vertical-slider:hover ~ .eq-freq-label,
+.vertical-slider:hover ~ .eq-gain-label {
+  color: var(--color-accent-light);
+  text-shadow: 0 0 16px rgba(244, 178, 102, 0.45);
+}
+
+/* ------------------------------------------------------------
+   Flat Neon Scrollbar
+------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-strong)
+  );
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-light),
+    var(--color-accent-strong)
+  );
+}
+
+html.theme-light ::-webkit-scrollbar-track {
+  background: var(--color-surface-hover);
+}
+html.theme-light ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--color-border), var(--color-muted));
+  border-radius: 4px;
+}
+html.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent),
+    var(--color-accent-strong)
+  );
+}
+
+/* Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .slide-up,
+  .accent-gradient,
+  .slide-in-up,
+  .slide-in-down {
+    animation: none !important;
+  }
+  * {
+    transition: none !important;
+  }
+
+  /* Disable visualizer animations for accessibility */
+  html::before,
+  html::after,
+  body::before,
+  body::after {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    opacity: 0.2 !important;
+  }
+
+  /* Disable audio-reactive variables */
+  :root {
+    --audio-intensity: 0 !important;
+    --audio-bass: 0 !important;
+    --audio-energy: 0 !important;
+    --audio-treble: 0 !important;
+    --audio-hue: 0 !important;
+  }
+}
+
+/* ------------------------------------------------------------
+   📱 Mobile-First Touch Utilities & Performance
+------------------------------------------------------------- */
+
+/* Force GPU acceleration for all animated elements */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+/* Minimum touch target size (44x44px iOS, 48x48px Android) */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* GPU acceleration for better performance */
+  transform: translateZ(0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Larger touch target for primary actions */
+.touch-target-lg {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateZ(0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Active state feedback for touch - optimized for 60fps */
+.touch-active:active {
+  transform: scale(0.95) translateZ(0);
+  opacity: 0.8;
+  transition:
+    transform 0.1s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.1s ease;
+}
+
+/* Prevent text selection on touch interfaces */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area insets for notched devices */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile-optimized spacing */
+.mobile-padding {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-padding {
+    padding: 1.5rem;
+  }
+}
+
+/* Bottom sheet styles */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 99;
+  pointer-events: none;
+}
+
+.bottom-sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+html.theme-light .bottom-sheet {
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+}
+html.theme-light .bottom-sheet-handle {
+  background: var(--color-border);
+}
+
+/* Swipe indicator */
+.swipe-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--color-accent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.swipe-indicator.left {
+  left: 0;
+}
+
+.swipe-indicator.right {
+  right: 0;
+}
+
+/* Mobile animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-up {
+  animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-down {
+  animation: slideInDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 768px) {
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   🔄 Loading States & Skeletons
+------------------------------------------------------------- */
+
+/* Loading spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(244, 178, 102, 0.18);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.spinner-lg {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Pulse effect for loading */
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ------------------------------------------------------------
+   ✨ Additional Polish
+------------------------------------------------------------- */
+
+/* Smooth transitions for all interactive elements */
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  /* GPU acceleration for interactive elements */
+  transform: translateZ(0);
+}
+
+/* Improved focus states */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* ------------------------------------------------------------
+   🚀 60fps Mobile Performance Optimizations
+------------------------------------------------------------- */
+
+/* Only animate transform and opacity for best performance */
+.animate-smooth {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Optimize repaints - use transform instead of top/left */
+.animate-position {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Contain layout changes to prevent reflows */
+.contain-layout {
+  contain: layout style paint;
+}
+
+/* Optimize scrolling performance on mobile */
+.scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  /* Enable GPU-accelerated scrolling */
+  transform: translateZ(0);
+}
+
+/* Optimize list rendering */
+.list-optimized {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* Reduce paint on hover/active states */
+.interactive-optimized {
+  /* Only animate GPU-accelerated properties */
+  transition-property: transform, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.15s;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize images for mobile */
+img {
+  content-visibility: auto;
+}
+
+/* Prevent layout shifts on mobile */
+@media (max-width: 768px) {
+  /* Force hardware acceleration on mobile */
+  .card,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  button,
+  a {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Optimize animations for mobile */
+  * {
+    animation-duration: 0.2s !important;
+    transition-duration: 0.15s !important;
+  }
+
+  /* Reduce motion on low-end devices */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Enable smooth animations only on capable devices */
+    .smooth-animation {
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+}
+
+/* Optimize touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device optimizations */
+  button:active,
+  a:active,
+  .touch-target:active,
+  .touch-target-lg:active {
+    transform: scale(0.96) translateZ(0);
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Layer promotion for frequently animated elements */
+.layer-promote {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ------------------------------------------------------------
+   🎧 Mobile Player Sizing
+
+   Conservative sizing accounts for browser chrome and OS UI:
+   - iOS: Status bar (44px) + address bar (~50px) + home indicator (34px) = ~128px
+   - Android: Status bar (24-30px) + address bar (~56px) + nav bar (48-60px) = ~130-146px
+   - Artwork limited to 42vh to ensure visibility with browser UI
+------------------------------------------------------------- */
+
+:root {
+  --mobile-player-artwork-size: 300px;
+  --mobile-player-content-width: 420px;
+  --mobile-player-gap: 0.875rem;
+
+  /* Button sizing */
+  --mobile-player-play-button-size: 64px;
+  --mobile-player-skip-button-size: 34px;
+  --mobile-player-control-button-size: 15px;
+  --mobile-player-controls-gap: 1.25rem;
+}
+
+.mobile-player-body {
+  gap: var(--mobile-player-gap);
+}
+
+.mobile-player-content {
+  width: 100%;
+  max-width: min(90vw, var(--mobile-player-content-width));
+}
+
+.mobile-player-artwork {
+  max-width: min(85vw, var(--mobile-player-artwork-size));
+  max-height: min(42vh, var(--mobile-player-artwork-size));
+}
+
+/* ------------------------------------------------------------
+   📱 Landscape Mode Optimizations for Mobile
+------------------------------------------------------------- */
+
+/* Mobile landscape - reduce vertical spacing */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 768px) {
+  /* Reduce padding in expanded mobile player */
+  .mobile-player-expanded {
+    padding: 0.5rem 1rem;
+  }
+
+  /* Make artwork smaller to fit vertically */
+  .mobile-player-artwork {
+    max-height: 35vh;
+    max-width: 35vh;
+  }
+
+  /* Reduce spacing in controls */
+  .mobile-player-controls {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  /* Make button sizes smaller */
+  .mobile-player-controls button {
+    padding: 0.5rem;
+  }
+
+  /* Hide secondary controls if needed to save space */
+  .mobile-player-secondary-controls {
+    display: none;
+  }
+
+  /* Reduce header/footer heights */
+  .mobile-player-header {
+    padding: 0.5rem;
+  }
+
+  /* Reduce bottom padding for main content */
+  .pb-36 {
+    padding-bottom: 5rem;
+  }
+
+  /* Make mini player more compact */
+  .safe-bottom {
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Tablet landscape - use horizontal space better */
+@media (min-width: 768px) and (max-height: 600px) and (orientation: landscape) {
+  /* Use 2-column layout for expanded player */
+  .mobile-player-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  /* Artwork on left side */
+  .mobile-player-artwork {
+    align-self: center;
+    justify-self: center;
+  }
+
+  /* Info and controls on right side */
+  .mobile-player-info-controls {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   📱 Enhanced Mobile Interaction Styles
+------------------------------------------------------------- */
+
+/* Swipeable card styles */
+.swipe-card {
+  touch-action: pan-y;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.swipe-card-content {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Rubber band effect for overscroll */
+@supports (overscroll-behavior: contain) {
+  .rubber-band {
+    overscroll-behavior: contain;
+  }
+}
+
+/* iOS-style momentum scrolling */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: y proximity;
+}
+
+/* Card hover disabled on touch */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+    border-color: rgba(244, 178, 102, 0.08);
+  }
+
+  .card:hover::before {
+    opacity: 0;
+  }
+
+  /* Disable hover animations on touch devices */
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-ghost:hover {
+    transform: none;
+  }
+}
+
+/* Active state for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
+  .btn-primary:active,
+  .btn-secondary:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Enhanced focus states for accessibility */
+@media (prefers-reduced-motion: no-preference) {
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(244, 178, 102, 0.4);
+    transition: box-shadow 0.2s ease;
+  }
+}
+
+/* Smooth text rendering on mobile */
+@media (max-width: 768px) {
+  body {
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Prevent content shift when keyboard opens */
+@media (max-width: 768px) {
+  .keyboard-aware {
+    transition: padding-bottom 0.3s ease;
+  }
+}
+
+/* iOS notch/dynamic island awareness */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .notch-aware-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .notch-aware-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent zoom on double tap for interactive elements */
+.no-zoom {
+  touch-action: manipulation;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: #3a4553;
+    --color-accent: #ffb347;
+  }
+
+  .card {
+    border-width: 2px;
+  }
+}
+
+/* Dark theme: slight image dimming for cohesion */
+html:not(.theme-light) img {
+  filter: brightness(0.98);
+}
+
+html.theme-light img {
+  filter: none;
+}
+
+/* Theme-aware chrome (header, player bar, drawers) */
+.theme-chrome-header {
+  background: rgba(10, 16, 24, 0.88);
+  border-color: var(--color-border);
+  box-shadow: 0 10px 40px rgba(5, 10, 18, 0.6);
+}
+
+html.theme-light .theme-chrome-header {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--color-border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.theme-chrome-sidebar {
+  background: rgba(10, 16, 24, 0.92);
+  border-color: var(--color-border);
+  box-shadow: 10px 0 40px rgba(5, 10, 18, 0.35);
+}
+
+html.theme-light .theme-chrome-sidebar {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: var(--color-border);
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Electron desktop chrome */
+html.is-electron .theme-chrome-header {
+  padding-top: 0;
+  user-select: none;
+}
+
+html.is-electron .theme-chrome-header .container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+html.is-electron .electron-titlebar-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 1fr) auto minmax(88px, 1fr);
+  min-height: 38px;
+  align-items: center;
+  margin: 0 0.15rem 0.45rem;
+  padding: 0 0.4rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    90deg,
+    rgba(49, 50, 60, 0.96) 0%,
+    rgba(56, 57, 67, 0.94) 42%,
+    rgba(47, 48, 58, 0.96) 100%
+  );
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+html.theme-light.is-electron .electron-titlebar-row {
+  border-color: rgba(15, 20, 25, 0.14);
+  background: linear-gradient(
+    90deg,
+    rgba(243, 245, 248, 0.98) 0%,
+    rgba(236, 239, 244, 0.95) 100%
+  );
+  box-shadow:
+    0 5px 14px rgba(15, 20, 25, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+html.is-electron .electron-titlebar-spacer {
+  justify-self: start;
+  width: 100%;
+}
+
+html.is-electron .electron-titlebar-title {
+  min-width: 0;
+  color: rgba(243, 244, 248, 0.96);
+  font-size: clamp(0.86rem, 1.65vmin, 1.03rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  text-align: center;
+  opacity: 0.98;
+}
+
+html.theme-light.is-electron .electron-titlebar-title {
+  color: rgba(23, 27, 32, 0.9);
+}
+
+html.is-electron .electron-titlebar-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+}
+
+html.is-electron .electron-titlebar-overlay {
+  position: fixed;
+  top: 0.4rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  margin: 0;
+  z-index: 70;
+}
+
+html.is-electron .electron-header-drag {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+html.is-electron .electron-header-main {
+  padding-left: max(0.75rem, var(--electron-titlebar-inset-left));
+  padding-right: max(0.75rem, var(--electron-titlebar-inset-right));
+}
+
+.electron-header-main {
+  min-height: 46px;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  align-items: center;
+}
+
+.electron-header-search {
+  width: 100%;
+  min-width: 0;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 28, 38, 0.82) 0%,
+    rgba(14, 20, 30, 0.7) 100%
+  );
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.theme-light .electron-header-search {
+  border-color: rgba(15, 20, 25, 0.14);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(248, 249, 251, 0.86) 100%
+  );
+  box-shadow:
+    0 6px 18px rgba(15, 20, 25, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.electron-sidebar {
+  padding-top: 0;
+}
+
+html.is-electron .desktop-shell .theme-chrome-header .container {
+  max-width: none !important;
+  width: 100%;
+}
+
+.electron-header-brand {
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  .electron-header-brand .header-logo-title {
+    display: none;
+  }
+}
+
+@media (max-width: 1080px) {
+  .electron-header-main {
+    grid-template-columns: minmax(0, 1fr) 120px;
+  }
+
+  .electron-header-brand {
+    display: none;
+  }
+}
+
+.desktop-main {
+  background: transparent;
+  padding-top: var(--electron-header-height);
+}
+
+.desktop-surface {
+  border-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(
+    180deg,
+    rgba(19, 26, 36, 0.72) 0%,
+    rgba(11, 17, 24, 0.6) 70%,
+    rgba(11, 17, 24, 0.55) 100%
+  );
+  box-shadow: var(--shadow-lg);
+}
+
+html.theme-light .desktop-surface {
+  border-color: rgba(15, 20, 25, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.86) 100%
+  );
+  box-shadow: var(--shadow-md);
+}
+
+.desktop-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+
+.desktop-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.desktop-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+html.theme-light .desktop-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 20, 25, 0.16);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.guest-modal-content-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+.guest-modal-dropdown-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+  scrollbar-gutter: stable both-edges;
+}
+
+.guest-modal-dropdown-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.guest-modal-dropdown-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.guest-modal-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+.guest-modal-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.44);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+html.theme-light .guest-modal-dropdown-scroll {
+  scrollbar-color: rgba(15, 20, 25, 0.34) transparent;
+}
+
+html.theme-light .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 20, 25, 0.24);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+html.theme-light .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 20, 25, 0.38);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+html.is-electron .electron-window-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  -webkit-app-region: no-drag;
+}
+
+html.is-electron .electron-window-controls-shell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+
+html.is-electron .electron-window-controls-shell:active {
+  cursor: default;
+}
+
+html.is-electron .electron-window-control {
+  width: 21px;
+  height: 21px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 246, 250, 0.86);
+  transition:
+    background-color 100ms ease,
+    color 100ms ease,
+    transform 80ms ease;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  opacity: 0.98;
+}
+
+html.is-electron .electron-window-control:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  opacity: 1;
+}
+
+html.is-electron .electron-window-control:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.96);
+}
+
+html.theme-light.is-electron .electron-window-control {
+  border-color: rgba(15, 20, 25, 0.14);
+  background: rgba(15, 20, 25, 0.08);
+  color: rgba(15, 20, 25, 0.76);
+  opacity: 0.9;
+}
+
+html.theme-light.is-electron .electron-window-control:hover {
+  background: rgba(15, 20, 25, 0.14);
+  color: rgba(15, 20, 25, 0.92);
+  opacity: 1;
+}
+
+html.theme-light.is-electron .electron-window-control:active {
+  background: rgba(15, 20, 25, 0.18);
+}
+
+html.is-electron .electron-window-control-close:hover {
+  background: #dc5c64;
+  border-color: #dc5c64;
+  color: #ffffff;
+  opacity: 1;
+}
+
+html.is-electron .electron-window-control-close:active {
+  background: #cd4e56;
+  border-color: #cd4e56;
+  color: #ffffff;
+}
+
+html.theme-light.is-electron .electron-window-control-close:hover {
+  background: #d95a63;
+  color: #ffffff;
+  opacity: 1;
+}
+
+html.theme-light.is-electron .electron-window-control-close:active {
+  background: #c94b54;
+  color: #ffffff;
+}
+
+html.is-electron .electron-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+html.is-electron .theme-chrome-header a,
+html.is-electron .theme-chrome-header button,
+html.is-electron .theme-chrome-header input,
+html.is-electron .theme-chrome-header select,
+html.is-electron .theme-chrome-header textarea,
+html.is-electron .theme-chrome-header form,
+html.is-electron .theme-chrome-header [role="button"] {
+  -webkit-app-region: no-drag;
+}
+
+/* Compact desktop player (web + Electron) */
+@media (min-width: 769px) {
+  .player-backdrop-inner {
+    padding: 0.425rem 0.9rem 0.525rem;
+  }
+
+  .player-backdrop-inner .slider-track {
+    height: 0.22rem;
+  }
+
+  .player-backdrop-inner .slider-track:hover {
+    height: 0.32rem;
+  }
+
+  .desktop-play-btn {
+    height: 1.9rem;
+    width: 1.9rem;
+  }
+
+  .player-backdrop-inner > div > div:first-child {
+    margin-top: 0;
+  }
+
+  .player-backdrop-inner img[width="56"],
+  .player-backdrop-inner .h-14 {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .player-backdrop-inner button {
+    padding: 0.3rem;
+  }
+
+  .player-backdrop-inner .gap-4 {
+    gap: 0.625rem;
+  }
+
+  .player-backdrop-inner .gap-3 {
+    gap: 0.45rem;
+  }
+
+  .player-backdrop-inner .gap-2 {
+    gap: 0.325rem;
+  }
+}
+
+html.theme-light .header-logo-title.accent-gradient {
+  background-image: linear-gradient(92deg, #c98b38, #4db896);
+}
+
+html.theme-light .api-health-pill {
+  border: 1.25px solid var(--color-border);
+  box-shadow: 0 0 0 1px rgba(15, 20, 25, 0.06);
+}
+
+html:not(.theme-light) .header-icon-btn > div {
+  background: rgba(40, 52, 70, 0.85);
+  border: 1px solid rgba(244, 178, 102, 0.28);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+html:not(.theme-light) .header-icon-btn:hover > div {
+  background: rgba(52, 66, 86, 0.9);
+  border-color: rgba(244, 178, 102, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.theme-light .header-icon-btn > div {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+html.theme-light .header-icon-btn:hover > div {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.theme-chrome-bar {
+  background: rgba(10, 16, 24, 0.96);
+  border-color: rgba(244, 178, 102, 0.16);
+  box-shadow: 0 -16px 48px rgba(5, 10, 18, 0.8);
+}
+
+html.theme-light .theme-chrome-bar {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--color-border);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.theme-chrome-drawer {
+  background: rgba(13, 19, 28, 0.98);
+  border-color: rgba(244, 178, 102, 0.16);
+  box-shadow:
+    0 -16px 48px rgba(5, 10, 18, 0.7),
+    0 0 40px rgba(5, 10, 18, 0.5);
+}
+
+html.theme-light .theme-chrome-drawer {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--color-border);
+  box-shadow:
+    0 -16px 48px rgba(0, 0, 0, 0.12),
+    0 0 40px rgba(0, 0, 0, 0.06);
+}
+
+.theme-chrome-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+html.theme-light .theme-chrome-backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.theme-panel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.theme-input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.theme-input:focus {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(212, 147, 61, 0.15);
+}
+
+html.theme-light .theme-input:focus {
+  box-shadow: 0 0 0 3px rgba(212, 147, 61, 0.2);
+}
+
+.theme-card-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+html.theme-light .theme-card-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.slider-track {
+  background: var(--color-slider-track);
+}
+
+.slider-fill {
+  background: var(--color-slider-fill);
+}
+
+/* Reduce transparency for better performance on older devices */
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .surface-panel,
+  .bottom-sheet {
+    backdrop-filter: none;
+    background: var(--color-surface);
+  }
+}
+
+/* Staggered list animation helper */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.stagger-item.visible {
+  animation: staggerFadeIn 0.4s ease forwards;
+}
+
+@keyframes staggerFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-hover) 20%,
+    var(--color-surface-hover) 40%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Smooth color transitions for dynamic theming */
+.dynamic-bg {
+  transition:
+    background-color 0.5s ease,
+    background-image 1s ease;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(18, 26, 38, 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html.theme-light .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+}
+
+/* Neon glow effect */
+.neon-glow {
+  box-shadow:
+    0 0 10px rgba(244, 178, 102, 0.3),
+    0 0 20px rgba(244, 178, 102, 0.2),
+    0 0 30px rgba(244, 178, 102, 0.1);
+}
+
+/* Pulsing animation for indicators */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: currentColor;
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  opacity: 0.3;
+}
+
+/* Scroll shadow indicators */
+.scroll-shadow-top {
+  box-shadow: inset 0 12px 16px -12px rgba(5, 10, 18, 0.5);
+}
+
+.scroll-shadow-bottom {
+  box-shadow: inset 0 -12px 16px -12px rgba(5, 10, 18, 0.5);
+}
+
+html.theme-light .scroll-shadow-top {
+  box-shadow: inset 0 12px 16px -12px rgba(0, 0, 0, 0.08);
+}
+
+html.theme-light .scroll-shadow-bottom {
+  box-shadow: inset 0 -12px 16px -12px rgba(0, 0, 0, 0.08);
+}
+
+/* Lightweight Particle Background - visible in both themes */
+.lightweight-particle-container {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lightweight-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(244, 178, 102, 0.4) 0%,
+    rgba(244, 178, 102, 0.2) 40%,
+    rgba(244, 178, 102, 0.05) 70%,
+    transparent 100%
+  );
+  opacity: 0.6;
+  animation: lightweight-particle-float linear infinite;
+  will-change: transform, opacity;
+}
+
+html.theme-light .lightweight-particle {
+  background: radial-gradient(
+    circle,
+    rgba(212, 147, 61, 0.2) 0%,
+    rgba(61, 168, 138, 0.12) 40%,
+    rgba(61, 168, 138, 0.04) 70%,
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+@keyframes lightweight-particle-float {
+  0% {
+    transform: translate(0, 0) scale(var(--start-scale, 0.7));
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(var(--float-x, 0px), var(--float-y, 0px)) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(
+        calc(var(--float-x, 0px) * 2),
+        calc(var(--float-y, 0px) * 2)
+      )
+      scale(var(--end-scale, 1));
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------
+   📱 Modern Phone Optimizations (2024-2026)
+------------------------------------------------------------- */
+
+/* iPhone 16 Pro Max, 15 Pro Max, 14 Pro Max (430×932) */
+@media (min-width: 430px) and (max-width: 430px) and (min-height: 850px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 380px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+  }
+
+  .mobile-player-expanded {
+    padding: 2rem 1.5rem;
+  }
+
+  /* Optimize for taller screen aspect ratio */
+  .pt-16 {
+    padding-top: 4.5rem;
+  }
+
+  .pb-24 {
+    padding-bottom: 6.5rem;
+  }
+}
+
+/* iPhone 16 Pro, 15 Pro (393×852) */
+@media (min-width: 390px) and (max-width: 395px) and (min-height: 840px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 420px;
+  }
+
+  /* Dynamic Island aware spacing */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 2.5rem);
+  }
+}
+
+/* Standard iPhones (390×844) - iPhone 16, 15, 14, 13, 12 */
+@media (min-width: 375px) and (max-width: 395px) and (min-height: 800px) and (max-height: 850px) {
+  :root {
+    --mobile-player-artwork-size: 340px;
+    --mobile-player-content-width: 410px;
+  }
+
+  .mobile-player-artwork {
+    max-width: 340px;
+    max-height: 340px;
+  }
+
+  /* Optimize spacing for standard notch */
+  .mobile-header {
+    padding-bottom: 0.75rem;
+  }
+}
+
+/* Samsung Galaxy S24 Ultra, S23 Ultra (412×915) */
+@media (min-width: 410px) and (max-width: 415px) and (min-height: 900px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+  }
+
+  /* Optimize for One UI navigation gestures */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+
+  .pb-24 {
+    padding-bottom: 6.25rem;
+  }
+}
+
+/* Samsung Galaxy S24, S23 (360-384×854) */
+@media (min-width: 360px) and (max-width: 385px) and (min-height: 840px) {
+  :root {
+    --mobile-player-artwork-size: 320px;
+    --mobile-player-content-width: 400px;
+  }
+
+  .mobile-player-artwork {
+    max-width: 320px;
+    max-height: 320px;
+  }
+
+  /* Compact spacing for standard Android phones */
+  .mobile-padding {
+    padding: 0.875rem;
+  }
+
+  .mobile-header {
+    padding: 0.625rem 1rem;
+  }
+}
+
+/* Pixel 7/8 Pro, OnePlus, other tall Android (412×915) */
+@media (min-width: 410px) and (max-width: 415px) and (min-height: 910px) {
+  :root {
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 440px;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Material You gesture navigation spacing */
+  .notch-aware-bottom {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* iPhone 14 Plus, 13 Pro Max, 12 Pro Max (428×926) */
+@media (min-width: 425px) and (max-width: 430px) and (min-height: 920px) and (max-height: 930px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 375px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 70px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 375px;
+    max-height: 375px;
+  }
+
+  .mobile-player-expanded {
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* iPhone 13 mini, 12 mini (375×812) */
+@media (min-width: 375px) and (max-width: 376px) and (min-height: 810px) and (max-height: 815px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 330px;
+    --mobile-player-content-width: 390px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 330px;
+    max-height: 330px;
+  }
+
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 2.25rem);
+  }
+}
+
+/* iPhone SE 2022/2020, SE 3rd Gen (375×667) */
+@media (min-width: 375px) and (max-width: 376px) and (min-height: 665px) and (max-height: 670px) {
+  :root {
+    --mobile-header-height: 54px;
+    --mobile-player-height: 78px;
+    --mobile-player-artwork-size: 310px;
+    --mobile-player-content-width: 380px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 60px;
+    --mobile-player-skip-button-size: 32px;
+    --mobile-player-control-button-size: 14px;
+    --mobile-player-controls-gap: 1.125rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 310px;
+    max-height: 310px;
+  }
+
+  /* No notch - standard spacing */
+  .safe-top {
+    padding-top: 1rem;
+  }
+
+  .pt-16 {
+    padding-top: 3.75rem;
+  }
+}
+
+/* iPhone X, XS, 11 Pro (375×812) */
+@media (min-width: 375px) and (max-width: 376px) and (min-height: 811px) and (max-height: 813px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 330px;
+    --mobile-player-content-width: 390px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 330px;
+    max-height: 330px;
+  }
+
+  /* First-gen notch spacing */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 2rem);
+  }
+}
+
+/* iPhone XR, 11 (414×896) */
+@media (min-width: 414px) and (max-width: 415px) and (min-height: 895px) and (max-height: 900px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+}
+
+/* Samsung Galaxy S22 Ultra, S21 Ultra (384×854) */
+@media (min-width: 380px) and (max-width: 390px) and (min-height: 850px) and (max-height: 860px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 345px;
+    --mobile-player-content-width: 410px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 345px;
+    max-height: 345px;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Samsung Galaxy S22+, S21+ (384×854) */
+@media (min-width: 384px) and (max-width: 385px) and (min-height: 853px) and (max-height: 855px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 345px;
+    --mobile-player-content-width: 410px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 345px;
+    max-height: 345px;
+  }
+}
+
+/* Samsung Galaxy A54, A53, A52 (360×800) */
+@media (min-width: 360px) and (max-width: 361px) and (min-height: 798px) and (max-height: 802px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 80px;
+    --mobile-player-artwork-size: 315px;
+    --mobile-player-content-width: 380px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 62px;
+    --mobile-player-skip-button-size: 33px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 315px;
+    max-height: 315px;
+  }
+}
+
+/* Google Pixel 9 Pro XL, 8 Pro (412×915) */
+@media (min-width: 412px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* Material You gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Google Pixel 9, 8, 7, 6 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 913px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+}
+
+/* Google Pixel 9a, 8a, 7a, 6a (412×892) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 890px) and (max-height: 894px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* OnePlus 12, 11, 10 Pro (412×919) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 917px) and (max-height: 921px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* OxygenOS gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* OnePlus Nord, Nord 2, Nord 3 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+}
+
+/* Xiaomi 14 Pro, 13 Pro, 12 Pro (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 913px) and (max-height: 917px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* MIUI gesture navigation spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Nothing Phone (2), Nothing Phone (1) (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Nothing OS gesture spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* iPhone 8, 7, 6s, 6 (375×667) */
+@media (min-width: 374px) and (max-width: 376px) and (min-height: 666px) and (max-height: 668px) {
+  :root {
+    --mobile-header-height: 55px;
+    --mobile-player-height: 80px;
+    --mobile-player-artwork-size: 320px;
+    --mobile-player-content-width: 395px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 62px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 320px;
+    max-height: 320px;
+  }
+
+  /* Classic home button design */
+  .safe-bottom {
+    padding-bottom: 1rem;
+  }
+}
+
+/* iPhone 8 Plus, 7 Plus, 6s Plus, 6 Plus (414×736) */
+@media (min-width: 414px) and (max-width: 415px) and (min-height: 735px) and (max-height: 738px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 425px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 350px;
+    max-height: 350px;
+  }
+
+  /* No notch - classic home button spacing */
+  .safe-top {
+    padding-top: 1rem;
+  }
+
+  .safe-bottom {
+    padding-bottom: 1rem;
+  }
+}
+
+/* iPhone 5s, 5c, 5, SE 1st Gen (320×568) */
+@media (min-width: 319px) and (max-width: 321px) and (min-height: 567px) and (max-height: 569px) {
+  :root {
+    --mobile-header-height: 52px;
+    --mobile-player-height: 74px;
+    --mobile-player-artwork-size: 260px;
+    --mobile-player-content-width: 340px;
+    --mobile-player-gap: 0.625rem;
+    --mobile-player-play-button-size: 54px;
+    --mobile-player-skip-button-size: 30px;
+    --mobile-player-control-button-size: 13px;
+    --mobile-player-controls-gap: 0.875rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 260px;
+    max-height: 260px;
+  }
+
+  /* Very compact - reduce all spacing */
+  .text-lg {
+    font-size: 0.9rem;
+  }
+
+  .text-2xl {
+    font-size: 1.125rem;
+  }
+}
+
+/* Samsung Galaxy S10+, S10 (412×869) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 868px) and (max-height: 870px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+
+  /* One UI with Infinity-O display */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Samsung Galaxy S10e (360×760) */
+@media (min-width: 359px) and (max-width: 361px) and (min-height: 759px) and (max-height: 761px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 340px;
+    --mobile-player-content-width: 380px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 340px;
+    max-height: 340px;
+  }
+}
+
+/* Samsung Galaxy S9+, S9 (360×740) */
+@media (min-width: 359px) and (max-width: 361px) and (min-height: 739px) and (max-height: 741px) {
+  :root {
+    --mobile-header-height: 55px;
+    --mobile-player-height: 81px;
+    --mobile-player-artwork-size: 335px;
+    --mobile-player-content-width: 380px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 63px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 335px;
+    max-height: 335px;
+  }
+}
+
+/* Samsung Galaxy S8+, S8 (360×740) */
+@media (min-width: 359px) and (max-width: 361px) and (min-height: 739px) and (max-height: 741px) {
+  :root {
+    --mobile-header-height: 55px;
+    --mobile-player-height: 81px;
+    --mobile-player-artwork-size: 335px;
+    --mobile-player-content-width: 380px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 63px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 335px;
+    max-height: 335px;
+  }
+
+  /* Infinity Display - first generation */
+  .safe-bottom {
+    padding-bottom: 0.875rem;
+  }
+}
+
+/* Samsung Galaxy S7 Edge, S7 (360×640) */
+@media (min-width: 359px) and (max-width: 361px) and (min-height: 639px) and (max-height: 641px) {
+  :root {
+    --mobile-header-height: 54px;
+    --mobile-player-height: 79px;
+    --mobile-player-artwork-size: 310px;
+    --mobile-player-content-width: 375px;
+    --mobile-player-gap: 0.75rem;
+    --mobile-player-play-button-size: 60px;
+    --mobile-player-skip-button-size: 32px;
+    --mobile-player-control-button-size: 14px;
+    --mobile-player-controls-gap: 1.125rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 310px;
+    max-height: 310px;
+  }
+
+  /* Classic Samsung design */
+  .safe-bottom {
+    padding-bottom: 0.875rem;
+  }
+}
+
+/* Samsung Galaxy Note 9 (414×846) */
+@media (min-width: 413px) and (max-width: 415px) and (min-height: 845px) and (max-height: 847px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+
+  /* S Pen optimized spacing */
+  .safe-bottom {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Samsung Galaxy Note 8 (414×846) */
+@media (min-width: 413px) and (max-width: 415px) and (min-height: 845px) and (max-height: 847px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* Google Pixel 5, 4a 5G (393×851) */
+@media (min-width: 392px) and (max-width: 394px) and (min-height: 850px) and (max-height: 852px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+
+  /* Material You early version */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Google Pixel 4a (393×851) */
+@media (min-width: 392px) and (max-width: 394px) and (min-height: 850px) and (max-height: 852px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* Google Pixel 4 XL (412×869) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 868px) and (max-height: 870px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+
+  /* Material Design 2 */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Google Pixel 4 (393×830) */
+@media (min-width: 392px) and (max-width: 394px) and (min-height: 829px) and (max-height: 831px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 83px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 65px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 350px;
+    max-height: 350px;
+  }
+}
+
+/* Google Pixel 3a XL (412×846) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 845px) and (max-height: 847px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* Google Pixel 3a (393×808) */
+@media (min-width: 392px) and (max-width: 394px) and (min-height: 807px) and (max-height: 809px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 345px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 345px;
+    max-height: 345px;
+  }
+}
+
+/* Google Pixel 3 XL (412×847) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 846px) and (max-height: 848px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+
+  /* Notch accommodation */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 1.125rem);
+  }
+}
+
+/* Google Pixel 3 (393×786) */
+@media (min-width: 392px) and (max-width: 394px) and (min-height: 785px) and (max-height: 787px) {
+  :root {
+    --mobile-header-height: 55px;
+    --mobile-player-height: 81px;
+    --mobile-player-artwork-size: 340px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 63px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 340px;
+    max-height: 340px;
+  }
+}
+
+/* Google Pixel 2 XL (412×824) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 823px) and (max-height: 825px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 82px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 65px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 350px;
+    max-height: 350px;
+  }
+}
+
+/* Google Pixel 2 (411×731) */
+@media (min-width: 410px) and (max-width: 412px) and (min-height: 730px) and (max-height: 732px) {
+  :root {
+    --mobile-header-height: 55px;
+    --mobile-player-height: 80px;
+    --mobile-player-artwork-size: 335px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 0.875rem;
+    --mobile-player-play-button-size: 62px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 335px;
+    max-height: 335px;
+  }
+}
+
+/* Samsung Galaxy Note 20 Ultra, Note 10+ (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* Note series - S Pen aware spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* LG Wing (main screen: 395×822) */
+@media (min-width: 393px) and (max-width: 397px) and (min-height: 820px) and (max-height: 825px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 350px;
+    max-height: 350px;
+  }
+
+  /* Unique form factor spacing */
+  .mobile-player-expanded {
+    padding: 1.75rem 1.25rem;
+  }
+}
+
+/* Fairphone 5, 4 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Sustainable phone - clean spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Motorola Edge 50 Pro, Edge 40 Pro, Edge+ (395×851) */
+@media (min-width: 394px) and (max-width: 396px) and (min-height: 850px) and (max-height: 852px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 420px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* Motorola Moto G Power, G Stylus (400×900) */
+@media (min-width: 399px) and (max-width: 401px) and (min-height: 899px) and (max-height: 901px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 425px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+}
+
+/* Nokia X30, X20, G60 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+}
+
+/* TCL 40 XL, 40 SE (397×843) */
+@media (min-width: 396px) and (max-width: 398px) and (min-height: 842px) and (max-height: 844px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 420px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+}
+
+/* Samsung Galaxy M54, M53, M52 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* One UI with gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Huawei P50 Pro, P40 Pro (408×900) */
+@media (min-width: 407px) and (max-width: 409px) and (min-height: 899px) and (max-height: 901px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+
+  /* EMUI gesture spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Huawei Mate 60 Pro, Mate 50 Pro (412×952) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 951px) and (max-height: 953px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 87px;
+    --mobile-player-artwork-size: 375px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 70px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 375px;
+    max-height: 375px;
+  }
+}
+
+/* ZTE Axon 60 Ultra, Axon 40 Ultra (400×900) */
+@media (min-width: 399px) and (max-width: 401px) and (min-height: 899px) and (max-height: 901px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 425px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+}
+
+/* Meizu 21 Pro, 20 Pro (412×919) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 918px) and (max-height: 920px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* Flyme OS gesture optimization */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Nubia Z60 Ultra, Red Magic 9 Pro (412×952) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 951px) and (max-height: 953px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 87px;
+    --mobile-player-artwork-size: 375px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 70px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 375px;
+    max-height: 375px;
+  }
+
+  /* Gaming phone - cooler fan clearance */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.25rem);
+  }
+}
+
+/* Lenovo Legion Y90, Y70 (395×876) */
+@media (min-width: 394px) and (max-width: 396px) and (min-height: 875px) and (max-height: 877px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 360px;
+    --mobile-player-content-width: 420px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 67px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 360px;
+    max-height: 360px;
+  }
+
+  /* Gaming phone with side triggers */
+  .mobile-player-expanded {
+    padding: 1.75rem 1.5rem;
+  }
+}
+
+/* Black Shark 5 Pro, 4 Pro (409×906) */
+@media (min-width: 408px) and (max-width: 410px) and (min-height: 905px) and (max-height: 907px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 85px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 430px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+}
+
+/* Oppo Find N3 Flip (382×840 cover, 748×1082 unfolded) */
+@media (min-width: 381px) and (max-width: 383px) and (min-height: 839px) and (max-height: 841px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 83px;
+    --mobile-player-artwork-size: 345px;
+    --mobile-player-content-width: 405px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 345px;
+    max-height: 345px;
+  }
+
+  /* ColorOS foldable spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Oppo Find N3 Fold (unfolded: 760×1080) */
+@media (min-width: 759px) and (max-width: 761px) and (min-height: 1079px) and (max-height: 1081px) {
+  :root {
+    --mobile-header-height: 62px;
+    --mobile-player-height: 94px;
+    --mobile-player-artwork-size: 460px;
+    --mobile-player-content-width: 760px;
+    --mobile-player-gap: 1.75rem;
+    --mobile-player-play-button-size: 78px;
+    --mobile-player-skip-button-size: 40px;
+    --mobile-player-control-button-size: 19px;
+    --mobile-player-controls-gap: 2rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 460px;
+    max-height: 460px;
+  }
+
+  /* Foldable tablet mode */
+  .mobile-player-expanded {
+    padding: 2.5rem 2rem;
+  }
+}
+
+/* Honor Magic V3, V2 (unfolded: 762×1080) */
+@media (min-width: 761px) and (max-width: 763px) and (min-height: 1079px) and (max-height: 1081px) {
+  :root {
+    --mobile-header-height: 62px;
+    --mobile-player-height: 94px;
+    --mobile-player-artwork-size: 465px;
+    --mobile-player-content-width: 765px;
+    --mobile-player-gap: 1.75rem;
+    --mobile-player-play-button-size: 78px;
+    --mobile-player-skip-button-size: 40px;
+    --mobile-player-control-button-size: 19px;
+    --mobile-player-controls-gap: 2rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 465px;
+    max-height: 465px;
+  }
+
+  /* MagicOS foldable optimization */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.25rem);
+  }
+}
+
+/* Xiaomi Mix Fold 4, Fold 3 (unfolded: 768×1024) */
+@media (min-width: 767px) and (max-width: 769px) and (min-height: 1023px) and (max-height: 1025px) {
+  :root {
+    --mobile-header-height: 62px;
+    --mobile-player-height: 95px;
+    --mobile-player-artwork-size: 470px;
+    --mobile-player-content-width: 770px;
+    --mobile-player-gap: 1.75rem;
+    --mobile-player-play-button-size: 80px;
+    --mobile-player-skip-button-size: 41px;
+    --mobile-player-control-button-size: 19px;
+    --mobile-player-controls-gap: 2rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 470px;
+    max-height: 470px;
+  }
+
+  /* MIUI Fold tablet spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Tecno Phantom X2 Pro, Camon 20 Pro (395×854) */
+@media (min-width: 394px) and (max-width: 396px) and (min-height: 853px) and (max-height: 855px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 355px;
+    --mobile-player-content-width: 420px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 66px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 355px;
+    max-height: 355px;
+  }
+
+  /* HiOS gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Infinix Note 40 Pro, Zero 30 (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* XOS gesture spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Itel Vision 3 Turbo, S24 (390×844) */
+@media (min-width: 389px) and (max-width: 391px) and (min-height: 843px) and (max-height: 845px) {
+  :root {
+    --mobile-header-height: 57px;
+    --mobile-player-height: 84px;
+    --mobile-player-artwork-size: 350px;
+    --mobile-player-content-width: 415px;
+    --mobile-player-gap: 1rem;
+    --mobile-player-play-button-size: 65px;
+    --mobile-player-skip-button-size: 35px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.375rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 350px;
+    max-height: 350px;
+  }
+}
+
+/* Poco X6 Pro, F5 Pro (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Poco UI (MIUI variant) */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Redmi Note 13 Pro+, Note 12 Pro+ (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Redmi MIUI gesture */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.125rem);
+  }
+}
+
+/* Compact phones (width < 375px) - iPhone SE, small Androids */
+@media (max-width: 374px) {
+  :root {
+    --mobile-header-height: 54px;
+    --mobile-player-height: 76px;
+    --mobile-player-artwork-size: 280px;
+    --mobile-player-content-width: 360px;
+    --mobile-player-gap: 0.75rem;
+
+    /* Smaller button sizes for compact phones */
+    --mobile-player-play-button-size: 58px;
+    --mobile-player-skip-button-size: 32px;
+    --mobile-player-control-button-size: 14px;
+    --mobile-player-controls-gap: 1rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 280px;
+    max-height: 280px;
+  }
+
+  /* Reduce control spacing */
+  .mobile-player-controls {
+    gap: 0.75rem;
+  }
+
+  /* Reduce text sizes for compact screens */
+  .text-lg {
+    font-size: 1rem;
+  }
+
+  .text-2xl {
+    font-size: 1.25rem;
+  }
+
+  /* More compact padding */
+  .mobile-padding {
+    padding: 0.75rem;
+  }
+
+  .mobile-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .pt-16 {
+    padding-top: 3.5rem;
+  }
+
+  .pb-24 {
+    padding-bottom: 5rem;
+  }
+}
+
+/* Sony Xperia 1 VI, 1 V (644×1644, typically 412×1096 CSS) */
+@media (min-width: 410px) and (max-width: 415px) and (min-height: 1090px) {
+  :root {
+    --mobile-header-height: 62px;
+    --mobile-player-height: 90px;
+    --mobile-player-artwork-size: 390px;
+    --mobile-player-content-width: 450px;
+    --mobile-player-gap: 1.5rem;
+    --mobile-player-play-button-size: 72px;
+    --mobile-player-skip-button-size: 38px;
+    --mobile-player-control-button-size: 18px;
+    --mobile-player-controls-gap: 1.75rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 390px;
+    max-height: 390px;
+  }
+
+  .mobile-player-expanded {
+    padding: 2.5rem 1.5rem;
+    justify-content: center;
+  }
+
+  /* Cinema-wide aspect ratio spacing */
+  .pb-24 {
+    padding-bottom: 7rem;
+  }
+}
+
+/* Asus ROG Phone 8, 7 (412×952) */
+@media (min-width: 410px) and (max-width: 415px) and (min-height: 950px) and (max-height: 955px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 380px;
+    --mobile-player-content-width: 445px;
+    --mobile-player-gap: 1.375rem;
+    --mobile-player-play-button-size: 70px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.625rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 380px;
+    max-height: 380px;
+  }
+
+  /* Gaming phone - extra bottom space for controls */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1.25rem);
+  }
+}
+
+/* Oppo Find X7 Ultra, X6 Pro (412×919) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 918px) and (max-height: 920px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 88px;
+    --mobile-player-artwork-size: 370px;
+    --mobile-player-content-width: 440px;
+    --mobile-player-gap: 1.25rem;
+    --mobile-player-play-button-size: 69px;
+    --mobile-player-skip-button-size: 37px;
+    --mobile-player-control-button-size: 17px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 370px;
+    max-height: 370px;
+  }
+
+  /* ColorOS gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Vivo X100 Pro, X90 Pro (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* Funtouch OS gesture spacing */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* Realme GT 6, GT 5 Pro (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 913px) and (max-height: 917px) {
+  :root {
+    --mobile-header-height: 58px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+}
+
+/* Honor Magic 6 Pro, Magic 5 Pro (412×915) */
+@media (min-width: 411px) and (max-width: 413px) and (min-height: 914px) and (max-height: 916px) {
+  :root {
+    --mobile-header-height: 60px;
+    --mobile-player-height: 86px;
+    --mobile-player-artwork-size: 365px;
+    --mobile-player-content-width: 435px;
+    --mobile-player-gap: 1.125rem;
+    --mobile-player-play-button-size: 68px;
+    --mobile-player-skip-button-size: 36px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.5rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 365px;
+    max-height: 365px;
+  }
+
+  /* MagicOS gesture navigation */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}
+
+/* iPad Mini (744×1133) - portrait mode */
+@media (min-width: 740px) and (max-width: 750px) and (min-height: 1125px) and (max-height: 1140px) and (orientation: portrait) {
+  :root {
+    --mobile-header-height: 64px;
+    --mobile-player-height: 96px;
+    --mobile-player-artwork-size: 480px;
+    --mobile-player-content-width: 720px;
+    --mobile-player-gap: 2rem;
+    --mobile-player-play-button-size: 80px;
+    --mobile-player-skip-button-size: 42px;
+    --mobile-player-control-button-size: 20px;
+    --mobile-player-controls-gap: 2rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 480px;
+    max-height: 480px;
+  }
+
+  .mobile-player-expanded {
+    padding: 3rem 2rem;
+  }
+
+  /* Tablet spacing */
+  .mobile-player-body {
+    max-width: 90vw;
+  }
+}
+
+/* Extra tall phones (aspect ratio > 20:9) - foldables unfolded, etc */
+@media (min-height: 950px) and (max-width: 500px) {
+  :root {
+    --mobile-player-artwork-size: 400px;
+    --mobile-player-content-width: 460px;
+    --mobile-player-gap: 1.5rem;
+
+    /* Larger buttons for extra tall screens */
+    --mobile-player-play-button-size: 72px;
+    --mobile-player-skip-button-size: 38px;
+    --mobile-player-control-button-size: 18px;
+    --mobile-player-controls-gap: 1.75rem;
+  }
+
+  .mobile-player-expanded {
+    padding: 2.5rem 1.5rem;
+    justify-content: center;
+  }
+
+  /* Add more breathing room on very tall screens */
+  .pb-24 {
+    padding-bottom: 7rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   📱 Foldable-Specific Breakpoints
+------------------------------------------------------------- */
+
+/* Samsung Galaxy Z Fold 5/4/3 - Cover Screen (832×2268, typically 344×882 CSS) */
+@media (min-width: 340px) and (max-width: 350px) and (min-height: 860px) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-player-height: 80px;
+    --mobile-player-artwork-size: 300px;
+    --mobile-player-content-width: 360px;
+    --mobile-player-gap: 1rem;
+
+    /* Compact buttons for narrow cover screen */
+    --mobile-player-play-button-size: 60px;
+    --mobile-player-skip-button-size: 32px;
+    --mobile-player-control-button-size: 15px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 300px;
+    max-height: 300px;
+  }
+
+  /* Tighter spacing for narrow cover */
+  .mobile-player-expanded {
+    padding: 1.5rem 1rem;
+  }
+
+  /* Adjust content for narrow screen */
+  .mobile-player-content {
+    max-width: 90vw;
+  }
+}
+
+/* Samsung Galaxy Z Fold 5/4/3 - Unfolded Inner Screen (1812×2176, typically 753×906 CSS) */
+@media (min-width: 740px) and (max-width: 770px) and (min-height: 890px) and (max-height: 920px) {
+  :root {
+    --mobile-header-height: 62px;
+    --mobile-player-height: 92px;
+    --mobile-player-artwork-size: 450px;
+    --mobile-player-content-width: 700px;
+    --mobile-player-gap: 2rem;
+
+    /* Larger buttons for tablet-sized unfolded screen */
+    --mobile-player-play-button-size: 76px;
+    --mobile-player-skip-button-size: 40px;
+    --mobile-player-control-button-size: 18px;
+    --mobile-player-controls-gap: 2rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 450px;
+    max-height: 450px;
+  }
+
+  .mobile-player-expanded {
+    padding: 3rem 2rem;
+  }
+
+  /* Use more horizontal space when unfolded */
+  .mobile-player-body {
+    max-width: 85vw;
+  }
+}
+
+/* Galaxy Z Flip 5/4/3 - Cover Screen (720×748, typically 260×512 CSS) */
+@media (min-width: 255px) and (max-width: 270px) and (min-height: 500px) and (max-height: 520px) {
+  :root {
+    --mobile-header-height: 50px;
+    --mobile-player-height: 72px;
+    --mobile-player-artwork-size: 220px;
+    --mobile-player-content-width: 280px;
+    --mobile-player-gap: 0.5rem;
+
+    /* Very compact buttons for tiny flip cover */
+    --mobile-player-play-button-size: 48px;
+    --mobile-player-skip-button-size: 26px;
+    --mobile-player-control-button-size: 13px;
+    --mobile-player-controls-gap: 0.75rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 220px;
+    max-height: 220px;
+  }
+
+  .mobile-player-expanded {
+    padding: 1rem 0.75rem;
+  }
+
+  /* Minimize UI chrome for tiny cover screen */
+  .mobile-player-controls {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  /* Smaller text for cover screen */
+  .text-lg {
+    font-size: 0.9rem;
+  }
+
+  .text-sm {
+    font-size: 0.75rem;
+  }
+}
+
+/* Motorola Razr+ (Razr 40 Ultra) - Cover Screen (1272×1080, typically 413×360 CSS) */
+@media (min-width: 405px) and (max-width: 420px) and (min-height: 350px) and (max-height: 370px) and (orientation: portrait) {
+  :root {
+    --mobile-header-height: 54px;
+    --mobile-player-height: 78px;
+    --mobile-player-artwork-size: 320px;
+    --mobile-player-content-width: 400px;
+    --mobile-player-gap: 1rem;
+
+    /* Medium compact for Razr+ cover */
+    --mobile-player-play-button-size: 64px;
+    --mobile-player-skip-button-size: 34px;
+    --mobile-player-control-button-size: 16px;
+    --mobile-player-controls-gap: 1.25rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 320px;
+    max-height: 280px;
+  }
+
+  /* Optimize for wide but short cover screen */
+  .mobile-player-expanded {
+    padding: 1rem 1.25rem;
+  }
+
+  .mobile-player-body {
+    display: grid;
+    grid-template-columns: minmax(200px, 280px) 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+}
+
+/* Very small landscape (height < 400px) - extreme compact mode */
+@media (max-height: 400px) and (orientation: landscape) {
+  :root {
+    --mobile-player-artwork-size: 160px;
+    --mobile-player-content-width: 320px;
+    --mobile-player-gap: 0.5rem;
+
+    /* Minimal button sizes for very small landscape */
+    --mobile-player-play-button-size: 44px;
+    --mobile-player-skip-button-size: 24px;
+    --mobile-player-control-button-size: 12px;
+    --mobile-player-controls-gap: 0.75rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 160px;
+    max-height: 160px;
+  }
+
+  .mobile-player-expanded {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Ultra compact controls */
+  .mobile-player-controls {
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  /* Hide non-essential UI in extreme compact mode */
+  .mobile-player-secondary-controls {
+    display: none;
+  }
+}
+
+/* Landscape mode optimizations for phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --mobile-player-artwork-size: 200px;
+    --mobile-player-content-width: 360px;
+    --mobile-player-gap: 0.75rem;
+
+    /* Compact button sizes for landscape */
+    --mobile-player-play-button-size: 52px;
+    --mobile-player-skip-button-size: 28px;
+    --mobile-player-control-button-size: 14px;
+    --mobile-player-controls-gap: 1rem;
+  }
+
+  .mobile-player-artwork {
+    max-width: 200px;
+    max-height: 200px;
+  }
+
+  /* Tighter control spacing in landscape */
+  .mobile-player-controls {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .mobile-header {
+    padding: 0.375rem 1rem;
+  }
+
+  /* Compact everything in landscape */
+  .pt-16 {
+    padding-top: 2.75rem;
+  }
+
+  .pb-24 {
+    padding-bottom: 3.5rem;
+  }
+
+  .mobile-player-expanded {
+    padding: 1rem;
+  }
+
+  .mobile-player-body {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    gap: 1.25rem;
+    align-items: center;
+  }
+}
+
+/* High density displays (Retina, AMOLED) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Use higher quality filters on high-DPI screens */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  .backdrop-blur-2xl {
+    backdrop-filter: blur(40px) saturate(200%);
+  }
+
+  /* Slightly soften gradients on OLED to prevent banding */
+  .card {
+    background: linear-gradient(
+      145deg,
+      rgba(18, 27, 37, 0.98),
+      rgba(11, 17, 24, 0.98)
+    );
+  }
+}

@@ -1,8 +1,7 @@
 # File: .vercelignore
-
 # Vercel Ignore - Exclude files from deployment to reduce bundle size
-
 # Development
+
 .vscode
 .idea
 *.log
@@ -50,6 +49,7 @@ resources
 # Documentation (not needed at runtime)
 *.md
 !README.md
+!CHANGELOG.md
 DEPLOYMENT.md
 LICENSE.md
 scripts/README.md

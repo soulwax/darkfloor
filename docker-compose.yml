@@ -1,0 +1,42 @@
+# File: docker-compose.yml
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        AUTH_SECRET: ${AUTH_SECRET}
+        AUTH_DISCORD_ID: ${AUTH_DISCORD_ID}
+        AUTH_DISCORD_SECRET: ${AUTH_DISCORD_SECRET}
+        NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+        DATABASE_URL: ${DATABASE_URL:-}
+        DB_ADMIN_USER: ${DB_ADMIN_USER:-}
+        DB_ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD:-}
+        DB_HOST: ${DB_HOST:-}
+        DB_PORT: ${DB_PORT:-}
+        DB_NAME: ${DB_NAME:-}
+        NODE_ENV: ${NODE_ENV:-}
+        BLUESIX_API_KEY: ${BLUESIX_API_KEY:-}
+        API_V2_URL: ${API_V2_URL:-}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3222}:3222"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3222
+      HOSTNAME: "0.0.0.0"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3222/api/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - ./drizzle:/app/drizzle:ro

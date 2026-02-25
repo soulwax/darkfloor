@@ -1,0 +1,174 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1761660940932,
+      "tag": "0000_eager_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762209104815,
+      "tag": "0001_strange_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762273361698,
+      "tag": "0002_stiff_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1762304917316,
+      "tag": "0003_chemical_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762311603879,
+      "tag": "0004_bizarre_violations",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762433511089,
+      "tag": "0005_shocking_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762439527950,
+      "tag": "0006_good_zaran",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1762439698829,
+      "tag": "0007_thankful_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762439770023,
+      "tag": "0008_luxuriant_smasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762523513765,
+      "tag": "0009_tidy_the_call",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1762611491574,
+      "tag": "0010_nostalgic_human_cannonball",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1762963675265,
+      "tag": "0011_useful_the_enforcers",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1764822831151,
+      "tag": "0012_remarkable_ronan",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1764928015659,
+      "tag": "0013_outgoing_sumo",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1767159995551,
+      "tag": "0014_petite_lady_ursula",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1768307019710,
+      "tag": "0015_material_skullbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768617197783,
+      "tag": "0016_daffy_shriek",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1769407574080,
+      "tag": "0017_admin_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1769961001359,
+      "tag": "0018_brief_post",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1769961100000,
+      "tag": "0019_user_banned",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1770387050430,
+      "tag": "0020_thin_annihilus",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1770390000000,
+      "tag": "0021_unique_first_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1770462000000,
+      "tag": "0022_startpage_taste_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1770666522280,
+      "tag": "0023_handy_karnak",
+      "breakpoints": true
+    }
+  ]
+}

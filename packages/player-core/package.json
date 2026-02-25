@@ -1,0 +1,11 @@
+{
+  "name": "@starchild/player-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared playback domain primitives",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts"
+  }
+}

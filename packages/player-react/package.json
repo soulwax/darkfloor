@@ -1,0 +1,14 @@
+{
+  "name": "@starchild/player-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "React playback bindings",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts",
+    "./useAudioPlayer": "./src/useAudioPlayer.ts",
+    "./useQueuePersistence": "./src/useQueuePersistence.ts",
+    "./AudioPlayerContext": "./src/AudioPlayerContext.tsx"
+  }
+}

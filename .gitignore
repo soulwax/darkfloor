@@ -26,6 +26,9 @@ next-env.d.ts
 .DS_Store
 *.pem
 
+# turbo
+.turbo/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -42,6 +45,7 @@ logs/pm2/*.log
 .env.production
 .env*.local
 .env.development
+.env.vercel
 
 # vercel
 .vercel
@@ -55,6 +59,11 @@ logs/pm2/*.log
 # Certs
 certs/
 ca.pem
+certs/starchild-env-private.key
+certs/starchild-env-public.pem
+.env.private.key
+*.env.enc
+*.env.local.*
 
 # db credentials
 drizzle.env.js
@@ -77,3 +86,11 @@ public/**/*.js
 nul
 resources/
 electron/azure-vault.json
+
+CLAUDE.md
+REPOSITORY_ANALYSIS.md
+.github/docs/*
+
+.annot8_backup.json
+
+.tmp/

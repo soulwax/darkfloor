@@ -1,0 +1,48 @@
+// File: apps/desktop/electron/preload.cjs
+
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("electron", {
+  isElectron: true,
+  platform: process.platform,
+  /**
+   * @param {string} channel
+   * @param {unknown} data
+   */
+  send: (channel, data) => {
+    const validChannels = ["toMain"];
+    if (validChannels.includes(channel)) {
+      ipcRenderer.send(channel, data);
+    }
+  },
+  /**
+   * @param {string} channel
+   * @param {(...args: unknown[]) => void} func
+   */
+  receive: (channel, func) => {
+    const validChannels = ["fromMain"];
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(
+        channel,
+        /**
+         * @param {import('electron').IpcRendererEvent} _event
+         * @param {...unknown} args
+         */
+        (_event, ...args) => func(...args),
+      );
+    }
+  },
+  /**
+   * @param {(key: string) => void} callback
+   */
+  onMediaKey: (callback) => {
+      ipcRenderer.on(
+        "media-key",
+        (/** @type {import('electron').IpcRendererEvent} */ _event, /** @type {string} */ key) =>
+          callback(key),
+      );
+  },
+  removeMediaKeyListener: () => {
+    ipcRenderer.removeAllListeners("media-key");
+  },
+});

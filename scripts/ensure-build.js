@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // File: scripts/ensure-build.js
 
-import { existsSync } from 'fs';
 import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,13 +12,11 @@ const __dirname = path.dirname(__filename);
 const buildIdPath = path.resolve(__dirname, '../.next/BUILD_ID');
 const nextDirPath = path.resolve(__dirname, '../.next');
 
-// Check if build exists
 const buildExists = existsSync(buildIdPath) && existsSync(nextDirPath);
 
 if (!buildExists) {
   console.log('[Build Check] Production build not found. Building...');
   try {
-    // Run the build
     execSync('npm run build', {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'inherit',

@@ -1,0 +1,20 @@
+{
+  "name": "@starchild/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared UI components",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts",
+    "./Button": "./src/Button.tsx",
+    "./LoadingSpinner": "./src/LoadingSpinner.tsx",
+    "./SkeletonGrid": "./src/SkeletonGrid.tsx",
+    "./Section": "./src/Section.tsx",
+    "./Toast": "./src/Toast.tsx",
+    "./SmoothSlider": "./src/SmoothSlider.tsx",
+    "./utils/cn": "./src/utils/cn.ts",
+    "./utils/haptics": "./src/utils/haptics.ts",
+    "./utils/spring-animations": "./src/utils/spring-animations.ts"
+  }
+}

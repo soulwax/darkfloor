@@ -1,0 +1,14 @@
+{
+  "name": "@starchild/config",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared constants and configuration",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts",
+    "./constants": "./src/constants.ts",
+    "./storage": "./src/storage.ts",
+    "./visualizer": "./src/visualizer.ts"
+  }
+}

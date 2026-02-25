@@ -1,4 +1,0 @@
--- File: drizzle/0009_tidy_the_call.sql
-
-ALTER TABLE "hexmusic-stream_user_preferences" ALTER COLUMN "visualizerType" SET DATA TYPE varchar(30);--> statement-breakpoint
-ALTER TABLE "hexmusic-stream_user_preferences" ALTER COLUMN "visualizerType" SET DEFAULT 'bars';

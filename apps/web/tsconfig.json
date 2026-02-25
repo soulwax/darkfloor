@@ -1,0 +1,113 @@
+{
+  "compilerOptions": {
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "checkJs": true,
+    "ignoreDeprecations": "5.0",
+    /* Bundled projects */
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "ES2022"
+    ],
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "incremental": true,
+    /* Path Aliases */
+    "rootDirs": [
+      "."
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@starchild/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@starchild/types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@starchild/config": [
+        "../../packages/config/src/index.ts"
+      ],
+      "@starchild/config/*": [
+        "../../packages/config/src/*"
+      ],
+      "@starchild/auth": [
+        "../../packages/auth/src/index.ts"
+      ],
+      "@starchild/auth/*": [
+        "../../packages/auth/src/*"
+      ],
+      "@starchild/api-client": [
+        "../../packages/api-client/src/index.ts"
+      ],
+      "@starchild/api-client/*": [
+        "../../packages/api-client/src/*"
+      ],
+      "@starchild/player-core": [
+        "../../packages/player-core/src/index.ts"
+      ],
+      "@starchild/player-core/*": [
+        "../../packages/player-core/src/*"
+      ],
+      "@starchild/player-react": [
+        "../../packages/player-react/src/index.ts"
+      ],
+      "@starchild/player-react/*": [
+        "../../packages/player-react/src/*"
+      ],
+      "@starchild/audio-adapters": [
+        "../../packages/audio-adapters/src/index.ts"
+      ],
+      "@starchild/audio-adapters/*": [
+        "../../packages/audio-adapters/src/*"
+      ],
+      "@starchild/visualizers": [
+        "../../packages/visualizers/src/index.ts"
+      ],
+      "@starchild/visualizers/*": [
+        "../../packages/visualizers/src/*"
+      ],
+      "@starchild/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@starchild/ui/*": [
+        "../../packages/ui/src/*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.cjs",
+    "**/*.js",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx",
+    "../../.next/types/**/*.ts",
+    "../../.next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "public/**/*.js",
+    "dist"
+  ]
+}

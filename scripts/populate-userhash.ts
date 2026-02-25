@@ -5,40 +5,64 @@ import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { Pool } from "pg";
 
-// Load environment variables
 dotenv.config({ path: ".env.local" });
 
-// Determine SSL configuration based on certificate availability
-function getSslConfig() {
-  const certPath = path.join(process.cwd(), "certs/ca.pem");
+function getSslConfig(connectionString: string) {
+    if (connectionString.includes("neon.tech")) {
+    return undefined;
+  }
+
+    const isCloudDb = 
+    connectionString.includes("aivencloud.com") || 
+    connectionString.includes("rds.amazonaws.com") ||
+    connectionString.includes("sslmode=");
+
+  if (!isCloudDb && connectionString.includes("localhost")) {
+        return undefined;
+  }
+
+    const certPath = path.join(process.cwd(), "certs/ca.pem");
   
   if (existsSync(certPath)) {
     console.log(`[DB] Using SSL certificate: ${certPath}`);
     return {
-      rejectUnauthorized: true,
+      rejectUnauthorized: process.env.NODE_ENV === "production",
       ca: readFileSync(certPath).toString(),
     };
   }
-  
-  // Certificate not found - use lenient SSL with warning
-  console.warn("[DB] ⚠️  WARNING: No CA certificate found at certs/ca.pem");
+
+    if (process.env.DB_SSL_CA) {
+    console.log("[DB] Using SSL certificate from DB_SSL_CA environment variable");
+    return {
+      rejectUnauthorized: process.env.NODE_ENV === "production",
+      ca: process.env.DB_SSL_CA,
+    };
+  }
+
+    console.warn("[DB] ⚠️  WARNING: Cloud database detected but no CA certificate found!");
   console.warn("[DB] ⚠️  Using rejectUnauthorized: false - vulnerable to MITM attacks");
+  console.warn("[DB] ⚠️  Set DB_SSL_CA environment variable or place your CA certificate at: certs/ca.pem");
   return {
     rejectUnauthorized: false,
   };
 }
 
+if (!process.env.DATABASE_URL) {
+  console.error("❌ Error: DATABASE_URL environment variable is required");
+  process.exit(1);
+}
+
+const sslConfig = getSslConfig(process.env.DATABASE_URL);
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
-  ssl: getSslConfig(),
+  connectionString: process.env.DATABASE_URL,
+  ...(sslConfig && { ssl: sslConfig }),
 });
 
 async function populateUserHash() {
   try {
     console.log("Connecting to database...");
 
-    // Check how many users have null userHash
-    const checkResult = await pool.query(
+        const checkResult = await pool.query(
       'SELECT COUNT(*) as count FROM "hexmusic-stream_user" WHERE "userHash" IS NULL',
     );
     console.log(
@@ -51,8 +75,7 @@ async function populateUserHash() {
       return;
     }
 
-    // Populate userHash for users who don't have one
-    console.log("Populating userHash for existing users...");
+        console.log("Populating userHash for existing users...");
     const result = await pool.query(`
       UPDATE "hexmusic-stream_user"
       SET "userHash" = SUBSTRING(REPLACE(gen_random_uuid()::text, '-', ''), 1, 16)

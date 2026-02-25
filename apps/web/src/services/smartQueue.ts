@@ -1,0 +1,856 @@
+// File: apps/web/src/services/smartQueue.ts
+
+import { env } from "@/env";
+import { authFetch, getInMemoryAccessToken } from "@/services/spotifyAuthClient";
+import { type Track } from "@starchild/types";
+
+const API_BASE_URL =
+  typeof window === "undefined"
+    ? (env.API_V2_URL ?? "http://localhost:3222")
+    : window.location.origin;
+
+if (typeof window !== "undefined") {
+  console.log("[SmartQueue] 🔧 Service initialized with config:", {
+    apiBaseUrl: API_BASE_URL,
+    hasEnvVar: true,
+  });
+}
+
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const inMemoryToken = getInMemoryAccessToken();
+  if (inMemoryToken) return inMemoryToken;
+
+  const sessionData = localStorage.getItem("next-auth.session-token");
+  if (sessionData) return sessionData;
+
+  return localStorage.getItem("auth_token");
+}
+
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const token = getAuthToken();
+
+  const baseUrl = API_BASE_URL.endsWith("/")
+    ? API_BASE_URL.slice(0, -1)
+    : API_BASE_URL;
+  const normalizedEndpoint = endpoint.startsWith("/")
+    ? endpoint
+    : `/${endpoint}`;
+  const url = `${baseUrl}${normalizedEndpoint}`;
+
+  console.log("[SmartQueue API] 🌐 Making API request:", {
+    url,
+    method: options.method ?? "GET",
+    hasToken: !!token,
+  });
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  new Headers(options.headers).forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await authFetch(url, {
+    ...options,
+    headers,
+  });
+
+  console.log("[SmartQueue API] 📡 API response:", {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok,
+  });
+
+  if (!response.ok) {
+    const error = (await response
+      .json()
+      .catch(() => ({ message: response.statusText }))) as { message?: string };
+    console.error("[SmartQueue API] ❌ API error:", error);
+    throw new Error(error.message ?? `API Error: ${response.status}`);
+  }
+
+  const data = (await response.json()) as T;
+  console.log("[SmartQueue API] ✅ Response data received");
+  return data;
+}
+
+interface SpotifyAudioFeatures {
+  danceability: number;
+  energy: number;
+  key: number;
+  loudness: number;
+  mode: number;
+  speechiness: number;
+  acousticness: number;
+  instrumentalness: number;
+  liveness: number;
+  valence: number;
+  tempo: number;
+  time_signature: number;
+}
+
+interface TrackAnalysis {
+  spotifyId?: string;
+  audioFeatures?: SpotifyAudioFeatures;
+  bpm?: number;
+  key?: string;
+  mood?: string;
+  energy?: number;
+}
+
+interface HexMusicTrack {
+  name: string;
+  artist: string;
+  album?: string;
+  duration_ms?: number;
+  preview_url?: string;
+  spotify_id?: string;
+  deezer_id?: string;
+}
+
+interface SpiceUpTrack {
+  id?: string;
+  name?: string;
+  artists?: Array<{ name?: string }>;
+  album?: { name?: string };
+  deezerId?: string | number | null;
+  deezer_id?: string | number | null;
+  explicit?: boolean;
+  isrc?: string;
+  source?: "spotify" | "lastfm" | "deezer";
+  reason?: string;
+  score?: number;
+}
+
+type SpiceUpSeed =
+  | string
+  | {
+      name?: string;
+      artist?: string;
+      album?: string;
+    };
+
+function normalizeSpiceUpSongs(
+  seeds: SpiceUpSeed[],
+): Array<{ name?: string; artist?: string; album?: string }> {
+  return seeds
+    .map((seed) => (typeof seed === "string" ? { name: seed } : seed))
+    .filter((song) =>
+      Boolean(song.name?.trim() ?? song.artist?.trim() ?? song.album?.trim()),
+    );
+}
+
+function extractSpiceUpTracks(payload: unknown): SpiceUpTrack[] {
+  if (Array.isArray(payload)) {
+    return payload as SpiceUpTrack[];
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const record = payload as Record<string, unknown>;
+  const tracks = record.tracks ?? record.recommendations;
+
+  return Array.isArray(tracks) ? (tracks as SpiceUpTrack[]) : [];
+}
+
+function normalizeSpiceUpDeezerId(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toString();
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return normalizeSpiceUpDeezerId(record.deezerId ?? record.deezer_id);
+  }
+  return null;
+}
+
+async function convertSpiceUpTracksToDeezer(
+  spiceTracks: SpiceUpTrack[],
+  limit: number,
+): Promise<Track[]> {
+  const resolved: Track[] = [];
+  const seenIds = new Set<number>();
+
+  for (const track of spiceTracks) {
+    if (resolved.length >= limit) break;
+
+    const spotifyId =
+      typeof track.id === "string" ? track.id.trim() : undefined;
+    const deezerId = normalizeSpiceUpDeezerId(
+      track.deezerId ?? track.deezer_id,
+    );
+    if (deezerId) {
+      const deezerTrack = await fetchDeezerTrack(deezerId);
+      if (deezerTrack && !seenIds.has(deezerTrack.id)) {
+        resolved.push(
+          spotifyId ? { ...deezerTrack, spotify_id: spotifyId } : deezerTrack,
+        );
+        seenIds.add(deezerTrack.id);
+      }
+      continue;
+    }
+
+    const name = track.name?.trim();
+    if (!name) continue;
+    const artist = track.artists?.[0]?.name?.trim();
+    const query = artist ? `${artist} ${name}` : name;
+    const searchResults = await searchDeezerTrack(query);
+    if (searchResults[0] && !seenIds.has(searchResults[0].id)) {
+      resolved.push(
+        spotifyId
+          ? { ...searchResults[0], spotify_id: spotifyId }
+          : searchResults[0],
+      );
+      seenIds.add(searchResults[0].id);
+    }
+  }
+
+  return resolved;
+}
+
+export async function analyzeTrack(
+  spotifyTrackId: string,
+): Promise<TrackAnalysis | null> {
+  try {
+    const response = await apiRequest<TrackAnalysis>(
+      `/spotify/tracks/analyze`,
+      {
+        method: "POST",
+        body: JSON.stringify({ trackId: spotifyTrackId }),
+      },
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Failed to analyze track:", error);
+    return null;
+  }
+}
+
+export async function analyzeBatch(
+  spotifyTrackIds: string[],
+): Promise<TrackAnalysis[]> {
+  try {
+    const response = await apiRequest<TrackAnalysis[]>(
+      `/spotify/tracks/analyze-batch`,
+      {
+        method: "POST",
+        body: JSON.stringify({ trackIds: spotifyTrackIds }),
+      },
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Failed to batch analyze tracks:", error);
+    return [];
+  }
+}
+
+export async function getAudioFeatures(
+  spotifyTrackId: string,
+): Promise<SpotifyAudioFeatures | null> {
+  try {
+    const response = await apiRequest<SpotifyAudioFeatures>(
+      `/spotify/tracks/${spotifyTrackId}/audio-features`,
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Failed to get audio features:", error);
+    return null;
+  }
+}
+
+export async function searchHexMusicTracks(
+  query: string,
+  limit = 20,
+): Promise<HexMusicTrack[]> {
+  console.log("[SmartQueue] 🔍 Searching HexMusic:", {
+    query,
+    limit,
+    apiUrl: API_BASE_URL,
+  });
+
+  try {
+    const params = new URLSearchParams();
+    params.set("query", query);
+    params.set("limit", limit.toString());
+    const response = await apiRequest<{ tracks: HexMusicTrack[] }>(
+      `/hexmusic/songs?${params.toString()}`,
+    );
+
+    const tracks = response.tracks || [];
+    console.log("[SmartQueue] ✅ HexMusic search results:", {
+      count: tracks.length,
+      tracks: tracks.slice(0, 3).map((t) => `${t.name} - ${t.artist}`),
+    });
+
+    return tracks;
+  } catch (error) {
+    console.error("[SmartQueue] ❌ Failed to search HexMusic tracks:", error);
+    return [];
+  }
+}
+
+export async function getRecommendationsFromPlaylist(
+  playlistId: string,
+): Promise<HexMusicTrack[]> {
+  try {
+    const response = await apiRequest<{ recommendations: HexMusicTrack[] }>(
+      `/hexmusic/recommendations/playlist/${playlistId}`,
+    );
+
+    return response.recommendations || [];
+  } catch (error) {
+    console.error("Failed to get playlist recommendations:", error);
+    return [];
+  }
+}
+
+export async function getPlaylistRecommendations(
+  query: string,
+): Promise<HexMusicTrack[]> {
+  try {
+    const params = new URLSearchParams();
+    params.set("query", query);
+    const response = await apiRequest<{ playlists: HexMusicTrack[] }>(
+      `/hexmusic/playlist-recommendations?${params.toString()}`,
+    );
+
+    return response.playlists ?? [];
+  } catch (error) {
+    console.error("Failed to get playlist recommendations:", error);
+    return [];
+  }
+}
+
+export async function getDeezerRecommendations(
+  seeds: SpiceUpSeed[],
+  count = 10,
+  options?: {
+    excludeDeezerIds?: Array<string | number>;
+    excludeTrackIds?: string[];
+    excludeExplicit?: boolean;
+  },
+): Promise<Track[]> {
+  console.log("[SmartQueue] 🎯 getSpiceUpRecommendations called", {
+    seedCount: seeds.length,
+    count,
+    apiUrl: API_BASE_URL,
+  });
+
+  try {
+    const songs = normalizeSpiceUpSongs(seeds);
+    if (songs.length === 0) {
+      return [];
+    }
+    if (songs.length === 1) {
+      songs.push({ ...songs[0] });
+    }
+
+    const excludeDeezerIds = Array.from(
+      new Set(options?.excludeDeezerIds ?? []),
+    ).filter((id) => id !== undefined && id !== null);
+    const excludeTrackIds = Array.from(
+      new Set(options?.excludeTrackIds ?? []),
+    ).filter((id) => id !== undefined && id !== null && id !== "");
+
+    const baseUrl = API_BASE_URL.endsWith("/")
+      ? API_BASE_URL.slice(0, -1)
+      : API_BASE_URL;
+    const response = await fetch(
+      `${baseUrl}/api/spotify/recommendations/spice-up/unified`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          songs,
+          limit: count,
+          mode: "diverse",
+          ...(excludeDeezerIds.length > 0 ? { excludeDeezerIds } : {}),
+          ...(excludeTrackIds.length > 0 ? { excludeTrackIds } : {}),
+          ...(options?.excludeExplicit ? { excludeExplicit: true } : {}),
+        }),
+      },
+    );
+
+    console.log("[SmartQueue] 📡 Spice-up recommendations API response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+    });
+
+    if (!response.ok) {
+      const error = (await response
+        .json()
+        .catch(() => ({ message: response.statusText }))) as {
+        message?: string;
+      };
+      console.error(
+        "[SmartQueue] ❌ Spice-up recommendations API error:",
+        error,
+      );
+      throw new Error(error.message ?? `API Error: ${response.status}`);
+    }
+
+    const payload = (await response.json()) as unknown;
+    const spiceTracks = extractSpiceUpTracks(payload);
+    const tracks = await convertSpiceUpTracksToDeezer(spiceTracks, count);
+
+    console.log("[SmartQueue] ✅ Spice-up recommendations received:", {
+      count: tracks.length,
+      sample: tracks.slice(0, 3).map((t) => `${t.title} - ${t.artist.name}`),
+    });
+
+    if (tracks.length === 0) {
+      return [];
+    }
+
+    return tracks.slice(0, count);
+  } catch (error) {
+    console.error(
+      "[SmartQueue] ❌ Failed to get spice-up recommendations:",
+      error,
+    );
+    return [];
+  }
+}
+
+export async function convertHexMusicToTracks(
+  hexMusicTracks: HexMusicTrack[],
+): Promise<Track[]> {
+  const tracks: Track[] = [];
+
+  for (const hexTrack of hexMusicTracks) {
+    try {
+      if (hexTrack.deezer_id) {
+        const deezerTrack = await fetchDeezerTrack(hexTrack.deezer_id);
+        if (deezerTrack) {
+          tracks.push(deezerTrack);
+          continue;
+        }
+      }
+
+      const searchQuery = `${hexTrack.artist} ${hexTrack.name}`;
+      const searchResults = await searchDeezerTrack(searchQuery);
+
+      if (searchResults.length > 0 && searchResults[0]) {
+        tracks.push(searchResults[0]);
+      }
+    } catch (error) {
+      console.error(`Failed to convert track: ${hexTrack.name}`, error);
+    }
+  }
+
+  return tracks;
+}
+
+async function fetchDeezerTrack(trackId: string): Promise<Track | null> {
+  try {
+    const response = await fetch(`https://api.deezer.com/track/${trackId}`);
+    if (!response.ok) return null;
+
+    const track = (await response.json()) as Track;
+    return track;
+  } catch (error) {
+    console.error("Failed to fetch Starchild track:", error);
+    return null;
+  }
+}
+
+async function searchDeezerTrack(query: string): Promise<Track[]> {
+  try {
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("limit", "1");
+    const response = await fetch(
+      `https://api.deezer.com/search?${params.toString()}`,
+    );
+
+    if (!response.ok) return [];
+
+    const data = (await response.json()) as { data: Track[] };
+    return data.data ?? [];
+  } catch (error) {
+    console.error("Failed to search Starchild:", error);
+    return [];
+  }
+}
+
+export interface RecommendationResult {
+  tracks: Track[];
+  source: "hexmusic-api" | "deezer-fallback" | "artist-radio" | "cached";
+  responseTime: number;
+  success: boolean;
+  errorMessage?: string;
+}
+
+export async function getSmartQueueRecommendations(
+  currentTrack: Track,
+  options: {
+    count?: number;
+    similarityLevel?: "strict" | "balanced" | "diverse";
+    useAudioFeatures?: boolean;
+  } = {},
+): Promise<RecommendationResult> {
+  const {
+    count = 5,
+    similarityLevel = "balanced",
+    useAudioFeatures = true,
+  } = options;
+
+  console.log("[SmartQueue] 🎯 getSmartQueueRecommendations called", {
+    track: `${currentTrack.title} - ${currentTrack.artist.name}`,
+    trackId: currentTrack.id,
+    count,
+    similarityLevel,
+    useAudioFeatures,
+  });
+
+  const startTime = performance.now();
+
+  try {
+    console.log(
+      "[SmartQueue] 🧠 Attempting intelligent recommendations from HexMusic API...",
+    );
+    const intelligentTracks = await getDeezerRecommendations(
+      [
+        {
+          name: currentTrack.title,
+          artist: currentTrack.artist.name,
+          album: currentTrack.album?.title,
+        },
+      ],
+      count * 2,
+    );
+
+    if (intelligentTracks.length > 0) {
+      console.log("[SmartQueue] ✅ Got recommendations from HexMusic API");
+
+      const filteredTracks = intelligentTracks.filter(
+        (track) => track.id !== currentTrack.id,
+      );
+      console.log("[SmartQueue] 🔍 After filtering current track:", {
+        before: intelligentTracks.length,
+        after: filteredTracks.length,
+      });
+
+      console.log(
+        "[SmartQueue] 🎚️ Applying similarity filter:",
+        similarityLevel,
+      );
+      const finalTracks = applySimilarityFilter(
+        filteredTracks,
+        currentTrack,
+        similarityLevel,
+      );
+      console.log("[SmartQueue] 📊 After similarity filtering:", {
+        count: finalTracks.length,
+      });
+
+      const result = finalTracks.slice(0, count);
+      const responseTime = performance.now() - startTime;
+
+      console.log("[SmartQueue] ✅ Returning recommendations:", {
+        count: result.length,
+        tracks: result.map((t) => `${t.title} - ${t.artist.name}`),
+        responseTime: `${responseTime.toFixed(0)}ms`,
+      });
+
+      return {
+        tracks: result,
+        source: "hexmusic-api",
+        responseTime: Math.round(responseTime),
+        success: true,
+      };
+    }
+
+    console.log("[SmartQueue] 🔄 Falling back to direct Starchild API...");
+    const tracks = await fetchDeezerRadio(currentTrack.id, count * 2);
+
+    if (tracks.length > 0) {
+      const filteredTracks = tracks.filter(
+        (track) => track.id !== currentTrack.id,
+      );
+      console.log("[SmartQueue] 🔍 After filtering current track:", {
+        before: tracks.length,
+        after: filteredTracks.length,
+      });
+
+      console.log(
+        "[SmartQueue] 🎚️ Applying similarity filter:",
+        similarityLevel,
+      );
+      const finalTracks = applySimilarityFilter(
+        filteredTracks,
+        currentTrack,
+        similarityLevel,
+      );
+      console.log("[SmartQueue] 📊 After similarity filtering:", {
+        count: finalTracks.length,
+      });
+
+      const result = finalTracks.slice(0, count);
+      const responseTime = performance.now() - startTime;
+
+      console.log("[SmartQueue] ✅ Returning recommendations:", {
+        count: result.length,
+        tracks: result.map((t) => `${t.title} - ${t.artist.name}`),
+        responseTime: `${responseTime.toFixed(0)}ms`,
+      });
+
+      return {
+        tracks: result,
+        source: "deezer-fallback",
+        responseTime: Math.round(responseTime),
+        success: true,
+      };
+    }
+
+    console.log("[SmartQueue] ⚠️ No recommendations found");
+    const responseTime = performance.now() - startTime;
+    return {
+      tracks: [],
+      source: "deezer-fallback",
+      responseTime: Math.round(responseTime),
+      success: false,
+      errorMessage: "No recommendations found",
+    };
+  } catch (error) {
+    console.error(
+      "[SmartQueue] ❌ Failed to get smart queue recommendations:",
+      error,
+    );
+    const responseTime = performance.now() - startTime;
+    return {
+      tracks: [],
+      source: "deezer-fallback",
+      responseTime: Math.round(responseTime),
+      success: false,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+async function fetchDeezerRadio(
+  trackId: number,
+  limit: number,
+): Promise<Track[]> {
+  console.log("[SmartQueue] 📻 Fetching Starchild recommendations:", {
+    trackId,
+    limit,
+  });
+
+  try {
+    const trackResponse = await fetch(
+      `https://api.deezer.com/track/${trackId}`,
+    );
+
+    if (!trackResponse.ok) {
+      console.log("[SmartQueue] ⚠️ Failed to fetch track details");
+      return [];
+    }
+
+    const trackData = (await trackResponse.json()) as Track;
+    const artistId = trackData.artist.id;
+
+    console.log("[SmartQueue] 👤 Got artist:", {
+      artistId,
+      artistName: trackData.artist.name,
+    });
+
+    const topTracksParams = new URLSearchParams();
+    topTracksParams.set("limit", Math.min(limit, 50).toString());
+    const topTracksResponse = await fetch(
+      `https://api.deezer.com/artist/${artistId}/top?${topTracksParams.toString()}`,
+    );
+
+    if (!topTracksResponse.ok) {
+      console.log("[SmartQueue] ⚠️ Failed to fetch artist top tracks");
+      return [];
+    }
+
+    const topTracksData = (await topTracksResponse.json()) as { data: Track[] };
+    let tracks = topTracksData.data ?? [];
+
+    tracks = tracks.filter((t) => t.id !== trackId);
+
+    console.log("[SmartQueue] ✅ Starchild recommendations received:", {
+      count: tracks.length,
+      tracks: tracks.slice(0, 3).map((t) => `${t.title} - ${t.artist.name}`),
+    });
+
+    if (tracks.length < limit) {
+      console.log(
+        "[SmartQueue] 🔍 Fetching related artists for more variety...",
+      );
+
+      const relatedResponse = await fetch(
+        `https://api.deezer.com/artist/${artistId}/related`,
+      );
+
+      if (relatedResponse.ok) {
+        const relatedData = (await relatedResponse.json()) as {
+          data: Array<{ id: number }>;
+        };
+        const relatedArtists = relatedData.data ?? [];
+
+        if (relatedArtists[0]) {
+          const relatedTracksParams = new URLSearchParams();
+          relatedTracksParams.set("limit", (limit - tracks.length).toString());
+          const relatedTracksResponse = await fetch(
+            `https://api.deezer.com/artist/${relatedArtists[0].id}/top?${relatedTracksParams.toString()}`,
+          );
+
+          if (relatedTracksResponse.ok) {
+            const relatedTracksData = (await relatedTracksResponse.json()) as {
+              data: Track[];
+            };
+            const relatedTracks = relatedTracksData.data ?? [];
+            tracks.push(...relatedTracks);
+
+            console.log("[SmartQueue] ✅ Added tracks from related artists:", {
+              addedCount: relatedTracks.length,
+              totalCount: tracks.length,
+            });
+          }
+        }
+      }
+    }
+
+    return tracks.slice(0, limit);
+  } catch (error) {
+    console.error(
+      "[SmartQueue] ❌ Failed to fetch Deezer recommendations:",
+      error,
+    );
+    return [];
+  }
+}
+
+function applySimilarityFilter(
+  tracks: Track[],
+  seedTrack: Track,
+  level: "strict" | "balanced" | "diverse",
+): Track[] {
+  if (level === "strict") {
+    return tracks.filter((track) => track.artist.id === seedTrack.artist.id);
+  } else if (level === "diverse") {
+    const diverseTracks: Track[] = [];
+    const artistIds = new Set<number>();
+
+    for (const track of tracks) {
+      if (
+        !artistIds.has(track.artist.id) ||
+        diverseTracks.length < tracks.length / 2
+      ) {
+        diverseTracks.push(track);
+        artistIds.add(track.artist.id);
+      }
+    }
+
+    return diverseTracks;
+  }
+
+  return tracks;
+}
+
+export async function generateSmartMix(
+  seedTracks: Track[],
+  count = 20,
+): Promise<Track[]> {
+  console.log("[SmartQueue] ⚡ generateSmartMix called", {
+    seedCount: seedTracks.length,
+    targetCount: count,
+    seeds: seedTracks.map((t) => `${t.title} - ${t.artist.name}`),
+  });
+
+  if (seedTracks.length === 0) {
+    console.log("[SmartQueue] ❌ No seed tracks provided");
+    return [];
+  }
+
+  try {
+    const allRecommendations: Track[] = [];
+    const tracksPerSeed = Math.ceil(count / seedTracks.length);
+
+    console.log("[SmartQueue] 📋 Will fetch", tracksPerSeed, "tracks per seed");
+
+    for (let i = 0; i < seedTracks.length; i++) {
+      const seedTrack = seedTracks[i];
+      if (!seedTrack) continue;
+
+      console.log(
+        `[SmartQueue] 🔍 Processing seed ${i + 1}/${seedTracks.length}:`,
+        {
+          track: `${seedTrack.title} - ${seedTrack.artist.name}`,
+        },
+      );
+
+      const result = await getSmartQueueRecommendations(seedTrack, {
+        count: tracksPerSeed,
+        similarityLevel: "balanced",
+      });
+
+      console.log(
+        `[SmartQueue] 📦 Received ${result.tracks.length} recommendations for seed ${i + 1}`,
+      );
+      allRecommendations.push(...result.tracks);
+    }
+
+    console.log(
+      "[SmartQueue] 📊 Total recommendations collected:",
+      allRecommendations.length,
+    );
+
+    const uniqueTracks = Array.from(
+      new Map(allRecommendations.map((track) => [track.id, track])).values(),
+    );
+
+    console.log("[SmartQueue] 🔍 After deduplication:", {
+      before: allRecommendations.length,
+      after: uniqueTracks.length,
+    });
+
+    const shuffled = shuffleArray(uniqueTracks).slice(0, count);
+    console.log("[SmartQueue] ✅ Returning smart mix:", {
+      count: shuffled.length,
+      targetCount: count,
+    });
+
+    return shuffled;
+  } catch (error) {
+    console.error("[SmartQueue] ❌ Failed to generate smart mix:", error);
+    return [];
+  }
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    if (temp !== undefined && shuffled[j] !== undefined) {
+      shuffled[i] = shuffled[j]!;
+      shuffled[j] = temp;
+    }
+  }
+  return shuffled;
+}

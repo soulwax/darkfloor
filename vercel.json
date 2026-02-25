@@ -1,28 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "framework": "nextjs",
-  "installCommand": "npm install",
-
+  "installCommand": "pnpm install --frozen-lockfile",
   "github": {
     "silent": true
   },
-
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "maxDuration": 30,
-      "memory": 1024
-    },
-    "src/app/api/trpc/**/*.ts": {
-      "maxDuration": 30,
-      "memory": 1024
-    },
-    "src/app/api/stream/route.ts": {
-      "maxDuration": 60,
-      "memory": 3008
-    }
-  },
-
   "headers": [
     {
       "source": "/(.*)",
@@ -59,7 +42,16 @@
       ]
     },
     {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot))",
+      "source": "/_next/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/_next/image(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -68,15 +60,14 @@
       ]
     }
   ],
-
   "rewrites": [
     {
       "source": "/healthz",
       "destination": "/api/health"
     }
   ],
-
-  "regions": ["iad1"],
-
+  "regions": [
+    "iad1"
+  ],
   "crons": []
 }

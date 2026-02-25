@@ -1,0 +1,18 @@
+{
+  "name": "@starchild/visualizers",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared visualizer renderers",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts",
+    "./FlowFieldRenderer": "./src/FlowFieldRenderer.ts",
+    "./FlowFieldCanvas": "./src/FlowFieldCanvas.tsx",
+    "./flowfieldPatterns/patternIds": "./src/flowfieldPatterns/patternIds.ts",
+    "./flowfieldPatterns/renderHexGrid": "./src/flowfieldPatterns/renderHexGrid.ts",
+    "./flowfieldPatterns/renderKaleidoscope": "./src/flowfieldPatterns/renderKaleidoscope.ts",
+    "./flowfieldPatterns/renderRays": "./src/flowfieldPatterns/renderRays.ts",
+    "./flowfieldPatterns/types": "./src/flowfieldPatterns/types.ts"
+  }
+}

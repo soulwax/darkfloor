@@ -1,0 +1,13 @@
+{
+  "name": "@starchild/mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Mobile app shell workspace",
+  "scripts": {
+    "dev": "node -e \"console.log('apps/mobile shell scaffold: runtime not wired yet')\"",
+    "build": "npm run typecheck",
+    "check": "npm run typecheck",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  }
+}

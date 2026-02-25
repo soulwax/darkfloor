@@ -1,0 +1,14 @@
+{
+  "name": "@starchild/types",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared domain types",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts",
+    "./settings": "./src/settings.ts",
+    "./player": "./src/player.ts",
+    "./searchSuggestions": "./src/searchSuggestions.ts"
+  }
+}

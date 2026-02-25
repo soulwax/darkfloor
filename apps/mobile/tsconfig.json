@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "@starchild/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@starchild/types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@starchild/config": [
+        "../../packages/config/src/index.ts"
+      ],
+      "@starchild/config/*": [
+        "../../packages/config/src/*"
+      ],
+      "@starchild/player-core": [
+        "../../packages/player-core/src/index.ts"
+      ],
+      "@starchild/player-core/*": [
+        "../../packages/player-core/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
