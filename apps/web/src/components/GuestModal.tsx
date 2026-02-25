@@ -86,13 +86,6 @@ const MOOD_PRESETS: MoodPreset[] = [
   },
 ];
 
-function applyThemeClass(): void {
-  if (typeof document === "undefined") return;
-  const html = document.documentElement;
-  html.classList.add("theme-dark");
-  html.classList.remove("theme-light");
-}
-
 function resolveInitialMood(
   similarityPreference: SimilarityPreference,
   autoQueueEnabled: boolean,
@@ -395,11 +388,6 @@ export function GuestModal({
       : null;
 
   useEffect(() => {
-    settingsStorage.set("theme", "dark");
-    applyThemeClass();
-  }, []);
-
-  useEffect(() => {
     if (typeof document === "undefined" || !isOpen) return;
 
     const { body, documentElement } = document;
@@ -539,6 +527,7 @@ export function GuestModal({
       }}
     >
       <DialogContent
+        overlayClassName="!bg-transparent !backdrop-blur-none"
         className={cn(
           "max-h-[90vh] overflow-hidden border-white/12 bg-[#0F1528]/95 p-0 text-white shadow-[0_30px_90px_rgba(0,0,0,0.6)] focus:outline-none",
           isMobile
