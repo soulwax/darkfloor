@@ -14,6 +14,8 @@ const REQUEST_HEADER_ALLOWLIST = new Set([
   "authorization",
   "content-type",
   "cookie",
+  "origin",
+  "referer",
   "user-agent",
   "x-correlation-id",
   "x-csrf-token",
@@ -92,6 +94,14 @@ function getForwardHeaders(request: NextRequest | Request): Headers {
     if (!REQUEST_HEADER_ALLOWLIST.has(normalized)) return;
     headers.set(normalized, value);
   });
+
+  const requestUrl = getRequestUrl(request);
+  if (!headers.has("x-forwarded-host")) {
+    headers.set("x-forwarded-host", requestUrl.host);
+  }
+  if (!headers.has("x-forwarded-proto")) {
+    headers.set("x-forwarded-proto", requestUrl.protocol.replace(":", ""));
+  }
 
   return headers;
 }
