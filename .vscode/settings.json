@@ -8,5 +8,6 @@
     "https://json-schema.org/": true,
     "https://turbo.build/": true,
     "https://openapi.vercel.sh/": true
-  }
+  },
+  "remote.autoForwardPortsFallback": 0
 }

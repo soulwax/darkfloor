@@ -1,3 +1,5 @@
+// File: tests/guest-modal.spec.ts
+
 import { expect, test } from "@playwright/test";
 
 const MOCK_GENRES = Array.from({ length: 120 }, (_, index) => ({

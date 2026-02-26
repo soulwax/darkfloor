@@ -1,3 +1,5 @@
+# File: .github/workflows/playwright.yml
+
 name: Playwright Tests
 on:
   push:
