@@ -8,7 +8,6 @@ import {
   isEnabledOAuthProvider,
 } from "@/config/oauthProviders";
 import { localStorage as appStorage } from "@/services/storage";
-import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
@@ -310,10 +309,6 @@ function SignInContent() {
                         providerId: provider.id,
                         callbackUrl,
                       });
-                      if (provider.id === "spotify") {
-                        startSpotifyLogin(callbackUrl);
-                        return;
-                      }
                       try {
                         await signIn(provider.id, {
                           callbackUrl: buildAuthCallbackUrl(

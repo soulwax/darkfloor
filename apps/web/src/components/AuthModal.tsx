@@ -8,7 +8,6 @@ import {
 } from "@/config/oauthProviders";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
-import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { springPresets } from "@/utils/spring-animations";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { AnimatePresence, motion } from "framer-motion";
@@ -141,11 +140,6 @@ export function AuthModal({
       providerId,
       callbackUrl,
     });
-
-    if (providerId === "spotify") {
-      startSpotifyLogin(callbackUrl);
-      return;
-    }
 
     try {
       await signIn(providerId, {

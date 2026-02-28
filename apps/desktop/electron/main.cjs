@@ -391,6 +391,28 @@ bootLog(
   process.env.NEXTAUTH_URL || "not set (using default)",
 );
 
+const shouldDisableGpu =
+  process.platform === "win32" &&
+  process.env.ELECTRON_DISABLE_GPU !== "false";
+
+if (shouldDisableGpu) {
+  // Windows builds can intermittently show blank renderer windows on some
+  // drivers/AV sandboxes; software rendering is more reliable.
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch("disable-gpu");
+  app.commandLine.appendSwitch("disable-gpu-compositing");
+}
+
+bootLog(
+  "  ELECTRON_DISABLE_GPU:",
+  process.env.ELECTRON_DISABLE_GPU ??
+    "(not set; defaulting to enabled on win32)",
+);
+bootLog(
+  "  Hardware acceleration:",
+  shouldDisableGpu ? "disabled" : "enabled",
+);
+
 const {
   BrowserWindow,
   Menu,
@@ -1109,6 +1131,45 @@ const createWindow = async () => {
   const isWindows = process.platform === "win32";
   const isMac = process.platform === "darwin";
   const isLinux = process.platform === "linux";
+  const initialLoadStartedAt = Date.now();
+  let initialLoadSettled = false;
+  let startupWatchdogTimer = null;
+  let pendingWindowStateSaveTimer = null;
+
+  /**
+   * @returns {void}
+   */
+  const clearStartupWatchdog = () => {
+    if (startupWatchdogTimer) {
+      clearTimeout(startupWatchdogTimer);
+      startupWatchdogTimer = null;
+    }
+  };
+
+  /**
+   * @returns {void}
+   */
+  const settleInitialLoad = () => {
+    if (initialLoadSettled) return;
+    initialLoadSettled = true;
+    clearStartupWatchdog();
+  };
+
+  /**
+   * @returns {void}
+   */
+  const scheduleWindowStateSave = () => {
+    if (pendingWindowStateSaveTimer) {
+      clearTimeout(pendingWindowStateSaveTimer);
+    }
+
+    pendingWindowStateSaveTimer = setTimeout(() => {
+      pendingWindowStateSaveTimer = null;
+      if (mainWindow) {
+        saveWindowState(mainWindow);
+      }
+    }, 150);
+  };
 
   mainWindow = new BrowserWindow({
     title: "Starchild",
@@ -1148,13 +1209,13 @@ const createWindow = async () => {
 
   mainWindow.on("resize", () => {
     if (mainWindow && !mainWindow.isMaximized()) {
-      saveWindowState(mainWindow);
+      scheduleWindowStateSave();
     }
   });
 
   mainWindow.on("move", () => {
     if (mainWindow && !mainWindow.isMaximized()) {
-      saveWindowState(mainWindow);
+      scheduleWindowStateSave();
     }
   });
 
@@ -1250,6 +1311,7 @@ const createWindow = async () => {
 
   mainWindow.webContents.on("did-finish-load", () => {
     log("Page finished loading");
+    settleInitialLoad();
     publishWindowState();
   });
 
@@ -1262,8 +1324,37 @@ const createWindow = async () => {
      */
     (event, errorCode, errorDescription) => {
       log("Page failed to load:", errorCode, errorDescription);
+      settleInitialLoad();
     },
   );
+
+  mainWindow.webContents.on(
+    "console-message",
+    (
+      _event,
+      level,
+      message,
+      line,
+      sourceId,
+    ) => {
+      // Avoid overwhelming logs with low-value info-level browser output.
+      if (level <= 1) return;
+      log("[Renderer Console]", {
+        level,
+        line,
+        sourceId,
+        message,
+      });
+    },
+  );
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    log("Renderer process terminated", details);
+  });
+
+  mainWindow.webContents.on("unresponsive", () => {
+    log("Renderer became unresponsive");
+  });
 
   mainWindow.once("ready-to-show", () => {
     log("Window ready to show");
@@ -1276,6 +1367,21 @@ const createWindow = async () => {
   log(`Loading URL: ${serverUrl}`);
   mainWindow.loadURL(serverUrl);
 
+  startupWatchdogTimer = setTimeout(() => {
+    if (initialLoadSettled) return;
+
+    const elapsedMs = Date.now() - initialLoadStartedAt;
+    log("Startup watchdog triggered before first page load completed", {
+      elapsedMs,
+      serverUrl,
+    });
+
+    dialog.showErrorBox(
+      "Renderer Startup Timeout",
+      `The app window did not finish loading within ${Math.round(elapsedMs / 1000)} seconds.\n\nServer URL: ${serverUrl}\n\nThis can be caused by GPU/driver issues or blocked runtime files.`,
+    );
+  }, 20_000);
+
   mainWindow.on("close", () => {
     if (mainWindow) {
       saveWindowState(mainWindow);
@@ -1284,6 +1390,11 @@ const createWindow = async () => {
 
   mainWindow.on("closed", () => {
     log("Window closed");
+    clearStartupWatchdog();
+    if (pendingWindowStateSaveTimer) {
+      clearTimeout(pendingWindowStateSaveTimer);
+      pendingWindowStateSaveTimer = null;
+    }
     mainWindow = null;
   });
 
