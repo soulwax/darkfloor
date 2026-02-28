@@ -51,7 +51,7 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config drizzle.config.ts",
     "db:mark-applied": "node scripts/mark-migrations-simple.js",
-    "copy:changelog": "cp CHANGELOG.md apps/web/public/CHANGELOG.md",
+    "copy:changelog": "node scripts/copy-changelog.js",
     "migrate:neon": "npx tsx scripts/migrate-to-neon.ts",
     "predev": "npm run generate:ssl",
     "dev": "cross-env NODE_ENV=development node scripts/server.js",
