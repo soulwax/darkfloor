@@ -933,6 +933,15 @@ const startServer = async () => {
 
   return new Promise((resolve, reject) => {
     const standaloneNodeModules = path.join(standaloneDir, "node_modules");
+    const standalonePnpmNodeModules = path.join(
+      standaloneNodeModules,
+      ".pnpm",
+      "node_modules",
+    );
+    const nodePathEntries = [
+      standaloneNodeModules,
+      standalonePnpmNodeModules,
+    ].filter((entry) => fs.existsSync(entry));
     let startupSettled = false;
     let serverExited = false;
     let stderrTail = "";
@@ -1006,7 +1015,7 @@ const startServer = async () => {
         NEXTAUTH_URL_INTERNAL: runtimeAuthOrigin,
         NODE_ENV: "production",
         ELECTRON_BUILD: "true",
-        NODE_PATH: standaloneNodeModules,
+        NODE_PATH: nodePathEntries.join(path.delimiter),
       },
       /** @type {string} */
       cwd: standaloneDir,

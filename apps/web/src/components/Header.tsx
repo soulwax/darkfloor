@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SearchSuggestionItem } from "@starchild/types/searchSuggestions";
 import { normalizeHealthStatus } from "@/utils/healthStatus";
-import { Home, Library, Music2, Search } from "lucide-react";
+import { BarChart3, Home, Library, Music2, Search } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -391,6 +391,18 @@ export default function Header() {
             <Music2 className="h-3.5 w-3.5" />
             <span className="hidden 2xl:inline">Greeter</span>
           </button>
+          {!isElectronRuntime && (
+            <a
+              href="https://analyze.darkfloor.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open Analyse tool"
+              className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs font-semibold text-[var(--color-subtext)] transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span className="hidden 2xl:inline">Analyse</span>
+            </a>
+          )}
           {apiHealthy !== null && (
             <div
               className="api-health-pill hidden items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] px-2 py-0.5 text-xs text-[var(--color-subtext)] 2xl:flex"

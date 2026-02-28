@@ -5,6 +5,22 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.10] - 2026-02-28
+
+### Added
+
+- **Header `Analyse` action for browser users**: Added an `Analyse` button (bar-chart icon) in the desktop header between `Greeter` and `API Healthy`, linking to `https://analyze.darkfloor.org` in a new tab for mood/rhythm/danceability analysis tooling.
+
+### Changed
+
+- **Electron-specific header behavior**: The new `Analyse` action is hidden in Electron runtime, keeping it available on web browser/mobile web only.
+
+## [1.1.9] - 2026-02-28
+
+### Fixed
+
+- **Portable/runtime server boot failure on Windows (`styled-jsx/package.json` not found)**: Electron now starts the bundled Next.js server with a pnpm-aware module resolution path by including both `node_modules` and `node_modules/.pnpm/node_modules` in `NODE_PATH`. This fixes startup crashes in extracted portable runtime directories. Location: `apps/desktop/electron/main.cjs`.
+
 ## [1.1.8] - 2026-02-28
 
 ### Added
