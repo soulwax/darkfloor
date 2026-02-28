@@ -18,8 +18,14 @@ if (shouldRelaunchWithoutRunAsNode) {
       const relaunchEnv = { ...process.env };
       delete relaunchEnv[RUN_AS_NODE_ENV_KEY];
       relaunchEnv[RELAUNCH_MARKER_ENV_KEY] = "1";
+      const isPackagedMainScript = __dirname
+        .toLowerCase()
+        .includes("app.asar");
+      const relaunchArgs = isPackagedMainScript
+        ? []
+        : [path.resolve(__dirname, "../../.."), ...process.argv.slice(2)];
 
-      const child = spawn(process.execPath, process.argv.slice(1), {
+      const child = spawn(process.execPath, relaunchArgs, {
         env: relaunchEnv,
         detached: true,
         stdio: "ignore",
