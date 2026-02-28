@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.12] - 2026-02-28
+
+### Added
+
+- **Firefox-safe visuals onboarding option**: Added a compact footer section in the guest modal that explains Firefox visual performance tradeoffs and provides an explicit opt-in action (`Enable visuals anyway`) instead of an opt-out toggle. Location: `apps/web/src/components/GuestModal.tsx`.
+
+### Changed
+
+- **Firefox visualizer default behavior for guests**: Visuals now default to disabled for Firefox when no prior preference exists; users can enable them explicitly. This preference is persisted and shared across guest flows. Locations: `apps/web/src/utils/visualizerPreference.ts`, `apps/web/src/components/PersistentPlayer.tsx`, `apps/web/src/components/GuestModal.tsx`.
+
 ## [1.1.11] - 2026-02-28
 
 ### Changed

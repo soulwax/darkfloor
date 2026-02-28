@@ -16,6 +16,13 @@ import { localStorage as appStorage } from "@/services/storage";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { parsePreferredGenreId } from "@/utils/genre";
 import { settingsStorage } from "@/utils/settingsStorage";
+import {
+  getInitialVisualizerEnabledPreference,
+  isFirefoxBrowser,
+  persistVisualizerEnabledPreference,
+  readStoredVisualizerEnabled,
+  VISUALIZER_PREFERENCE_UPDATED_EVENT,
+} from "@/utils/visualizerPreference";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { ChevronDown, Music2, X } from "lucide-react";
@@ -164,6 +171,9 @@ export function GuestModal({
   const [genreMenuDirection, setGenreMenuDirection] = useState<"down" | "up">(
     "down",
   );
+  const [showFirefoxVisualsOptIn, setShowFirefoxVisualsOptIn] =
+    useState(false);
+  const [firefoxVisualsOptedIn, setFirefoxVisualsOptedIn] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number>(0);
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [genreMenuMaxHeight, setGenreMenuMaxHeight] = useState<number>(320);
@@ -412,6 +422,33 @@ export function GuestModal({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const firefoxDetected = isFirefoxBrowser();
+    setShowFirefoxVisualsOptIn(firefoxDetected);
+    if (!firefoxDetected) return;
+
+    const initialEnabled = getInitialVisualizerEnabledPreference();
+    setFirefoxVisualsOptedIn(initialEnabled);
+
+    const syncPreference = () => {
+      const stored = readStoredVisualizerEnabled();
+      setFirefoxVisualsOptedIn(stored === true);
+    };
+
+    window.addEventListener(
+      VISUALIZER_PREFERENCE_UPDATED_EVENT,
+      syncPreference,
+    );
+    return () => {
+      window.removeEventListener(
+        VISUALIZER_PREFERENCE_UPDATED_EVENT,
+        syncPreference,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isGenreMenuOpen || !genreTriggerRef.current) return;
 
     const updateRect = () => {
@@ -466,6 +503,11 @@ export function GuestModal({
     settingsStorage.set("similarityPreference", preset.similarity);
     settingsStorage.set("autoQueueEnabled", preset.autoQueue);
     settingsStorage.set("smartMixEnabled", preset.smartMix);
+  };
+
+  const enableFirefoxVisuals = () => {
+    persistVisualizerEnabledPreference(true);
+    setFirefoxVisualsOptedIn(true);
   };
 
   return (
@@ -653,6 +695,28 @@ export function GuestModal({
                   Skip for now
                 </button>
               </DialogClose>
+
+              {showFirefoxVisualsOptIn && (
+                <div className="rounded-xl border border-white/12 bg-white/[0.02] px-3 py-2 text-[11px] leading-relaxed text-white/68">
+                  <p>
+                    Firefox can struggle with advanced live visuals, so they are
+                    disabled by default to keep playback smooth.
+                  </p>
+                  {firefoxVisualsOptedIn ? (
+                    <p className="mt-1.5 font-medium text-[#1DB954]">
+                      Visuals are enabled for this browser.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={enableFirefoxVisuals}
+                      className="mt-2 inline-flex h-8 items-center rounded-lg border border-[#1DB954]/45 bg-[#1DB954]/14 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-[#1DB954]/22"
+                    >
+                      Enable visuals anyway
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

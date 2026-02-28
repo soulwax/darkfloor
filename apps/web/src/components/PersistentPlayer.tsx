@@ -2,7 +2,6 @@
 
 "use client";
 
-import { STORAGE_KEYS } from "@starchild/config/storage";
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import { useEqualizer } from "@/hooks/useEqualizer";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -16,6 +15,12 @@ import {
   SETTINGS_UPDATED_EVENT,
   settingsStorage,
 } from "@/utils/settingsStorage";
+import {
+  getInitialVisualizerEnabledPreference,
+  persistVisualizerEnabledPreference,
+  readStoredVisualizerEnabled,
+  VISUALIZER_PREFERENCE_UPDATED_EVENT,
+} from "@/utils/visualizerPreference";
 import { LightweightParticleBackground } from "./LightweightParticleBackground";
 import MaturePlayer from "./Player";
 import type { FlowFieldRenderer } from "@starchild/visualizers/FlowFieldRenderer";
@@ -67,7 +72,9 @@ export default function PersistentPlayer() {
 
   const [showQueue, setShowQueue] = useState(false);
   const [showEqualizer, setShowEqualizer] = useState(false);
-  const [visualizerEnabled, setVisualizerEnabled] = useState(true);
+  const [visualizerEnabled, setVisualizerEnabled] = useState(
+    getInitialVisualizerEnabledPreference,
+  );
   const [showFpsCounter, setShowFpsCounter] = useState(() =>
     settingsStorage.getSetting("showFpsCounter", false),
   );
@@ -85,21 +92,12 @@ export default function PersistentPlayer() {
   }, [preferences]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Load visualizer state from localStorage when not authenticated
+  // Keep guest visualizer preference in sync with local storage when signed out.
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: load from localStorage */
   useEffect(() => {
     if (isAuthenticated) return;
-    if (typeof window === "undefined") return;
-
-    const stored = window.localStorage.getItem(STORAGE_KEYS.VISUALIZER_ENABLED);
-    if (stored !== null) {
-      try {
-        const parsed: unknown = JSON.parse(stored);
-        setVisualizerEnabled(parsed === true);
-      } catch {
-        setVisualizerEnabled(stored === "true");
-      }
-    }
+    const storedPreference = readStoredVisualizerEnabled();
+    setVisualizerEnabled(storedPreference ?? getInitialVisualizerEnabledPreference());
   }, [isAuthenticated]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -153,10 +151,7 @@ export default function PersistentPlayer() {
       if (isAuthenticated) {
         updatePreferences.mutate({ visualizerEnabled: next });
       } else if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          STORAGE_KEYS.VISUALIZER_ENABLED,
-          JSON.stringify(next),
-        );
+        persistVisualizerEnabledPreference(next);
       }
     },
     [isAuthenticated, updatePreferences],
@@ -187,6 +182,30 @@ export default function PersistentPlayer() {
       );
     };
   }, [handleVisualizerToggle]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isAuthenticated) return;
+
+    const syncGuestPreference = () => {
+      const storedPreference = readStoredVisualizerEnabled();
+      if (storedPreference !== null) {
+        setVisualizerEnabled(storedPreference);
+      }
+    };
+
+    syncGuestPreference();
+    window.addEventListener(
+      VISUALIZER_PREFERENCE_UPDATED_EVENT,
+      syncGuestPreference,
+    );
+
+    return () => {
+      window.removeEventListener(
+        VISUALIZER_PREFERENCE_UPDATED_EVENT,
+        syncGuestPreference,
+      );
+    };
+  }, [isAuthenticated]);
 
   const playerProps = {
     currentTrack: player.currentTrack,
