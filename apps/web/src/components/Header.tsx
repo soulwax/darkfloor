@@ -4,11 +4,11 @@
 
 import { SearchSuggestionsList } from "@/components/SearchSuggestionsList";
 import { useGuestModal } from "@/contexts/GuestModalContext";
-import { useSearchSuggestions } from "@/hooks/useSearchSuggestions";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useSearchSuggestions } from "@/hooks/useSearchSuggestions";
+import { normalizeHealthStatus } from "@/utils/healthStatus";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SearchSuggestionItem } from "@starchild/types/searchSuggestions";
-import { normalizeHealthStatus } from "@/utils/healthStatus";
 import { BarChart3, Home, Library, Music2, Search } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -393,7 +393,7 @@ export default function Header() {
           </button>
           {!isElectronRuntime && (
             <a
-              href="https://analyze.darkfloor.org"
+              href="https://analyse.darkfloor.org"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Open Analyse tool"
