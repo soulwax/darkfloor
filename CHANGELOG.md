@@ -5,6 +5,21 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-02-28
+
+### Added
+
+- **Cross-platform changelog copy script**: Added a Node-based changelog copy utility so `copy:changelog` works on Windows shells (PowerShell/cmd), not just Unix-like environments. Locations: `scripts/copy-changelog.js`, `package.json`.
+
+### Changed
+
+- **Windows Electron builder wrapper now runs targets sequentially**: `electron:builder:win` now builds `nsis` and `portable` in separate invocations with per-target cleanup and retry handling for transient packaging errors. Location: `apps/desktop/scripts/run-electron-builder-win.js`.
+
+### Fixed
+
+- **`pnpm electron:build:win` failure on Windows due to missing `cp` command**: Replaced Unix-only `cp` with a Node script, unblocking `next build && copy:changelog` inside Electron production builds.
+- **Intermittent Windows packaging failures in combined `electron-builder --win` runs**: Avoided `win-unpacked` executable/resource race conditions by serializing Windows target builds in the wrapper script.
+
 ## [1.1.7] - 2026-02-22
 
 ### Added

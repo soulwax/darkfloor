@@ -10,11 +10,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "../../..");
 const winUnpackedDir = path.join(rootDir, "dist", "win-unpacked");
+const winTargets = ["nsis", "portable"];
 
-function runBuilder() {
+function runBuilder(target) {
   return spawnSync(
     process.execPath,
-    ["apps/desktop/scripts/load-env-build.js", "electron-builder --win"],
+    [
+      "apps/desktop/scripts/load-env-build.js",
+      `electron-builder --win ${target}`,
+    ],
     {
       cwd: rootDir,
       stdio: "pipe",
@@ -38,6 +42,12 @@ function isMissingResourcesError(output) {
   );
 }
 
+function isMissingElectronExeRenameError(output) {
+  return /ENOENT:\s*no such file or directory,\s*rename\s+'[^']*dist[\\/]win-unpacked[\\/]electron\.exe'\s*->\s*'[^']*dist[\\/]win-unpacked[\\/]Starchild\.exe'/i.test(
+    output,
+  );
+}
+
 function cleanupWinUnpacked() {
   try {
     fs.rmSync(winUnpackedDir, { recursive: true, force: true });
@@ -46,23 +56,37 @@ function cleanupWinUnpacked() {
   }
 }
 
-const firstRun = runBuilder();
-printRun(firstRun);
+for (const target of winTargets) {
+  console.log(`[electron-builder:win] Building target "${target}"...`);
+  cleanupWinUnpacked();
 
-if (firstRun.status === 0) {
-  process.exit(0);
+  const firstRun = runBuilder(target);
+  printRun(firstRun);
+
+  if (firstRun.status === 0) {
+    continue;
+  }
+
+  const firstOutput = `${firstRun.stdout ?? ""}\n${firstRun.stderr ?? ""}`;
+  const shouldRetry =
+    isMissingResourcesError(firstOutput) ||
+    isMissingElectronExeRenameError(firstOutput);
+
+  if (!shouldRetry) {
+    process.exit(typeof firstRun.status === "number" ? firstRun.status : 1);
+  }
+
+  console.warn(
+    `\n[electron-builder:win] Detected transient packaging failure for "${target}"; retrying once...\n`,
+  );
+  cleanupWinUnpacked();
+
+  const secondRun = runBuilder(target);
+  printRun(secondRun);
+
+  if (secondRun.status !== 0) {
+    process.exit(typeof secondRun.status === "number" ? secondRun.status : 1);
+  }
 }
 
-const firstOutput = `${firstRun.stdout ?? ""}\n${firstRun.stderr ?? ""}`;
-if (!isMissingResourcesError(firstOutput)) {
-  process.exit(typeof firstRun.status === "number" ? firstRun.status : 1);
-}
-
-console.warn(
-  "\n[electron-builder:win] Detected transient missing resources folder; retrying once...\n",
-);
-cleanupWinUnpacked();
-
-const secondRun = runBuilder();
-printRun(secondRun);
-process.exit(typeof secondRun.status === "number" ? secondRun.status : 1);
+process.exit(0);
