@@ -3,8 +3,52 @@
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { spawn } = require("child_process");
+const RUN_AS_NODE_ENV_KEY = "ELECTRON_RUN_AS_NODE";
+const RELAUNCH_MARKER_ENV_KEY = "STARCHILD_ELECTRON_RELAUNCHED";
+const runAsNodeValue = (process.env[RUN_AS_NODE_ENV_KEY] || "")
+  .trim()
+  .toLowerCase();
+const shouldRelaunchWithoutRunAsNode =
+  runAsNodeValue === "1" || runAsNodeValue === "true";
+
+if (shouldRelaunchWithoutRunAsNode) {
+  if (process.env[RELAUNCH_MARKER_ENV_KEY] !== "1") {
+    try {
+      const relaunchEnv = { ...process.env };
+      delete relaunchEnv[RUN_AS_NODE_ENV_KEY];
+      relaunchEnv[RELAUNCH_MARKER_ENV_KEY] = "1";
+
+      const child = spawn(process.execPath, process.argv.slice(1), {
+        env: relaunchEnv,
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+      process.exit(0);
+    } catch (relaunchError) {
+      console.error(
+        "[Electron] Failed to relaunch without ELECTRON_RUN_AS_NODE:",
+        relaunchError,
+      );
+      process.exit(1);
+    }
+  }
+
+  console.error(
+    "[Electron] ELECTRON_RUN_AS_NODE is set; clear it before launching Electron runtime.",
+  );
+  process.exit(1);
+}
+
 const electron = require("electron");
 const { app } = electron;
+if (!app) {
+  console.error(
+    "[Electron] electron.app is unavailable; ensure this file is started by Electron and not plain Node.js.",
+  );
+  process.exit(1);
+}
 const repoRoot = path.resolve(__dirname, "../../..");
 const webPublicDir = path.join(repoRoot, "apps", "web", "public");
 
@@ -424,7 +468,6 @@ const {
   nativeTheme,
   shell,
 } = electron;
-const { spawn } = require("child_process");
 const http = require("http");
 
 /** @type {boolean} */

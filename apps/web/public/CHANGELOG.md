@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.11] - 2026-02-28
+
+### Changed
+
+- **Windows renderer stability defaults**: Electron now disables GPU acceleration by default on Windows (`ELECTRON_DISABLE_GPU=false` opt-out) to reduce black/blank renderer windows on affected GPU driver and AV sandbox setups. Location: `apps/desktop/electron/main.cjs`.
+- **Window-state persistence behavior**: Window move/resize writes are now debounced to avoid rapid synchronous write bursts during drag/resize interactions. Location: `apps/desktop/electron/main.cjs`.
+- **Startup diagnostics coverage**: Added renderer-process diagnostics (`console-message` warning/error capture, `render-process-gone`, `unresponsive`) and a first-load watchdog timeout message for stalled startups. Location: `apps/desktop/electron/main.cjs`.
+
+### Fixed
+
+- **Electron run-as-node bootstrap trap**: If `ELECTRON_RUN_AS_NODE` is set in the environment, the app now self-relaunches once without that variable and exits the bootstrap process cleanly, preventing broken startup states (including blank/failed launches) in dev and packaged runs. Location: `apps/desktop/electron/main.cjs`.
+- **Clear startup failure signaling when Electron main API is unavailable**: Added an explicit fail-fast error when `electron.app` cannot be resolved, instead of crashing later with less actionable errors. Location: `apps/desktop/electron/main.cjs`.
+
 ## [1.1.10] - 2026-02-28
 
 ### Added
