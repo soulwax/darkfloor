@@ -6,6 +6,7 @@ import {
 } from "@/utils/authDebugClient";
 
 const DEFAULT_AUTH_API_ORIGIN = "https://www.darkfloor.one";
+const ELECTRON_SPOTIFY_CALLBACK_URI = "darkfloor://auth/callback";
 const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/signin/spotify";
 const FRONTEND_SPOTIFY_CALLBACK_PATH = "/auth/spotify/callback";
 const DEFAULT_POST_AUTH_PATH = "/library";
@@ -144,6 +145,11 @@ function resolveAuthApiOrigin(): string {
 
 function buildAuthEndpoint(pathname: string): string {
   return `${resolveAuthApiOrigin()}${pathname}`;
+}
+
+function isElectronRuntime(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.electron?.isElectron === true;
 }
 
 function createDefaultHashKeyPresence(present = false): HashTokenPresence {
@@ -654,6 +660,20 @@ export function buildSpotifyLoginUrl(
   nextPath: string,
   traceId?: string,
 ): string {
+  if (isElectronRuntime()) {
+    const params = new URLSearchParams({
+      frontend_redirect_uri: ELECTRON_SPOTIFY_CALLBACK_URI,
+    });
+    const loginUrl = `${DEFAULT_AUTH_API_ORIGIN}/api/auth/spotify?${params.toString()}`;
+    logSpotifyBrowserDebug("Built Electron Spotify OAuth URL", {
+      requestedNextPath: nextPath,
+      traceId: traceId ?? null,
+      frontendRedirectUri: ELECTRON_SPOTIFY_CALLBACK_URI,
+      loginUrl,
+    });
+    return loginUrl;
+  }
+
   const effectiveTraceId = traceId ?? generateTraceId();
   const frontendRedirectUri = buildSpotifyFrontendCallbackUrl(
     nextPath,

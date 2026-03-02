@@ -44,6 +44,36 @@ describe("spotifyAuthClient", () => {
     expect(frontendRedirect).toContain("trace=");
   });
 
+  it("builds Electron login URL with backend deep-link callback", () => {
+    const originalElectron = window.electron;
+    window.electron = {
+      isElectron: true,
+      platform: "win32",
+      getAppVersion: vi.fn().mockResolvedValue("1.0.0"),
+      getPlatform: vi.fn().mockResolvedValue("win32"),
+      onMediaKey: vi.fn(),
+      removeMediaKeyListener: vi.fn(),
+    };
+
+    try {
+      const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
+      const parsed = new URL(loginUrl);
+
+      expect(parsed.origin).toBe("https://www.darkfloor.one");
+      expect(parsed.pathname).toBe("/api/auth/spotify");
+      expect(parsed.searchParams.get("frontend_redirect_uri")).toBe(
+        "darkfloor://auth/callback",
+      );
+      expect(parsed.searchParams.get("trace")).toBeNull();
+    } finally {
+      if (originalElectron) {
+        window.electron = originalElectron;
+      } else {
+        delete window.electron;
+      }
+    }
+  });
+
   it("builds browser sign-in shim URL with callback and trace", () => {
     window.history.replaceState({}, "", "/signin");
     const signInUrl = buildSpotifyBrowserSignInUrl("/playlists?tab=mine");

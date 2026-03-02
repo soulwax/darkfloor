@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-02
+
+### Fixed
+
+- **Electron Spotify login URL now enforces backend deep-link callback flow**: `buildSpotifyLoginUrl` now returns `https://www.darkfloor.one/api/auth/spotify?frontend_redirect_uri=darkfloor://auth/callback` when running inside Electron, so native auth starts use the backend endpoint and deep-link callback transport.
+
 ## [1.2.1] - 2026-03-02
 
 ### Changed
