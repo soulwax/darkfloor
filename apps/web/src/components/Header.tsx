@@ -4,12 +4,21 @@
 
 import { SearchSuggestionsList } from "@/components/SearchSuggestionsList";
 import { useGuestModal } from "@/contexts/GuestModalContext";
+import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useSearchSuggestions } from "@/hooks/useSearchSuggestions";
 import { normalizeHealthStatus } from "@/utils/healthStatus";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SearchSuggestionItem } from "@starchild/types/searchSuggestions";
-import { BarChart3, Home, Library, Music2, Search } from "lucide-react";
+import {
+  BarChart3,
+  Home,
+  Library,
+  Maximize2,
+  Minimize2,
+  Music2,
+  Search,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -36,6 +45,7 @@ export default function Header() {
   const headerSearchInputRef = useRef<HTMLInputElement>(null);
   const desktopHeaderRef = useRef<HTMLElement>(null);
   const searchBlurTimerRef = useRef<number | null>(null);
+  const { compactMode, toggleCompactMode } = useCompactModePreference();
 
   useEffect(() => {
     const healthUrls = ["/api/v2/status", "/api/v2/health"];
@@ -297,61 +307,97 @@ export default function Header() {
       }}
       suppressHydrationWarning
     >
-      <div className="theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_minmax(210px,auto)] items-center gap-3 rounded-[1.25rem] border py-2 backdrop-blur-xl">
-        <div className="electron-no-drag relative flex items-center justify-center">
-          <form
-            className="electron-header-search flex h-11 w-[90%] items-center gap-2.5 rounded-full border px-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitHeaderSearch(searchText);
-              setIsSearchFocused(false);
-              setActiveSuggestionIndex(-1);
-            }}
+      <div
+        className={`theme-chrome-header electron-header-main relative z-10 grid items-center rounded-[1.25rem] border backdrop-blur-xl ${
+          compactMode
+            ? "grid-cols-[minmax(0,1fr)_minmax(168px,auto)] gap-2 py-1.5"
+            : "grid-cols-[minmax(0,1fr)_minmax(210px,auto)] gap-3 py-2"
+        }`}
+      >
+        <div className="electron-no-drag relative flex items-center gap-2 px-2 sm:px-3">
+          <button
+            type="button"
+            onClick={toggleCompactMode}
+            aria-label={
+              compactMode ? "Switch to expanded view" : "Switch to compact view"
+            }
+            aria-pressed={compactMode}
+            title={compactMode ? "Expanded view" : "Compact view"}
+            className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all ${
+              compactMode
+                ? "border-[rgba(88,198,177,0.45)] bg-[rgba(88,198,177,0.2)] text-[var(--color-text)]"
+                : "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[var(--color-subtext)] hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
+            }`}
           >
-            <Search className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
-            <input
-              ref={headerSearchInputRef}
-              value={searchText}
-              onChange={(event) => {
-                setSearchText(event.target.value);
+            {compactMode ? (
+              <Maximize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Minimize2 className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden 2xl:inline">
+              {compactMode ? "Expanded" : "Compact"}
+            </span>
+          </button>
+
+          <div className="relative min-w-0 flex-1">
+            <form
+              className={`electron-header-search flex w-full items-center gap-2.5 rounded-full border px-3 ${
+                compactMode ? "h-10" : "h-11"
+              }`}
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitHeaderSearch(searchText);
+                setIsSearchFocused(false);
                 setActiveSuggestionIndex(-1);
               }}
-              onFocus={() => {
-                if (searchBlurTimerRef.current !== null) {
-                  window.clearTimeout(searchBlurTimerRef.current);
-                  searchBlurTimerRef.current = null;
-                }
-                setIsSearchFocused(true);
-              }}
-              onBlur={() => {
-                searchBlurTimerRef.current = window.setTimeout(() => {
-                  setIsSearchFocused(false);
-                  setActiveSuggestionIndex(-1);
-                }, 120);
-              }}
-              onKeyDown={handleSearchKeyDown}
-              className="h-8 min-w-0 flex-1 bg-transparent text-sm leading-none text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none"
-              placeholder="Search for songs, artists, or albums..."
-              aria-label="Search music"
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-3 text-xs leading-none font-bold text-[var(--color-on-accent)] transition-all hover:brightness-110 active:scale-[0.98]"
             >
-              <Search className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline">Search</span>
-            </button>
-          </form>
-          {showSuggestions && (
-            <SearchSuggestionsList
-              suggestions={suggestions}
-              activeIndex={activeSuggestionIndex}
-              onActiveIndexChange={setActiveSuggestionIndex}
-              onSelect={selectSuggestion}
-              className="absolute top-[calc(100%+0.4rem)] right-0 left-0 z-40"
-            />
-          )}
+              <Search className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+              <input
+                ref={headerSearchInputRef}
+                value={searchText}
+                onChange={(event) => {
+                  setSearchText(event.target.value);
+                  setActiveSuggestionIndex(-1);
+                }}
+                onFocus={() => {
+                  if (searchBlurTimerRef.current !== null) {
+                    window.clearTimeout(searchBlurTimerRef.current);
+                    searchBlurTimerRef.current = null;
+                  }
+                  setIsSearchFocused(true);
+                }}
+                onBlur={() => {
+                  searchBlurTimerRef.current = window.setTimeout(() => {
+                    setIsSearchFocused(false);
+                    setActiveSuggestionIndex(-1);
+                  }, 120);
+                }}
+                onKeyDown={handleSearchKeyDown}
+                className="h-8 min-w-0 flex-1 bg-transparent text-sm leading-none text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none"
+                placeholder="Search for songs, artists, or albums..."
+                aria-label="Search music"
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-3 text-xs leading-none font-bold text-[var(--color-on-accent)] transition-all hover:brightness-110 active:scale-[0.98]"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className={compactMode ? "hidden" : "hidden lg:inline"}>
+                  Search
+                </span>
+              </button>
+            </form>
+            {showSuggestions && (
+              <SearchSuggestionsList
+                suggestions={suggestions}
+                activeIndex={activeSuggestionIndex}
+                onActiveIndexChange={setActiveSuggestionIndex}
+                onSelect={selectSuggestion}
+                className="absolute top-[calc(100%+0.4rem)] right-0 left-0 z-40"
+              />
+            )}
+          </div>
         </div>
 
         <div className="electron-no-drag flex min-w-0 items-center justify-end gap-2">
@@ -364,7 +410,9 @@ export default function Header() {
             }`}
           >
             <Home className="h-3.5 w-3.5" />
-            <span className="hidden xl:inline">Home</span>
+            <span className={compactMode ? "hidden" : "hidden xl:inline"}>
+              Home
+            </span>
           </Link>
           <Link
             href="/library"
@@ -375,7 +423,9 @@ export default function Header() {
             }`}
           >
             <Library className="h-3.5 w-3.5" />
-            <span className="hidden xl:inline">Library</span>
+            <span className={compactMode ? "hidden" : "hidden xl:inline"}>
+              Library
+            </span>
           </Link>
           <button
             type="button"
@@ -389,7 +439,9 @@ export default function Header() {
             } disabled:cursor-default`}
           >
             <Music2 className="h-3.5 w-3.5" />
-            <span className="hidden 2xl:inline">Greeter</span>
+            <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
+              Greeter
+            </span>
           </button>
           {!isElectronRuntime && (
             <a
@@ -400,10 +452,12 @@ export default function Header() {
               className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs font-semibold text-[var(--color-subtext)] transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
             >
               <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden 2xl:inline">Analyse</span>
+              <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
+                Analyse
+              </span>
             </a>
           )}
-          {apiHealthy !== null && (
+          {!compactMode && apiHealthy !== null && (
             <div
               className="api-health-pill hidden items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] px-2 py-0.5 text-xs text-[var(--color-subtext)] 2xl:flex"
               aria-label="API health status"

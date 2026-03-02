@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-01
+
+### Added
+
+- **Desktop compact view toggle in header search row**: Added a compact/expanded toggle control on the left side of the desktop header search bar so users can switch layouts instantly. Locations: `apps/web/src/components/Header.tsx`, `apps/web/src/hooks/useCompactModePreference.ts`.
+
+### Changed
+
+- **Desktop shell layout responds to compact mode**: Compact mode now hides the desktop right rail and reduces shell chrome spacing for a cleaner minimal desktop surface while preserving sidebar and main content behavior. Location: `apps/web/src/components/DesktopShell.tsx`.
+- **Compact mode styling polish**: Added scoped compact desktop chrome/surface styles to tighten header/search density and overall visual rhythm without impacting mobile layouts. Location: `apps/web/src/styles/globals.css`.
+
 ## [1.1.12] - 2026-02-28
 
 ### Added
