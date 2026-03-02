@@ -44,7 +44,7 @@ describe("spotifyAuthClient", () => {
     expect(frontendRedirect).toContain("trace=");
   });
 
-  it("builds Electron login URL with backend deep-link callback", () => {
+  it("builds login URL with frontend callback URI in Electron runtime", () => {
     const originalElectron = window.electron;
     window.electron = {
       isElectron: true,
@@ -57,14 +57,14 @@ describe("spotifyAuthClient", () => {
 
     try {
       const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
-      const parsed = new URL(loginUrl);
+      const parsed = new URL(loginUrl, window.location.origin);
+      const frontendRedirect = parsed.searchParams.get("frontend_redirect_uri");
 
-      expect(parsed.origin).toBe("https://www.darkfloor.one");
+      expect(parsed.origin).toBe(expectedAuthOrigin());
       expect(parsed.pathname).toBe("/api/auth/spotify");
-      expect(parsed.searchParams.get("frontend_redirect_uri")).toBe(
-        "darkfloor://auth/callback",
-      );
-      expect(parsed.searchParams.get("trace")).toBeNull();
+      expect(frontendRedirect).toContain("/auth/spotify/callback");
+      expect(frontendRedirect).toContain("next=%2Fplaylists%3Ftab%3Dmine");
+      expect(frontendRedirect).toContain("trace=");
     } finally {
       if (originalElectron) {
         window.electron = originalElectron;
@@ -388,6 +388,9 @@ describe("spotifyAuthClient", () => {
           JSON.stringify({
             accessToken: "new-access-token",
             refreshToken: "new-refresh-token",
+            spotifyAccessToken: "spotify-token-rotated-1",
+            spotifyTokenType: "Bearer",
+            spotifyExpiresIn: 3600,
           }),
           {
             status: 200,
@@ -407,6 +410,16 @@ describe("spotifyAuthClient", () => {
 
     const refreshed = await refreshAccessToken();
     expect(refreshed).toBe("new-access-token");
+    const firstRefreshTokenState = JSON.parse(
+      window.sessionStorage.getItem("sb_spotify_auth_state_v1") ?? "{}",
+    ) as {
+      spotifyAccessToken?: string | null;
+      spotifyTokenType?: string;
+    };
+    expect(firstRefreshTokenState.spotifyAccessToken).toBe(
+      "spotify-token-rotated-1",
+    );
+    expect(firstRefreshTokenState.spotifyTokenType).toBe("Bearer");
 
     const refreshFetchCall = fetchMock.mock.calls[1] as
       | [RequestInfo | URL, RequestInit | undefined]
@@ -425,9 +438,16 @@ describe("spotifyAuthClient", () => {
       JSON.stringify({ refreshToken: "app-refresh-token-1" }),
     );
 
-    clearInMemoryAccessToken();
     const secondRefresh = await refreshAccessToken();
     expect(secondRefresh).toBe("next-access-token");
+    const secondRefreshTokenState = JSON.parse(
+      window.sessionStorage.getItem("sb_spotify_auth_state_v1") ?? "{}",
+    ) as {
+      spotifyAccessToken?: string | null;
+    };
+    expect(secondRefreshTokenState.spotifyAccessToken).toBe(
+      "spotify-token-rotated-1",
+    );
 
     const secondRefreshCall = fetchMock.mock.calls[2] as
       | [RequestInfo | URL, RequestInit | undefined]

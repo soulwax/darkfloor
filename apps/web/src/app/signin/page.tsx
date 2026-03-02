@@ -311,11 +311,7 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        if (
-                          provider.id === "spotify" &&
-                          typeof window !== "undefined" &&
-                          window.electron?.isElectron
-                        ) {
+                        if (provider.id === "spotify") {
                           startSpotifyLogin(callbackUrl);
                           return;
                         }

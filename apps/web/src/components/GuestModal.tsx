@@ -685,17 +685,7 @@ export function GuestModal({
               <button
                 type="button"
                 onClick={() => {
-                  if (
-                    typeof window !== "undefined" &&
-                    window.electron?.isElectron
-                  ) {
-                    startSpotifyLogin(callbackUrl);
-                    return;
-                  }
-
-                  void signIn("spotify", {
-                    callbackUrl: buildAuthCallbackUrl(callbackUrl, "spotify"),
-                  });
+                  startSpotifyLogin(callbackUrl);
                 }}
                 className="h-12 w-full rounded-xl border border-[#1DB954]/40 bg-[#1DB954]/15 px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:bg-[#1DB954]/20 sm:text-sm"
               >

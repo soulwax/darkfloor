@@ -5,6 +5,33 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-03-02
+
+### Changed
+
+- **Spotify sign-in now consistently uses backend OAuth start flow on web and Electron**: Spotify actions in sign-in page, auth modal, and guest modal now always navigate to `GET /api/auth/spotify?frontend_redirect_uri=...` instead of using NextAuth Spotify browser sign-in for non-Electron sessions.
+- **Spotify login URL builder now always emits frontend callback redirects**: `buildSpotifyLoginUrl` now always constructs callback URLs under `/auth/spotify/callback` with `next` and `trace` parameters, aligned with the backend contract.
+
+### Fixed
+
+- **Refresh response parsing now stores rotated Spotify token fields**: The frontend now reads `spotifyAccessToken`/`spotify_access_token`, token type, and expiry metadata from `/api/auth/spotify/refresh` responses and keeps Spotify token state in sync during token rotation.
+
+## [1.2.2] - 2026-03-02
+
+### Fixed
+
+- **Electron Spotify login URL now enforces backend deep-link callback flow**: `buildSpotifyLoginUrl` now returns `https://www.darkfloor.one/api/auth/spotify?frontend_redirect_uri=darkfloor://auth/callback` when running inside Electron, so native auth starts use the backend endpoint and deep-link callback transport.
+
+## [1.2.1] - 2026-03-02
+
+### Changed
+
+- **Electron Spotify auth start now targets backend deep-link flow**: In Electron runtime, Spotify login now starts from `https://www.darkfloor.one/api/auth/spotify` with `frontend_redirect_uri=darkfloor://auth/callback`, matching the backend-managed callback flow.
+
+### Fixed
+
+- **Electron sign-in surfaces now consistently use backend Spotify start URL**: Spotify sign-in actions from the sign-in page, auth modal, and guest modal now route through the same Electron-specific backend login flow instead of using the generic NextAuth browser sign-in path.
+
 ## [1.2.0] - 2026-03-01
 
 ### Added

@@ -143,11 +143,7 @@ export function AuthModal({
     });
 
     try {
-      if (
-        providerId === "spotify" &&
-        typeof window !== "undefined" &&
-        window.electron?.isElectron
-      ) {
+      if (providerId === "spotify") {
         startSpotifyLogin(callbackUrl);
         return;
       }
