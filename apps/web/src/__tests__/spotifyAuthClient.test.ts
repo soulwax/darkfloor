@@ -234,6 +234,25 @@ describe("spotifyAuthClient", () => {
     expect(getInMemoryAccessToken()).toBe("app-token-optional");
   });
 
+  it("accepts callback tokens from query params when hash transport is absent", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/auth/spotify/callback?next=%2Flibrary&access_token=app-token-query&token_type=Bearer&expires_in=3600",
+    );
+
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "user-query" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const result = await handleSpotifyCallbackHash();
+    expect(result.accessToken).toBe("app-token-query");
+    expect(getInMemoryAccessToken()).toBe("app-token-query");
+  });
+
   it("emits auth-required event and clears token on refresh 401", async () => {
     document.cookie = "sb_csrf_token=csrf-refresh-token; path=/";
     window.history.replaceState(
@@ -315,6 +334,83 @@ describe("spotifyAuthClient", () => {
     const refreshHeaders = new Headers(refreshInit.headers);
     expect(refreshHeaders.get("accept")).toBe("application/json");
     expect(refreshHeaders.get("x-csrf-token")).toBe("csrf-refresh-token");
+  });
+
+  it("refreshes access token using body refreshToken fallback without csrf cookie", async () => {
+    document.cookie = "sb_csrf_token=; Max-Age=0; path=/";
+
+    window.history.replaceState(
+      {},
+      "",
+      "/auth/spotify/callback?next=%2Flibrary#access_token=app-token-1&token_type=Bearer&expires_in=3600&refresh_token=app-refresh-token-1",
+    );
+
+    const fetchMock = vi.spyOn(global, "fetch");
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "user-1" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            accessToken: "new-access-token",
+            refreshToken: "new-refresh-token",
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ accessToken: "next-access-token" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    await handleSpotifyCallbackHash();
+    clearInMemoryAccessToken();
+
+    const refreshed = await refreshAccessToken();
+    expect(refreshed).toBe("new-access-token");
+
+    const refreshFetchCall = fetchMock.mock.calls[1] as
+      | [RequestInfo | URL, RequestInit | undefined]
+      | undefined;
+    expect(refreshFetchCall).toBeDefined();
+    if (!refreshFetchCall) {
+      throw new Error("Expected refresh request");
+    }
+
+    expect(refreshFetchCall[0]).toBe(expectedRefreshEndpoint());
+    const refreshInit = refreshFetchCall[1] ?? {};
+    const refreshHeaders = new Headers(refreshInit.headers);
+    expect(refreshHeaders.get("x-csrf-token")).toBeNull();
+    expect(refreshHeaders.get("content-type")).toBe("application/json");
+    expect(refreshInit.body).toBe(
+      JSON.stringify({ refreshToken: "app-refresh-token-1" }),
+    );
+
+    clearInMemoryAccessToken();
+    const secondRefresh = await refreshAccessToken();
+    expect(secondRefresh).toBe("next-access-token");
+
+    const secondRefreshCall = fetchMock.mock.calls[2] as
+      | [RequestInfo | URL, RequestInit | undefined]
+      | undefined;
+    expect(secondRefreshCall).toBeDefined();
+    if (!secondRefreshCall) {
+      throw new Error("Expected second refresh request");
+    }
+
+    const secondRefreshInit = secondRefreshCall[1] ?? {};
+    expect(secondRefreshInit.body).toBe(
+      JSON.stringify({ refreshToken: "new-refresh-token" }),
+    );
   });
 
   it("restores spotify session from sessionStorage without csrf cookie", async () => {

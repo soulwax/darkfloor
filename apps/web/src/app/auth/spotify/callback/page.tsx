@@ -20,6 +20,7 @@ function createEmptyHashPresence(): SpotifyCallbackDebugInfo["requiredHashKeys"]
     access_token: false,
     token_type: false,
     expires_in: false,
+    refresh_token: false,
     spotify_access_token: false,
     spotify_token_type: false,
     spotify_expires_in: false,

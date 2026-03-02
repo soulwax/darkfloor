@@ -15,6 +15,7 @@ const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
 const OAUTH_SESSION_COOKIE_NAME = "sb_spotify_oauth_sid";
 const EXPIRY_SKEW_MS = 15_000;
 const TOKEN_STATE_STORAGE_KEY = "sb_spotify_auth_state_v1";
+const REFRESH_TOKEN_STORAGE_KEY = "sb_spotify_refresh_token_v1";
 const LOGIN_TRACE_STORAGE_KEY = "sb_spotify_auth_trace_v1";
 const LOGOUT_MARKER_STORAGE_KEY = "sb_spotify_logout_marker_v1";
 
@@ -22,6 +23,7 @@ const HASH_TOKEN_KEYS = [
   "access_token",
   "token_type",
   "expires_in",
+  "refresh_token",
   "spotify_access_token",
   "spotify_token_type",
   "spotify_expires_in",
@@ -51,6 +53,7 @@ type HashTokenPayload = {
   accessToken: string;
   tokenType: string;
   expiresIn: number | null;
+  refreshToken: string | null;
   spotifyAccessToken: string | null;
   spotifyTokenType: string;
   spotifyExpiresIn: number | null;
@@ -148,6 +151,7 @@ function createDefaultHashKeyPresence(present = false): HashTokenPresence {
     access_token: present,
     token_type: present,
     expires_in: present,
+    refresh_token: present,
     spotify_access_token: present,
     spotify_token_type: present,
     spotify_expires_in: present,
@@ -217,6 +221,23 @@ function readStoredTraceId(): string | null {
 function clearStoredTraceId(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(LOGIN_TRACE_STORAGE_KEY);
+}
+
+function persistRefreshToken(refreshToken: string): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+}
+
+function readStoredRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const value = window.sessionStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+  if (!value || value.trim().length === 0) return null;
+  return value;
+}
+
+function clearStoredRefreshToken(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
 }
 
 function markSpotifyLoggedOut(): void {
@@ -423,9 +444,21 @@ function resolvePostAuthPath(path: string): string {
   return path === "/" ? DEFAULT_POST_AUTH_PATH : path;
 }
 
-function parseHashTokens(hash: string): HashTokenParseResult {
+function parseHashTokens(hash: string, search = ""): HashTokenParseResult {
   const fragment = hash.startsWith("#") ? hash.slice(1) : hash;
-  if (!fragment) {
+  const query = search.startsWith("?") ? search.slice(1) : search;
+  const hashParams = new URLSearchParams(fragment);
+  const queryParams = new URLSearchParams(query);
+
+  const readParam = (key: string): string | null => {
+    const fromHash = hashParams.get(key);
+    if (fromHash && fromHash.trim().length > 0) return fromHash;
+    const fromQuery = queryParams.get(key);
+    if (fromQuery && fromQuery.trim().length > 0) return fromQuery;
+    return null;
+  };
+
+  if (hashParams.size === 0 && queryParams.size === 0) {
     return {
       payload: null,
       keyPresence: createDefaultHashKeyPresence(false),
@@ -433,11 +466,10 @@ function parseHashTokens(hash: string): HashTokenParseResult {
     };
   }
 
-  const params = new URLSearchParams(fragment);
   const keyPresence = createDefaultHashKeyPresence(false);
 
   for (const key of HASH_TOKEN_KEYS) {
-    const value = params.get(key);
+    const value = readParam(key);
     keyPresence[key] = typeof value === "string" && value.trim().length > 0;
   }
 
@@ -453,20 +485,25 @@ function parseHashTokens(hash: string): HashTokenParseResult {
     };
   }
 
-  const spotifyAccessTokenRaw = params.get("spotify_access_token");
+  const spotifyAccessTokenRaw = readParam("spotify_access_token");
+  const refreshTokenRaw = readParam("refresh_token");
 
   return {
     payload: {
-      accessToken: params.get("access_token") ?? "",
-      tokenType: params.get("token_type") ?? "Bearer",
-      expiresIn: parseExpiresIn(params.get("expires_in")),
+      accessToken: readParam("access_token") ?? "",
+      tokenType: readParam("token_type") ?? "Bearer",
+      expiresIn: parseExpiresIn(readParam("expires_in")),
+      refreshToken:
+        typeof refreshTokenRaw === "string" && refreshTokenRaw.trim().length > 0
+          ? refreshTokenRaw
+          : null,
       spotifyAccessToken:
         typeof spotifyAccessTokenRaw === "string" &&
         spotifyAccessTokenRaw.trim().length > 0
           ? spotifyAccessTokenRaw
           : null,
-      spotifyTokenType: params.get("spotify_token_type") ?? "Bearer",
-      spotifyExpiresIn: parseExpiresIn(params.get("spotify_expires_in")),
+      spotifyTokenType: readParam("spotify_token_type") ?? "Bearer",
+      spotifyExpiresIn: parseExpiresIn(readParam("spotify_expires_in")),
     },
     keyPresence,
     missingKeys,
@@ -746,6 +783,7 @@ export function clearSpotifyBrowserSessionArtifacts(): void {
   markSpotifyLoggedOut();
   clearInMemoryAccessToken();
   clearStoredTraceId();
+  clearStoredRefreshToken();
 
   if (typeof window === "undefined") return;
 
@@ -776,6 +814,7 @@ function notifyAuthRequired(reason: AuthRequiredReason): void {
 
 function handleUnauthorized(reason: AuthRequiredReason): void {
   clearInMemoryAccessToken();
+  clearStoredRefreshToken();
   notifyAuthRequired(reason);
 }
 
@@ -849,6 +888,22 @@ type RefreshAccessTokenOptions = {
   notifyOnUnauthorized?: boolean;
 };
 
+function getRefreshTokenFromBody(body: unknown): string | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+
+  const record = body as Record<string, unknown>;
+  const refreshToken =
+    typeof record.refreshToken === "string"
+      ? record.refreshToken
+      : typeof record.refresh_token === "string"
+        ? record.refresh_token
+        : null;
+
+  return refreshToken && refreshToken.trim().length > 0 ? refreshToken : null;
+}
+
 export async function refreshAccessToken(
   options: RefreshAccessTokenOptions = {},
 ): Promise<string> {
@@ -860,7 +915,13 @@ export async function refreshAccessToken(
   const notifyOnUnauthorized = options.notifyOnUnauthorized ?? true;
   const refreshEndpoint = buildAuthEndpoint("/api/auth/spotify/refresh");
   const csrfToken = getCsrfTokenFromCookies();
-  if (!csrfToken) {
+  const storedRefreshToken = readStoredRefreshToken();
+  const useBodyRefreshToken =
+    !csrfToken &&
+    typeof storedRefreshToken === "string" &&
+    storedRefreshToken.length > 0;
+
+  if (!csrfToken && !useBodyRefreshToken) {
     if (notifyOnUnauthorized) {
       handleUnauthorized("missing_csrf_token");
     } else {
@@ -874,15 +935,30 @@ export async function refreshAccessToken(
 
   logAuthClientDebug("Refreshing Spotify app access token", {
     endpoint: refreshEndpoint,
-    csrfTokenPresent: true,
+    csrfTokenPresent: Boolean(csrfToken),
+    bodyRefreshTokenPresent: useBodyRefreshToken,
   });
+
+  const headers = new Headers({
+    Accept: "application/json",
+  });
+  let requestBody: string | undefined;
+
+  if (csrfToken) {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
+
+  if (useBodyRefreshToken) {
+    headers.set("Content-Type", "application/json");
+    requestBody = JSON.stringify({
+      refreshToken: storedRefreshToken,
+    });
+  }
 
   const response = await fetch(refreshEndpoint, {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "X-CSRF-Token": csrfToken,
-    },
+    headers,
+    ...(requestBody ? { body: requestBody } : {}),
     credentials: "include",
     cache: "no-store",
   });
@@ -915,10 +991,16 @@ export async function refreshAccessToken(
     );
   }
 
+  const rotatedRefreshToken = getRefreshTokenFromBody(body);
+  if (rotatedRefreshToken) {
+    persistRefreshToken(rotatedRefreshToken);
+  }
+
   setTokenState({
     accessToken: tokenPayload.accessToken,
     tokenType: tokenPayload.tokenType,
     expiresIn: tokenPayload.expiresIn,
+    refreshToken: null,
     spotifyAccessToken: tokenState.spotifyAccessToken,
     spotifyTokenType: tokenState.spotifyTokenType,
     spotifyExpiresIn: null,
@@ -964,7 +1046,7 @@ export async function handleSpotifyCallbackHash(): Promise<CallbackResult> {
   }
 
   const traceId = getTraceIdFromCallbackUrl();
-  const parsed = parseHashTokens(window.location.hash);
+  const parsed = parseHashTokens(window.location.hash, window.location.search);
 
   if (!parsed.payload) {
     const authMeEndpoint = buildAuthEndpoint("/api/auth/me");
@@ -996,6 +1078,9 @@ export async function handleSpotifyCallbackHash(): Promise<CallbackResult> {
   });
 
   clearSpotifyLoggedOutMarker();
+  if (parsed.payload.refreshToken) {
+    persistRefreshToken(parsed.payload.refreshToken);
+  }
   setTokenState(parsed.payload);
 
   const cleanUrl = `${window.location.pathname}${window.location.search}`;
@@ -1035,7 +1120,7 @@ export async function restoreSpotifySession(): Promise<boolean> {
   }
 
   const csrfToken = getCsrfTokenFromCookies();
-  if (!csrfToken) {
+  if (!csrfToken && !readStoredRefreshToken()) {
     clearInMemoryAccessToken();
     return false;
   }

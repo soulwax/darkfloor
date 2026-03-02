@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
+import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { localStorage as appStorage } from "@/services/storage";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { parsePreferredGenreId } from "@/utils/genre";
@@ -171,8 +172,7 @@ export function GuestModal({
   const [genreMenuDirection, setGenreMenuDirection] = useState<"down" | "up">(
     "down",
   );
-  const [showFirefoxVisualsOptIn, setShowFirefoxVisualsOptIn] =
-    useState(false);
+  const [showFirefoxVisualsOptIn, setShowFirefoxVisualsOptIn] = useState(false);
   const [firefoxVisualsOptedIn, setFirefoxVisualsOptedIn] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number>(0);
   const [viewportWidth, setViewportWidth] = useState<number>(0);
@@ -303,7 +303,9 @@ export function GuestModal({
     if (!genreMenuRect) return undefined;
 
     const boundedViewportWidth =
-      viewportWidth > 0 ? viewportWidth : genreMenuRect.width + 2 * GENRE_MENU_HORIZONTAL_PADDING;
+      viewportWidth > 0
+        ? viewportWidth
+        : genreMenuRect.width + 2 * GENRE_MENU_HORIZONTAL_PADDING;
     const maxMenuWidth = Math.max(
       boundedViewportWidth - GENRE_MENU_HORIZONTAL_PADDING * 2,
       160,
@@ -346,7 +348,7 @@ export function GuestModal({
       ? createPortal(
           <>
             <div
-              className="fixed inset-0 z-[240] pointer-events-auto"
+              className="pointer-events-auto fixed inset-0 z-[240]"
               onClick={closeGenreMenu}
               aria-hidden="true"
             />
@@ -457,7 +459,8 @@ export function GuestModal({
 
       const nextViewportHeight = window.innerHeight;
       const nextViewportWidth = window.innerWidth;
-      const spaceBelow = nextViewportHeight - rect.bottom - GENRE_MENU_VERTICAL_OFFSET;
+      const spaceBelow =
+        nextViewportHeight - rect.bottom - GENRE_MENU_VERTICAL_OFFSET;
       const spaceAbove = rect.top - GENRE_MENU_VERTICAL_OFFSET;
       const nextDirection =
         spaceBelow < 280 && spaceAbove > spaceBelow ? "up" : "down";
@@ -681,7 +684,19 @@ export function GuestModal({
 
               <button
                 type="button"
-                onClick={() => void signIn("spotify", { callbackUrl: buildAuthCallbackUrl(callbackUrl, "spotify") })}
+                onClick={() => {
+                  if (
+                    typeof window !== "undefined" &&
+                    window.electron?.isElectron
+                  ) {
+                    startSpotifyLogin(callbackUrl);
+                    return;
+                  }
+
+                  void signIn("spotify", {
+                    callbackUrl: buildAuthCallbackUrl(callbackUrl, "spotify"),
+                  });
+                }}
                 className="h-12 w-full rounded-xl border border-[#1DB954]/40 bg-[#1DB954]/15 px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:bg-[#1DB954]/20 sm:text-sm"
               >
                 Use Spotify instead
