@@ -320,6 +320,12 @@ describe("MobilePlayer - Integrated Controls", () => {
       queueId: `q-${i}`,
       queueSource: "user",
     }));
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: vi.fn(() => Promise.resolve()),
+      },
+      configurable: true,
+    });
     vi.clearAllMocks();
   });
 
@@ -360,23 +366,51 @@ describe("MobilePlayer - Integrated Controls", () => {
       expect(favoriteButton).toBeInTheDocument();
     });
 
-    it("displays all three action buttons in a row", () => {
+    it("renders share button within the main controls section", () => {
+      render(<MobilePlayer {...defaultProps} />);
+
+      const shareButton = screen.getByLabelText("Share track");
+      expect(shareButton).toBeInTheDocument();
+    });
+
+    it("displays all four action buttons in a row", () => {
       render(<MobilePlayer {...defaultProps} />);
 
       const queueButton = screen.getByLabelText("Show queue");
       const playlistButton = screen.getByLabelText(
         "Sign in to add to playlists",
       );
+      const shareButton = screen.getByLabelText("Share track");
       const favoriteButton = screen.getByLabelText(
         "Sign in to favorite tracks",
       );
 
       const queueParent = queueButton.closest('[class*="flex"]');
       const playlistParent = playlistButton.closest('[class*="flex"]');
+      const shareParent = shareButton.closest('[class*="flex"]');
       const favoriteParent = favoriteButton.closest('[class*="flex"]');
 
       expect(queueParent).toBe(playlistParent);
+      expect(playlistParent).toBe(shareParent);
       expect(playlistParent).toBe(favoriteParent);
+    });
+
+    it("copies title+artist+album search URL when share button is clicked", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      Object.defineProperty(navigator, "clipboard", {
+        value: { writeText },
+        configurable: true,
+      });
+
+      render(<MobilePlayer {...defaultProps} />);
+
+      fireEvent.click(screen.getByLabelText("Share track"));
+
+      await waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith(
+          `${window.location.origin}/?q=Test%20Track+Test%20Artist+Test%20Album`,
+        );
+      });
     });
   });
 
@@ -602,6 +636,7 @@ describe("MobilePlayer - Integrated Controls", () => {
       expect(
         screen.getByLabelText("Sign in to add to playlists"),
       ).toBeInTheDocument();
+      expect(screen.getByLabelText("Share track")).toBeInTheDocument();
       expect(
         screen.getByLabelText("Sign in to favorite tracks"),
       ).toBeInTheDocument();

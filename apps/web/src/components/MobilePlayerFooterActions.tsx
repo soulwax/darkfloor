@@ -3,7 +3,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ListMusic, ListPlus } from "lucide-react";
+import { Heart, ListMusic, ListPlus, Share2 } from "lucide-react";
 
 export interface MobilePlayerPlaylistOption {
   id: number;
@@ -22,6 +22,7 @@ export interface MobilePlayerFooterActionsProps {
   playlists?: MobilePlayerPlaylistOption[] | null;
   onAddToPlaylist: (playlistId: number) => void;
   isAddingToPlaylist: boolean;
+  onShare: () => void;
   favoriteIsActive: boolean;
   favoriteDisabled: boolean;
   isHeartAnimating: boolean;
@@ -39,6 +40,7 @@ export function MobilePlayerFooterActions({
   playlists,
   onAddToPlaylist,
   isAddingToPlaylist,
+  onShare,
   favoriteIsActive,
   favoriteDisabled,
   isHeartAnimating,
@@ -142,6 +144,16 @@ export function MobilePlayerFooterActions({
           )}
         </AnimatePresence>
       </div>
+
+      <motion.button
+        onClick={onShare}
+        whileTap={{ scale: 0.9 }}
+        className="touch-target text-[var(--color-subtext)] transition-all"
+        title="Share track"
+        aria-label="Share track"
+      >
+        <Share2 className="h-5 w-5" />
+      </motion.button>
 
       <motion.button
         onClick={onToggleFavorite}

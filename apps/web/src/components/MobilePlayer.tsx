@@ -971,6 +971,33 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     setTimeout(() => setIsHeartAnimating(false), 600);
   };
 
+  const handleShareTrack = useCallback(async () => {
+    if (!currentTrack) return;
+
+    const queryParts = [
+      currentTrack.title?.trim(),
+      currentTrack.artist?.name?.trim(),
+      currentTrack.album?.title?.trim(),
+    ].filter((value): value is string => typeof value === "string" && value.length > 0);
+
+    if (queryParts.length === 0) {
+      showToast("Track details unavailable for sharing", "error");
+      return;
+    }
+
+    const query = queryParts.map((part) => encodeURIComponent(part)).join("+");
+    const shareUrl = `${window.location.origin}/?q=${query}`;
+
+    hapticLight();
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("Share link copied to clipboard!", "success");
+    } catch (error) {
+      console.error("Failed to copy share link:", error);
+      showToast("Failed to copy share link", "error");
+    }
+  }, [currentTrack, showToast]);
+
   useEffect(() => {
     if (isExpanded) {
       document.body.style.overflow = "hidden";
@@ -2036,6 +2063,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             }
                           }}
                           isAddingToPlaylist={addToPlaylist.isPending}
+                          onShare={() => {
+                            void handleShareTrack();
+                          }}
                           favoriteIsActive={Boolean(favoriteData?.isFavorite)}
                           favoriteDisabled={
                             !isAuthenticated ||
