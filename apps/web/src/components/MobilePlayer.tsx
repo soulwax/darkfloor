@@ -494,6 +494,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
   const [, setVisualizerEnabled] = useState(true);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  const [isShareCopied, setIsShareCopied] = useState(false);
   const [albumColorPalette, setAlbumColorPalette] =
     useState<ColorPalette | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
@@ -527,6 +528,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const queueScrollTrackRef = useRef<HTMLDivElement>(null);
   const queueScrollThumbRef = useRef<HTMLDivElement>(null);
   const queueScrollRafRef = useRef<number | null>(null);
+  const shareFeedbackTimeoutRef = useRef<number | null>(null);
   const queueScrollbarVisibleRef = useRef(false);
   const queueThumbHeightRef = useRef(0);
   const queueScrollDragRef = useRef<{ active: boolean; startY: number; startScrollTop: number }>({
@@ -954,6 +956,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       if (queueUndoState) {
         clearTimeout(queueUndoState.timerId);
       }
+      if (shareFeedbackTimeoutRef.current !== null) {
+        clearTimeout(shareFeedbackTimeoutRef.current);
+      }
     };
   }, [longPressTimer, queueUndoState]);
 
@@ -988,12 +993,23 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     const query = queryParts.map((part) => encodeURIComponent(part)).join("+");
     const shareUrl = `${window.location.origin}/?q=${query}`;
 
+    if (shareFeedbackTimeoutRef.current !== null) {
+      clearTimeout(shareFeedbackTimeoutRef.current);
+      shareFeedbackTimeoutRef.current = null;
+    }
+
     hapticLight();
     try {
       await navigator.clipboard.writeText(shareUrl);
+      setIsShareCopied(true);
+      shareFeedbackTimeoutRef.current = window.setTimeout(() => {
+        setIsShareCopied(false);
+        shareFeedbackTimeoutRef.current = null;
+      }, 1400);
       showToast("Share link copied to clipboard!", "success");
     } catch (error) {
       console.error("Failed to copy share link:", error);
+      setIsShareCopied(false);
       showToast("Failed to copy share link", "error");
     }
   }, [currentTrack, showToast]);
@@ -2066,6 +2082,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           onShare={() => {
                             void handleShareTrack();
                           }}
+                          shareCopied={isShareCopied}
                           favoriteIsActive={Boolean(favoriteData?.isFavorite)}
                           favoriteDisabled={
                             !isAuthenticated ||

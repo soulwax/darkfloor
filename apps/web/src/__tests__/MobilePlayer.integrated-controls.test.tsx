@@ -404,11 +404,17 @@ describe("MobilePlayer - Integrated Controls", () => {
 
       render(<MobilePlayer {...defaultProps} />);
 
-      fireEvent.click(screen.getByLabelText("Share track"));
+      const shareButton = screen.getByLabelText("Share track");
+      expect(shareButton).toHaveAttribute("title", "Share track");
+      fireEvent.click(shareButton);
 
       await waitFor(() => {
         expect(writeText).toHaveBeenCalledWith(
           `${window.location.origin}/?q=Test%20Track+Test%20Artist+Test%20Album`,
+        );
+        expect(screen.getByLabelText("Share track")).toHaveAttribute(
+          "title",
+          "Copied!",
         );
       });
     });
