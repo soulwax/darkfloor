@@ -6,11 +6,13 @@
 const OAUTH_PROVIDERS = {
   discord: {
     name: "Discord",
+    authSource: "nextauth",
     buttonStyle:
       "bg-[#5865F2] text-white hover:brightness-110 active:brightness-95",
   },
   spotify: {
     name: "Spotify",
+    authSource: "backend",
     buttonStyle:
       "bg-[#1DB954] text-white hover:brightness-110 active:brightness-95",
   },
@@ -19,6 +21,18 @@ const OAUTH_PROVIDERS = {
 export type SupportedOAuthProviderId = keyof typeof OAUTH_PROVIDERS;
 
 type OAuthProviderConfig = (typeof OAUTH_PROVIDERS)[SupportedOAuthProviderId];
+type OAuthRuntimeProvider = {
+  id: string;
+  name: string;
+  type: string;
+};
+
+export type OAuthProviderAuthSource = OAuthProviderConfig["authSource"];
+export type EnabledOAuthUiProvider = {
+  id: SupportedOAuthProviderId;
+  name: string;
+  authSource: OAuthProviderAuthSource;
+};
 
 /**
  * Button styles mapped by provider ID (derived from OAUTH_PROVIDERS)
@@ -60,6 +74,50 @@ export function isEnabledOAuthProvider<T extends { id: string; type: string }>(
   provider: T,
 ): provider is T & { id: SupportedOAuthProviderId; type: "oauth" } {
   return provider.type === "oauth" && isEnabledOAuthProviderId(provider.id);
+}
+
+export function isBackendManagedOAuthProviderId(
+  providerId: string,
+): providerId is SupportedOAuthProviderId {
+  return (
+    isEnabledOAuthProviderId(providerId) &&
+    OAUTH_PROVIDERS[providerId].authSource === "backend"
+  );
+}
+
+export function getEnabledOAuthUiProviders(
+  providers?: Record<string, OAuthRuntimeProvider> | null,
+): EnabledOAuthUiProvider[] {
+  const resolved: EnabledOAuthUiProvider[] = [];
+  const seen = new Set<SupportedOAuthProviderId>();
+
+  if (providers) {
+    for (const provider of Object.values(providers)) {
+      if (!isEnabledOAuthProvider(provider)) continue;
+
+      resolved.push({
+        id: provider.id,
+        name: provider.name || OAUTH_PROVIDERS[provider.id].name,
+        authSource: OAUTH_PROVIDERS[provider.id].authSource,
+      });
+      seen.add(provider.id);
+    }
+  }
+
+  for (const providerId of ENABLED_OAUTH_PROVIDER_IDS) {
+    if (seen.has(providerId)) continue;
+
+    const config = OAUTH_PROVIDERS[providerId];
+    if (config.authSource !== "backend") continue;
+
+    resolved.push({
+      id: providerId,
+      name: config.name,
+      authSource: config.authSource,
+    });
+  }
+
+  return resolved;
 }
 
 /**

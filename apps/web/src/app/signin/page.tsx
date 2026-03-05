@@ -4,8 +4,9 @@
 
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import {
+  getEnabledOAuthUiProviders,
   getOAuthProviderButtonStyle,
-  isEnabledOAuthProvider,
+  isBackendManagedOAuthProviderId,
 } from "@/config/oauthProviders";
 import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { localStorage as appStorage } from "@/services/storage";
@@ -132,8 +133,7 @@ function SignInContent() {
   }, []);
 
   const oauthProviders = useMemo(() => {
-    if (!providers) return [];
-    return Object.values(providers).filter(isEnabledOAuthProvider);
+    return getEnabledOAuthUiProviders(providers);
   }, [providers]);
   const submittingProvider = useMemo(
     () =>
@@ -284,7 +284,7 @@ function SignInContent() {
         </section>
 
         <div className="mt-6">
-          {providers === null ? (
+          {providers === null && oauthProviders.length === 0 ? (
             <div className="flex items-center justify-center py-3">
               <div
                 role="status"
@@ -311,7 +311,7 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        if (provider.id === "spotify") {
+                        if (isBackendManagedOAuthProviderId(provider.id)) {
                           startSpotifyLogin(callbackUrl);
                           return;
                         }

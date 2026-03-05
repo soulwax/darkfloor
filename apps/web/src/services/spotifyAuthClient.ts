@@ -1,15 +1,18 @@
 // File: apps/web/src/services/spotifyAuthClient.ts
 
 import {
+  FRONTEND_SPOTIFY_CALLBACK_PATH,
+  SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
+  buildSpotifyFrontendRedirectUri,
+  resolveSpotifyPostAuthPath,
+} from "@/utils/spotifyAuthRedirect";
+import {
   isClientAuthDebugEnabled,
   logAuthClientDebug,
 } from "@/utils/authDebugClient";
 
 const DEFAULT_AUTH_API_ORIGIN = "https://www.darkfloor.one";
 const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/signin/spotify";
-const FRONTEND_SPOTIFY_CALLBACK_PATH = "/auth/spotify/callback";
-const DEFAULT_POST_AUTH_PATH = "/library";
-const FRONTEND_CALLBACK_TRACE_PARAM = "trace";
 const CSRF_COOKIE_NAME = "sb_csrf_token";
 const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
 const OAUTH_SESSION_COOKIE_NAME = "sb_spotify_oauth_sid";
@@ -259,7 +262,7 @@ function getTraceIdFromCallbackUrl(): string | null {
   if (typeof window === "undefined") return null;
 
   const searchTrace = new URLSearchParams(window.location.search).get(
-    FRONTEND_CALLBACK_TRACE_PARAM,
+    SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
   );
 
   if (searchTrace && searchTrace.trim().length > 0) {
@@ -417,31 +420,6 @@ function parseExpiresIn(value: string | null): number | null {
 function resolveExpiresAt(expiresInSeconds: number | null): number | null {
   if (!expiresInSeconds) return null;
   return Date.now() + expiresInSeconds * 1000;
-}
-
-function toSameOriginPath(pathOrUrl: string, origin: string): string {
-  if (!pathOrUrl) return "/";
-
-  if (pathOrUrl.startsWith("/")) {
-    return pathOrUrl.startsWith(FRONTEND_SPOTIFY_CALLBACK_PATH)
-      ? "/"
-      : pathOrUrl;
-  }
-
-  try {
-    const parsed = new URL(pathOrUrl);
-    if (parsed.origin !== origin) return "/";
-    const sameOriginPath =
-      `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
-    if (sameOriginPath.startsWith(FRONTEND_SPOTIFY_CALLBACK_PATH)) return "/";
-    return sameOriginPath;
-  } catch {
-    return "/";
-  }
-}
-
-function resolvePostAuthPath(path: string): string {
-  return path === "/" ? DEFAULT_POST_AUTH_PATH : path;
 }
 
 function parseHashTokens(hash: string, search = ""): HashTokenParseResult {
@@ -675,8 +653,7 @@ export function resolveFrontendRedirectPath(
   next: string | null | undefined,
 ): string {
   if (typeof window === "undefined") return "/";
-  const sameOriginPath = toSameOriginPath(next ?? "/", window.location.origin);
-  return resolvePostAuthPath(sameOriginPath);
+  return resolveSpotifyPostAuthPath(next, window.location.origin);
 }
 
 export function buildSpotifyFrontendCallbackUrl(
@@ -687,24 +664,19 @@ export function buildSpotifyFrontendCallbackUrl(
     throw new Error("buildSpotifyFrontendCallbackUrl must run in the browser");
   }
 
-  const safeNext = resolvePostAuthPath(
-    toSameOriginPath(nextPath, window.location.origin),
-  );
-  const callbackUrl = new URL(
-    FRONTEND_SPOTIFY_CALLBACK_PATH,
-    window.location.origin,
-  );
-  callbackUrl.searchParams.set("next", safeNext);
-  if (traceId) {
-    callbackUrl.searchParams.set(FRONTEND_CALLBACK_TRACE_PARAM, traceId);
-  }
+  const callbackUrl = buildSpotifyFrontendRedirectUri({
+    next: nextPath,
+    origin: window.location.origin,
+    traceId,
+  });
+  const safeNext = resolveSpotifyPostAuthPath(nextPath, window.location.origin);
   logSpotifyBrowserDebug("Built frontend Spotify callback URL", {
     requestedNextPath: nextPath,
     safeNextPath: safeNext,
     traceId,
-    callbackUrl: callbackUrl.toString(),
+    callbackUrl,
   });
-  return callbackUrl.toString();
+  return callbackUrl;
 }
 
 export function buildSpotifyLoginUrl(
@@ -740,15 +712,16 @@ export function buildSpotifyBrowserSignInUrl(
   }
 
   const effectiveTraceId = traceId ?? generateTraceId();
-  const safeNext = resolvePostAuthPath(
-    toSameOriginPath(nextPath, window.location.origin),
-  );
+  const safeNext = resolveSpotifyPostAuthPath(nextPath, window.location.origin);
   const signInUrl = new URL(
     SPOTIFY_BROWSER_SIGNIN_PATH,
     window.location.origin,
   );
   signInUrl.searchParams.set("callbackUrl", safeNext);
-  signInUrl.searchParams.set(FRONTEND_CALLBACK_TRACE_PARAM, effectiveTraceId);
+  signInUrl.searchParams.set(
+    SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
+    effectiveTraceId,
+  );
 
   logSpotifyBrowserDebug("Built browser Spotify sign-in shim URL", {
     requestedNextPath: nextPath,

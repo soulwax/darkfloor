@@ -72,7 +72,9 @@ describe("Spotify auth proxy routes", () => {
     const debugRoute = await loadGetRoute("@/app/api/auth/spotify/debug/route");
 
     await spotifyRoute.GET(
-      makeRequest("/api/auth/spotify?frontend_redirect_uri=http%3A%2F%2Flocalhost%3A3222%2Fauth%2Fspotify%2Fcallback"),
+      makeRequest(
+        "/api/auth/spotify?frontend_redirect_uri=http%3A%2F%2Flocalhost%3A3222%2Fauth%2Fspotify%2Fcallback",
+      ),
     );
     await callbackRoute.GET(
       makeRequest("/api/auth/spotify/callback?code=abc&state=123"),
@@ -88,9 +90,13 @@ describe("Spotify auth proxy routes", () => {
         headers: { authorization: "Bearer app-jwt-token" },
       }),
     );
-    await debugRoute.GET(makeRequest("/api/auth/spotify/debug?trace_id=trace-1"));
+    await debugRoute.GET(
+      makeRequest("/api/auth/spotify/debug?trace_id=trace-1"),
+    );
 
-    const paths = capturedRequests.map((request) => new URL(request.url).pathname);
+    const paths = capturedRequests.map(
+      (request) => new URL(request.url).pathname,
+    );
     expect(paths).toEqual([
       "/api/auth/spotify",
       "/api/auth/spotify/callback",
@@ -170,7 +176,8 @@ describe("Spotify auth proxy routes", () => {
       new Response(null, {
         status: 302,
         headers: {
-          location: "http://localhost:3222/auth/spotify/callback#access_token=abc",
+          location:
+            "http://localhost:3222/auth/spotify/callback#access_token=abc",
           "set-cookie":
             "sb_app_refresh_token=token; Path=/; HttpOnly, sb_csrf_token=csrf; Path=/",
         },
@@ -185,7 +192,9 @@ describe("Spotify auth proxy routes", () => {
     );
 
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toContain("/auth/spotify/callback");
+    expect(response.headers.get("location")).toContain(
+      "/auth/spotify/callback",
+    );
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("sb_app_refresh_token");
     expect(setCookie).toContain("sb_csrf_token");
@@ -210,6 +219,7 @@ describe("Spotify auth proxy routes", () => {
   });
 
   it("redirects legacy /api/auth/signin/spotify to canonical auth start", async () => {
+    vi.resetModules();
     const legacySignInRoute = await loadGetRoute(
       "@/app/api/auth/signin/spotify/route",
     );
@@ -237,7 +247,42 @@ describe("Spotify auth proxy routes", () => {
     expect(callbackUrl.searchParams.get("next")).toBe("/library");
   });
 
+  it("redirects legacy /api/auth/signin/spotify to configured auth origin", async () => {
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        NEXT_PUBLIC_AUTH_API_ORIGIN: "https://auth.example.com/",
+      },
+    }));
+
+    const legacySignInRoute = await loadGetRoute(
+      "@/app/api/auth/signin/spotify/route",
+    );
+
+    const response = await legacySignInRoute.GET(
+      makeRequest("/api/auth/signin/spotify?callbackUrl=%2Flibrary"),
+    );
+
+    const location = response.headers.get("location");
+    expect(location).toBeTruthy();
+
+    const redirectUrl = new URL(location ?? "http://localhost:3222/");
+    expect(redirectUrl.origin).toBe("https://auth.example.com");
+    expect(redirectUrl.pathname).toBe("/api/auth/spotify");
+
+    const frontendRedirectUri = redirectUrl.searchParams.get(
+      "frontend_redirect_uri",
+    );
+    const callbackUrl = new URL(
+      frontendRedirectUri ?? "http://localhost:3222/auth/spotify/callback",
+    );
+
+    expect(callbackUrl.origin).toBe("http://localhost:3222");
+    expect(callbackUrl.pathname).toBe("/auth/spotify/callback");
+  });
+
   it("sanitizes cross-origin callback URLs in legacy /api/auth/signin/spotify", async () => {
+    vi.resetModules();
     const legacySignInRoute = await loadGetRoute(
       "@/app/api/auth/signin/spotify/route",
     );
@@ -262,6 +307,7 @@ describe("Spotify auth proxy routes", () => {
   });
 
   it("supports POST on legacy /api/auth/signin/spotify shim", async () => {
+    vi.resetModules();
     const legacySignInRoute = await loadPostRoute(
       "@/app/api/auth/signin/spotify/route",
     );
@@ -288,6 +334,7 @@ describe("Spotify auth proxy routes", () => {
   });
 
   it("forwards trace query param through legacy /api/auth/signin/spotify shim", async () => {
+    vi.resetModules();
     const legacySignInRoute = await loadGetRoute(
       "@/app/api/auth/signin/spotify/route",
     );

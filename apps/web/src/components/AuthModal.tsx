@@ -3,8 +3,9 @@
 "use client";
 
 import {
+  getEnabledOAuthUiProviders,
   getOAuthProviderButtonStyle,
-  isEnabledOAuthProvider,
+  isBackendManagedOAuthProviderId,
 } from "@/config/oauthProviders";
 import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
@@ -105,8 +106,7 @@ export function AuthModal({
   }, [isOpen, onClose]);
 
   const oauthProviders = useMemo(() => {
-    if (!providers) return [];
-    return Object.values(providers).filter(isEnabledOAuthProvider);
+    return getEnabledOAuthUiProviders(providers);
   }, [providers]);
   const submittingProvider = useMemo(
     () =>
@@ -143,7 +143,7 @@ export function AuthModal({
     });
 
     try {
-      if (providerId === "spotify") {
+      if (isBackendManagedOAuthProviderId(providerId)) {
         startSpotifyLogin(callbackUrl);
         return;
       }
@@ -192,7 +192,7 @@ export function AuthModal({
               </p>
 
               <div className="mt-6 space-y-3">
-                {providers === null ? (
+                {providers === null && oauthProviders.length === 0 ? (
                   <div className="flex items-center justify-center py-4">
                     <div
                       role="status"

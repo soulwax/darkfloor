@@ -23,7 +23,6 @@ import {
   logAuthWarn,
   summarizeUrlForLog,
 } from "@starchild/auth";
-import { createSpotifyProvider } from "@starchild/auth/spotifyProvider";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -54,38 +53,34 @@ logAuthInfo("NextAuth config bootstrap", {
   hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
   authSpotifyEnabled: env.AUTH_SPOTIFY_ENABLED,
   publicAuthSpotifyEnabled: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,
+  spotifyOAuthOwner: "backend",
 });
 
-if (env.AUTH_SPOTIFY_ENABLED && !env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
+if (env.AUTH_SPOTIFY_ENABLED) {
   logAuthWarn(
-    "AUTH_SPOTIFY_ENABLED=true but NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=false",
+    "Spotify OAuth is backend-managed; NextAuth provider registration is skipped",
     {
       impact:
-        "Spotify is available on the server but can be hidden in client UI.",
+        "SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET are ignored by the web runtime.",
     },
   );
 }
 
 if (!env.AUTH_SPOTIFY_ENABLED && env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
   logAuthWarn(
-    "NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=true but AUTH_SPOTIFY_ENABLED=false",
+    "NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=true while Spotify OAuth is backend-managed",
     {
       impact:
-        "Spotify may appear in fallback UI while server-side sign-in remains disabled.",
-      fix:
-        "Set AUTH_SPOTIFY_ENABLED=true and provide SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET.",
+        "Spotify remains available through /api/auth/spotify and upstream backend auth routes.",
     },
   );
 }
 
-const spotifyProvider = createSpotifyProvider({
-  enabled: env.AUTH_SPOTIFY_ENABLED,
-  clientId: env.SPOTIFY_CLIENT_ID,
-  clientSecret: env.SPOTIFY_CLIENT_SECRET,
-});
-
 logAuthInfo("OAuth providers configured", {
-  providers: ["discord", ...(spotifyProvider ? ["spotify"] : [])],
+  providers: ["discord"],
+  backendManagedProviders: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED
+    ? ["spotify"]
+    : [],
 });
 
 export const authConfig = {
@@ -98,7 +93,6 @@ export const authConfig = {
       clientId: env.AUTH_DISCORD_ID,
       clientSecret: env.AUTH_DISCORD_SECRET,
     }),
-    ...(spotifyProvider ? [spotifyProvider] : []),
   ],
   adapter: DrizzleAdapter(db, {
     usersTable: users,
@@ -228,7 +222,8 @@ export const authConfig = {
             }
 
             if (profile.global_name || profile.username) {
-              updates.name = (profile.global_name ?? profile.username) as string;
+              updates.name = (profile.global_name ??
+                profile.username) as string;
             }
 
             if (Object.keys(updates).length > 0) {
@@ -380,14 +375,14 @@ export const authConfig = {
           userId: user?.id ?? null,
           provider: account?.provider ?? null,
           accountKeys: account ? Object.keys(account) : [],
-          profileKeys: profile && typeof profile === "object" ? Object.keys(profile) : [],
-          hasProfileEmail:
-            Boolean(
-              profile &&
-                typeof profile === "object" &&
-                "email" in profile &&
-                (profile as { email?: unknown }).email,
-            ),
+          profileKeys:
+            profile && typeof profile === "object" ? Object.keys(profile) : [],
+          hasProfileEmail: Boolean(
+            profile &&
+            typeof profile === "object" &&
+            "email" in profile &&
+            (profile as { email?: unknown }).email,
+          ),
         });
       }
     },
