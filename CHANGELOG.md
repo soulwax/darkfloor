@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Header `Analyse` action for browser users**: Added an `Analyse` button (bar-chart icon) in the desktop header between `Greeter` and `API Healthy`, linking to `https://analyse.darkfloor.org` in a new tab for mood/rhythm/danceability analysis tooling.
+- **Header `Analyse` action for browser users**: Added an `Analyse` button (bar-chart icon) in the desktop header between `Greeter` and `API Healthy`, linking to `https://analyze.darkfloor.org` in a new tab for mood/rhythm/danceability analysis tooling.
 
 ### Changed
 

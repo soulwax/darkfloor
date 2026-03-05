@@ -445,7 +445,7 @@ export default function Header() {
           </button>
           {!isElectronRuntime && (
             <a
-              href="https://analyse.darkfloor.org"
+              href="https://analyze.darkfloor.org"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Open Analyse tool"
