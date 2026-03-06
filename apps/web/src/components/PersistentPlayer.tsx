@@ -72,12 +72,8 @@ export default function PersistentPlayer() {
 
   const [showQueue, setShowQueue] = useState(false);
   const [showEqualizer, setShowEqualizer] = useState(false);
-  const [visualizerEnabled, setVisualizerEnabled] = useState(
-    getInitialVisualizerEnabledPreference,
-  );
-  const [showFpsCounter, setShowFpsCounter] = useState(() =>
-    settingsStorage.getSetting("showFpsCounter", false),
-  );
+  const [visualizerEnabled, setVisualizerEnabled] = useState(true);
+  const [showFpsCounter, setShowFpsCounter] = useState(false);
   const [showPatternControls, setShowPatternControls] = useState(false);
   const [renderer, setRenderer] = useState<FlowFieldRenderer | null>(null);
 

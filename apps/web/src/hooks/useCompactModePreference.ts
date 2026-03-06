@@ -21,9 +21,7 @@ export function useCompactModePreference(): UseCompactModePreferenceResult {
   const isAuthenticated = !!session?.user;
   const utils = api.useUtils();
 
-  const [guestCompactMode, setGuestCompactMode] = useState(() =>
-    settingsStorage.getSetting("compactMode", false),
-  );
+  const [guestCompactMode, setGuestCompactMode] = useState(false);
 
   const { data: preferences } = api.music.getUserPreferences.useQuery(
     undefined,

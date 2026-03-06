@@ -2,41 +2,45 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+const MEDIA_QUERY_DEFAULT_MATCH = false;
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia(query).matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia(query);
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setMatches(event.matches);
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", handleChange);
-    } else {
-      mediaQuery.addListener(handleChange);
-    }
-
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener("change", handleChange);
-      } else {
-        mediaQuery.removeListener(handleChange);
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") {
+        return () => undefined;
       }
-    };
-  }, [query]);
 
-  return matches;
+      const mediaQuery = window.matchMedia(query);
+      const handleChange = () => {
+        onStoreChange();
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener("change", handleChange);
+      } else {
+        mediaQuery.addListener(handleChange);
+      }
+
+      return () => {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener("change", handleChange);
+        } else {
+          mediaQuery.removeListener(handleChange);
+        }
+      };
+    },
+    () => {
+      if (typeof window === "undefined") {
+        return MEDIA_QUERY_DEFAULT_MATCH;
+      }
+
+      return window.matchMedia(query).matches;
+    },
+    () => MEDIA_QUERY_DEFAULT_MATCH,
+  );
 }
 
 export function useIsMobile(): boolean {

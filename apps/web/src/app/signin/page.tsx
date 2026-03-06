@@ -36,7 +36,6 @@ function SignInContent() {
   const [preferredGenreId, setPreferredGenreId] = useState<number | null>(null);
   const [preferredGenreName, setPreferredGenreName] = useState("");
 
-  /* eslint-disable react-hooks/set-state-in-effect -- Preferred genre state is restored from client storage after mount to avoid hydration mismatches. */
   useEffect(() => {
     setPreferredGenreId(
       parsePreferredGenreId(
@@ -55,7 +54,6 @@ function SignInContent() {
       typeof storedName === "string" ? storedName.trim() : "",
     );
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!error) return;
