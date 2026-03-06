@@ -102,6 +102,39 @@ describe("spotifyAuthClient", () => {
     }
   });
 
+  it("normalizes darkfloor auth origin env override to canonical www host", async () => {
+    const previous = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+    process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = "https://darkfloor.one/";
+
+    try {
+      window.history.replaceState(
+        {},
+        "",
+        "/auth/spotify/callback?next=%2Flibrary#access_token=app-token-www&token_type=Bearer&expires_in=3600",
+      );
+
+      const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ id: "user-www" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+      await handleSpotifyCallbackHash();
+
+      const callbackFetchCall = fetchMock.mock.calls[0] as
+        | [RequestInfo | URL, RequestInit | undefined]
+        | undefined;
+      expect(callbackFetchCall?.[0]).toBe("https://www.darkfloor.one/api/auth/me");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+      } else {
+        process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = previous;
+      }
+    }
+  });
+
   it("starts Spotify login on canonical auth origin", () => {
     window.history.replaceState({}, "", "/signin");
     const navigateSpy = vi.fn<(url: string) => void>();
@@ -373,6 +406,36 @@ describe("spotifyAuthClient", () => {
     expect(refreshHeaders.get("accept")).toBe("application/json");
     expect(refreshHeaders.get("x-csrf-token")).toBe("csrf-refresh-token");
     expect(refreshInit.body).toBeUndefined();
+  });
+
+  it("normalizes refresh endpoint to canonical www host", async () => {
+    const previous = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+    process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = "https://darkfloor.one/";
+    document.cookie = "sb_csrf_token=csrf-refresh-token; path=/";
+
+    try {
+      const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ accessToken: "new-access-token" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+      await refreshAccessToken();
+
+      const refreshFetchCall = fetchMock.mock.calls[0] as
+        | [RequestInfo | URL, RequestInit | undefined]
+        | undefined;
+      expect(refreshFetchCall?.[0]).toBe(
+        "https://www.darkfloor.one/api/auth/spotify/refresh",
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+      } else {
+        process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = previous;
+      }
+    }
   });
 
   it("refreshes access token using body refreshToken fallback without csrf cookie", async () => {

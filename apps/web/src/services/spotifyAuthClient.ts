@@ -12,6 +12,8 @@ import {
 } from "@/utils/authDebugClient";
 
 const DEFAULT_AUTH_API_ORIGIN = "https://www.darkfloor.one";
+const CANONICAL_AUTH_HOSTNAME = "www.darkfloor.one";
+const AUTH_API_HOST_ALIASES = new Set(["darkfloor.one", CANONICAL_AUTH_HOSTNAME]);
 const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/signin/spotify";
 const CSRF_COOKIE_NAME = "sb_csrf_token";
 const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
@@ -129,7 +131,18 @@ function logSpotifyBrowserDebug(message: string, details?: unknown): void {
 }
 
 function normalizeAuthOrigin(value: string): string {
-  return value.replace(/\/+$/, "");
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(trimmed);
+    if (AUTH_API_HOST_ALIASES.has(parsed.hostname.toLowerCase())) {
+      return DEFAULT_AUTH_API_ORIGIN;
+    }
+
+    return parsed.origin;
+  } catch {
+    return trimmed;
+  }
 }
 
 function resolveAuthApiOrigin(): string {
