@@ -1,11 +1,33 @@
 const FRONTEND_SPOTIFY_CALLBACK_PATH = "/auth/spotify/callback";
 const DEFAULT_SPOTIFY_POST_AUTH_PATH = "/library";
 const SPOTIFY_CALLBACK_TRACE_QUERY_PARAM = "trace";
+const DEFAULT_FRONTEND_ORIGIN = "https://www.darkfloor.org";
+const CANONICAL_FRONTEND_HOSTNAME = "www.darkfloor.org";
+const FRONTEND_ORIGIN_ALIASES = new Set([
+  "darkfloor.org",
+  CANONICAL_FRONTEND_HOSTNAME,
+]);
+
+function normalizeFrontendOrigin(value: string): string {
+  const trimmed = value.trim().replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(trimmed);
+    if (FRONTEND_ORIGIN_ALIASES.has(parsed.hostname.toLowerCase())) {
+      return DEFAULT_FRONTEND_ORIGIN;
+    }
+
+    return parsed.origin;
+  } catch {
+    return trimmed;
+  }
+}
 
 function toSameOriginPath(
   pathOrUrl: string | null | undefined,
   origin: string,
 ): string {
+  const normalizedOrigin = normalizeFrontendOrigin(origin);
   if (!pathOrUrl) return "/";
 
   if (pathOrUrl.startsWith("/")) {
@@ -16,7 +38,7 @@ function toSameOriginPath(
 
   try {
     const parsed = new URL(pathOrUrl);
-    if (parsed.origin !== origin) return "/";
+    if (normalizeFrontendOrigin(parsed.origin) !== normalizedOrigin) return "/";
 
     const sameOriginPath =
       `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
@@ -32,7 +54,8 @@ export function resolveSpotifyPostAuthPath(
   next: string | null | undefined,
   origin: string,
 ): string {
-  const sameOriginPath = toSameOriginPath(next, origin);
+  const normalizedOrigin = normalizeFrontendOrigin(origin);
+  const sameOriginPath = toSameOriginPath(next, normalizedOrigin);
   return sameOriginPath === "/"
     ? DEFAULT_SPOTIFY_POST_AUTH_PATH
     : sameOriginPath;
@@ -43,10 +66,11 @@ export function buildSpotifyFrontendRedirectUri(options: {
   origin: string;
   traceId?: string;
 }): string {
-  const callbackUrl = new URL(FRONTEND_SPOTIFY_CALLBACK_PATH, options.origin);
+  const normalizedOrigin = normalizeFrontendOrigin(options.origin);
+  const callbackUrl = new URL(FRONTEND_SPOTIFY_CALLBACK_PATH, normalizedOrigin);
   callbackUrl.searchParams.set(
     "next",
-    resolveSpotifyPostAuthPath(options.next, options.origin),
+    resolveSpotifyPostAuthPath(options.next, normalizedOrigin),
   );
 
   if (options.traceId) {
@@ -61,6 +85,8 @@ export function buildSpotifyFrontendRedirectUri(options: {
 
 export {
   DEFAULT_SPOTIFY_POST_AUTH_PATH,
+  DEFAULT_FRONTEND_ORIGIN,
   FRONTEND_SPOTIFY_CALLBACK_PATH,
+  normalizeFrontendOrigin,
   SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
 };
