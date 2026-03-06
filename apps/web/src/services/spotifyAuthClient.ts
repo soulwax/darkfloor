@@ -488,6 +488,18 @@ function parseHashTokens(hash: string, search = ""): HashTokenParseResult {
   };
 }
 
+function buildCleanCallbackUrl(pathname: string, search: string): string {
+  const query = search.startsWith("?") ? search.slice(1) : search;
+  const searchParams = new URLSearchParams(query);
+
+  for (const key of HASH_TOKEN_KEYS) {
+    searchParams.delete(key);
+  }
+
+  const nextSearch = searchParams.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+}
+
 export function hasSpotifyTokenHashFragment(hash: string): boolean {
   const fragment = hash.startsWith("#") ? hash.slice(1) : hash;
   if (!fragment) return false;
@@ -1117,7 +1129,10 @@ export async function handleSpotifyCallbackHash(): Promise<CallbackResult> {
   }
   setTokenState(parsed.payload);
 
-  const cleanUrl = `${window.location.pathname}${window.location.search}`;
+  const cleanUrl = buildCleanCallbackUrl(
+    window.location.pathname,
+    window.location.search,
+  );
   window.history.replaceState(window.history.state, document.title, cleanUrl);
 
   let profile: unknown;

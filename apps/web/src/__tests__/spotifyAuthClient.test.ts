@@ -268,7 +268,7 @@ describe("spotifyAuthClient", () => {
     window.history.replaceState(
       {},
       "",
-      "/auth/spotify/callback?next=%2Flibrary&access_token=app-token-query&token_type=Bearer&expires_in=3600",
+      "/auth/spotify/callback?next=%2Flibrary&trace=trace-query-1&access_token=app-token-query&token_type=Bearer&expires_in=3600",
     );
 
     vi.spyOn(global, "fetch").mockResolvedValue(
@@ -281,6 +281,14 @@ describe("spotifyAuthClient", () => {
     const result = await handleSpotifyCallbackHash();
     expect(result.accessToken).toBe("app-token-query");
     expect(getInMemoryAccessToken()).toBe("app-token-query");
+    expect(window.location.hash).toBe("");
+
+    const cleanedSearch = new URLSearchParams(window.location.search);
+    expect(cleanedSearch.get("next")).toBe("/library");
+    expect(cleanedSearch.get("trace")).toBe("trace-query-1");
+    expect(cleanedSearch.get("access_token")).toBeNull();
+    expect(cleanedSearch.get("token_type")).toBeNull();
+    expect(cleanedSearch.get("expires_in")).toBeNull();
   });
 
   it("emits auth-required event and clears token on refresh 401", async () => {
@@ -364,6 +372,7 @@ describe("spotifyAuthClient", () => {
     const refreshHeaders = new Headers(refreshInit.headers);
     expect(refreshHeaders.get("accept")).toBe("application/json");
     expect(refreshHeaders.get("x-csrf-token")).toBe("csrf-refresh-token");
+    expect(refreshInit.body).toBeUndefined();
   });
 
   it("refreshes access token using body refreshToken fallback without csrf cookie", async () => {
