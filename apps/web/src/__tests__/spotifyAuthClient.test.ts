@@ -86,8 +86,8 @@ describe("spotifyAuthClient", () => {
   });
 
   it("prefers configured auth API origin when env override is provided", () => {
-    const previous = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
-    process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = "https://auth.example.com/";
+    const previous = process.env.NEXT_PUBLIC_AUTH_API_BASE;
+    process.env.NEXT_PUBLIC_AUTH_API_BASE = "https://auth.example.com/";
 
     try {
       const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
@@ -95,16 +95,16 @@ describe("spotifyAuthClient", () => {
       expect(parsed.origin).toBe("https://auth.example.com");
     } finally {
       if (previous === undefined) {
-        delete process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+        delete process.env.NEXT_PUBLIC_AUTH_API_BASE;
       } else {
-        process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = previous;
+        process.env.NEXT_PUBLIC_AUTH_API_BASE = previous;
       }
     }
   });
 
-  it("normalizes darkfloor auth origin env override to canonical www host", async () => {
-    const previous = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
-    process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = "https://darkfloor.one/";
+  it("normalizes darkfloor auth API base to canonical www host", async () => {
+    const previous = process.env.NEXT_PUBLIC_AUTH_API_BASE;
+    process.env.NEXT_PUBLIC_AUTH_API_BASE = "https://darkfloor.one/";
 
     try {
       window.history.replaceState(
@@ -128,9 +128,9 @@ describe("spotifyAuthClient", () => {
       expect(callbackFetchCall?.[0]).toBe("https://www.darkfloor.one/api/auth/me");
     } finally {
       if (previous === undefined) {
-        delete process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+        delete process.env.NEXT_PUBLIC_AUTH_API_BASE;
       } else {
-        process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = previous;
+        process.env.NEXT_PUBLIC_AUTH_API_BASE = previous;
       }
     }
   });
@@ -409,8 +409,8 @@ describe("spotifyAuthClient", () => {
   });
 
   it("normalizes refresh endpoint to canonical www host", async () => {
-    const previous = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
-    process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = "https://darkfloor.one/";
+    const previous = process.env.NEXT_PUBLIC_AUTH_API_BASE;
+    process.env.NEXT_PUBLIC_AUTH_API_BASE = "https://darkfloor.one/";
     document.cookie = "sb_csrf_token=csrf-refresh-token; path=/";
 
     try {
@@ -431,9 +431,9 @@ describe("spotifyAuthClient", () => {
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.NEXT_PUBLIC_AUTH_API_ORIGIN;
+        delete process.env.NEXT_PUBLIC_AUTH_API_BASE;
       } else {
-        process.env.NEXT_PUBLIC_AUTH_API_ORIGIN = previous;
+        process.env.NEXT_PUBLIC_AUTH_API_BASE = previous;
       }
     }
   });

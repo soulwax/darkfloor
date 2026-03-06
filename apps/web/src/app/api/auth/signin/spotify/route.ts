@@ -1,21 +1,17 @@
 import { env } from "@/env";
+import { resolveAuthApiBase } from "@/utils/authApiBase";
 import { buildSpotifyFrontendRedirectUri } from "@/utils/spotifyAuthRedirect";
 import { type NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function normalizeOrigin(value: string): string {
-  return value.replace(/\/+$/, "");
-}
-
 function resolveAuthOrigin(request: NextRequest): string {
-  const configured = env.NEXT_PUBLIC_AUTH_API_ORIGIN?.trim();
-  if (configured && configured.length > 0) {
-    return normalizeOrigin(configured);
-  }
-
-  return request.nextUrl.origin;
+  return resolveAuthApiBase({
+    configuredBase:
+      env.NEXT_PUBLIC_AUTH_API_BASE ?? env.NEXT_PUBLIC_AUTH_API_ORIGIN,
+    fallbackOrigin: request.nextUrl.origin,
+  });
 }
 
 function buildCanonicalSpotifyStartUrl(request: NextRequest): string {

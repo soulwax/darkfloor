@@ -6,14 +6,12 @@ import {
   buildSpotifyFrontendRedirectUri,
   resolveSpotifyPostAuthPath,
 } from "@/utils/spotifyAuthRedirect";
+import { resolveAuthApiBase } from "@/utils/authApiBase";
 import {
   isClientAuthDebugEnabled,
   logAuthClientDebug,
 } from "@/utils/authDebugClient";
 
-const DEFAULT_AUTH_API_ORIGIN = "https://www.darkfloor.one";
-const CANONICAL_AUTH_HOSTNAME = "www.darkfloor.one";
-const AUTH_API_HOST_ALIASES = new Set(["darkfloor.one", CANONICAL_AUTH_HOSTNAME]);
 const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/signin/spotify";
 const CSRF_COOKIE_NAME = "sb_csrf_token";
 const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
@@ -130,32 +128,13 @@ function logSpotifyBrowserDebug(message: string, details?: unknown): void {
   console.log(`[Spotify Browser Login] ${message}`, details);
 }
 
-function normalizeAuthOrigin(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, "");
-
-  try {
-    const parsed = new URL(trimmed);
-    if (AUTH_API_HOST_ALIASES.has(parsed.hostname.toLowerCase())) {
-      return DEFAULT_AUTH_API_ORIGIN;
-    }
-
-    return parsed.origin;
-  } catch {
-    return trimmed;
-  }
-}
-
 function resolveAuthApiOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_AUTH_API_ORIGIN?.trim();
-  if (configured && configured.length > 0) {
-    return normalizeAuthOrigin(configured);
-  }
-
-  if (typeof window !== "undefined") {
-    return normalizeAuthOrigin(window.location.origin);
-  }
-
-  return DEFAULT_AUTH_API_ORIGIN;
+  return resolveAuthApiBase({
+    configuredBase:
+      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
+      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
+    fallbackOrigin: typeof window !== "undefined" ? window.location.origin : null,
+  });
 }
 
 function buildAuthEndpoint(pathname: string): string {

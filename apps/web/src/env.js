@@ -42,6 +42,7 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_APP_VERSION: z.string().optional(),
+    NEXT_PUBLIC_AUTH_API_BASE: z.string().url().optional(),
     NEXT_PUBLIC_AUTH_API_ORIGIN: z.string().url().optional(),
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED: z
       .string()
@@ -86,6 +87,7 @@ export const env = createEnv({
       process.env.SONGBIRD_API_URL ??
       process.env.V2_API_URL ??
       process.env.NEXT_PUBLIC_V2_API_URL,
+    NEXT_PUBLIC_AUTH_API_BASE: process.env.NEXT_PUBLIC_AUTH_API_BASE,
     NEXT_PUBLIC_AUTH_API_ORIGIN: process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED:
       process.env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,

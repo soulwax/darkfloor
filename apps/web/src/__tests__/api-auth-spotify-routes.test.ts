@@ -247,11 +247,11 @@ describe("Spotify auth proxy routes", () => {
     expect(callbackUrl.searchParams.get("next")).toBe("/library");
   });
 
-  it("redirects legacy /api/auth/signin/spotify to configured auth origin", async () => {
+  it("redirects legacy /api/auth/signin/spotify to configured auth API base", async () => {
     vi.resetModules();
     vi.doMock("@/env", () => ({
       env: {
-        NEXT_PUBLIC_AUTH_API_ORIGIN: "https://auth.example.com/",
+        NEXT_PUBLIC_AUTH_API_BASE: "https://auth.example.com/",
       },
     }));
 
