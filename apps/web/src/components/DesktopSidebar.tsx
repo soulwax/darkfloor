@@ -57,27 +57,10 @@ export function DesktopSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user?.admin === true;
-  const isLinuxElectron =
-    typeof window !== "undefined" &&
-    window.electron?.isElectron === true &&
-    window.electron?.platform === "linux";
   const { openAuthModal } = useAuthModal();
 
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getOrDefault<boolean>(
-      STORAGE_KEYS.DESKTOP_SIDEBAR_COLLAPSED,
-      false,
-    );
-  });
-  const [expandedWidth, setExpandedWidth] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_EXPANDED_WIDTH;
-    const storedWidth = localStorage.getOrDefault<number>(
-      STORAGE_KEYS.DESKTOP_SIDEBAR_WIDTH,
-      DEFAULT_EXPANDED_WIDTH,
-    );
-    return clampSidebarWidth(storedWidth);
-  });
+  const [collapsed, setCollapsed] = useState(false);
+  const [expandedWidth, setExpandedWidth] = useState(DEFAULT_EXPANDED_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const resizePointerIdRef = useRef<number | null>(null);
@@ -100,6 +83,22 @@ export function DesktopSidebar() {
       document.documentElement.style.removeProperty("--electron-sidebar-width");
     };
   }, []);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- Sidebar preferences come from localStorage and must be restored after mount to avoid hydration mismatches. */
+  useEffect(() => {
+    const storedCollapsed = localStorage.getOrDefault<boolean>(
+      STORAGE_KEYS.DESKTOP_SIDEBAR_COLLAPSED,
+      false,
+    );
+    const storedWidth = localStorage.getOrDefault<number>(
+      STORAGE_KEYS.DESKTOP_SIDEBAR_WIDTH,
+      DEFAULT_EXPANDED_WIDTH,
+    );
+
+    setCollapsed(storedCollapsed);
+    setExpandedWidth(clampSidebarWidth(storedWidth));
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (collapsed || isResizing) return;

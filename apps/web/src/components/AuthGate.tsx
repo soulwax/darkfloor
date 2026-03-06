@@ -58,13 +58,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [spotifyAuthenticated, setSpotifyAuthenticated] = useState(false);
   const [spotifyResolved, setSpotifyResolved] = useState(false);
   const [manualGuestModalOpen, setManualGuestModalOpen] = useState(false);
-  const [guestModalDismissed, setGuestModalDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      window.localStorage.getItem(GUEST_MODAL_DISMISSED_STORAGE_KEY) === "true" ||
-      window.localStorage.getItem(LEGACY_GUEST_MODE_STORAGE_KEY) === "true"
+  const [guestModalDismissed, setGuestModalDismissed] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrate browser-only dismissal state after mount to keep SSR and client markup aligned. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    setGuestModalDismissed(
+      window.localStorage.getItem(GUEST_MODAL_DISMISSED_STORAGE_KEY) ===
+        "true" ||
+        window.localStorage.getItem(LEGACY_GUEST_MODE_STORAGE_KEY) === "true",
     );
-  });
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (typeof window === "undefined") return;
