@@ -19,21 +19,57 @@ export default function ChangelogModal({
   const [changelogContent, setChangelogContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (isOpen) {
+  const handleClose = () => {
+    setChangelogContent("");
+    setLoading(true);
+    onClose();
+  };
 
-      fetch("/CHANGELOG.md")
-        .then((res) => res.text())
-        .then((text) => {
-          setChangelogContent(text);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to load changelog:", err);
-          setChangelogContent("Failed to load changelog.");
-          setLoading(false);
-        });
+  useEffect(() => {
+    if (!isOpen) {
+      return;
     }
+
+    const controller = new AbortController();
+
+    fetch("/api/changelog", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Changelog request failed with status ${res.status}`);
+        }
+
+        const contentType = res.headers.get("content-type") ?? "";
+        if (
+          !contentType.includes("text/markdown") &&
+          !contentType.includes("text/plain")
+        ) {
+          throw new Error(
+            `Unexpected changelog content type: ${contentType || "unknown"}`,
+          );
+        }
+
+        return res.text();
+      })
+      .then((text) => {
+        setChangelogContent(text);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error("Failed to load changelog:", err);
+        setChangelogContent("Failed to load changelog.");
+        setLoading(false);
+      });
+
+    return () => {
+      controller.abort();
+    };
   }, [isOpen]);
 
   const parseChangelog = (content: string) => {
@@ -152,7 +188,7 @@ export default function ChangelogModal({
             exit={{ opacity: 0 }}
             transition={springPresets.gentle}
             className="theme-chrome-backdrop fixed inset-0 z-[90] backdrop-blur-sm"
-            onClick={onClose}
+            onClick={handleClose}
           />
 
           {}
@@ -169,7 +205,7 @@ export default function ChangelogModal({
                 Changelog
               </h2>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(244,178,102,0.1)] text-[var(--color-accent)] transition-all hover:bg-[rgba(244,178,102,0.2)]"
               >
                 <X className="h-5 w-5" />
