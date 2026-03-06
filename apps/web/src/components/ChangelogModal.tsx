@@ -5,11 +5,90 @@
 import { springPresets } from "@/utils/spring-animations";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 interface ChangelogModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+const CHANGELOG_ENDPOINTS = ["/CHANGELOG.md", "/api/v2/changelog"] as const;
+const HTML_RESPONSE_PATTERN = /^\s*<(?:!doctype html|html|head|body)\b/i;
+const CHANGELOG_UNAVAILABLE_MESSAGE =
+  "Changelog is currently unavailable. Please try again shortly.";
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function looksLikeHtmlDocument(payload: string): boolean {
+  return HTML_RESPONSE_PATTERN.test(payload);
+}
+
+function extractMarkdownFromJsonPayload(payload: string): string | null {
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    if (typeof parsed === "string" && parsed.trim().length > 0) {
+      return parsed;
+    }
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "changelog" in parsed &&
+      typeof parsed.changelog === "string" &&
+      parsed.changelog.trim().length > 0
+    ) {
+      return parsed.changelog;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function fetchChangelogFromSource(
+  source: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const response = await fetch(source, { cache: "no-store", signal });
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  const payload = await response.text();
+  if (payload.trim().length === 0) {
+    throw new Error("Response body was empty");
+  }
+
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (contentType.includes("text/html") || looksLikeHtmlDocument(payload)) {
+    throw new Error("Received HTML response instead of markdown");
+  }
+
+  if (contentType.includes("application/json")) {
+    const extractedMarkdown = extractMarkdownFromJsonPayload(payload);
+    if (extractedMarkdown) {
+      return extractedMarkdown;
+    }
+  }
+
+  return payload;
+}
+
+async function fetchChangelog(signal: AbortSignal): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (const source of CHANGELOG_ENDPOINTS) {
+    try {
+      return await fetchChangelogFromSource(source, signal);
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  throw lastError ?? new Error("No changelog sources are available");
 }
 
 export default function ChangelogModal({
@@ -20,24 +99,35 @@ export default function ChangelogModal({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
-      fetch("/CHANGELOG.md")
-        .then((res) => res.text())
-        .then((text) => {
-          setChangelogContent(text);
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    void fetchChangelog(controller.signal)
+      .then((markdown) => {
+        if (controller.signal.aborted) return;
+        setChangelogContent(markdown);
+      })
+      .catch((error: unknown) => {
+        if (isAbortError(error)) return;
+        console.error("Failed to load changelog:", error);
+        setChangelogContent(CHANGELOG_UNAVAILABLE_MESSAGE);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
           setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to load changelog:", err);
-          setChangelogContent("Failed to load changelog.");
-          setLoading(false);
-        });
-    }
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
   }, [isOpen]);
 
   const parseChangelog = (content: string) => {
     const lines = content.split("\n");
-    const elements: React.ReactElement[] = [];
+    const elements: ReactElement[] = [];
     let key = 0;
 
     for (let i = 0; i < lines.length; i++) {
