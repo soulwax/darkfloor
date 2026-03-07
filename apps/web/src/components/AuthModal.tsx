@@ -229,7 +229,7 @@ export function AuthModal({
                               </span>
                             </div>
                           )}
-                          <span>{provider.id === "spotify" ? "We are working hard on Spotify, until then, fuck you Spotify!" : `Continue with ${provider.name}`}</span>
+                          <span>{`Continue with ${provider.name}`}</span>
                         </span>
                       </button>
                     );
