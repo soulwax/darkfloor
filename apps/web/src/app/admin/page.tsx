@@ -87,6 +87,46 @@ type UpstreamOAuthDumpEntry = {
   details: unknown;
 };
 
+type SpotifyAdminFetchResult = {
+  status: number;
+  fetchedAt: string;
+  payload: unknown;
+};
+
+type SpotifyAdminProfileSummary = {
+  connected: boolean | null;
+  displayName: string | null;
+  email: string | null;
+  spotifyUserId: string | null;
+  country: string | null;
+  product: string | null;
+  followerCount: number | null;
+  imageUrl: string | null;
+  scopeText: string | null;
+};
+
+type SpotifyAdminPlaylistSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  ownerName: string | null;
+  trackCount: number | null;
+  imageUrl: string | null;
+  externalUrl: string | null;
+  raw: unknown;
+};
+
+type SpotifyAdminTrackSummary = {
+  id: string | null;
+  name: string;
+  artists: string[];
+  albumName: string | null;
+  durationMs: number | null;
+  imageUrl: string | null;
+  externalUrl: string | null;
+  raw: unknown;
+};
+
 const API_DIAGNOSTIC_TARGETS: ApiDiagnosticTarget[] = [
   { key: "status", label: "Liveness", path: "/api/v2/status" },
   { key: "version", label: "Version", path: "/api/v2/version" },
@@ -104,6 +144,11 @@ const API_DIAGNOSTIC_TARGETS: ApiDiagnosticTarget[] = [
 
 const API_DIAGNOSTIC_AUTH_KEYS = new Set(["cache", "authMe"]);
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
 function readFirstString(
   record: Record<string, unknown>,
   keys: string[],
@@ -115,6 +160,246 @@ function readFirstString(
     }
   }
   return null;
+}
+
+function readFirstNumber(
+  record: Record<string, unknown>,
+  keys: string[],
+): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function readFirstBoolean(
+  record: Record<string, unknown>,
+  keys: string[],
+): boolean | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+  }
+  return null;
+}
+
+function extractFirstImageUrl(value: unknown): string | null {
+  if (!Array.isArray(value)) return null;
+
+  for (const entry of value) {
+    const record = asRecord(entry);
+    if (!record) continue;
+    const url = readFirstString(record, ["url", "src"]);
+    if (url) return url;
+  }
+
+  return null;
+}
+
+function extractArrayCandidates(
+  payload: unknown,
+  keys: string[],
+): unknown[] | null {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  const root = asRecord(payload);
+  if (!root) return null;
+
+  for (const key of keys) {
+    const directValue = root[key];
+    if (Array.isArray(directValue)) {
+      return directValue;
+    }
+
+    const nestedRecord = asRecord(directValue);
+    if (!nestedRecord) continue;
+
+    for (const nestedKey of ["items", "data", "playlists", "tracks"]) {
+      const nestedValue = nestedRecord[nestedKey];
+      if (Array.isArray(nestedValue)) {
+        return nestedValue;
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractSpotifyScopeText(payload: unknown): string | null {
+  const root = asRecord(payload);
+  if (!root) return null;
+
+  const directScope = readFirstString(root, ["scope", "scopes"]);
+  if (directScope) return directScope;
+
+  for (const key of ["profile", "user", "spotifyProfile", "connection"]) {
+    const nestedRecord = asRecord(root[key]);
+    if (!nestedRecord) continue;
+    const nestedScope = readFirstString(nestedRecord, ["scope", "scopes"]);
+    if (nestedScope) return nestedScope;
+  }
+
+  const scopes = root.scopes;
+  if (Array.isArray(scopes)) {
+    const values = scopes.filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
+    if (values.length > 0) {
+      return values.join(", ");
+    }
+  }
+
+  return null;
+}
+
+function extractSpotifyProfileSummary(
+  payload: unknown,
+): SpotifyAdminProfileSummary {
+  const root = asRecord(payload);
+  const profile =
+    asRecord(root?.profile) ??
+    asRecord(root?.spotifyProfile) ??
+    asRecord(root?.user) ??
+    asRecord(root?.account) ??
+    root;
+
+  const connected =
+    (root
+      ? readFirstBoolean(root, ["connected", "isConnected", "hasConnection"])
+      : null) ??
+    (profile
+      ? readFirstBoolean(profile, ["connected", "isConnected", "hasConnection"])
+      : null);
+
+  const followers =
+    readFirstNumber(profile ?? {}, ["followers", "followerCount"]) ??
+    readFirstNumber(asRecord(profile?.followers) ?? {}, ["total"]);
+
+  return {
+    connected,
+    displayName: readFirstString(profile ?? {}, [
+      "display_name",
+      "displayName",
+      "name",
+      "username",
+    ]),
+    email: readFirstString(profile ?? {}, ["email"]),
+    spotifyUserId: readFirstString(profile ?? {}, ["id", "spotifyUserId"]),
+    country: readFirstString(profile ?? {}, ["country"]),
+    product: readFirstString(profile ?? {}, ["product"]),
+    followerCount: followers,
+    imageUrl:
+      extractFirstImageUrl(profile?.images) ??
+      readFirstString(profile ?? {}, ["image", "imageUrl", "avatarUrl"]),
+    scopeText: extractSpotifyScopeText(payload),
+  };
+}
+
+function extractSpotifyPlaylistSummaries(
+  payload: unknown,
+): SpotifyAdminPlaylistSummary[] {
+  const entries =
+    extractArrayCandidates(payload, ["items", "playlists", "data"]) ?? [];
+
+  return entries
+    .map((entry): SpotifyAdminPlaylistSummary | null => {
+      const record = asRecord(entry);
+      if (!record) return null;
+
+      const id = readFirstString(record, ["id", "playlistId"]);
+      const name = readFirstString(record, ["name", "title"]);
+
+      if (!id || !name) {
+        return null;
+      }
+
+      const owner = asRecord(record.owner);
+      const tracks = asRecord(record.tracks);
+      const externalUrls = asRecord(record.external_urls);
+
+      return {
+        id,
+        name,
+        description: readFirstString(record, ["description"]),
+        ownerName: readFirstString(owner ?? {}, ["display_name", "name"]),
+        trackCount:
+          readFirstNumber(tracks ?? {}, ["total"]) ??
+          readFirstNumber(record, ["trackCount"]),
+        imageUrl:
+          extractFirstImageUrl(record.images) ??
+          readFirstString(record, ["image", "imageUrl"]),
+        externalUrl:
+          readFirstString(externalUrls ?? {}, ["spotify"]) ??
+          readFirstString(record, ["href", "uri", "link"]),
+        raw: entry,
+      };
+    })
+    .filter((value): value is SpotifyAdminPlaylistSummary => value !== null);
+}
+
+function extractSpotifyPlaylistTracks(
+  payload: unknown,
+): SpotifyAdminTrackSummary[] {
+  const root = asRecord(payload);
+  const tracksRecord = asRecord(root?.tracks);
+  const entries =
+    (Array.isArray(tracksRecord?.items) ? tracksRecord?.items : null) ??
+    extractArrayCandidates(payload, ["items", "tracks", "data"]) ??
+    [];
+
+  return entries
+    .map((entry): SpotifyAdminTrackSummary | null => {
+      const record = asRecord(entry);
+      if (!record) return null;
+
+      const trackRecord = asRecord(record.track) ?? record;
+      const name = readFirstString(trackRecord, ["name", "title"]);
+      if (!name) return null;
+
+      const artistsValue = trackRecord.artists;
+      const artists = Array.isArray(artistsValue)
+        ? artistsValue
+            .map((artist) => readFirstString(asRecord(artist) ?? {}, ["name"]))
+            .filter((value): value is string => Boolean(value))
+        : [];
+      const album = asRecord(trackRecord.album);
+      const externalUrls = asRecord(trackRecord.external_urls);
+
+      return {
+        id: readFirstString(trackRecord, ["id", "trackId"]),
+        name,
+        artists,
+        albumName: readFirstString(album ?? {}, ["name", "title"]),
+        durationMs: readFirstNumber(trackRecord, ["duration_ms", "durationMs"]),
+        imageUrl:
+          extractFirstImageUrl(album?.images) ??
+          readFirstString(album ?? {}, ["image", "imageUrl"]),
+        externalUrl:
+          readFirstString(externalUrls ?? {}, ["spotify"]) ??
+          readFirstString(trackRecord, ["href", "uri", "link"]),
+        raw: entry,
+      };
+    })
+    .filter((value): value is SpotifyAdminTrackSummary => value !== null);
+}
+
+function formatDurationMs(durationMs: number | null): string {
+  if (durationMs === null || !Number.isFinite(durationMs)) {
+    return "n/a";
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function extractUpstreamOAuthDumpEntries(
@@ -362,6 +647,22 @@ export default function AdminPage() {
   const [upstreamOAuthLimitInput, setUpstreamOAuthLimitInput] = useState("200");
   const upstreamOAuthTraceIdRef = useRef(upstreamOAuthTraceIdInput);
   const upstreamOAuthLimitRef = useRef(upstreamOAuthLimitInput);
+  const [spotifyProfileData, setSpotifyProfileData] =
+    useState<SpotifyAdminFetchResult | null>(null);
+  const [spotifyPlaylistsData, setSpotifyPlaylistsData] =
+    useState<SpotifyAdminFetchResult | null>(null);
+  const [selectedSpotifyPlaylistId, setSelectedSpotifyPlaylistId] = useState<
+    string | null
+  >(null);
+  const [selectedSpotifyPlaylistData, setSelectedSpotifyPlaylistData] =
+    useState<SpotifyAdminFetchResult | null>(null);
+  const [isSpotifyAdminLoading, setIsSpotifyAdminLoading] = useState(false);
+  const [isSpotifyPlaylistDetailLoading, setIsSpotifyPlaylistDetailLoading] =
+    useState(false);
+  const [spotifyAdminError, setSpotifyAdminError] = useState<string | null>(
+    null,
+  );
+  const [spotifyTokenUnavailable, setSpotifyTokenUnavailable] = useState(false);
 
   const handleToggleAdmin = (userId: string, admin: boolean) => {
     updateAdmin.mutate({ userId, admin: !admin });
@@ -584,6 +885,176 @@ export default function AdminPage() {
     () => extractUpstreamOAuthDumpEntries(upstreamOAuthDump?.payload),
     [upstreamOAuthDump?.payload],
   );
+  const spotifyProfileSummary = useMemo(
+    () => extractSpotifyProfileSummary(spotifyProfileData?.payload),
+    [spotifyProfileData?.payload],
+  );
+  const spotifyPlaylists = useMemo(
+    () => extractSpotifyPlaylistSummaries(spotifyPlaylistsData?.payload),
+    [spotifyPlaylistsData?.payload],
+  );
+  const selectedSpotifyPlaylistTracks = useMemo(
+    () => extractSpotifyPlaylistTracks(selectedSpotifyPlaylistData?.payload),
+    [selectedSpotifyPlaylistData?.payload],
+  );
+  const selectedSpotifyPlaylistSummary = useMemo(
+    () =>
+      selectedSpotifyPlaylistId
+        ? (spotifyPlaylists.find(
+            (playlist) => playlist.id === selectedSpotifyPlaylistId,
+          ) ?? null)
+        : null,
+    [selectedSpotifyPlaylistId, spotifyPlaylists],
+  );
+
+  const fetchSpotifyAdminPayload = useCallback(
+    async (
+      path: string,
+      accessToken: string,
+    ): Promise<SpotifyAdminFetchResult> => {
+      const response = await fetch(path, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: {
+          accept: "application/json",
+          authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const rawPayload = await response.text().catch(() => "");
+      let parsedPayload: unknown = rawPayload;
+
+      if (rawPayload.trim().length === 0) {
+        parsedPayload = {};
+      } else {
+        try {
+          parsedPayload = JSON.parse(rawPayload) as unknown;
+        } catch {
+          parsedPayload = rawPayload;
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessageFromPayload(parsedPayload) ??
+            `${path} failed with status ${response.status}`,
+        );
+      }
+
+      return {
+        status: response.status,
+        fetchedAt: new Date().toISOString(),
+        payload: parsedPayload,
+      };
+    },
+    [],
+  );
+
+  const loadSpotifyPlaylistDetail = useCallback(
+    async (
+      playlistId: string,
+      options?: {
+        accessToken?: string;
+        silent?: boolean;
+      },
+    ) => {
+      setSelectedSpotifyPlaylistId(playlistId);
+      setIsSpotifyPlaylistDetailLoading(true);
+      try {
+        const accessToken =
+          options?.accessToken ?? (await ensureAccessToken()) ?? null;
+
+        if (!accessToken) {
+          setSpotifyTokenUnavailable(true);
+          setSelectedSpotifyPlaylistData(null);
+          return;
+        }
+
+        setSpotifyTokenUnavailable(false);
+        const detail = await fetchSpotifyAdminPayload(
+          `/api/admin/spotify/playlists/${encodeURIComponent(playlistId)}`,
+          accessToken,
+        );
+        setSelectedSpotifyPlaylistData(detail);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load Spotify playlist details";
+        setSpotifyAdminError(message);
+        setSelectedSpotifyPlaylistData(null);
+        if (!options?.silent) {
+          showToast(message, "error");
+        }
+      } finally {
+        setIsSpotifyPlaylistDetailLoading(false);
+      }
+    },
+    [fetchSpotifyAdminPayload, showToast],
+  );
+
+  const refreshSpotifyAdminData = useCallback(async () => {
+    setIsSpotifyAdminLoading(true);
+    setSpotifyAdminError(null);
+
+    try {
+      const accessToken = await ensureAccessToken();
+      if (!accessToken) {
+        setSpotifyTokenUnavailable(true);
+        setSpotifyProfileData(null);
+        setSpotifyPlaylistsData(null);
+        setSelectedSpotifyPlaylistData(null);
+        setSelectedSpotifyPlaylistId(null);
+        return;
+      }
+
+      setSpotifyTokenUnavailable(false);
+
+      const [profileResult, playlistsResult] = await Promise.all([
+        fetchSpotifyAdminPayload("/api/admin/spotify/auth/status", accessToken),
+        fetchSpotifyAdminPayload(
+          "/api/admin/spotify/playlists?limit=24",
+          accessToken,
+        ),
+      ]);
+
+      setSpotifyProfileData(profileResult);
+      setSpotifyPlaylistsData(playlistsResult);
+
+      const playlists = extractSpotifyPlaylistSummaries(
+        playlistsResult.payload,
+      );
+      const nextPlaylistId =
+        selectedSpotifyPlaylistId &&
+        playlists.some((playlist) => playlist.id === selectedSpotifyPlaylistId)
+          ? selectedSpotifyPlaylistId
+          : (playlists[0]?.id ?? null);
+
+      if (!nextPlaylistId) {
+        setSelectedSpotifyPlaylistId(null);
+        setSelectedSpotifyPlaylistData(null);
+        return;
+      }
+
+      await loadSpotifyPlaylistDetail(nextPlaylistId, {
+        accessToken,
+        silent: true,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load Spotify admin data";
+      setSpotifyAdminError(message);
+      showToast(message, "error");
+    } finally {
+      setIsSpotifyAdminLoading(false);
+    }
+  }, [
+    fetchSpotifyAdminPayload,
+    loadSpotifyPlaylistDetail,
+    selectedSpotifyPlaylistId,
+    showToast,
+  ]);
 
   useEffect(() => {
     if (!isAuthorized) return;
@@ -591,6 +1062,7 @@ export default function AdminPage() {
     void refreshDiagnostics();
     void refreshOAuthDump();
     void refreshUpstreamOAuthDump();
+    void refreshSpotifyAdminData();
     const intervalId = window.setInterval(() => {
       void refreshDiagnostics();
       void refreshOAuthDump();
@@ -604,6 +1076,7 @@ export default function AdminPage() {
     isAuthorized,
     refreshDiagnostics,
     refreshOAuthDump,
+    refreshSpotifyAdminData,
     refreshUpstreamOAuthDump,
   ]);
 
@@ -1113,6 +1586,372 @@ export default function AdminPage() {
           <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-subtext)]">
             Upstream OAuth debug dump not loaded yet.
           </div>
+        )}
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)]/90 via-[var(--color-surface-2)]/85 to-[rgba(29,185,84,0.12)] p-6 shadow-[var(--shadow-lg)]">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="flex items-center gap-2 text-sm tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+              <Gauge className="h-4 w-4 text-[var(--color-accent)]" />
+              Spotify Admin Data
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-subtext)]">
+              Current admin Spotify connection status, profile summary,
+              playlists, and selected playlist details.
+            </p>
+          </div>
+          <button
+            onClick={() => void refreshSpotifyAdminData()}
+            disabled={isSpotifyAdminLoading}
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+          >
+            {isSpotifyAdminLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
+            Refresh Spotify data
+          </button>
+        </div>
+
+        {spotifyTokenUnavailable &&
+        !spotifyProfileData &&
+        !spotifyPlaylistsData ? (
+          <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-subtext)]">
+            No Spotify app token is available in this browser session. Sign in
+            through Spotify first if you want admin-side Spotify data to appear
+            here.
+          </div>
+        ) : !spotifyProfileData &&
+          !spotifyPlaylistsData &&
+          isSpotifyAdminLoading ? (
+          <div className="grid gap-3 xl:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-64 animate-pulse rounded-2xl bg-[var(--color-surface)]/70"
+              />
+            ))}
+          </div>
+        ) : spotifyAdminError &&
+          !spotifyProfileData &&
+          !spotifyPlaylistsData ? (
+          <div className="rounded-2xl border border-[rgba(242,139,130,0.25)] bg-[rgba(242,139,130,0.08)] px-4 py-3 text-sm text-[var(--color-danger)]">
+            {spotifyAdminError}
+          </div>
+        ) : (
+          <>
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--color-subtext)]">
+              <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                connected:{" "}
+                <strong className="text-[var(--color-text)]">
+                  {spotifyProfileSummary.connected === null
+                    ? "unknown"
+                    : spotifyProfileSummary.connected
+                      ? "yes"
+                      : "no"}
+                </strong>
+              </span>
+              <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                playlists:{" "}
+                <strong className="text-[var(--color-text)]">
+                  {spotifyPlaylists.length}
+                </strong>
+              </span>
+              <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                selected tracks:{" "}
+                <strong className="text-[var(--color-text)]">
+                  {selectedSpotifyPlaylistTracks.length}
+                </strong>
+              </span>
+              <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                updated:{" "}
+                <strong className="text-[var(--color-text)]">
+                  {spotifyPlaylistsData?.fetchedAt ??
+                    spotifyProfileData?.fetchedAt ??
+                    "n/a"}
+                </strong>
+              </span>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-[320px_320px_minmax(0,1fr)]">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
+                <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">
+                  Profile
+                </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                    {spotifyProfileSummary.imageUrl ? (
+                      <Image
+                        src={spotifyProfileSummary.imageUrl}
+                        alt={
+                          spotifyProfileSummary.displayName ?? "Spotify profile"
+                        }
+                        width={56}
+                        height={56}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Gauge className="h-5 w-5 text-[var(--color-muted)]" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold text-[var(--color-text)]">
+                      {spotifyProfileSummary.displayName ?? "Spotify user"}
+                    </p>
+                    {spotifyProfileSummary.email ? (
+                      <p className="truncate text-sm text-[var(--color-subtext)]">
+                        {spotifyProfileSummary.email}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">
+                      Spotify ID: {spotifyProfileSummary.spotifyUserId ?? "n/a"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-2 text-sm text-[var(--color-subtext)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Country</span>
+                    <strong className="text-[var(--color-text)]">
+                      {spotifyProfileSummary.country ?? "n/a"}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Plan</span>
+                    <strong className="text-[var(--color-text)]">
+                      {spotifyProfileSummary.product ?? "n/a"}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Followers</span>
+                    <strong className="text-[var(--color-text)]">
+                      {spotifyProfileSummary.followerCount ?? "n/a"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl bg-[var(--color-surface-2)]/70 p-3">
+                  <p className="mb-1 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
+                    Scopes
+                  </p>
+                  <p className="text-xs leading-relaxed text-[var(--color-subtext)]">
+                    {spotifyProfileSummary.scopeText ??
+                      "No scope metadata returned."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
+                <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">
+                  Playlists
+                </p>
+                <div className="max-h-[28rem] space-y-2 overflow-auto pr-1">
+                  {spotifyPlaylists.length === 0 ? (
+                    <p className="text-sm text-[var(--color-subtext)]">
+                      No Spotify playlists were returned.
+                    </p>
+                  ) : (
+                    spotifyPlaylists.map((playlist) => {
+                      const isSelected =
+                        playlist.id === selectedSpotifyPlaylistId;
+
+                      return (
+                        <button
+                          key={playlist.id}
+                          type="button"
+                          onClick={() =>
+                            void loadSpotifyPlaylistDetail(playlist.id)
+                          }
+                          className={`w-full rounded-xl border p-3 text-left transition ${
+                            isSelected
+                              ? "border-[var(--color-accent)] bg-[rgba(121,195,238,0.12)]"
+                              : "border-[var(--color-border)] bg-[var(--color-surface-2)]/70 hover:border-[var(--color-accent)]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+                              {playlist.imageUrl ? (
+                                <Image
+                                  src={playlist.imageUrl}
+                                  alt={playlist.name}
+                                  width={48}
+                                  height={48}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <FileText className="h-4 w-4 text-[var(--color-muted)]" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                                {playlist.name}
+                              </p>
+                              <p className="truncate text-xs text-[var(--color-subtext)]">
+                                {playlist.ownerName ?? "Unknown owner"}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+                                {playlist.trackCount ?? "?"} tracks
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                    {selectedSpotifyPlaylistSummary?.name ??
+                      "Selected playlist"}
+                  </p>
+                  {selectedSpotifyPlaylistSummary?.externalUrl ? (
+                    <a
+                      href={selectedSpotifyPlaylistSummary.externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent)] transition hover:text-[var(--color-accent-light)]"
+                    >
+                      <Link2 className="h-3 w-3" />
+                      Open in Spotify
+                    </a>
+                  ) : null}
+                </div>
+
+                {selectedSpotifyPlaylistId === null ? (
+                  <p className="text-sm text-[var(--color-subtext)]">
+                    Select a playlist to inspect track-level Spotify data.
+                  </p>
+                ) : isSpotifyPlaylistDetailLoading ? (
+                  <div className="flex h-48 items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-[var(--color-accent)]" />
+                  </div>
+                ) : (
+                  <>
+                    {selectedSpotifyPlaylistSummary?.description ? (
+                      <p className="mb-3 text-sm text-[var(--color-subtext)]">
+                        {selectedSpotifyPlaylistSummary.description}
+                      </p>
+                    ) : null}
+
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--color-subtext)]">
+                      <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                        owner:{" "}
+                        <strong className="text-[var(--color-text)]">
+                          {selectedSpotifyPlaylistSummary?.ownerName ?? "n/a"}
+                        </strong>
+                      </span>
+                      <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                        tracks:{" "}
+                        <strong className="text-[var(--color-text)]">
+                          {selectedSpotifyPlaylistTracks.length}
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="max-h-[28rem] space-y-2 overflow-auto pr-1">
+                      {selectedSpotifyPlaylistTracks.length === 0 ? (
+                        <p className="text-sm text-[var(--color-subtext)]">
+                          No track-level Spotify metadata was returned for this
+                          playlist.
+                        </p>
+                      ) : (
+                        selectedSpotifyPlaylistTracks.map((track, index) => (
+                          <div
+                            key={`${track.id ?? "track"}-${index}`}
+                            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+                                {track.imageUrl ? (
+                                  <Image
+                                    src={track.imageUrl}
+                                    alt={track.name}
+                                    width={48}
+                                    height={48}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <FileText className="h-4 w-4 text-[var(--color-muted)]" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                                      {track.name}
+                                    </p>
+                                    <p className="truncate text-xs text-[var(--color-subtext)]">
+                                      {track.artists.length > 0
+                                        ? track.artists.join(", ")
+                                        : "Unknown artist"}
+                                    </p>
+                                  </div>
+                                  <span className="shrink-0 text-[11px] text-[var(--color-muted)]">
+                                    {formatDurationMs(track.durationMs)}
+                                  </span>
+                                </div>
+                                <p className="mt-1 truncate text-[11px] text-[var(--color-muted)]">
+                                  Album: {track.albumName ?? "n/a"}
+                                </p>
+                                {track.externalUrl ? (
+                                  <a
+                                    href={track.externalUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--color-accent)] transition hover:text-[var(--color-accent-light)]"
+                                  >
+                                    <Link2 className="h-3 w-3" />
+                                    Open track
+                                  </a>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <details className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--color-text)]">
+                Raw Spotify payloads
+              </summary>
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                  <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
+                    Auth status
+                  </p>
+                  <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--color-surface)]/70 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
+                    {toJsonPreview(spotifyProfileData?.payload ?? {})}
+                  </pre>
+                </div>
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                  <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
+                    Playlists
+                  </p>
+                  <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--color-surface)]/70 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
+                    {toJsonPreview(spotifyPlaylistsData?.payload ?? {})}
+                  </pre>
+                </div>
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                  <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
+                    Selected playlist
+                  </p>
+                  <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--color-surface)]/70 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
+                    {toJsonPreview(selectedSpotifyPlaylistData?.payload ?? {})}
+                  </pre>
+                </div>
+              </div>
+            </details>
+          </>
         )}
       </div>
 
