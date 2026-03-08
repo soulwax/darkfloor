@@ -14,6 +14,7 @@ import {
   verificationTokens,
 } from "@/server/db/schema";
 import {
+  createSpotifyProvider,
   hashForLog,
   isAuthDebugEnabled,
   isOAuthVerboseDebugEnabled,
@@ -44,6 +45,15 @@ declare module "next-auth" {
 
 const authDebugEnabled = isAuthDebugEnabled();
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
+const spotifyProvider = createSpotifyProvider({
+  enabled: env.AUTH_SPOTIFY_ENABLED,
+  clientId: env.SPOTIFY_CLIENT_ID,
+  clientSecret: env.SPOTIFY_CLIENT_SECRET,
+});
+const configuredProviders = [
+  "discord",
+  ...(spotifyProvider ? ["spotify"] : []),
+];
 
 logAuthInfo("NextAuth config bootstrap", {
   authDebugEnabled,
@@ -53,34 +63,32 @@ logAuthInfo("NextAuth config bootstrap", {
   hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
   authSpotifyEnabled: env.AUTH_SPOTIFY_ENABLED,
   publicAuthSpotifyEnabled: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,
-  spotifyOAuthOwner: "backend",
+  spotifyOAuthOwner: "frontend",
 });
 
-if (env.AUTH_SPOTIFY_ENABLED) {
+if (env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED && !spotifyProvider) {
   logAuthWarn(
-    "Spotify OAuth is backend-managed; NextAuth provider registration is skipped",
+    "Spotify sign-in is enabled in the UI but the Auth.js Spotify provider is unavailable",
     {
       impact:
-        "SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET are ignored by the web runtime.",
+        "Check AUTH_SPOTIFY_ENABLED, SPOTIFY_CLIENT_ID, and SPOTIFY_CLIENT_SECRET.",
     },
   );
 }
 
-if (!env.AUTH_SPOTIFY_ENABLED && env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
+if (env.AUTH_SPOTIFY_ENABLED && !env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
   logAuthWarn(
-    "NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=true while Spotify OAuth is backend-managed",
+    "Spotify Auth.js provider is configured but hidden in the public provider list",
     {
       impact:
-        "Spotify remains available through /api/auth/spotify and upstream backend auth routes.",
+        "Users will not see Spotify as a sign-in option until NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=true.",
     },
   );
 }
 
 logAuthInfo("OAuth providers configured", {
-  providers: ["discord"],
-  backendManagedProviders: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED
-    ? ["spotify"]
-    : [],
+  providers: configuredProviders,
+  backendManagedProviders: [],
 });
 
 export const authConfig = {
@@ -93,6 +101,7 @@ export const authConfig = {
       clientId: env.AUTH_DISCORD_ID,
       clientSecret: env.AUTH_DISCORD_SECRET,
     }),
+    ...(spotifyProvider ? [spotifyProvider] : []),
   ],
   adapter: DrizzleAdapter(db, {
     usersTable: users,

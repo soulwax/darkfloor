@@ -5,9 +5,7 @@
 import {
   getEnabledOAuthUiProviders,
   getOAuthProviderButtonStyle,
-  isBackendManagedOAuthProviderId,
 } from "@/config/oauthProviders";
-import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { springPresets } from "@/utils/spring-animations";
@@ -143,11 +141,6 @@ export function AuthModal({
     });
 
     try {
-      if (isBackendManagedOAuthProviderId(providerId)) {
-        startSpotifyLogin(callbackUrl);
-        return;
-      }
-
       await signIn(providerId, {
         callbackUrl: buildAuthCallbackUrl(callbackUrl, providerId),
       });

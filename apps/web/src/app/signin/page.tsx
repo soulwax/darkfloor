@@ -6,9 +6,7 @@ import { STORAGE_KEYS } from "@starchild/config/storage";
 import {
   getEnabledOAuthUiProviders,
   getOAuthProviderButtonStyle,
-  isBackendManagedOAuthProviderId,
 } from "@/config/oauthProviders";
-import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { localStorage as appStorage } from "@/services/storage";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
@@ -317,11 +315,6 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        if (isBackendManagedOAuthProviderId(provider.id)) {
-                          startSpotifyLogin(callbackUrl);
-                          return;
-                        }
-
                         await signIn(provider.id, {
                           callbackUrl: buildAuthCallbackUrl(
                             callbackUrl,

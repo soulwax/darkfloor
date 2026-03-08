@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
-import { startSpotifyLogin } from "@/services/spotifyAuthClient";
 import { localStorage as appStorage } from "@/services/storage";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { parsePreferredGenreId } from "@/utils/genre";
@@ -684,9 +683,11 @@ export function GuestModal({
 
               <button
                 type="button"
-                onClick={() => {
-                  startSpotifyLogin(callbackUrl);
-                }}
+                onClick={() =>
+                  void signIn("spotify", {
+                    callbackUrl: buildAuthCallbackUrl(callbackUrl, "spotify"),
+                  })
+                }
                 className="h-12 w-full rounded-xl border border-[#1DB954]/40 bg-[#1DB954]/15 px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:bg-[#1DB954]/20 sm:text-sm"
               >
                 Use Spotify instead

@@ -12,7 +12,7 @@ const OAUTH_PROVIDERS = {
   },
   spotify: {
     name: "Spotify",
-    authSource: "backend",
+    authSource: "nextauth",
     buttonStyle:
       "bg-[#1DB954] text-white hover:brightness-110 active:brightness-95",
   },

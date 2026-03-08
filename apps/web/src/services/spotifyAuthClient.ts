@@ -6,6 +6,7 @@ import {
   buildSpotifyFrontendRedirectUri,
   resolveSpotifyPostAuthPath,
 } from "@/utils/spotifyAuthRedirect";
+import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { resolveAuthApiBase } from "@/utils/authApiBase";
 import {
   isClientAuthDebugEnabled,
@@ -737,11 +738,12 @@ export function buildSpotifyBrowserSignInUrl(
 
   const effectiveTraceId = traceId ?? generateTraceId();
   const safeNext = resolveSpotifyPostAuthPath(nextPath, window.location.origin);
+  const callbackUrl = buildAuthCallbackUrl(safeNext, "spotify");
   const signInUrl = new URL(
     SPOTIFY_BROWSER_SIGNIN_PATH,
     window.location.origin,
   );
-  signInUrl.searchParams.set("callbackUrl", safeNext);
+  signInUrl.searchParams.set("callbackUrl", callbackUrl);
   signInUrl.searchParams.set(
     SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
     effectiveTraceId,
@@ -750,6 +752,7 @@ export function buildSpotifyBrowserSignInUrl(
   logSpotifyBrowserDebug("Built browser Spotify sign-in shim URL", {
     requestedNextPath: nextPath,
     safeNextPath: safeNext,
+    callbackUrl,
     traceId: effectiveTraceId,
     signInUrl: signInUrl.toString(),
   });
@@ -768,43 +771,27 @@ export function startSpotifyLogin(
   const safeNextPath = resolveFrontendRedirectPath(nextPath);
   const traceId = generateTraceId();
   persistTraceId(traceId);
-  const directLoginUrl = buildSpotifyLoginUrl(safeNextPath, traceId);
-  const authApiOrigin = (() => {
-    try {
-      return new URL(directLoginUrl).origin;
-    } catch {
-      return resolveAuthApiOrigin();
-    }
-  })();
-  const currentOrigin = window.location.origin;
-  const crossOriginAuthStart = authApiOrigin !== currentOrigin;
+  const signInUrl = buildSpotifyBrowserSignInUrl(safeNextPath, traceId);
 
   logAuthClientDebug("Spotify login initiated", {
     traceId,
     nextPath,
     safeNextPath,
-    directLoginUrl,
-    authApiOrigin,
-    currentOrigin,
-    crossOriginAuthStart,
-    resolvedAuthApiOrigin: resolveAuthApiOrigin(),
+    signInUrl,
     currentUrl: window.location.href,
   });
 
-  logSpotifyBrowserDebug("Navigating browser to Spotify OAuth start", {
+  logSpotifyBrowserDebug("Navigating browser to Spotify Auth.js sign-in", {
     traceId,
     from: window.location.href,
-    to: directLoginUrl,
-    authApiOrigin,
-    currentOrigin,
-    crossOriginAuthStart,
+    to: signInUrl,
   });
   if (navigate) {
-    navigate(directLoginUrl);
+    navigate(signInUrl);
     return;
   }
 
-  window.location.assign(directLoginUrl);
+  window.location.assign(signInUrl);
 }
 
 export function getInMemoryAccessToken(): string | null {
