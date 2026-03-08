@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./index": "./src/index.ts",
     "./settings": "./src/settings.ts",
+    "./spotifySettings": "./src/spotifySettings.ts",
     "./player": "./src/player.ts",
     "./searchSuggestions": "./src/searchSuggestions.ts"
   }

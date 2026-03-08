@@ -13,6 +13,8 @@ export interface Artist {
   type: "artist";
 }
 
+export * from "./spotifySettings";
+
 export interface Album {
   id: number;
   title: string;
@@ -54,13 +56,13 @@ export interface Track {
 }
 
 export type QueueSource =
-  | 'user'
-  | 'smart'
-  | 'playlist'
-  | 'album'
-  | 'artist'
-  | 'radio'
-  | 'recommendation';
+  | "user"
+  | "smart"
+  | "playlist"
+  | "album"
+  | "artist"
+  | "radio"
+  | "recommendation";
 
 export interface QueuedTrack {
   track: Track;
@@ -88,7 +90,7 @@ export interface QueueState {
   smartQueueState: SmartQueueState;
 }
 
-export type RepeatMode = 'none' | 'one' | 'all';
+export type RepeatMode = "none" | "one" | "all";
 
 export interface SmartQueueState {
   isActive: boolean;
@@ -109,10 +111,7 @@ export interface SmartQueueSettings {
   preferLiveVersions: boolean;
 }
 
-export type SimilarityPreference =
-  | 'strict'
-  | 'balanced'
-  | 'diverse';
+export type SimilarityPreference = "strict" | "balanced" | "diverse";
 
 export interface QueueSections {
   nowPlaying: QueuedTrack | null;
@@ -120,7 +119,7 @@ export interface QueueSections {
   smartQueue: QueuedTrack[];
 }
 
-export type PlaylistVisibility = 'public' | 'private' | 'unlisted';
+export type PlaylistVisibility = "public" | "private" | "unlisted";
 
 export interface Playlist {
   id: number;
@@ -141,16 +140,16 @@ export interface Playlist {
 }
 
 export type PlaylistMood =
-  | 'energetic'
-  | 'chill'
-  | 'happy'
-  | 'sad'
-  | 'focused'
-  | 'party'
-  | 'workout'
-  | 'sleep'
-  | 'romantic'
-  | 'melancholic';
+  | "energetic"
+  | "chill"
+  | "happy"
+  | "sad"
+  | "focused"
+  | "party"
+  | "workout"
+  | "sleep"
+  | "romantic"
+  | "melancholic";
 
 export interface PlaylistTrack {
   id: number;
@@ -192,7 +191,7 @@ export interface PlaylistStats {
   lastPlayedAt: Date | null;
 }
 
-export type ProfileVisibility = 'public' | 'friends' | 'private';
+export type ProfileVisibility = "public" | "friends" | "private";
 
 export interface UserProfile {
   userId: string;
@@ -270,7 +269,7 @@ export interface UserPreferences {
   visualizerEnabled: boolean;
 }
 
-export type ThemePreference = 'dark' | 'light' | 'auto';
+export type ThemePreference = "dark" | "light" | "auto";
 
 export interface NotificationPreferences {
   newFollowers: boolean;
@@ -300,19 +299,25 @@ export interface PlaybackPreferences {
   downloadQuality: AudioQuality;
 }
 
-export type AudioQuality = 'low' | 'normal' | 'high' | 'lossless';
+export type AudioQuality = "low" | "normal" | "high" | "lossless";
 
 export interface VisualizerPreferences {
   enabled: boolean;
   pattern: string;
-  colorScheme: 'track' | 'album' | 'custom';
+  colorScheme: "track" | "album" | "custom";
   customColors?: string[];
   sensitivity: number;
   particleCount: number;
   animationSpeed: number;
 }
 
-export type PlayerState = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'buffering';
+export type PlayerState =
+  | "idle"
+  | "loading"
+  | "playing"
+  | "paused"
+  | "error"
+  | "buffering";
 
 export interface AudioPlayerState {
   currentTrack: Track | null;
@@ -338,13 +343,13 @@ export interface PlayerError {
 }
 
 export type PlayerErrorCode =
-  | 'NETWORK_ERROR'
-  | 'DECODE_ERROR'
-  | 'SRC_NOT_SUPPORTED'
-  | 'ABORTED'
-  | 'STREAM_NOT_FOUND'
-  | 'PERMISSION_DENIED'
-  | 'UNKNOWN';
+  | "NETWORK_ERROR"
+  | "DECODE_ERROR"
+  | "SRC_NOT_SUPPORTED"
+  | "ABORTED"
+  | "STREAM_NOT_FOUND"
+  | "PERMISSION_DENIED"
+  | "UNKNOWN";
 
 export interface AudioFeatures {
   trackId: number;
@@ -354,7 +359,7 @@ export interface AudioFeatures {
   rhythm: number | null;
 
   key: string | null;
-  mode: 'major' | 'minor' | null;
+  mode: "major" | "minor" | null;
   harmonicComplexity: number | null;
 
   energy: number | null;
@@ -373,7 +378,7 @@ export interface AudioFeatures {
   confidence: number;
 }
 
-export type AudioAnalysisSource = 'essentia' | 'spotify' | 'librosa' | 'manual';
+export type AudioAnalysisSource = "essentia" | "spotify" | "librosa" | "manual";
 
 export interface EqualizerSettings {
   enabled: boolean;
@@ -382,18 +387,18 @@ export interface EqualizerSettings {
 }
 
 export type EqualizerPreset =
-  | 'Flat'
-  | 'Rock'
-  | 'Pop'
-  | 'Jazz'
-  | 'Classical'
-  | 'Bass Boost'
-  | 'Treble Boost'
-  | 'Vocal'
-  | 'Electronic'
-  | 'Hip Hop'
-  | 'Acoustic'
-  | 'Custom';
+  | "Flat"
+  | "Rock"
+  | "Pop"
+  | "Jazz"
+  | "Classical"
+  | "Bass Boost"
+  | "Treble Boost"
+  | "Vocal"
+  | "Electronic"
+  | "Hip Hop"
+  | "Acoustic"
+  | "Custom";
 
 export interface EqualizerBand {
   frequency: number;
@@ -415,24 +420,24 @@ export interface ListeningHistoryItem {
 }
 
 export type PlaybackSource =
-  | 'queue'
-  | 'playlist'
-  | 'album'
-  | 'artist'
-  | 'search'
-  | 'radio'
-  | 'recommendation'
-  | 'history'
-  | 'favorite';
+  | "queue"
+  | "playlist"
+  | "album"
+  | "artist"
+  | "search"
+  | "radio"
+  | "recommendation"
+  | "history"
+  | "favorite";
 
 export interface PlaybackContext {
-  type: 'playlist' | 'album' | 'artist' | 'radio' | 'queue';
+  type: "playlist" | "album" | "artist" | "radio" | "queue";
   id?: number | string;
   name?: string;
 }
 
 export interface DeviceInfo {
-  type: 'browser' | 'desktop' | 'mobile' | 'tablet';
+  type: "browser" | "desktop" | "mobile" | "tablet";
   name: string;
   os?: string;
   browser?: string;
@@ -453,7 +458,7 @@ export interface ListeningStats {
   listeningByDay: number[];
 }
 
-export type TimePeriod = 'week' | 'month' | 'year' | 'all-time';
+export type TimePeriod = "week" | "month" | "year" | "all-time";
 
 export interface TopTrackItem {
   track: Track;
@@ -514,29 +519,29 @@ export interface RecommendationContext {
 }
 
 export type RecommendationSource =
-  | 'deezer'
-  | 'custom'
-  | 'ml'
-  | 'audio-features'
-  | 'collaborative'
-  | 'content-based';
+  | "deezer"
+  | "custom"
+  | "ml"
+  | "audio-features"
+  | "collaborative"
+  | "content-based";
 
 export interface RecommendedTrack extends Track {
   recommendationContext: RecommendationContext;
 }
 
 export type SimilarityMethod =
-  | 'same-artist'
-  | 'same-album'
-  | 'same-genre'
-  | 'bpm-match'
-  | 'key-match'
-  | 'energy-match'
-  | 'mood-match'
-  | 'collaborative-filtering'
-  | 'audio-similarity'
-  | 'lyric-similarity'
-  | 'user-taste-profile';
+  | "same-artist"
+  | "same-album"
+  | "same-genre"
+  | "bpm-match"
+  | "key-match"
+  | "energy-match"
+  | "mood-match"
+  | "collaborative-filtering"
+  | "audio-similarity"
+  | "lyric-similarity"
+  | "user-taste-profile";
 
 export interface SimilarTrackOptions {
   limit: number;
@@ -618,34 +623,34 @@ export interface ActivityItem {
 }
 
 export type ActivityType =
-  | 'track_played'
-  | 'playlist_created'
-  | 'playlist_updated'
-  | 'track_favorited'
-  | 'user_followed'
-  | 'achievement_unlocked';
+  | "track_played"
+  | "playlist_created"
+  | "playlist_updated"
+  | "track_favorited"
+  | "user_followed"
+  | "achievement_unlocked";
 
 export type ActivityData =
-  | { type: 'track_played'; track: Track }
-  | { type: 'playlist_created'; playlist: Playlist }
-  | { type: 'playlist_updated'; playlist: Playlist }
-  | { type: 'track_favorited'; track: Track }
-  | { type: 'user_followed'; user: UserProfile }
-  | { type: 'achievement_unlocked'; achievement: Achievement };
+  | { type: "track_played"; track: Track }
+  | { type: "playlist_created"; playlist: Playlist }
+  | { type: "playlist_updated"; playlist: Playlist }
+  | { type: "track_favorited"; track: Track }
+  | { type: "user_followed"; user: UserProfile }
+  | { type: "achievement_unlocked"; achievement: Achievement };
 
 export interface Achievement {
   id: string;
   name: string;
   description: string;
   icon: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: "common" | "rare" | "epic" | "legendary";
   unlockedAt: Date;
   progress?: number;
 }
 
 export interface ShareLink {
   id: string;
-  type: 'track' | 'playlist' | 'album' | 'artist' | 'profile';
+  type: "track" | "playlist" | "album" | "artist" | "profile";
   entityId: number | string;
   shortUrl: string;
   fullUrl: string;
@@ -661,18 +666,18 @@ export interface ModalState {
 }
 
 export type ModalType =
-  | 'add-to-playlist'
-  | 'create-playlist'
-  | 'edit-playlist'
-  | 'share'
-  | 'equalizer'
-  | 'queue'
-  | 'settings'
-  | 'user-profile';
+  | "add-to-playlist"
+  | "create-playlist"
+  | "edit-playlist"
+  | "share"
+  | "equalizer"
+  | "queue"
+  | "settings"
+  | "user-profile";
 
 export interface ToastNotification {
   id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: "success" | "error" | "info" | "warning";
   message: string;
   duration?: number;
   action?: ToastAction;
@@ -685,7 +690,7 @@ export interface ToastAction {
 
 export interface KeyboardShortcut {
   key: string;
-  modifiers: Array<'ctrl' | 'shift' | 'alt' | 'meta'>;
+  modifiers: Array<"ctrl" | "shift" | "alt" | "meta">;
   action: string;
   description: string;
   handler: () => void;
@@ -750,7 +755,8 @@ export function isUserProfile(obj: unknown): obj is UserProfile {
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+export type RequiredBy<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>;
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];

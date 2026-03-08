@@ -7,24 +7,31 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { appSignOut } from "@/services/authSignOut";
+import {
+  getSpotifyFeatureConnectionSummary,
+  maskSpotifyClientSecret,
+  spotifyFeatureSettingsStorage,
+} from "@/utils/spotifyFeatureSettings";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SettingsKey } from "@starchild/types/settings";
+import type { SpotifyFeatureSettings } from "@starchild/types/spotifySettings";
 import { hapticLight, hapticToggle } from "@/utils/haptics";
 import { settingsStorage } from "@/utils/settingsStorage";
 import { springPresets } from "@/utils/spring-animations";
 import { motion } from "framer-motion";
 import {
-    ChevronRight,
-    Eye,
-    Music,
-    Settings,
-    Sparkles,
-    User,
-    Volume2,
+  ChevronRight,
+  Disc3,
+  Eye,
+  Music,
+  Settings,
+  Sparkles,
+  User,
+  Volume2,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { getProviders, useSession } from "next-auth/react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface SettingsSection {
@@ -54,11 +61,22 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
-  const { theme: effectiveTheme } = useTheme();
+  useTheme();
 
   const [localSettings, setLocalSettings] = useState(() =>
     settingsStorage.getAll(),
   );
+  const [spotifySettings, setSpotifySettings] =
+    useState<SpotifyFeatureSettings>(() =>
+      spotifyFeatureSettingsStorage.getAll(),
+    );
+  const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(() =>
+    spotifyFeatureSettingsStorage.getAll(),
+  );
+  const [spotifyProviderAvailable, setSpotifyProviderAvailable] =
+    useState(false);
+  const [isCheckingSpotifyProvider, setIsCheckingSpotifyProvider] =
+    useState(true);
 
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
@@ -116,7 +134,7 @@ export default function SettingsPage() {
       html.classList.remove("theme-light");
       if (session) {
         utils.music.getUserPreferences.setData(undefined, (prev) =>
-          prev ? { ...prev, theme: themeValue } : prev
+          prev ? { ...prev, theme: themeValue } : prev,
         );
         updatePreferences.mutate({ theme: themeValue });
       } else {
@@ -139,6 +157,59 @@ export default function SettingsPage() {
   const handleSignOut = () => {
     hapticLight();
     void appSignOut({ callbackUrl: "/" });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getProviders()
+      .then((providers) => {
+        if (cancelled) return;
+        setSpotifyProviderAvailable(Boolean(providers?.spotify));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSpotifyProviderAvailable(false);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsCheckingSpotifyProvider(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const spotifySummary = useMemo(
+    () =>
+      getSpotifyFeatureConnectionSummary({
+        settings: spotifySettings,
+        providerAvailable: spotifyProviderAvailable,
+      }),
+    [spotifyProviderAvailable, spotifySettings],
+  );
+  const spotifyDraftDirty = useMemo(
+    () => JSON.stringify(spotifyDraft) !== JSON.stringify(spotifySettings),
+    [spotifyDraft, spotifySettings],
+  );
+
+  const handleSpotifyDraftChange = (
+    key: keyof SpotifyFeatureSettings,
+    value: string | boolean,
+  ) => {
+    setSpotifyDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSpotifySettingsSave = () => {
+    hapticLight();
+    const saved = spotifyFeatureSettingsStorage.save(spotifyDraft);
+    setSpotifySettings(saved);
+    setSpotifyDraft(saved);
+    showToast("Spotify feature settings saved locally", "success");
   };
 
   if (!session) {
@@ -226,12 +297,12 @@ export default function SettingsPage() {
         ],
         onChange: (value) => {
           const mode = value as "none" | "one" | "all";
-                              const modeOrder: ("none" | "one" | "all")[] = ["none", "all", "one"];
+          const modeOrder: ("none" | "one" | "all")[] = ["none", "all", "one"];
           const currentMode = player.repeatMode;
           const targetIndex = modeOrder.indexOf(mode);
           const currentIndex = modeOrder.indexOf(currentMode);
 
-                    const cyclesNeeded = (targetIndex - currentIndex + 3) % 3;
+          const cyclesNeeded = (targetIndex - currentIndex + 3) % 3;
           for (let i = 0; i < cyclesNeeded; i++) {
             player.cycleRepeatMode();
           }
@@ -302,7 +373,7 @@ export default function SettingsPage() {
           { label: "Disco", value: "Disco" },
           { label: "Soul", value: "Soul" },
           { label: "R&B", value: "R&B" },
-          { label: "Country", value: "Country" }
+          { label: "Country", value: "Country" },
         ],
         onChange: (value) => handleSelect("equalizerPreset", value as string),
       },
@@ -399,7 +470,8 @@ export default function SettingsPage() {
         min: 1,
         max: 10,
         step: 1,
-        onChange: (value) => handleSlider("autoQueueThreshold", value as number),
+        onChange: (value) =>
+          handleSlider("autoQueueThreshold", value as number),
       },
       {
         id: "autoQueueCount",
@@ -468,7 +540,6 @@ export default function SettingsPage() {
     ...(isMobile ? [] : [audioSection]),
     visualSection,
     smartQueueSection,
-    accountSection,
   ];
 
   return (
@@ -517,6 +588,209 @@ export default function SettingsPage() {
             </div>
           </motion.div>
         ))}
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            ...springPresets.gentle,
+            delay: sections.length * 0.04,
+          }}
+        >
+          <div className="mb-4 flex items-center gap-2.5">
+            <div className="text-[#1DB954]">
+              <Disc3 className="h-5 w-5" />
+            </div>
+            <h2 className="text-base font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
+              Spotify
+            </h2>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-lg backdrop-blur-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-[15px] font-medium text-[var(--color-text)]">
+                  Local Spotify feature profile
+                </p>
+                <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[var(--color-subtext)]">
+                  Save Spotify feature inputs locally for this device and use
+                  the readiness check below to confirm the app can surface
+                  Spotify features later. Client secrets stored in a browser are
+                  not safe for shared or production environments.
+                </p>
+              </div>
+              <div
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                  spotifySummary.state === "ready"
+                    ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[#1DB954]"
+                    : spotifySummary.state === "unavailable"
+                      ? "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] text-red-300"
+                      : spotifySummary.state === "incomplete"
+                        ? "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] text-amber-300"
+                        : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
+                }`}
+              >
+                {isCheckingSpotifyProvider
+                  ? "Checking Spotify provider..."
+                  : spotifySummary.label}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
+                <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Spotify features
+                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--color-text)]">
+                    Enable Spotify features on this device
+                  </span>
+                  <ToggleSwitch
+                    checked={spotifyDraft.enabled}
+                    onChange={(checked) =>
+                      handleSpotifyDraftChange("enabled", checked)
+                    }
+                  />
+                </div>
+              </label>
+
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
+                <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Saved secret
+                </p>
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  {maskSpotifyClientSecret(spotifySettings.clientSecret)}
+                </p>
+                <p className="mt-2 text-xs text-[var(--color-subtext)]">
+                  {spotifySettings.updatedAt
+                    ? `Last saved ${new Date(spotifySettings.updatedAt).toLocaleString()}`
+                    : "Not saved yet"}
+                </p>
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Spotify Client ID
+                </span>
+                <input
+                  type="text"
+                  value={spotifyDraft.clientId}
+                  onChange={(event) =>
+                    handleSpotifyDraftChange("clientId", event.target.value)
+                  }
+                  placeholder="Spotify Client ID"
+                  autoComplete="off"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Spotify Username
+                </span>
+                <input
+                  type="text"
+                  value={spotifyDraft.username}
+                  onChange={(event) =>
+                    handleSpotifyDraftChange("username", event.target.value)
+                  }
+                  placeholder="Spotify username"
+                  autoComplete="off"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
+                />
+              </label>
+
+              <label className="block md:col-span-2">
+                <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Spotify Client Secret
+                </span>
+                <input
+                  type="password"
+                  value={spotifyDraft.clientSecret}
+                  onChange={(event) =>
+                    handleSpotifyDraftChange("clientSecret", event.target.value)
+                  }
+                  placeholder="Spotify Client Secret"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/30 p-4">
+              <p className="mb-3 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                Connection checklist
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {spotifySummary.checks.map((check) => (
+                  <div
+                    key={check.id}
+                    className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-2"
+                  >
+                    <span className="text-sm text-[var(--color-text)]">
+                      {check.label}
+                    </span>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        check.ready
+                          ? "bg-[rgba(29,185,84,0.16)] text-[#1DB954]"
+                          : "bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
+                      }`}
+                    >
+                      {check.ready ? "Ready" : "Missing"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleSpotifySettingsSave}
+                disabled={!spotifyDraftDirty}
+                className="rounded-xl bg-[#1DB954] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Save Spotify setup
+              </button>
+              <Link
+                href="/spotify"
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#1DB954] hover:text-[#1DB954]"
+              >
+                Open Spotify page
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            ...springPresets.gentle,
+            delay: (sections.length + 1) * 0.04,
+          }}
+        >
+          <div className="mb-4 flex items-center gap-2.5">
+            <div className="text-[var(--color-accent)]">
+              {accountSection.icon}
+            </div>
+            <h2 className="text-base font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
+              {accountSection.title}
+            </h2>
+          </div>
+
+          <div className="overflow-visible rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg backdrop-blur-sm">
+            {accountSection.items.map((item, itemIndex) => (
+              <SettingsItemComponent
+                key={item.id}
+                item={item}
+                index={itemIndex}
+                isLast={itemIndex === accountSection.items.length - 1}
+              />
+            ))}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -535,7 +809,9 @@ function SettingsItemComponent({
 
   // Sync local value with prop - intentional controlled component pattern
   /* eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync prop to state */
-  useEffect(() => { setLocalValue(item.value); }, [item.value]);
+  useEffect(() => {
+    setLocalValue(item.value);
+  }, [item.value]);
 
   const handleChange = (newValue: boolean | number | string) => {
     setLocalValue(newValue);
@@ -835,43 +1111,43 @@ function SelectButton({
     : undefined;
 
   const dropdownPortal =
-    typeof document !== "undefined" && isOpen && dropdownStyle ? (
-      createPortal(
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={springPresets.snappy}
-            className="theme-panel mt-2 overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl"
-            style={dropdownStyle}
-          >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  hapticLight();
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-4 py-3 text-left text-[14px] font-medium transition-colors ${
-                  value === option.value
-                    ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
-                    : "text-[var(--color-text)] active:bg-[var(--color-surface-hover)] md:hover:bg-[var(--color-surface-hover)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </motion.div>
-        </>,
-        document.body,
-      )
-    ) : null;
+    typeof document !== "undefined" && isOpen && dropdownStyle
+      ? createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              transition={springPresets.snappy}
+              className="theme-panel mt-2 overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl"
+              style={dropdownStyle}
+            >
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    hapticLight();
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                    value === option.value
+                      ? "bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
+                      : "text-[var(--color-text)] active:bg-[var(--color-surface-hover)] md:hover:bg-[var(--color-surface-hover)]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </motion.div>
+          </>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="relative">
