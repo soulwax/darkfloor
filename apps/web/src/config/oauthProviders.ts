@@ -76,48 +76,23 @@ export function isEnabledOAuthProvider<T extends { id: string; type: string }>(
   return provider.type === "oauth" && isEnabledOAuthProviderId(provider.id);
 }
 
-export function isBackendManagedOAuthProviderId(
-  providerId: string,
-): providerId is SupportedOAuthProviderId {
-  return (
-    isEnabledOAuthProviderId(providerId) &&
-    OAUTH_PROVIDERS[providerId].authSource === "backend"
-  );
-}
-
 export function getEnabledOAuthUiProviders(
   providers?: Record<string, OAuthRuntimeProvider> | null,
 ): EnabledOAuthUiProvider[] {
-  const resolved: EnabledOAuthUiProvider[] = [];
-  const seen = new Set<SupportedOAuthProviderId>();
+  if (!providers) return [];
 
-  if (providers) {
-    for (const provider of Object.values(providers)) {
-      if (!isEnabledOAuthProvider(provider)) continue;
+  return ENABLED_OAUTH_PROVIDER_IDS.flatMap((providerId) => {
+    const provider = providers[providerId];
+    if (!provider || !isEnabledOAuthProvider(provider)) return [];
 
-      resolved.push({
+    return [
+      {
         id: provider.id,
         name: provider.name || OAUTH_PROVIDERS[provider.id].name,
         authSource: OAUTH_PROVIDERS[provider.id].authSource,
-      });
-      seen.add(provider.id);
-    }
-  }
-
-  for (const providerId of ENABLED_OAUTH_PROVIDER_IDS) {
-    if (seen.has(providerId)) continue;
-
-    const config = OAUTH_PROVIDERS[providerId];
-    if (config.authSource !== "backend") continue;
-
-    resolved.push({
-      id: providerId,
-      name: config.name,
-      authSource: config.authSource,
-    });
-  }
-
-  return resolved;
+      },
+    ];
+  });
 }
 
 /**

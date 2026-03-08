@@ -49,19 +49,21 @@ Fix:
 3. Verify Discord OAuth callback URL configuration.
 4. Check auth handler logs from `apps/web/src/server/auth/*`.
 
-## Spotify OAuth fails in split-origin deployments
+## Spotify Auth.js login fails
 
 Symptoms:
 
-- callback succeeds upstream but frontend remains unauthenticated
-- CSRF/cookie mismatch in refresh calls
+- `/api/auth/signin/spotify` or `/api/auth/callback/spotify` fails
+- Spotify is missing from `/api/auth/providers`
+- callback loops or lands back on sign-in unexpectedly
 
 Fix:
 
-1. Set `NEXT_PUBLIC_AUTH_API_ORIGIN`.
-2. Start login at `${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...`.
-3. Ensure backend allows frontend origin in `AUTH_FRONTEND_ORIGINS`.
-4. Ensure browser requests include credentials and CSRF token where required.
+1. Validate `AUTH_SPOTIFY_ENABLED`, `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED`, `SPOTIFY_CLIENT_ID`, and `SPOTIFY_CLIENT_SECRET`.
+2. Ensure `NEXTAUTH_URL` matches the deployed frontend origin.
+3. Verify the Spotify app callback URL is `${NEXTAUTH_URL}/api/auth/callback/spotify`.
+4. Confirm `/api/auth/providers` includes `spotify`.
+5. Use same-origin Auth.js login (`signIn("spotify")` or `/api/auth/signin/spotify`) for the normal web flow. `NEXT_PUBLIC_AUTH_API_ORIGIN` only applies to legacy backend auth proxy/debug routes.
 
 ## Database connection failures
 

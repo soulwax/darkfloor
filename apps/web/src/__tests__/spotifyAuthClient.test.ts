@@ -32,20 +32,20 @@ describe("spotifyAuthClient", () => {
     window.localStorage.clear();
   });
 
-  it("builds login URL with frontend callback URI", () => {
+  it("builds login URL through the local Auth.js provider route", () => {
     window.history.replaceState({}, "", "/signin");
     const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
     const parsed = new URL(loginUrl, window.location.origin);
-    const frontendRedirect = parsed.searchParams.get("frontend_redirect_uri");
 
     expect(parsed.origin).toBe(expectedAuthOrigin());
-    expect(parsed.pathname).toBe("/api/auth/spotify");
-    expect(frontendRedirect).toContain("/auth/spotify/callback");
-    expect(frontendRedirect).toContain("next=%2Fplaylists%3Ftab%3Dmine");
-    expect(frontendRedirect).toContain("trace=");
+    expect(parsed.pathname).toBe("/api/auth/signin/spotify");
+    expect(parsed.searchParams.get("callbackUrl")).toBe(
+      "/auth/callback?next=%2Fplaylists%3Ftab%3Dmine&provider=spotify",
+    );
+    expect(parsed.searchParams.get("trace")).toBeTruthy();
   });
 
-  it("builds login URL with frontend callback URI in Electron runtime", () => {
+  it("builds login URL through the local Auth.js provider route in Electron runtime", () => {
     const originalElectron = window.electron;
     window.electron = {
       isElectron: true,
@@ -59,13 +59,13 @@ describe("spotifyAuthClient", () => {
     try {
       const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
       const parsed = new URL(loginUrl, window.location.origin);
-      const frontendRedirect = parsed.searchParams.get("frontend_redirect_uri");
 
       expect(parsed.origin).toBe(expectedAuthOrigin());
-      expect(parsed.pathname).toBe("/api/auth/spotify");
-      expect(frontendRedirect).toContain("/auth/spotify/callback");
-      expect(frontendRedirect).toContain("next=%2Fplaylists%3Ftab%3Dmine");
-      expect(frontendRedirect).toContain("trace=");
+      expect(parsed.pathname).toBe("/api/auth/signin/spotify");
+      expect(parsed.searchParams.get("callbackUrl")).toBe(
+        "/auth/callback?next=%2Fplaylists%3Ftab%3Dmine&provider=spotify",
+      );
+      expect(parsed.searchParams.get("trace")).toBeTruthy();
     } finally {
       if (originalElectron) {
         window.electron = originalElectron;
@@ -88,14 +88,15 @@ describe("spotifyAuthClient", () => {
     expect(parsed.searchParams.get("trace")).toBeTruthy();
   });
 
-  it("prefers configured auth API origin when env override is provided", () => {
+  it("keeps login on the frontend origin even when auth API base is configured", () => {
     const previous = process.env.NEXT_PUBLIC_AUTH_API_BASE;
     process.env.NEXT_PUBLIC_AUTH_API_BASE = "https://auth.example.com/";
 
     try {
       const loginUrl = buildSpotifyLoginUrl("/playlists?tab=mine");
       const parsed = new URL(loginUrl, window.location.origin);
-      expect(parsed.origin).toBe("https://auth.example.com");
+      expect(parsed.origin).toBe(window.location.origin);
+      expect(parsed.pathname).toBe("/api/auth/signin/spotify");
     } finally {
       if (previous === undefined) {
         delete process.env.NEXT_PUBLIC_AUTH_API_BASE;
@@ -161,13 +162,10 @@ describe("spotifyAuthClient", () => {
     window.history.replaceState({}, "", "/signin");
     const loginUrl = buildSpotifyLoginUrl("/");
     const parsed = new URL(loginUrl, window.location.origin);
-    const frontendRedirect = parsed.searchParams.get("frontend_redirect_uri");
-
-    expect(frontendRedirect).toBeTruthy();
-    const callbackUrl = new URL(
-      frontendRedirect ?? "https://www.darkfloor.org/auth/spotify/callback",
+    expect(parsed.pathname).toBe("/api/auth/signin/spotify");
+    expect(parsed.searchParams.get("callbackUrl")).toBe(
+      "/auth/callback?next=%2Flibrary&provider=spotify",
     );
-    expect(callbackUrl.searchParams.get("next")).toBe("/library");
   });
 
   it("sanitizes redirect destinations to same-origin paths", () => {

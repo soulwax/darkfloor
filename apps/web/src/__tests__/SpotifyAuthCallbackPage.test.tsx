@@ -47,7 +47,9 @@ describe("SpotifyAuthCallbackPage", () => {
       ),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry Spotify Sign-In" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retry Spotify Sign-In" }),
+    );
 
     await waitFor(() => {
       expect(nextAuthState.signIn).toHaveBeenCalledWith("spotify", {

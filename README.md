@@ -94,19 +94,19 @@ The typed env schema lives in `apps/web/src/env.js`. When adding/changing env va
 
 Common variables:
 
-| Variable | Status | Purpose |
-| --- | --- | --- |
-| `AUTH_SECRET` | required | NextAuth secret (min length enforced) |
-| `AUTH_DISCORD_ID` | required | Discord OAuth client id |
-| `AUTH_DISCORD_SECRET` | required | Discord OAuth client secret |
-| `DATABASE_URL` | required at runtime | Postgres connection string |
-| `NEXTAUTH_URL` | recommended | Canonical app/auth base URL |
-| `API_V2_URL` | required for V2 proxy routes | Upstream API base URL |
-| `SONGBIRD_API_URL` | required for `/api/songbird/*` routes | Songbird API base URL |
-| `UNIVERSAL_KEY` or `BLUESIX_API_KEY` | recommended | Upstream API auth key aliases used by proxy helpers |
-| `AUTH_SPOTIFY_ENABLED` + `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED` | optional | Spotify auth feature flag pair |
-| `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` | required when Spotify auth is enabled | Spotify OAuth credentials |
-| `NEXT_PUBLIC_AUTH_API_ORIGIN` | optional | Canonical auth origin for cross-origin Spotify auth flows |
+| Variable                                                    | Status                                | Purpose                                                                                                                |
+| ----------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_SECRET`                                               | required                              | NextAuth secret (min length enforced)                                                                                  |
+| `AUTH_DISCORD_ID`                                           | required                              | Discord OAuth client id                                                                                                |
+| `AUTH_DISCORD_SECRET`                                       | required                              | Discord OAuth client secret                                                                                            |
+| `DATABASE_URL`                                              | required at runtime                   | Postgres connection string                                                                                             |
+| `NEXTAUTH_URL`                                              | recommended                           | Canonical app/auth base URL                                                                                            |
+| `API_V2_URL`                                                | required for V2 proxy routes          | Upstream API base URL                                                                                                  |
+| `SONGBIRD_API_URL`                                          | required for `/api/songbird/*` routes | Songbird API base URL                                                                                                  |
+| `UNIVERSAL_KEY` or `BLUESIX_API_KEY`                        | recommended                           | Upstream API auth key aliases used by proxy helpers                                                                    |
+| `AUTH_SPOTIFY_ENABLED` + `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED` | optional                              | Spotify auth feature flag pair                                                                                         |
+| `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET`               | required when Spotify auth is enabled | Spotify OAuth credentials                                                                                              |
+| `NEXT_PUBLIC_AUTH_API_ORIGIN`                               | optional                              | Legacy auth API origin used by backend auth proxy/debug routes; normal Spotify sign-in uses same-origin Auth.js routes |
 
 Notes:
 
@@ -115,19 +115,19 @@ Notes:
 
 ## Development Commands
 
-| Command | Description |
-| --- | --- |
-| `pnpm dev` | Start custom dev server wrapper (`scripts/server.js`) |
-| `pnpm dev:next` | Start plain Next.js dev server on port `3222` |
-| `pnpm build` | Build web app (`apps/web`) |
-| `pnpm start` | Start production server via custom wrapper |
-| `pnpm check` | Boundary check + lint + typecheck |
-| `pnpm test` | Run Vitest suite in `apps/web` |
-| `pnpm format:write` | Format repository code |
-| `pnpm electron:dev` | Run dev server and Electron together |
-| `pnpm ws:build` | Build all workspaces with Turborepo |
-| `pnpm ws:check` | Run workspace checks with Turborepo |
-| `pnpm ws:test` | Run workspace tests with Turborepo |
+| Command             | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
+| `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
+| `pnpm build`        | Build web app (`apps/web`)                            |
+| `pnpm start`        | Start production server via custom wrapper            |
+| `pnpm check`        | Boundary check + lint + typecheck                     |
+| `pnpm test`         | Run Vitest suite in `apps/web`                        |
+| `pnpm format:write` | Format repository code                                |
+| `pnpm electron:dev` | Run dev server and Electron together                  |
+| `pnpm ws:build`     | Build all workspaces with Turborepo                   |
+| `pnpm ws:check`     | Run workspace checks with Turborepo                   |
+| `pnpm ws:test`      | Run workspace tests with Turborepo                    |
 
 ## Key Paths
 
@@ -155,14 +155,14 @@ Notes:
 
 ## API Surface Summary
 
-| Surface | Path | Role |
-| --- | --- | --- |
-| tRPC endpoint | `apps/web/src/app/api/trpc/[trpc]/route.ts` | Internal app API for DB-backed features |
-| NextAuth endpoint | `apps/web/src/app/api/auth/[...nextauth]/route.ts` | Session + OAuth flow handling |
-| Health endpoint | `apps/web/src/app/api/health/route.ts` | Local health checks |
-| V2 proxy routes | `apps/web/src/app/api/v2/**/route.ts` | Generic upstream V2 proxy endpoints |
-| Music proxy routes | `apps/web/src/app/api/music/**/route.ts` | Discovery/search/playlists proxy endpoints |
-| Songbird routes | `apps/web/src/app/api/songbird/**/route.ts` | Token-authenticated Songbird endpoints |
+| Surface            | Path                                               | Role                                       |
+| ------------------ | -------------------------------------------------- | ------------------------------------------ |
+| tRPC endpoint      | `apps/web/src/app/api/trpc/[trpc]/route.ts`        | Internal app API for DB-backed features    |
+| NextAuth endpoint  | `apps/web/src/app/api/auth/[...nextauth]/route.ts` | Session + OAuth flow handling              |
+| Health endpoint    | `apps/web/src/app/api/health/route.ts`             | Local health checks                        |
+| V2 proxy routes    | `apps/web/src/app/api/v2/**/route.ts`              | Generic upstream V2 proxy endpoints        |
+| Music proxy routes | `apps/web/src/app/api/music/**/route.ts`           | Discovery/search/playlists proxy endpoints |
+| Songbird routes    | `apps/web/src/app/api/songbird/**/route.ts`        | Token-authenticated Songbird endpoints     |
 
 For route-level details, see `docs/API_ROUTE_USE.md`.
 

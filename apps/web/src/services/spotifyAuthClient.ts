@@ -136,7 +136,8 @@ function resolveAuthApiOrigin(): string {
     configuredBase:
       process.env.NEXT_PUBLIC_AUTH_API_BASE ??
       process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
-    fallbackOrigin: typeof window !== "undefined" ? window.location.origin : null,
+    fallbackOrigin:
+      typeof window !== "undefined" ? window.location.origin : null,
   });
 }
 
@@ -708,23 +709,14 @@ export function buildSpotifyLoginUrl(
   nextPath: string,
   traceId?: string,
 ): string {
-  const effectiveTraceId = traceId ?? generateTraceId();
-  const frontendRedirectUri = buildSpotifyFrontendCallbackUrl(
-    nextPath,
-    effectiveTraceId,
-  );
-  const params = new URLSearchParams({
-    frontend_redirect_uri: frontendRedirectUri,
-  });
-  const loginEndpoint = buildAuthEndpoint("/api/auth/spotify");
-  const loginUrl = `${loginEndpoint}?${params.toString()}`;
-  logSpotifyBrowserDebug("Built direct Spotify OAuth URL", {
+  const loginUrl = buildSpotifyBrowserSignInUrl(nextPath, traceId);
+
+  logSpotifyBrowserDebug("Built Spotify Auth.js login URL", {
     requestedNextPath: nextPath,
-    traceId: effectiveTraceId,
-    frontendRedirectUri,
-    loginEndpoint,
+    traceId,
     loginUrl,
   });
+
   return loginUrl;
 }
 
@@ -749,7 +741,7 @@ export function buildSpotifyBrowserSignInUrl(
     effectiveTraceId,
   );
 
-  logSpotifyBrowserDebug("Built browser Spotify sign-in shim URL", {
+  logSpotifyBrowserDebug("Built browser Spotify Auth.js sign-in URL", {
     requestedNextPath: nextPath,
     safeNextPath: safeNext,
     callbackUrl,

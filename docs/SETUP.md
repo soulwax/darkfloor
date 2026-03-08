@@ -37,21 +37,21 @@ The typed schema is defined in `apps/web/src/env.js`.
 
 Minimum required values for a functional local app:
 
-| Variable | Why it is needed |
-| --- | --- |
-| `AUTH_SECRET` | Required by NextAuth (`min(32)` enforced). |
-| `AUTH_DISCORD_ID` | Required by Discord provider config. |
-| `AUTH_DISCORD_SECRET` | Required by Discord provider config. |
-| `DATABASE_URL` | Required at runtime by `apps/web/src/server/db/index.ts`. |
-| `API_V2_URL` | Base URL for Bluesix/Songbird V2 proxy routes. |
-| `BLUESIX_API_KEY` (or `UNIVERSAL_KEY`) | Auth key used by stream/search and other upstream calls. |
+| Variable                               | Why it is needed                                          |
+| -------------------------------------- | --------------------------------------------------------- |
+| `AUTH_SECRET`                          | Required by NextAuth (`min(32)` enforced).                |
+| `AUTH_DISCORD_ID`                      | Required by Discord provider config.                      |
+| `AUTH_DISCORD_SECRET`                  | Required by Discord provider config.                      |
+| `DATABASE_URL`                         | Required at runtime by `apps/web/src/server/db/index.ts`. |
+| `API_V2_URL`                           | Base URL for Bluesix/Songbird V2 proxy routes.            |
+| `BLUESIX_API_KEY` (or `UNIVERSAL_KEY`) | Auth key used by stream/search and other upstream calls.  |
 
 Useful optional values:
 
 - `NEXTAUTH_URL` (recommended canonical app/auth URL)
 - `AUTH_SPOTIFY_ENABLED` + `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED`
 - `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` (required when Spotify auth is enabled)
-- `NEXT_PUBLIC_AUTH_API_ORIGIN` (for split frontend/auth origins)
+- `NEXT_PUBLIC_AUTH_API_ORIGIN` (optional legacy auth API origin for backend auth proxy/debug routes)
 
 Generate an auth secret (any strong 32+ char value works):
 
@@ -116,13 +116,13 @@ pnpm check
 pnpm test
 ```
 
-## Cross-origin Spotify OAuth note
+## Spotify login note
 
-When frontend and auth API run on different origins, initiate login on the canonical auth origin:
+The normal web Spotify login flow is frontend-owned and starts on the app origin:
 
-- `${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...`
+- `/api/auth/signin/spotify`
 
-This ensures PKCE/session cookies are minted on the callback origin.
+`NEXT_PUBLIC_AUTH_API_ORIGIN` is not required for standard Spotify sign-in. Keep it only if you still rely on legacy backend auth proxy/debug routes such as `/api/auth/spotify*` or `/api/auth/me`.
 
 ## Common setup pitfalls
 

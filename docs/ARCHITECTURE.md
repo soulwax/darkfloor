@@ -103,7 +103,7 @@ Use route handlers for upstream transport concerns (headers, retries, auth forwa
 - Endpoint: `apps/web/src/app/api/auth/[...nextauth]/route.ts`
 - Persistence: Postgres via Drizzle adapter
 
-For split-origin Spotify auth setups, login must begin on the canonical auth API origin to issue callback cookies on the correct domain.
+Spotify web login is frontend-owned through Auth.js on the app origin (`/api/auth/signin/spotify` -> `/api/auth/callback/spotify`). The proxy routes under `/api/auth/spotify*` remain available only for legacy/backend integrations and diagnostics.
 
 ## Subsystem deep dives
 

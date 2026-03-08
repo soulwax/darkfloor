@@ -297,5 +297,4 @@ describe("Spotify auth proxy routes", () => {
     expect(body.error).toMatch(/API_V2_URL/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
-
 });

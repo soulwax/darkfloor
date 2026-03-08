@@ -1921,7 +1921,7 @@ export default function AdminPage() {
                     <p className="text-sm text-[var(--color-subtext)]">
                       {hasSpotifyPlaylistScope
                         ? "No Spotify playlists were returned for this session."
-                        : "Playlist data has not been loaded. Under the narrowed backend OAuth flow, this should be considered a separate elevated-consent path."}
+                        : "Playlist data has not been loaded. Treat this as a separate elevated-consent path from the default Spotify login flow."}
                     </p>
                   ) : (
                     spotifyPlaylists.map((playlist) => {
