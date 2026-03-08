@@ -4,18 +4,29 @@ Last updated: 2026-03-08
 
 ## Summary
 
-The best first Spotify perk for Starchild is:
+The best first elevated-consent Spotify perk for Starchild is:
 
 `Import Spotify playlist -> translate tracks to Deezer -> save as a normal Starchild playlist`
 
-This gives Spotify-connected users immediate value without needing Spotify write access, two-way sync, or background jobs on day one.
+This remains a strong feature, but it is no longer part of basic Spotify login. Backend Spotify OAuth was narrowed to profile login only, so playlist import now needs a separate elevated-consent flow.
 
 The feature should treat Spotify as a read source and the local Starchild playlist as the canonical playback object.
+
+## Scope caveat
+
+Basic Spotify login now defaults to:
+
+- `user-read-email`
+- `user-read-private`
+
+That means the current login flow should only be used for account connection and profile identity. Frontend must not assume playlist, library, top-track, or recently-played access immediately after login.
+
+This document therefore describes a future elevated-consent flow for playlist import, not the default post-login capability set.
 
 ## Why this should be first
 
 - Users instantly understand it.
-- It uses the Spotify data already available from the current OAuth scopes.
+- It is the highest-value feature once the user grants elevated Spotify consent.
 - It turns Spotify taste/history into something playable in the Starchild frontend.
 - It reuses the app's existing playlist, playback, and Deezer track infrastructure.
 - It avoids promising true sync before the matching and review experience is mature.
@@ -51,31 +62,34 @@ The feature should treat Spotify as a read source and the local Starchild playli
 
 ### Entry points
 
+- `Settings > Connections > Spotify`: account state, elevated-consent request, import history, and re-import.
 - `Library` page: primary `Import from Spotify` CTA.
 - `Playlists` page: secondary `Import from Spotify` CTA.
-- `Settings > Connections > Spotify`: entry point for account state, import history, and re-import.
 
 ### Primary flow
 
-1. User clicks `Import from Spotify`.
-2. Frontend loads the user's Spotify playlists from a local proxy route.
-3. User selects a playlist.
-4. Frontend loads playlist details and runs an import preview.
-5. Preview shows:
+1. User starts from an already connected basic Spotify account.
+2. User explicitly grants elevated Spotify playlist consent.
+3. User clicks `Import from Spotify`.
+4. Frontend loads the user's Spotify playlists from a local proxy route.
+5. User selects a playlist.
+6. Frontend loads playlist details and runs an import preview.
+7. Preview shows:
    - playlist artwork, name, owner, track count
    - matched track count
    - low-confidence track count
    - unmatched track count
-6. User chooses:
+8. User chooses:
    - `Import matched tracks`
    - `Review low-confidence matches`
    - `Cancel`
-7. App creates a normal local playlist and inserts matched Deezer tracks.
-8. Success screen shows:
-   - local playlist link
-   - match summary
-   - unresolved track count
-   - optional `Review unresolved tracks`
+9. App creates a normal local playlist and inserts matched Deezer tracks.
+10. Success screen shows:
+
+- local playlist link
+- match summary
+- unresolved track count
+- optional `Review unresolved tracks`
 
 ### Review flow
 
@@ -122,8 +136,10 @@ Add local proxy routes for Spotify reads:
 
 - `GET /api/spotify/playlists`
   - proxies upstream `GET /spotify/playlists`
+  - only valid after elevated Spotify playlist consent
 - `GET /api/spotify/playlists/[playlistId]`
   - proxies upstream `GET /spotify/playlists/{playlistId}`
+  - only valid after elevated Spotify playlist consent
 
 Optional later:
 
@@ -235,26 +251,26 @@ Purpose:
 
 Suggested columns:
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `integer` PK | local import id |
-| `userId` | `varchar` FK -> `users.id` | owner |
-| `provider` | `varchar(32)` | start with `spotify` |
-| `providerPlaylistId` | `varchar(255)` | Spotify playlist id |
-| `providerPlaylistUrl` | `varchar(512)` nullable | source URL |
-| `providerPlaylistName` | `varchar(256)` | source name at import time |
-| `providerOwnerName` | `varchar(256)` nullable | playlist owner label |
-| `providerSnapshotId` | `varchar(255)` nullable | Spotify snapshot/version if available |
-| `localPlaylistId` | `integer` FK -> `playlists.id` nullable | created local playlist |
-| `status` | `varchar(32)` | `previewed`, `imported`, `partial`, `failed` |
-| `totalTracks` | `integer` | source total |
-| `matchedTracks` | `integer` | imported matches |
-| `lowConfidenceTracks` | `integer` | reviewable matches |
-| `unmatchedTracks` | `integer` | unresolved count |
-| `createdAt` | `timestamp` | run started |
-| `completedAt` | `timestamp` nullable | run finished |
-| `lastError` | `text` nullable | import failure summary |
-| `rawSourcePayload` | `jsonb` nullable | optional compact playlist metadata snapshot |
+| Column                 | Type                                    | Notes                                        |
+| ---------------------- | --------------------------------------- | -------------------------------------------- |
+| `id`                   | `integer` PK                            | local import id                              |
+| `userId`               | `varchar` FK -> `users.id`              | owner                                        |
+| `provider`             | `varchar(32)`                           | start with `spotify`                         |
+| `providerPlaylistId`   | `varchar(255)`                          | Spotify playlist id                          |
+| `providerPlaylistUrl`  | `varchar(512)` nullable                 | source URL                                   |
+| `providerPlaylistName` | `varchar(256)`                          | source name at import time                   |
+| `providerOwnerName`    | `varchar(256)` nullable                 | playlist owner label                         |
+| `providerSnapshotId`   | `varchar(255)` nullable                 | Spotify snapshot/version if available        |
+| `localPlaylistId`      | `integer` FK -> `playlists.id` nullable | created local playlist                       |
+| `status`               | `varchar(32)`                           | `previewed`, `imported`, `partial`, `failed` |
+| `totalTracks`          | `integer`                               | source total                                 |
+| `matchedTracks`        | `integer`                               | imported matches                             |
+| `lowConfidenceTracks`  | `integer`                               | reviewable matches                           |
+| `unmatchedTracks`      | `integer`                               | unresolved count                             |
+| `createdAt`            | `timestamp`                             | run started                                  |
+| `completedAt`          | `timestamp` nullable                    | run finished                                 |
+| `lastError`            | `text` nullable                         | import failure summary                       |
+| `rawSourcePayload`     | `jsonb` nullable                        | optional compact playlist metadata snapshot  |
 
 Suggested indexes:
 
@@ -271,26 +287,26 @@ Purpose:
 
 Suggested columns:
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `integer` PK | local item id |
-| `importId` | `integer` FK -> `external_playlist_import.id` | parent run |
-| `sourcePosition` | `integer` | order inside Spotify playlist |
-| `providerTrackId` | `varchar(255)` nullable | Spotify track id |
-| `providerTrackName` | `varchar(512)` | raw Spotify title |
-| `providerArtistName` | `varchar(512)` nullable | flattened primary artist |
-| `providerAlbumName` | `varchar(512)` nullable | album label |
-| `providerDurationMs` | `integer` nullable | Spotify duration |
-| `providerIsrc` | `varchar(32)` nullable | best exact-match key |
-| `matchStatus` | `varchar(32)` | `matched`, `low_confidence`, `unmatched`, `skipped`, `manual_override` |
-| `matchMethod` | `varchar(32)` nullable | `isrc`, `metadata_exact`, `metadata_fuzzy`, `manual` |
-| `matchConfidence` | `numeric(5,4)` nullable | `0.0000` to `1.0000` |
-| `deezerTrackId` | `bigint` nullable | matched Deezer id |
-| `playlistTrackId` | `integer` FK -> `playlistTracks.id` nullable | inserted local playlist row |
-| `rawSourceTrackPayload` | `jsonb` nullable | compact Spotify track snapshot |
-| `rawMatchPayload` | `jsonb` nullable | candidate/matcher snapshot |
-| `createdAt` | `timestamp` | item created |
-| `updatedAt` | `timestamp` nullable | review/update time |
+| Column                  | Type                                          | Notes                                                                  |
+| ----------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| `id`                    | `integer` PK                                  | local item id                                                          |
+| `importId`              | `integer` FK -> `external_playlist_import.id` | parent run                                                             |
+| `sourcePosition`        | `integer`                                     | order inside Spotify playlist                                          |
+| `providerTrackId`       | `varchar(255)` nullable                       | Spotify track id                                                       |
+| `providerTrackName`     | `varchar(512)`                                | raw Spotify title                                                      |
+| `providerArtistName`    | `varchar(512)` nullable                       | flattened primary artist                                               |
+| `providerAlbumName`     | `varchar(512)` nullable                       | album label                                                            |
+| `providerDurationMs`    | `integer` nullable                            | Spotify duration                                                       |
+| `providerIsrc`          | `varchar(32)` nullable                        | best exact-match key                                                   |
+| `matchStatus`           | `varchar(32)`                                 | `matched`, `low_confidence`, `unmatched`, `skipped`, `manual_override` |
+| `matchMethod`           | `varchar(32)` nullable                        | `isrc`, `metadata_exact`, `metadata_fuzzy`, `manual`                   |
+| `matchConfidence`       | `numeric(5,4)` nullable                       | `0.0000` to `1.0000`                                                   |
+| `deezerTrackId`         | `bigint` nullable                             | matched Deezer id                                                      |
+| `playlistTrackId`       | `integer` FK -> `playlistTracks.id` nullable  | inserted local playlist row                                            |
+| `rawSourceTrackPayload` | `jsonb` nullable                              | compact Spotify track snapshot                                         |
+| `rawMatchPayload`       | `jsonb` nullable                              | candidate/matcher snapshot                                             |
+| `createdAt`             | `timestamp`                                   | item created                                                           |
+| `updatedAt`             | `timestamp` nullable                          | review/update time                                                     |
 
 Suggested indexes:
 
@@ -307,18 +323,18 @@ Purpose:
 
 Suggested columns:
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `integer` PK | local override id |
-| `userId` | `varchar` FK -> `users.id` | owner |
-| `provider` | `varchar(32)` | `spotify` |
-| `providerTrackId` | `varchar(255)` nullable | preferred stable key |
-| `providerIsrc` | `varchar(32)` nullable | fallback exact key |
-| `providerFingerprint` | `varchar(512)` | normalized `artist + title + duration` fingerprint |
-| `deezerTrackId` | `bigint` | chosen Deezer track |
-| `reason` | `varchar(64)` nullable | `manual_review`, `preferred_version`, etc. |
-| `createdAt` | `timestamp` | created time |
-| `updatedAt` | `timestamp` nullable | last touched |
+| Column                | Type                       | Notes                                              |
+| --------------------- | -------------------------- | -------------------------------------------------- |
+| `id`                  | `integer` PK               | local override id                                  |
+| `userId`              | `varchar` FK -> `users.id` | owner                                              |
+| `provider`            | `varchar(32)`              | `spotify`                                          |
+| `providerTrackId`     | `varchar(255)` nullable    | preferred stable key                               |
+| `providerIsrc`        | `varchar(32)` nullable     | fallback exact key                                 |
+| `providerFingerprint` | `varchar(512)`             | normalized `artist + title + duration` fingerprint |
+| `deezerTrackId`       | `bigint`                   | chosen Deezer track                                |
+| `reason`              | `varchar(64)` nullable     | `manual_review`, `preferred_version`, etc.         |
+| `createdAt`           | `timestamp`                | created time                                       |
+| `updatedAt`           | `timestamp` nullable       | last touched                                       |
 
 Suggested indexes:
 
@@ -358,13 +374,13 @@ Output:
     imageUrl: string | null;
     ownerName: string | null;
     trackCount: number;
-  };
+  }
   summary: {
     total: number;
     matched: number;
     lowConfidence: number;
     unmatched: number;
-  };
+  }
   items: Array<{
     sourcePosition: number;
     spotifyTrackId: string | null;
@@ -436,6 +452,8 @@ Output:
 
 Do not call this `Spotify sync` in v1.
 
+Do not position this as part of the default Spotify login flow either. The consent expansion should be explicit and separate.
+
 Use:
 
 - `Import from Spotify`
@@ -500,9 +518,10 @@ Build this in the smallest useful vertical slice:
 
 1. local proxy route for `GET /api/spotify/playlists`
 2. local proxy route for `GET /api/spotify/playlists/[playlistId]`
-3. `music.previewSpotifyPlaylistImport`
-4. `music.importSpotifyPlaylist`
-5. import modal on `Library` page
-6. import history row in `Settings > Connections > Spotify`
+3. elevated-consent CTA and state in `Settings > Connections > Spotify`
+4. `music.previewSpotifyPlaylistImport`
+5. `music.importSpotifyPlaylist`
+6. import modal on `Library` page
+7. import history row in `Settings > Connections > Spotify`
 
 That slice is enough to prove the value before building full review and re-import tooling.

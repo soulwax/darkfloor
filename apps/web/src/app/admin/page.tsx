@@ -127,6 +127,16 @@ type SpotifyAdminTrackSummary = {
   raw: unknown;
 };
 
+const BASIC_SPOTIFY_LOGIN_SCOPES = [
+  "user-read-email",
+  "user-read-private",
+] as const;
+
+const SPOTIFY_PLAYLIST_READ_SCOPES = [
+  "playlist-read-private",
+  "playlist-read-collaborative",
+] as const;
+
 const API_DIAGNOSTIC_TARGETS: ApiDiagnosticTarget[] = [
   { key: "status", label: "Liveness", path: "/api/v2/status" },
   { key: "version", label: "Version", path: "/api/v2/version" },
@@ -258,6 +268,47 @@ function extractSpotifyScopeText(payload: unknown): string | null {
   }
 
   return null;
+}
+
+function normalizeSpotifyScopes(scopeText: string | null): string[] {
+  if (!scopeText) return [];
+
+  return Array.from(
+    new Set(
+      scopeText
+        .split(/[,\s]+/u)
+        .map((scope) => scope.trim())
+        .filter((scope) => scope.length > 0),
+    ),
+  );
+}
+
+function hasAnySpotifyScope(
+  scopes: string[],
+  requiredScopes: readonly string[],
+): boolean {
+  return requiredScopes.some((scope) => scopes.includes(scope));
+}
+
+function hasAllSpotifyScopes(
+  scopes: string[],
+  requiredScopes: readonly string[],
+): boolean {
+  return requiredScopes.every((scope) => scopes.includes(scope));
+}
+
+function normalizeSpotifyPlaylistAccessError(message: string): string {
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes("403") ||
+    normalized.includes("forbidden") ||
+    normalized.includes("insufficient") ||
+    normalized.includes("scope")
+  ) {
+    return "Spotify playlist data is not available for this session. Basic Spotify login now grants profile scopes only; playlist access should use a separate elevated-consent flow.";
+  }
+
+  return message;
 }
 
 function extractSpotifyProfileSummary(
@@ -657,6 +708,8 @@ export default function AdminPage() {
   const [selectedSpotifyPlaylistData, setSelectedSpotifyPlaylistData] =
     useState<SpotifyAdminFetchResult | null>(null);
   const [isSpotifyAdminLoading, setIsSpotifyAdminLoading] = useState(false);
+  const [isSpotifyPlaylistsLoading, setIsSpotifyPlaylistsLoading] =
+    useState(false);
   const [isSpotifyPlaylistDetailLoading, setIsSpotifyPlaylistDetailLoading] =
     useState(false);
   const [spotifyAdminError, setSpotifyAdminError] = useState<string | null>(
@@ -889,6 +942,20 @@ export default function AdminPage() {
     () => extractSpotifyProfileSummary(spotifyProfileData?.payload),
     [spotifyProfileData?.payload],
   );
+  const spotifyScopes = useMemo(
+    () => normalizeSpotifyScopes(spotifyProfileSummary.scopeText),
+    [spotifyProfileSummary.scopeText],
+  );
+  const hasSpotifyPlaylistScope = useMemo(
+    () => hasAnySpotifyScope(spotifyScopes, SPOTIFY_PLAYLIST_READ_SCOPES),
+    [spotifyScopes],
+  );
+  const isSpotifyProfileOnlySession = useMemo(
+    () =>
+      hasAllSpotifyScopes(spotifyScopes, BASIC_SPOTIFY_LOGIN_SCOPES) &&
+      !hasSpotifyPlaylistScope,
+    [hasSpotifyPlaylistScope, spotifyScopes],
+  );
   const spotifyPlaylists = useMemo(
     () => extractSpotifyPlaylistSummaries(spotifyPlaylistsData?.payload),
     [spotifyPlaylistsData?.payload],
@@ -976,10 +1043,11 @@ export default function AdminPage() {
         );
         setSelectedSpotifyPlaylistData(detail);
       } catch (error) {
-        const message =
+        const message = normalizeSpotifyPlaylistAccessError(
           error instanceof Error
             ? error.message
-            : "Failed to load Spotify playlist details";
+            : "Failed to load Spotify playlist details",
+        );
         setSpotifyAdminError(message);
         setSelectedSpotifyPlaylistData(null);
         if (!options?.silent) {
@@ -992,7 +1060,7 @@ export default function AdminPage() {
     [fetchSpotifyAdminPayload, showToast],
   );
 
-  const refreshSpotifyAdminData = useCallback(async () => {
+  const refreshSpotifyAdminProfileData = useCallback(async () => {
     setIsSpotifyAdminLoading(true);
     setSpotifyAdminError(null);
 
@@ -1008,16 +1076,54 @@ export default function AdminPage() {
       }
 
       setSpotifyTokenUnavailable(false);
-
-      const [profileResult, playlistsResult] = await Promise.all([
-        fetchSpotifyAdminPayload("/api/admin/spotify/auth/status", accessToken),
-        fetchSpotifyAdminPayload(
-          "/api/admin/spotify/playlists?limit=24",
-          accessToken,
-        ),
-      ]);
-
+      const profileResult = await fetchSpotifyAdminPayload(
+        "/api/admin/spotify/auth/status",
+        accessToken,
+      );
       setSpotifyProfileData(profileResult);
+      const profileScopes = normalizeSpotifyScopes(
+        extractSpotifyProfileSummary(profileResult.payload).scopeText,
+      );
+      if (
+        profileScopes.length > 0 &&
+        !hasAnySpotifyScope(profileScopes, SPOTIFY_PLAYLIST_READ_SCOPES)
+      ) {
+        setSpotifyPlaylistsData(null);
+        setSelectedSpotifyPlaylistId(null);
+        setSelectedSpotifyPlaylistData(null);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load Spotify admin data";
+      setSpotifyAdminError(message);
+      showToast(message, "error");
+    } finally {
+      setIsSpotifyAdminLoading(false);
+    }
+  }, [fetchSpotifyAdminPayload, showToast]);
+
+  const loadSpotifyPlaylistData = useCallback(async () => {
+    setIsSpotifyPlaylistsLoading(true);
+    setSpotifyAdminError(null);
+
+    try {
+      const accessToken = await ensureAccessToken();
+      if (!accessToken) {
+        setSpotifyTokenUnavailable(true);
+        setSpotifyPlaylistsData(null);
+        setSelectedSpotifyPlaylistData(null);
+        setSelectedSpotifyPlaylistId(null);
+        return;
+      }
+
+      setSpotifyTokenUnavailable(false);
+      const playlistsResult = await fetchSpotifyAdminPayload(
+        "/api/admin/spotify/playlists?limit=24",
+        accessToken,
+      );
+
       setSpotifyPlaylistsData(playlistsResult);
 
       const playlists = extractSpotifyPlaylistSummaries(
@@ -1040,14 +1146,18 @@ export default function AdminPage() {
         silent: true,
       });
     } catch (error) {
-      const message =
+      const message = normalizeSpotifyPlaylistAccessError(
         error instanceof Error
           ? error.message
-          : "Failed to load Spotify admin data";
+          : "Failed to load Spotify playlist data",
+      );
       setSpotifyAdminError(message);
+      setSpotifyPlaylistsData(null);
+      setSelectedSpotifyPlaylistData(null);
+      setSelectedSpotifyPlaylistId(null);
       showToast(message, "error");
     } finally {
-      setIsSpotifyAdminLoading(false);
+      setIsSpotifyPlaylistsLoading(false);
     }
   }, [
     fetchSpotifyAdminPayload,
@@ -1062,7 +1172,7 @@ export default function AdminPage() {
     void refreshDiagnostics();
     void refreshOAuthDump();
     void refreshUpstreamOAuthDump();
-    void refreshSpotifyAdminData();
+    void refreshSpotifyAdminProfileData();
     const intervalId = window.setInterval(() => {
       void refreshDiagnostics();
       void refreshOAuthDump();
@@ -1076,7 +1186,7 @@ export default function AdminPage() {
     isAuthorized,
     refreshDiagnostics,
     refreshOAuthDump,
-    refreshSpotifyAdminData,
+    refreshSpotifyAdminProfileData,
     refreshUpstreamOAuthDump,
   ]);
 
@@ -1597,22 +1707,56 @@ export default function AdminPage() {
               Spotify Admin Data
             </p>
             <p className="mt-1 text-sm text-[var(--color-subtext)]">
-              Current admin Spotify connection status, profile summary,
-              playlists, and selected playlist details.
+              Basic Spotify login now exposes connection and profile data by
+              default. Playlist data is optional and should be treated as a
+              separate elevated-consent capability.
             </p>
           </div>
-          <button
-            onClick={() => void refreshSpotifyAdminData()}
-            disabled={isSpotifyAdminLoading}
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
-          >
-            {isSpotifyAdminLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-4 w-4" />
-            )}
-            Refresh Spotify data
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => void refreshSpotifyAdminProfileData()}
+              disabled={isSpotifyAdminLoading}
+              className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+            >
+              {isSpotifyAdminLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-4 w-4" />
+              )}
+              Refresh Spotify profile
+            </button>
+            <button
+              onClick={() => void loadSpotifyPlaylistData()}
+              disabled={
+                isSpotifyPlaylistsLoading ||
+                isSpotifyPlaylistDetailLoading ||
+                spotifyTokenUnavailable
+              }
+              className="inline-flex items-center gap-2 self-start rounded-xl border border-[rgba(29,185,84,0.28)] bg-[rgba(29,185,84,0.12)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#1DB954] hover:text-[#1DB954] disabled:opacity-50"
+            >
+              {isSpotifyPlaylistsLoading || isSpotifyPlaylistDetailLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Link2 className="h-4 w-4" />
+              )}
+              {spotifyPlaylistsData
+                ? "Refresh playlist data"
+                : "Load playlist data"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4 rounded-2xl border border-[rgba(121,195,238,0.22)] bg-[rgba(121,195,238,0.08)] px-4 py-3 text-sm text-[var(--color-subtext)]">
+          Basic login should now only grant{" "}
+          <code className="rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
+            user-read-email
+          </code>{" "}
+          and{" "}
+          <code className="rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
+            user-read-private
+          </code>
+          . This dashboard always loads profile data first and only attempts
+          playlist endpoints when requested explicitly.
         </div>
 
         {spotifyTokenUnavailable &&
@@ -1642,6 +1786,12 @@ export default function AdminPage() {
           </div>
         ) : (
           <>
+            {spotifyAdminError ? (
+              <div className="mb-3 rounded-2xl border border-[rgba(242,139,130,0.25)] bg-[rgba(242,139,130,0.08)] px-4 py-3 text-sm text-[var(--color-danger)]">
+                {spotifyAdminError}
+              </div>
+            ) : null}
+
             <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--color-subtext)]">
               <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
                 connected:{" "}
@@ -1654,7 +1804,19 @@ export default function AdminPage() {
                 </strong>
               </span>
               <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
-                playlists:{" "}
+                playlist access:{" "}
+                <strong className="text-[var(--color-text)]">
+                  {hasSpotifyPlaylistScope
+                    ? "granted"
+                    : isSpotifyProfileOnlySession
+                      ? "profile only"
+                      : spotifyScopes.length > 0
+                        ? "not granted"
+                        : "unknown"}
+                </strong>
+              </span>
+              <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                playlists loaded:{" "}
                 <strong className="text-[var(--color-text)]">
                   {spotifyPlaylists.length}
                 </strong>
@@ -1668,9 +1830,7 @@ export default function AdminPage() {
               <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
                 updated:{" "}
                 <strong className="text-[var(--color-text)]">
-                  {spotifyPlaylistsData?.fetchedAt ??
-                    spotifyProfileData?.fetchedAt ??
-                    "n/a"}
+                  {spotifyProfileData?.fetchedAt ?? "n/a"}
                 </strong>
               </span>
             </div>
@@ -1745,12 +1905,23 @@ export default function AdminPage() {
 
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
                 <p className="mb-3 text-sm font-semibold text-[var(--color-text)]">
-                  Playlists
+                  Playlist Data
+                </p>
+                <p className="mb-3 text-xs leading-relaxed text-[var(--color-subtext)]">
+                  Basic Spotify login should not be treated as playlist consent.
+                  Use the button above only when testing an elevated-consent or
+                  legacy-scope session.
                 </p>
                 <div className="max-h-[28rem] space-y-2 overflow-auto pr-1">
-                  {spotifyPlaylists.length === 0 ? (
+                  {!spotifyPlaylistsData && isSpotifyPlaylistsLoading ? (
+                    <div className="flex h-48 items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-[var(--color-accent)]" />
+                    </div>
+                  ) : spotifyPlaylists.length === 0 ? (
                     <p className="text-sm text-[var(--color-subtext)]">
-                      No Spotify playlists were returned.
+                      {hasSpotifyPlaylistScope
+                        ? "No Spotify playlists were returned for this session."
+                        : "Playlist data has not been loaded. Under the narrowed backend OAuth flow, this should be considered a separate elevated-consent path."}
                     </p>
                   ) : (
                     spotifyPlaylists.map((playlist) => {
@@ -1806,8 +1977,7 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--color-text)]">
-                    {selectedSpotifyPlaylistSummary?.name ??
-                      "Selected playlist"}
+                    {selectedSpotifyPlaylistSummary?.name ?? "Playlist Detail"}
                   </p>
                   {selectedSpotifyPlaylistSummary?.externalUrl ? (
                     <a
@@ -1824,7 +1994,8 @@ export default function AdminPage() {
 
                 {selectedSpotifyPlaylistId === null ? (
                   <p className="text-sm text-[var(--color-subtext)]">
-                    Select a playlist to inspect track-level Spotify data.
+                    Playlist detail is only available after loading playlist
+                    data explicitly.
                   </p>
                 ) : isSpotifyPlaylistDetailLoading ? (
                   <div className="flex h-48 items-center justify-center">
@@ -1935,18 +2106,22 @@ export default function AdminPage() {
                 </div>
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
                   <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
-                    Playlists
+                    Playlists (optional)
                   </p>
                   <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--color-surface)]/70 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
-                    {toJsonPreview(spotifyPlaylistsData?.payload ?? {})}
+                    {spotifyPlaylistsData
+                      ? toJsonPreview(spotifyPlaylistsData.payload)
+                      : "Not loaded. Basic Spotify login is profile-only by default."}
                   </pre>
                 </div>
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
                   <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--color-muted)] uppercase">
-                    Selected playlist
+                    Selected playlist (optional)
                   </p>
                   <pre className="max-h-64 overflow-auto rounded-lg bg-[var(--color-surface)]/70 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
-                    {toJsonPreview(selectedSpotifyPlaylistData?.payload ?? {})}
+                    {selectedSpotifyPlaylistData
+                      ? toJsonPreview(selectedSpotifyPlaylistData.payload)
+                      : "Not loaded. Load playlist data first if you are testing elevated Spotify consent."}
                   </pre>
                 </div>
               </div>
