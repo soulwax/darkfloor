@@ -257,6 +257,7 @@ describe("spotifyAuthClient", () => {
     const result = await handleSpotifyCallbackHash();
 
     expect(result.accessToken).toBe("app-token-1");
+    expect(result.spotifyAccessTokenPresent).toBe(true);
     expect(getInMemoryAccessToken()).toBe("app-token-1");
     expect(window.location.hash).toBe("");
 
@@ -294,6 +295,7 @@ describe("spotifyAuthClient", () => {
 
     const result = await handleSpotifyCallbackHash();
     expect(result.accessToken).toBe("app-token-optional");
+    expect(result.spotifyAccessTokenPresent).toBe(false);
     expect(getInMemoryAccessToken()).toBe("app-token-optional");
   });
 
@@ -313,6 +315,7 @@ describe("spotifyAuthClient", () => {
 
     const result = await handleSpotifyCallbackHash();
     expect(result.accessToken).toBe("app-token-query");
+    expect(result.spotifyAccessTokenPresent).toBe(false);
     expect(getInMemoryAccessToken()).toBe("app-token-query");
     expect(window.location.hash).toBe("");
 

@@ -91,6 +91,7 @@ export type SpotifyCallbackDebugInfo = {
 
 type CallbackResult = {
   accessToken: string;
+  spotifyAccessTokenPresent: boolean;
   profile: unknown;
 };
 
@@ -1142,6 +1143,7 @@ export async function handleSpotifyCallbackHash(): Promise<CallbackResult> {
 
   return {
     accessToken: parsed.payload.accessToken,
+    spotifyAccessTokenPresent: Boolean(parsed.payload.spotifyAccessToken),
     profile,
   };
 }

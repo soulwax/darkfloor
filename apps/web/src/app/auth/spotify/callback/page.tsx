@@ -9,7 +9,10 @@ import {
   resolveFrontendRedirectPath,
   startSpotifyLogin,
 } from "@/services/spotifyAuthClient";
-import { isClientAuthDebugEnabled } from "@/utils/authDebugClient";
+import {
+  isClientAuthDebugEnabled,
+  logAuthClientDebug,
+} from "@/utils/authDebugClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -46,6 +49,35 @@ function getErrorMessage(error: unknown): string {
 
   if (error instanceof Error) return error.message;
   return "Authentication failed. Please try again.";
+}
+
+function hasNonEmptyParam(
+  params: URLSearchParams,
+  key: string,
+): boolean {
+  const value = params.get(key);
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function buildCallbackParamPresence(rawParams: string): {
+  appPresent: boolean;
+  expiresPresent: boolean;
+  spotifyPresent: boolean;
+  spotifyTypePresent: boolean;
+  spotifyExpiryPresent: boolean;
+} {
+  const normalized = rawParams.startsWith("?") || rawParams.startsWith("#")
+    ? rawParams.slice(1)
+    : rawParams;
+  const params = new URLSearchParams(normalized);
+
+  return {
+    appPresent: hasNonEmptyParam(params, "access_token"),
+    expiresPresent: hasNonEmptyParam(params, "expires_in"),
+    spotifyPresent: hasNonEmptyParam(params, "spotify_access_token"),
+    spotifyTypePresent: hasNonEmptyParam(params, "spotify_token_type"),
+    spotifyExpiryPresent: hasNonEmptyParam(params, "spotify_expires_in"),
+  };
 }
 
 function SpotifyAuthCallbackFallback() {
@@ -160,6 +192,32 @@ function SpotifyAuthCallbackContent() {
     let cancelled = false;
 
     const run = async () => {
+      const searchPresence = buildCallbackParamPresence(window.location.search);
+      const hashPresence = buildCallbackParamPresence(window.location.hash);
+      const appTokenPresent =
+        searchPresence.appPresent || hashPresence.appPresent;
+      const spotifyTokenPresent =
+        searchPresence.spotifyPresent || hashPresence.spotifyPresent;
+
+      logAuthClientDebug("callback mounted", {
+        path: window.location.pathname,
+        searchPresent: window.location.search.length > 0,
+        hashPresent: window.location.hash.length > 0,
+        nextPath,
+      });
+      logAuthClientDebug("search params parsed", searchPresence);
+      logAuthClientDebug("hash parsed", hashPresence);
+      logAuthClientDebug("access_token present", {
+        anyPresent: appTokenPresent,
+        searchPresent: searchPresence.appPresent,
+        hashPresent: hashPresence.appPresent,
+      });
+      logAuthClientDebug("spotify_access_token present", {
+        anyPresent: spotifyTokenPresent,
+        searchPresent: searchPresence.spotifyPresent,
+        hashPresent: hashPresence.spotifyPresent,
+      });
+
       if (queryError) {
         const status = queryError === "access_denied" ? 403 : 401;
         setState("error");
@@ -190,8 +248,13 @@ function SpotifyAuthCallbackContent() {
       }
 
       try {
-        await handleSpotifyCallbackHash();
+        const result = await handleSpotifyCallbackHash();
         if (cancelled) return;
+        logAuthClientDebug("tokens persisted", {
+          appPersisted: Boolean(result.accessToken),
+          spotifyPersisted: result.spotifyAccessTokenPresent,
+        });
+        logAuthClientDebug("redirecting to next", { nextPath });
         router.replace(nextPath);
       } catch (error) {
         if (cancelled) return;

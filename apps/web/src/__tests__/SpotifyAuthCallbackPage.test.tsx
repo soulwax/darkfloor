@@ -33,6 +33,11 @@ const authState = vi.hoisted(() => ({
   startSpotifyLogin: vi.fn(),
 }));
 
+const debugState = vi.hoisted(() => ({
+  isClientAuthDebugEnabled: vi.fn(() => false),
+  logAuthClientDebug: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationState.router,
   useSearchParams: () => ({
@@ -49,6 +54,11 @@ vi.mock("@/services/spotifyAuthClient", () => {
   };
 });
 
+vi.mock("@/utils/authDebugClient", () => ({
+  isClientAuthDebugEnabled: debugState.isClientAuthDebugEnabled,
+  logAuthClientDebug: debugState.logAuthClientDebug,
+}));
+
 function renderPage() {
   render(<SpotifyAuthCallbackPage />);
 }
@@ -59,12 +69,16 @@ describe("SpotifyAuthCallbackPage", () => {
     navigationState.replace.mockClear();
     navigationState.router.replace = navigationState.replace;
     navigationState.searchParams = new URLSearchParams("next=%2Flibrary");
+    window.history.replaceState({}, "", "/auth/spotify/callback?next=%2Flibrary");
     authState.handleSpotifyCallbackHash.mockReset();
     authState.handleSpotifyCallbackHash.mockResolvedValue({
       accessToken: "token",
+      spotifyAccessTokenPresent: false,
       profile: { id: "user-1" },
     });
     authState.startSpotifyLogin.mockClear();
+    debugState.isClientAuthDebugEnabled.mockReturnValue(false);
+    debugState.logAuthClientDebug.mockClear();
     process.env.NEXT_PUBLIC_AUTH_DEBUG = "0";
   });
 
@@ -75,6 +89,40 @@ describe("SpotifyAuthCallbackPage", () => {
       expect(authState.handleSpotifyCallbackHash).toHaveBeenCalledTimes(1);
       expect(navigationState.replace).toHaveBeenCalledWith("/library");
     });
+  });
+
+  it("logs callback parsing and persistence before redirect", async () => {
+    navigationState.searchParams = new URLSearchParams(
+      "next=%2Flibrary&access_token=app-token-query&expires_in=3600&spotify_access_token=spotify-token-query&spotify_token_type=Bearer&spotify_expires_in=3600",
+    );
+    window.history.replaceState(
+      {},
+      "",
+      "/auth/spotify/callback?next=%2Flibrary&access_token=app-token-query&expires_in=3600&spotify_access_token=spotify-token-query&spotify_token_type=Bearer&spotify_expires_in=3600#access_token=app-token-hash&expires_in=3600&spotify_access_token=spotify-token-hash&spotify_token_type=Bearer&spotify_expires_in=3600",
+    );
+    authState.handleSpotifyCallbackHash.mockResolvedValueOnce({
+      accessToken: "token",
+      spotifyAccessTokenPresent: true,
+      profile: { id: "user-1" },
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(navigationState.replace).toHaveBeenCalledWith("/library");
+    });
+
+    const loggedMessages = debugState.logAuthClientDebug.mock.calls.map(
+      ([message]) => message,
+    );
+
+    expect(loggedMessages).toContain("callback mounted");
+    expect(loggedMessages).toContain("search params parsed");
+    expect(loggedMessages).toContain("hash parsed");
+    expect(loggedMessages).toContain("access_token present");
+    expect(loggedMessages).toContain("spotify_access_token present");
+    expect(loggedMessages).toContain("tokens persisted");
+    expect(loggedMessages).toContain("redirecting to next");
   });
 
   it("shows denied message and retry action for access_denied errors", async () => {
@@ -96,6 +144,7 @@ describe("SpotifyAuthCallbackPage", () => {
 
   it("renders debug panel when callback auth/me validation fails", async () => {
     process.env.NEXT_PUBLIC_AUTH_DEBUG = "1";
+    debugState.isClientAuthDebugEnabled.mockReturnValue(true);
 
     authState.handleSpotifyCallbackHash.mockRejectedValueOnce(
       new authState.SpotifyAuthClientError("Unauthorized", 401, {
