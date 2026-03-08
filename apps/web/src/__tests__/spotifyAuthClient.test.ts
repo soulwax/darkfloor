@@ -82,7 +82,9 @@ describe("spotifyAuthClient", () => {
 
     expect(parsed.origin).toBe(window.location.origin);
     expect(parsed.pathname).toBe("/api/auth/signin/spotify");
-    expect(parsed.searchParams.get("callbackUrl")).toBe("/playlists?tab=mine");
+    expect(parsed.searchParams.get("callbackUrl")).toBe(
+      "/auth/callback?next=%2Fplaylists%3Ftab%3Dmine&provider=spotify",
+    );
     expect(parsed.searchParams.get("trace")).toBeTruthy();
   });
 
@@ -136,7 +138,7 @@ describe("spotifyAuthClient", () => {
     }
   });
 
-  it("starts Spotify login on canonical auth origin", () => {
+  it("starts Spotify login through the local Auth.js provider route", () => {
     window.history.replaceState({}, "", "/signin");
     const navigateSpy = vi.fn<(url: string) => void>();
 
@@ -147,13 +149,12 @@ describe("spotifyAuthClient", () => {
     expect(typeof navigatedUrl).toBe("string");
 
     const parsed = new URL(String(navigatedUrl), window.location.origin);
-    expect(parsed.origin).toBe(expectedAuthOrigin());
-    expect(parsed.pathname).toBe("/api/auth/spotify");
-
-    const frontendRedirect = parsed.searchParams.get("frontend_redirect_uri");
-    expect(frontendRedirect).toContain("/auth/spotify/callback");
-    expect(frontendRedirect).toContain("next=%2Fplaylists%3Ftab%3Dmine");
-    expect(frontendRedirect).toContain("trace=");
+    expect(parsed.origin).toBe(window.location.origin);
+    expect(parsed.pathname).toBe("/api/auth/signin/spotify");
+    expect(parsed.searchParams.get("callbackUrl")).toBe(
+      "/auth/callback?next=%2Fplaylists%3Ftab%3Dmine&provider=spotify",
+    );
+    expect(parsed.searchParams.get("trace")).toBeTruthy();
   });
 
   it("normalizes root post-auth destinations to /library", () => {

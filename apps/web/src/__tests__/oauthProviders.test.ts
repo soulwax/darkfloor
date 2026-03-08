@@ -6,7 +6,40 @@ describe("oauth provider config", () => {
     vi.resetModules();
   });
 
-  it("keeps backend-managed Spotify visible in UI when NextAuth only returns Discord", async () => {
+  it("marks Spotify as a NextAuth-managed provider when available", async () => {
+    process.env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED = "true";
+
+    const { getEnabledOAuthUiProviders } =
+      await import("@/config/oauthProviders");
+
+    expect(
+      getEnabledOAuthUiProviders({
+        discord: {
+          id: "discord",
+          name: "Discord",
+          type: "oauth",
+        },
+        spotify: {
+          id: "spotify",
+          name: "Spotify",
+          type: "oauth",
+        },
+      }),
+    ).toEqual([
+      {
+        id: "discord",
+        name: "Discord",
+        authSource: "nextauth",
+      },
+      {
+        id: "spotify",
+        name: "Spotify",
+        authSource: "nextauth",
+      },
+    ]);
+  });
+
+  it("does not synthesize Spotify when Auth.js does not report it", async () => {
     process.env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED = "true";
 
     const { getEnabledOAuthUiProviders } =
@@ -25,11 +58,6 @@ describe("oauth provider config", () => {
         id: "discord",
         name: "Discord",
         authSource: "nextauth",
-      },
-      {
-        id: "spotify",
-        name: "Spotify",
-        authSource: "backend",
       },
     ]);
   });
