@@ -17,6 +17,7 @@ const CSRF_COOKIE_NAME = "sb_csrf_token";
 const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
 const OAUTH_SESSION_COOKIE_NAME = "sb_spotify_oauth_sid";
 const EXPIRY_SKEW_MS = 15_000;
+const AUTH_ME_TIMEOUT_MS = 10_000;
 const TOKEN_STATE_STORAGE_KEY = "sb_spotify_auth_state_v1";
 const REFRESH_TOKEN_STORAGE_KEY = "sb_spotify_refresh_token_v1";
 const LOGIN_TRACE_STORAGE_KEY = "sb_spotify_auth_trace_v1";
@@ -140,6 +141,24 @@ function resolveAuthApiOrigin(): string {
 
 function buildAuthEndpoint(pathname: string): string {
   return `${resolveAuthApiOrigin()}${pathname}`;
+}
+
+function buildSameOriginEndpoint(pathname: string): string {
+  if (typeof window === "undefined") {
+    return pathname;
+  }
+
+  return new URL(pathname, window.location.origin).toString();
+}
+
+function shouldUseSameOriginAuthValidation(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+function buildAuthMeEndpoint(): string {
+  return shouldUseSameOriginAuthValidation()
+    ? buildSameOriginEndpoint("/api/auth/me")
+    : buildAuthEndpoint("/api/auth/me");
 }
 
 function createDefaultHashKeyPresence(present = false): HashTokenPresence {
@@ -867,7 +886,7 @@ export async function getCurrentUser(
     missingKeys: RequiredHashTokenKey[];
   },
 ): Promise<unknown> {
-  const authMeEndpoint = buildAuthEndpoint("/api/auth/me");
+  const authMeEndpoint = buildAuthMeEndpoint();
   const authorizationHeaderSent = true;
   logAuthClientDebug("Fetching authenticated profile", {
     traceId: context?.traceId ?? null,
@@ -883,6 +902,7 @@ export async function getCurrentUser(
     },
     credentials: "include",
     cache: "no-store",
+    signal: AbortSignal.timeout(AUTH_ME_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -1110,7 +1130,7 @@ export async function handleSpotifyCallbackHash(): Promise<CallbackResult> {
   const parsed = parseHashTokens(window.location.hash, window.location.search);
 
   if (!parsed.payload) {
-    const authMeEndpoint = buildAuthEndpoint("/api/auth/me");
+    const authMeEndpoint = buildAuthMeEndpoint();
     const debugInfo = buildDebugInfo({
       traceId,
       requiredHashKeys: parsed.keyPresence,

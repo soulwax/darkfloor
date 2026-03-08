@@ -103,7 +103,7 @@ describe("spotifyAuthClient", () => {
     }
   });
 
-  it("normalizes darkfloor auth API base to canonical www host", async () => {
+  it("keeps callback validation on the same origin even when auth API base is external", async () => {
     const previous = process.env.NEXT_PUBLIC_AUTH_API_BASE;
     process.env.NEXT_PUBLIC_AUTH_API_BASE = "https://darkfloor.one/";
 
@@ -126,7 +126,7 @@ describe("spotifyAuthClient", () => {
       const callbackFetchCall = fetchMock.mock.calls[0] as
         | [RequestInfo | URL, RequestInit | undefined]
         | undefined;
-      expect(callbackFetchCall?.[0]).toBe("https://www.darkfloor.one/api/auth/me");
+      expect(callbackFetchCall?.[0]).toBe(expectedAuthMeEndpoint());
     } finally {
       if (previous === undefined) {
         delete process.env.NEXT_PUBLIC_AUTH_API_BASE;
