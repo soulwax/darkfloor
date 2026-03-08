@@ -5,6 +5,28 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-08
+
+### Added
+
+- **Backend-managed Spotify app-session bootstrap for web auth**: Added a local session bridge so the backend-issued app access token can establish an Auth.js-compatible session before post-login navigation, keeping `useSession()` and protected frontend data flows aligned with backend-managed Spotify auth.
+- **Spotify callback diagnostics and test coverage**: Added explicit callback lifecycle logging, callback parsing assertions, and targeted tests around token persistence, callback transport, and local session bootstrap sequencing.
+- **Changelog API delivery for the web UI**: Added changelog route support and updated the changelog modal to fetch release notes from the app instead of relying on a baked-in static view.
+- **Mobile player share action**: Added share controls and feedback handling in the mobile player footer to improve track sharing flows on supported platforms.
+
+### Changed
+
+- **Spotify OAuth flow is confirmed working on the deployed web app**: The backend-managed Spotify sign-in flow now completes end-to-end on the deployed frontend, including backend OAuth start, callback token delivery, frontend callback handling, and redirect back into the app.
+- **Spotify auth routing and callback handling were consolidated around the backend contract**: Sign-in surfaces now consistently use the backend OAuth entrypoint, callback URLs are generated under `/auth/spotify/callback`, and auth API base handling was clarified with canonical host normalization where required.
+- **Client auth state handling was simplified**: Hydration-sensitive auth/UI state initialization in sign-in and shell components was cleaned up to reduce ambiguity during startup and callback transitions.
+- **Settings now expose Vercel runtime log permission control**: Added a settings-level control for Vercel runtime logs to make deployment diagnostics easier to manage.
+
+### Fixed
+
+- **Spotify callback token handling is more resilient**: The frontend now parses callback tokens from both query and hash transports, persists auth state before redirect, removes transient token parameters from the visible URL, and does not require a `refresh_token` in the browser callback.
+- **Development callback validation now uses the local auth proxy**: In non-production builds, callback validation uses the same-origin `/api/auth/me` proxy to avoid local cross-origin callback failures while leaving the deployed production path unchanged.
+- **Header analyse link target**: Corrected the `Analyse` tool URL in the header.
+
 ## [1.2.3] - 2026-03-02
 
 ### Changed
