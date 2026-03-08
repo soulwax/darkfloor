@@ -26,6 +26,7 @@ const authState = vi.hoisted(() => ({
     }
   },
   handleSpotifyCallbackHash: vi.fn(),
+  bootstrapSpotifyAppSession: vi.fn(),
   resolveFrontendRedirectPath: vi.fn((next: string | null | undefined) => {
     void next;
     return "/library";
@@ -38,6 +39,10 @@ const debugState = vi.hoisted(() => ({
   logAuthClientDebug: vi.fn(),
 }));
 
+const nextAuthState = vi.hoisted(() => ({
+  getSession: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationState.router,
   useSearchParams: () => ({
@@ -48,11 +53,16 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/services/spotifyAuthClient", () => {
   return {
     SpotifyAuthClientError: authState.SpotifyAuthClientError,
+    bootstrapSpotifyAppSession: authState.bootstrapSpotifyAppSession,
     handleSpotifyCallbackHash: authState.handleSpotifyCallbackHash,
     resolveFrontendRedirectPath: authState.resolveFrontendRedirectPath,
     startSpotifyLogin: authState.startSpotifyLogin,
   };
 });
+
+vi.mock("next-auth/react", () => ({
+  getSession: nextAuthState.getSession,
+}));
 
 vi.mock("@/utils/authDebugClient", () => ({
   isClientAuthDebugEnabled: debugState.isClientAuthDebugEnabled,
@@ -76,9 +86,15 @@ describe("SpotifyAuthCallbackPage", () => {
       spotifyAccessTokenPresent: false,
       profile: { id: "user-1" },
     });
+    authState.bootstrapSpotifyAppSession.mockReset();
+    authState.bootstrapSpotifyAppSession.mockResolvedValue(undefined);
     authState.startSpotifyLogin.mockClear();
     debugState.isClientAuthDebugEnabled.mockReturnValue(false);
     debugState.logAuthClientDebug.mockClear();
+    nextAuthState.getSession.mockReset();
+    nextAuthState.getSession.mockResolvedValue({
+      user: { id: "user-1" },
+    });
     process.env.NEXT_PUBLIC_AUTH_DEBUG = "0";
   });
 
@@ -87,6 +103,8 @@ describe("SpotifyAuthCallbackPage", () => {
 
     await waitFor(() => {
       expect(authState.handleSpotifyCallbackHash).toHaveBeenCalledTimes(1);
+      expect(authState.bootstrapSpotifyAppSession).toHaveBeenCalledWith("token");
+      expect(nextAuthState.getSession).toHaveBeenCalledTimes(1);
       expect(navigationState.replace).toHaveBeenCalledWith("/library");
     });
   });

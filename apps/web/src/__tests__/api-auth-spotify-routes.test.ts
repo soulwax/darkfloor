@@ -116,6 +116,86 @@ describe("Spotify auth proxy routes", () => {
     );
   });
 
+  it("bootstraps a local Auth.js session from backend-managed bearer auth", async () => {
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URL: "https://api.example.com/",
+      },
+    }));
+
+    const findFirst = vi.fn().mockResolvedValue({
+      id: "local-user-1",
+      email: "user@example.com",
+      name: "Existing User",
+      image: null,
+    });
+    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
+    const insert = vi.fn().mockReturnValue({
+      values: insertSessionValues,
+    });
+
+    vi.doMock("@/server/db", () => ({
+      db: {
+        query: {
+          users: {
+            findFirst,
+          },
+        },
+        insert,
+        update: vi.fn(() => ({
+          set: vi.fn(() => ({
+            where: vi.fn().mockResolvedValue(undefined),
+          })),
+        })),
+      },
+    }));
+
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "backend-user-1",
+          email: "user@example.com",
+          name: "Existing User",
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const route = await loadPostRoute("@/app/api/auth/spotify/session/route");
+    const response = await route.POST(
+      makeRequest("/api/auth/spotify/session", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer app-token-1",
+          "x-forwarded-proto": "https",
+        },
+      }),
+    );
+    const body = (await response.json()) as {
+      ok?: boolean;
+      userId?: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.userId).toBe("local-user-1");
+    expect(findFirst).toHaveBeenCalledTimes(1);
+
+    const setCookie = response.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("__Secure-authjs.session-token=");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Secure");
+
+    const sessionInsertCall = insertSessionValues.mock.calls[0]?.[0] as
+      | { userId?: string }
+      | undefined;
+    expect(sessionInsertCall?.userId).toBe("local-user-1");
+  });
+
   it("returns 503 when AUTH_DEBUG_TOKEN is missing for debug proxy route", async () => {
     vi.resetModules();
     vi.doMock("@/server/auth", () => ({

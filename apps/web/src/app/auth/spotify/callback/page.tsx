@@ -3,6 +3,7 @@
 "use client";
 
 import {
+  bootstrapSpotifyAppSession,
   SpotifyAuthClientError,
   type SpotifyCallbackDebugInfo,
   handleSpotifyCallbackHash,
@@ -14,6 +15,7 @@ import {
   logAuthClientDebug,
 } from "@/utils/authDebugClient";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getSession } from "next-auth/react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 type CallbackState = "pending" | "error";
@@ -254,6 +256,15 @@ function SpotifyAuthCallbackContent() {
           appPersisted: Boolean(result.accessToken),
           spotifyPersisted: result.spotifyAccessTokenPresent,
         });
+        await bootstrapSpotifyAppSession(result.accessToken);
+        if (cancelled) return;
+        const nextAuthSession = await getSession();
+        if (!nextAuthSession?.user) {
+          throw new SpotifyAuthClientError(
+            "App session bootstrap did not produce a local session",
+            500,
+          );
+        }
         logAuthClientDebug("redirecting to next", { nextPath });
         router.replace(nextPath);
       } catch (error) {

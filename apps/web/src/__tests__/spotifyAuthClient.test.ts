@@ -2,6 +2,7 @@
 
 import {
   AUTH_REQUIRED_EVENT,
+  bootstrapSpotifyAppSession,
   buildSpotifyBrowserSignInUrl,
   buildSpotifyLoginUrl,
   clearInMemoryAccessToken,
@@ -179,6 +180,29 @@ describe("spotifyAuthClient", () => {
   it("extracts csrf token from cookies", () => {
     const token = getCsrfTokenFromCookies("a=1; sb_csrf_token=csrf-123; b=2");
     expect(token).toBe("csrf-123");
+  });
+
+  it("bootstraps local app session using backend access token", async () => {
+    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, userId: "user-1" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await bootstrapSpotifyAppSession("app-token-1");
+
+    const fetchCall = fetchMock.mock.calls[0] as
+      | [RequestInfo | URL, RequestInit | undefined]
+      | undefined;
+    expect(fetchCall?.[0]).toBe("/api/auth/spotify/session");
+    const init = fetchCall?.[1] ?? {};
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("include");
+
+    const headers = new Headers(init.headers);
+    expect(headers.get("accept")).toBe("application/json");
+    expect(headers.get("authorization")).toBe("Bearer app-token-1");
   });
 
   it("clears in-memory/session auth state and trace artifacts", () => {

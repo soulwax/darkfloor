@@ -31,7 +31,6 @@ pnpm preview              # Build then start (test production locally)
 **Code Quality (run before committing):**
 
 ```bash
-```bash
 pnpm check                # Package boundaries + ESLint + TypeScript (run this!)
 pnpm lint                 # ESLint only
 pnpm lint:fix             # ESLint with auto-fix
@@ -144,8 +143,8 @@ Import via `@starchild/*` alias — never import from `apps/web` inside packages
 - `app/` — Next.js App Router pages and API route handlers
 - `app/api/v2/**` — Proxy routes to Bluesix V2 upstream (see `docs/API_ROUTE_USE.md`)
 - `app/api/trpc/[trpc]/route.ts` — tRPC endpoint
-- `server/api/routers/` — tRPC routers: `music`, `equalizer`, `preferences`, `admin`
-- `server/api/root.ts` — Router registration
+- `server/api/routers/` — tRPC routers (active in `appRouter`: `admin`, `post`, `music`, `equalizer`; `preferences.ts` exists but is unregistered)
+- `server/api/root.ts` — Router registration (add new routers here)
 - `server/auth/` — NextAuth configuration
 - `server/db/schema.ts` — Drizzle table definitions (19KB)
 - `server/db/index.ts` — pg Pool init (throws if `DATABASE_URL` missing)
@@ -157,7 +156,8 @@ Import via `@starchild/*` alias — never import from `apps/web` inside packages
 **API boundaries:**
 
 - First-party app data → tRPC (`server/api/routers/`). Register new routers in `server/api/root.ts`.
-- External upstream calls → proxy route handlers in `app/api/**/route.ts`.
+- External upstream calls → proxy route handlers in `app/api/**/route.ts`. Reuse existing `_lib.ts` helpers (`app/api/v2/_lib.ts`, `app/api/songbird/_lib.ts`, `app/api/music/_lib.ts`) instead of duplicating fetch/header logic.
+- Songbird token management: `src/lib/server/songbird-token.ts`. For user-scoped upstream calls, forward the caller's `Authorization` header.
 
 **Import aliases:**
 
@@ -181,6 +181,10 @@ Import via `@starchild/*` alias — never import from `apps/web` inside packages
 **Playback changes:** Edit `packages/player-react/` and/or `packages/player-core/`.
 
 **Linting:** ESLint 9 flat config. `drizzle/enforce-delete-with-where` and `drizzle/enforce-update-with-where` are errors — always include `.where()` on destructive Drizzle queries.
+
+**Spotify OAuth cross-origin:** When `NEXT_PUBLIC_AUTH_API_ORIGIN` differs from the frontend origin, initiate browser login on the canonical auth API origin (`${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...`) so PKCE/session cookies are issued on the callback origin.
+
+**tRPC patterns:** Use `createTRPCRouter`, `publicProcedure`, `protectedProcedure` from `server/api/trpc.ts`. Keep business logic in routers/services, not in React components.
 
 ## Documentation
 

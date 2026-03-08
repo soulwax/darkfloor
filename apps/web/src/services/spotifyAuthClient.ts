@@ -1052,6 +1052,28 @@ export async function refreshAccessToken(
   return tokenPayload.accessToken;
 }
 
+export async function bootstrapSpotifyAppSession(
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch("/api/auth/spotify/session", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const body = await parseResponseBody(response);
+  if (!response.ok) {
+    const message =
+      getMessageFromBody(body) ??
+      `POST /api/auth/spotify/session failed with status ${response.status}`;
+    throw new SpotifyAuthClientError(message, response.status);
+  }
+}
+
 export async function ensureAccessToken(): Promise<string | null> {
   if (isSpotifyMarkedLoggedOut()) {
     clearInMemoryAccessToken();
