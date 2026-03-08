@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - 2026-03-08
 
+### tl;dr
+FIXED SPOTIFY OAUTH
+
 ### Added
 
 - **Backend-managed Spotify app-session bootstrap for web auth**: Added a local session bridge so the backend-issued app access token can establish an Auth.js-compatible session before post-login navigation, keeping `useSession()` and protected frontend data flows aligned with backend-managed Spotify auth.
