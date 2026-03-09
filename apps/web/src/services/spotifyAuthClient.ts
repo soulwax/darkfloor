@@ -272,6 +272,48 @@ function isSpotifyMarkedLoggedOut(): boolean {
   return window.localStorage.getItem(LOGOUT_MARKER_STORAGE_KEY) !== null;
 }
 
+function hasSpotifyRefreshArtifacts(): boolean {
+  const csrfToken = getCsrfTokenFromCookies();
+  const storedRefreshToken = readStoredRefreshToken();
+
+  return Boolean(
+    (typeof csrfToken === "string" && csrfToken.length > 0) ||
+      (typeof storedRefreshToken === "string" && storedRefreshToken.length > 0),
+  );
+}
+
+function hasSpotifySessionArtifacts(): boolean {
+  if (
+    (typeof tokenState.accessToken === "string" &&
+      tokenState.accessToken.length > 0) ||
+    (typeof tokenState.spotifyAccessToken === "string" &&
+      tokenState.spotifyAccessToken.length > 0)
+  ) {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const persistedTokenState = window.sessionStorage.getItem(
+    TOKEN_STATE_STORAGE_KEY,
+  );
+  if (
+    typeof persistedTokenState === "string" &&
+    persistedTokenState.trim().length > 0
+  ) {
+    return true;
+  }
+
+  return Boolean(
+    readStoredRefreshToken() ||
+      getCsrfTokenFromCookies() ||
+      readCookieValue(document.cookie, APP_REFRESH_COOKIE_NAME) ||
+      readCookieValue(document.cookie, OAUTH_SESSION_COOKIE_NAME),
+  );
+}
+
 function getTraceIdFromCallbackUrl(): string | null {
   if (typeof window === "undefined") return null;
 
@@ -948,6 +990,7 @@ export async function refreshAccessToken(
 
   const notifyOnUnauthorized = options.notifyOnUnauthorized ?? true;
   const refreshEndpoint = buildAuthEndpoint("/api/auth/spotify/refresh");
+  const hadSessionArtifacts = hasSpotifySessionArtifacts();
   const csrfToken = getCsrfTokenFromCookies();
   const storedRefreshToken = readStoredRefreshToken();
   const useBodyRefreshToken =
@@ -956,7 +999,7 @@ export async function refreshAccessToken(
     storedRefreshToken.length > 0;
 
   if (!csrfToken && !useBodyRefreshToken) {
-    if (notifyOnUnauthorized) {
+    if (notifyOnUnauthorized && hadSessionArtifacts) {
       handleUnauthorized("missing_csrf_token");
     } else {
       clearInMemoryAccessToken();
@@ -1085,6 +1128,11 @@ export async function ensureAccessToken(): Promise<string | null> {
 
   if (!tokenState.accessToken && hydrateTokenStateFromStorage()) {
     return tokenState.accessToken;
+  }
+
+  if (!hasSpotifyRefreshArtifacts()) {
+    clearInMemoryAccessToken();
+    return null;
   }
 
   refreshPromise ??= refreshAccessToken().finally(() => {
@@ -1221,6 +1269,13 @@ export async function authFetch(
   const response = await sendRequest(token);
 
   if (response.status !== 401) {
+    return response;
+  }
+
+  if (!hasSpotifyRefreshArtifacts()) {
+    if (token && hasSpotifySessionArtifacts()) {
+      handleUnauthorized("missing_csrf_token");
+    }
     return response;
   }
 

@@ -2,11 +2,13 @@
 
 import {
   AUTH_REQUIRED_EVENT,
+  authFetch,
   bootstrapSpotifyAppSession,
   buildSpotifyBrowserSignInUrl,
   buildSpotifyLoginUrl,
   clearInMemoryAccessToken,
   clearSpotifyBrowserSessionArtifacts,
+  ensureAccessToken,
   getCsrfTokenFromCookies,
   getInMemoryAccessToken,
   handleSpotifyCallbackHash,
@@ -30,6 +32,9 @@ describe("spotifyAuthClient", () => {
     window.history.replaceState({}, "", "/");
     window.sessionStorage.clear();
     window.localStorage.clear();
+    document.cookie = "sb_csrf_token=; Max-Age=0; path=/";
+    document.cookie = "sb_app_refresh_token=; Max-Age=0; path=/";
+    document.cookie = "sb_spotify_oauth_sid=; Max-Age=0; path=/";
   });
 
   it("builds login URL through the local Auth.js provider route", () => {
@@ -243,6 +248,27 @@ describe("spotifyAuthClient", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not raise auth-required when no Spotify refresh artifacts exist", async () => {
+    const authRequiredListener = vi.fn();
+    window.addEventListener(
+      AUTH_REQUIRED_EVENT,
+      authRequiredListener as EventListener,
+    );
+
+    const fetchMock = vi.spyOn(global, "fetch");
+
+    const token = await ensureAccessToken();
+
+    expect(token).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(authRequiredListener).not.toHaveBeenCalled();
+
+    window.removeEventListener(
+      AUTH_REQUIRED_EVENT,
+      authRequiredListener as EventListener,
+    );
+  });
+
   it("clears logout marker when login is started again", () => {
     clearSpotifyBrowserSessionArtifacts();
     expect(
@@ -432,6 +458,34 @@ describe("spotifyAuthClient", () => {
     expect(refreshHeaders.get("accept")).toBe("application/json");
     expect(refreshHeaders.get("x-csrf-token")).toBe("csrf-refresh-token");
     expect(refreshInit.body).toBeUndefined();
+  });
+
+  it("does not raise auth-required after a 401 response when no Spotify refresh artifacts exist", async () => {
+    const authRequiredListener = vi.fn();
+    window.addEventListener(
+      AUTH_REQUIRED_EVENT,
+      authRequiredListener as EventListener,
+    );
+
+    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const response = await authFetch("/api/protected/test", {
+      method: "GET",
+    });
+
+    expect(response.status).toBe(401);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(authRequiredListener).not.toHaveBeenCalled();
+
+    window.removeEventListener(
+      AUTH_REQUIRED_EVENT,
+      authRequiredListener as EventListener,
+    );
   });
 
   it("normalizes refresh endpoint to canonical www host", async () => {

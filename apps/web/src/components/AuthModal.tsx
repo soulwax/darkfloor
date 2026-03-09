@@ -4,7 +4,10 @@
 
 import {
   getEnabledOAuthUiProviders,
+  getOAuthProviderAction,
   getOAuthProviderButtonStyle,
+  getOAuthProviderCtaLabel,
+  type SupportedOAuthProviderId,
 } from "@/config/oauthProviders";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
@@ -132,7 +135,7 @@ export function AuthModal({
     };
   }, [submittingProviderId]);
 
-  const handleProviderSignIn = async (providerId: string) => {
+  const handleProviderSignIn = async (providerId: SupportedOAuthProviderId) => {
     setSubmittingProviderId(providerId);
 
     logAuthClientDebug("AuthModal starting OAuth sign-in", {
@@ -141,6 +144,21 @@ export function AuthModal({
     });
 
     try {
+      const providerAction = getOAuthProviderAction(providerId);
+      if (providerAction.kind === "link") {
+        logAuthClientDebug("AuthModal redirecting OAuth provider to link", {
+          providerId,
+          href: providerAction.href,
+          target: providerAction.target,
+        });
+        window.open(
+          providerAction.href,
+          providerAction.target,
+          providerAction.target === "_blank" ? "noopener,noreferrer" : undefined,
+        );
+        return;
+      }
+
       await signIn(providerId, {
         callbackUrl: buildAuthCallbackUrl(callbackUrl, providerId),
       });
@@ -201,6 +219,10 @@ export function AuthModal({
                       provider.id,
                     );
                     const isSubmitting = submittingProviderId === provider.id;
+                    const providerLabel = getOAuthProviderCtaLabel(
+                      provider.id,
+                      `Continue with ${provider.name}`,
+                    );
 
                     return (
                       <button
@@ -222,7 +244,7 @@ export function AuthModal({
                               </span>
                             </div>
                           )}
-                          <span>{`Continue with ${provider.name}`}</span>
+                          <span>{providerLabel}</span>
                         </span>
                       </button>
                     );

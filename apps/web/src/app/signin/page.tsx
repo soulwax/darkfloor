@@ -5,7 +5,9 @@
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import {
   getEnabledOAuthUiProviders,
+  getOAuthProviderAction,
   getOAuthProviderButtonStyle,
+  getOAuthProviderCtaLabel,
 } from "@/config/oauthProviders";
 import { localStorage as appStorage } from "@/services/storage";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
@@ -315,6 +317,20 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
+                        const providerAction = getOAuthProviderAction(
+                          provider.id,
+                        );
+                        if (providerAction.kind === "link") {
+                          window.open(
+                            providerAction.href,
+                            providerAction.target,
+                            providerAction.target === "_blank"
+                              ? "noopener,noreferrer"
+                              : undefined,
+                          );
+                          return;
+                        }
+
                         await signIn(provider.id, {
                           callbackUrl: buildAuthCallbackUrl(
                             callbackUrl,
@@ -340,7 +356,12 @@ function SignInContent() {
                           </span>
                         </div>
                       ) : null}
-                      <span>Sign in with {provider.name}</span>
+                      <span>
+                        {getOAuthProviderCtaLabel(
+                          provider.id,
+                          `Sign in with ${provider.name}`,
+                        )}
+                      </span>
                     </span>
                   </button>
                 );

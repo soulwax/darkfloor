@@ -82,4 +82,22 @@ describe("oauth provider config", () => {
       },
     ]);
   });
+
+  it("exposes the Spotify migration guide CTA override", async () => {
+    const {
+      SPOTIFY_MIGRATION_GUIDE_LABEL,
+      SPOTIFY_MIGRATION_GUIDE_URL,
+      getOAuthProviderAction,
+      getOAuthProviderCtaLabel,
+    } = await import("@/config/oauthProviders");
+
+    expect(getOAuthProviderAction("spotify")).toEqual({
+      kind: "link",
+      href: SPOTIFY_MIGRATION_GUIDE_URL,
+      target: "_self",
+    });
+    expect(
+      getOAuthProviderCtaLabel("spotify", "Continue with Spotify"),
+    ).toBe(SPOTIFY_MIGRATION_GUIDE_LABEL);
+  });
 });

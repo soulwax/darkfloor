@@ -2,15 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import SpotifyAuthCallbackPage from "@/app/auth/spotify/callback/page";
+import { SPOTIFY_MIGRATION_GUIDE_URL } from "@/config/oauthProviders";
 
 const navigationState = vi.hoisted(() => ({
   replace: vi.fn(),
   router: { replace: vi.fn() },
   searchParams: new URLSearchParams("next=%2Flibrary"),
-}));
-
-const nextAuthState = vi.hoisted(() => ({
-  signIn: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -20,25 +17,23 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("next-auth/react", () => ({
-  signIn: nextAuthState.signIn,
-}));
-
 function renderPage() {
   render(<SpotifyAuthCallbackPage />);
 }
 
 describe("SpotifyAuthCallbackPage", () => {
+  const openSpy = vi.fn();
+
   beforeEach(() => {
     vi.restoreAllMocks();
     navigationState.replace.mockClear();
     navigationState.router.replace = navigationState.replace;
     navigationState.searchParams = new URLSearchParams("next=%2Flibrary");
-    nextAuthState.signIn.mockReset();
-    nextAuthState.signIn.mockResolvedValue(undefined);
+    openSpy.mockReset();
+    vi.stubGlobal("open", openSpy);
   });
 
-  it("renders legacy callback guidance and retries through Auth.js", async () => {
+  it("renders legacy callback guidance and opens the Spotify migration guide", async () => {
     renderPage();
 
     expect(
@@ -48,13 +43,17 @@ describe("SpotifyAuthCallbackPage", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Retry Spotify Sign-In" }),
+      screen.getByRole("button", {
+        name: `Fuck you Spotify, instead of logging in, point to: "${SPOTIFY_MIGRATION_GUIDE_URL}"`,
+      }),
     );
 
     await waitFor(() => {
-      expect(nextAuthState.signIn).toHaveBeenCalledWith("spotify", {
-        callbackUrl: "/auth/callback?next=%2Flibrary&provider=spotify",
-      });
+      expect(openSpy).toHaveBeenCalledWith(
+        SPOTIFY_MIGRATION_GUIDE_URL,
+        "_self",
+        undefined,
+      );
     });
   });
 

@@ -1,8 +1,11 @@
 "use client";
 
-import { buildAuthCallbackUrl, resolvePostAuthPath } from "@/utils/authRedirect";
+import {
+  getOAuthProviderAction,
+  getOAuthProviderCtaLabel,
+} from "@/config/oauthProviders";
+import { resolvePostAuthPath } from "@/utils/authRedirect";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { Suspense, useMemo, useState } from "react";
 
 function SpotifyAuthCallbackFallback() {
@@ -73,23 +76,31 @@ function SpotifyAuthCallbackContent() {
       <div className="surface-panel w-full p-8 text-center">
         <p className="text-sm text-[var(--color-subtext)]">{errorMessage}</p>
         <div className="mt-4 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              setIsRetrying(true);
-              try {
-                await signIn("spotify", {
-                  callbackUrl: buildAuthCallbackUrl(nextPath, "spotify"),
-                });
-              } finally {
-                setIsRetrying(false);
-              }
-            }}
-            disabled={isRetrying}
-            className="w-full rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-          >
-            {isRetrying ? "Retrying..." : "Retry Spotify Sign-In"}
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRetrying(true);
+                const providerAction = getOAuthProviderAction("spotify");
+                if (providerAction.kind === "link") {
+                  window.open(
+                    providerAction.href,
+                    providerAction.target,
+                    providerAction.target === "_blank"
+                      ? "noopener,noreferrer"
+                      : undefined,
+                  );
+                }
+              }}
+              disabled={isRetrying}
+              className="w-full rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            >
+              {isRetrying
+                ? "Opening guide..."
+                : getOAuthProviderCtaLabel(
+                    "spotify",
+                    "Retry Spotify Sign-In",
+                  )}
+            </button>
           <button
             type="button"
             onClick={() => router.replace(signInUrl)}
