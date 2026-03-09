@@ -8,6 +8,7 @@ import { Settings, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import type { SimilarityPreference } from "@starchild/types";
+import { useTranslations } from "next-intl";
 
 export interface QueueSettingsModalProps {
   isOpen: boolean;
@@ -27,6 +28,29 @@ export function QueueSettingsModal({
   initialCount = 5,
   initialSimilarityLevel = "balanced",
 }: QueueSettingsModalProps) {
+  const t = useTranslations("queue");
+  const tc = useTranslations("common");
+  const similarityOptions: Array<{
+    value: SimilarityPreference;
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: "strict",
+      label: t("similarityStrict"),
+      description: t("similarityStrictDescription"),
+    },
+    {
+      value: "balanced",
+      label: t("similarityBalanced"),
+      description: t("similarityBalancedDescription"),
+    },
+    {
+      value: "diverse",
+      label: t("similarityDiverse"),
+      description: t("similarityDiverseDescription"),
+    },
+  ];
   const [mounted] = useState(() => typeof window !== "undefined");
   const [count, setCount] = useState(initialCount);
   const [similarityLevel, setSimilarityLevel] = useState<SimilarityPreference>(
@@ -69,28 +93,6 @@ export function QueueSettingsModal({
     onClose();
   };
 
-  const similarityOptions: Array<{
-    value: SimilarityPreference;
-    label: string;
-    description: string;
-  }> = [
-    {
-      value: "strict",
-      label: "Strict",
-      description: "Very similar tracks, mostly from track radio",
-    },
-    {
-      value: "balanced",
-      label: "Balanced",
-      description: "Mix of similar tracks and related artists",
-    },
-    {
-      value: "diverse",
-      label: "Diverse",
-      description: "Wide variety including genre exploration",
-    },
-  ];
-
   if (!mounted) return null;
 
   return createPortal(
@@ -122,13 +124,13 @@ export function QueueSettingsModal({
                 <div className="flex items-center gap-3">
                   <Settings className="h-5 w-5 text-[var(--color-accent)]" />
                   <h2 className="text-xl font-bold text-[var(--color-text)]">
-                    Smart Tracks Settings
+                    {t("settingsTitle")}
                   </h2>
                 </div>
                 <button
                   onClick={onClose}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(244,178,102,0.1)] text-[var(--color-accent)] transition-all hover:bg-[rgba(244,178,102,0.2)]"
-                  aria-label="Close settings"
+                  aria-label={t("closeSettings")}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -139,7 +141,7 @@ export function QueueSettingsModal({
                 {/* Track Count */}
                 <div>
                   <label className="mb-3 block text-sm font-semibold text-[var(--color-text)]">
-                    Number of Tracks
+                    {t("numberOfTracks")}
                   </label>
                   <div className="flex items-center gap-4">
                     <input
@@ -155,14 +157,14 @@ export function QueueSettingsModal({
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-[var(--color-subtext)]">
-                    Number of smart tracks to add to the queue
+                    {t("numberOfTracksHint")}
                   </p>
                 </div>
 
                 {/* Similarity Level */}
                 <div>
                   <label className="mb-3 block text-sm font-semibold text-[var(--color-text)]">
-                    Similarity Level
+                    {t("similarityLevel")}
                   </label>
                   <div className="space-y-2">
                     {similarityOptions.map((option) => (
@@ -198,13 +200,13 @@ export function QueueSettingsModal({
                   onClick={onClose}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-subtext)] transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
                 >
-                  Cancel
+                  {tc("cancel")}
                 </button>
                 <button
                   onClick={handleApply}
                   className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition-all hover:scale-105 hover:bg-[var(--color-accent-strong)]"
                 >
-                  Apply
+                  {t("apply")}
                 </button>
               </div>
             </div>

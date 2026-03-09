@@ -1,8 +1,11 @@
 // File: apps/web/src/components/Queue.tsx
 
+"use client";
+
 import type { QueueItem } from "@starchild/types";
 import { Trash2, X } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -18,18 +21,22 @@ interface QueueProps {
 }
 
 export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
+  const t = useTranslations("queue");
+
   return (
     <div className="theme-chrome-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l">
       {}
       <div className="flex items-center justify-between border-b border-[var(--color-border)] p-4">
-        <h2 className="text-xl font-bold text-[var(--color-text)]">Queue ({queue.length})</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text)]">
+          {t("title", { count: queue.length })}
+        </h2>
         <div className="flex items-center gap-2">
           {queue.length > 0 && (
             <button
               onClick={onClear}
               className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
-              aria-label="Clear queue"
-              title="Clear queue"
+              aria-label={t("clearQueue")}
+              title={t("clearQueue")}
             >
               <Trash2 className="h-5 w-5" />
             </button>
@@ -37,7 +44,7 @@ export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
           <button
             onClick={onClose}
             className="rounded-full p-2 transition-colors hover:bg-[var(--color-surface-hover)]"
-            aria-label="Close queue"
+            aria-label={t("closeQueue")}
           >
             <X className="h-6 w-6 text-[var(--color-subtext)]" />
           </button>
@@ -49,8 +56,8 @@ export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
         {queue.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center text-[var(--color-muted)]">
             <div className="mb-4 text-6xl">🎵</div>
-            <p className="mb-2 text-lg font-medium">Queue is empty</p>
-            <p className="text-sm">Add tracks to start building your queue</p>
+            <p className="mb-2 text-lg font-medium">{t("emptyTitle")}</p>
+            <p className="text-sm">{t("emptyDescription")}</p>
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
@@ -106,7 +113,7 @@ export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
                   <button
                     onClick={() => onRemove(item.id)}
                     className="flex-shrink-0 rounded p-1.5 opacity-0 transition-colors group-hover:opacity-100 hover:bg-[var(--color-surface-hover)]"
-                    aria-label="Remove from queue"
+                    aria-label={t("removeFromQueue")}
                   >
                     <X className="h-4 w-4 text-[var(--color-subtext)] hover:text-[var(--color-text)]" />
                   </button>
@@ -120,7 +127,7 @@ export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
       {}
       {queue.length > 0 && (
         <div className="border-t border-gray-800 p-4 text-sm text-gray-400">
-          Total duration:{" "}
+          {t("totalDuration")}{" "}
           {formatDuration(
             queue.reduce((acc, item) => acc + item.track.duration, 0),
           )}
