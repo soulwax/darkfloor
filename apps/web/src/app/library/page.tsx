@@ -45,6 +45,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useTranslations } from "next-intl";
 
 type TabType = "favorites" | "history";
 type SortOption = "newest" | "oldest" | "artist" | "album" | "duration";
@@ -90,14 +91,6 @@ const UNDO_TIMEOUT_MS = 8000;
 const SMART_SEED_LIMIT = 5;
 const SMART_QUEUE_LIMIT = 40;
 const BULK_MUTATION_CONCURRENCY = 8;
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "artist", label: "Artist" },
-  { value: "album", label: "Album" },
-  { value: "duration", label: "Duration" },
-];
-
 function shuffleTracks(tracks: Track[]): Track[] {
   const copy = [...tracks];
   for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -129,10 +122,12 @@ function dedupeTracksById(tracks: Track[]): Track[] {
   return uniqueTracks;
 }
 
-function buildLibraryPlaylistName(tab: TabType): string {
+function buildLibraryPlaylistName(
+  sectionLabel: string,
+  libraryLabel: string,
+): string {
   const date = new Date().toISOString().slice(0, 10);
-  const section = tab === "favorites" ? "Favorites" : "Recent";
-  return `Library ${section} ${date}`;
+  return `${libraryLabel} ${sectionLabel} ${date}`;
 }
 
 function getEntryTimestamp(entry: LibraryEntry): number {
@@ -144,15 +139,24 @@ function getEntryTimestamp(entry: LibraryEntry): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatEntryLabel(entry: LibraryEntry, tab: TabType): string {
+function formatEntryLabel(
+  entry: LibraryEntry,
+  tab: TabType,
+  labels: {
+    recentlyPlayed: string;
+    savedTrack: string;
+    played: (date: string) => string;
+    saved: (date: string) => string;
+  },
+): string {
   const value = tab === "history" ? entry.playedAt : entry.createdAt;
   if (!value) {
-    return tab === "history" ? "Recently played" : "Saved track";
+    return tab === "history" ? labels.recentlyPlayed : labels.savedTrack;
   }
 
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) {
-    return tab === "history" ? "Recently played" : "Saved track";
+    return tab === "history" ? labels.recentlyPlayed : labels.savedTrack;
   }
 
   const dateLabel = date.toLocaleDateString(undefined, {
@@ -160,7 +164,7 @@ function formatEntryLabel(entry: LibraryEntry, tab: TabType): string {
     day: "numeric",
   });
 
-  return tab === "history" ? `Played ${dateLabel}` : `Saved ${dateLabel}`;
+  return tab === "history" ? labels.played(dateLabel) : labels.saved(dateLabel);
 }
 
 function sortLibraryEntries(
@@ -260,13 +264,14 @@ function LibraryHeaderActionMenu({
 }: {
   actions: LibraryHeaderMenuAction[];
 }) {
+  const t = useTranslations("library");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-subtext)] transition-all duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/35 focus-visible:outline-none"
-          aria-label="Open additional library actions"
+          aria-label={t("openActions")}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
@@ -316,6 +321,7 @@ function LibraryGridCard({
   onOpenMenu,
   onOpenMenuAtPoint,
 }: LibraryGridCardProps) {
+  const t = useTranslations("library");
   const cardActionButtonClass =
     "inline-flex h-8 w-8 items-center justify-center rounded-md text-white/90 transition-all duration-200 ease-out hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:cursor-not-allowed disabled:opacity-50";
   const mobileActionButtonClass =
@@ -329,7 +335,10 @@ function LibraryGridCard({
           : "border-[var(--color-border)] hover:-translate-y-0.5 hover:border-[var(--color-accent)]/40 hover:shadow-xl"
       }`}
       tabIndex={0}
-      aria-label={`${entry.track.title} by ${entry.track.artist.name}`}
+      aria-label={t("trackCardAria", {
+        title: entry.track.title,
+        artist: entry.track.artist.name,
+      })}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
 
@@ -350,7 +359,7 @@ function LibraryGridCard({
       <div className="relative aspect-video overflow-hidden border-b border-[var(--color-border)]/65 bg-black/30">
         <Image
           src={getCoverImage(entry.track, "medium")}
-          alt={`${entry.track.album.title} cover`}
+          alt={t("coverAlt", { album: entry.track.album.title })}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, (max-width: 1536px) 33vw, 25vw"
           className="object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
@@ -367,7 +376,7 @@ function LibraryGridCard({
             }}
             className="absolute top-2 left-2 inline-flex h-8 w-8 items-center justify-center rounded-md bg-black/65 text-white transition-colors duration-200 ease-out hover:bg-black/75 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             aria-pressed={isSelected}
-            aria-label={isSelected ? "Deselect track" : "Select track"}
+            aria-label={isSelected ? t("deselectTrack") : t("selectTrack")}
           >
             {isSelected ? (
               <CheckSquare className="h-4 w-4" />
@@ -387,7 +396,7 @@ function LibraryGridCard({
                   onPlay();
                 }}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-emerald-950 transition-colors duration-200 ease-out hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:outline-none"
-                aria-label={`Play ${entry.track.title}`}
+                aria-label={t("playTrackAria", { title: entry.track.title })}
               >
                 <Play className="h-4 w-4" />
               </button>
@@ -401,8 +410,8 @@ function LibraryGridCard({
                 className={cardActionButtonClass}
                 aria-label={
                   isFavorite
-                    ? `Remove ${entry.track.title} from favorites`
-                    : `Add ${entry.track.title} to favorites`
+                    ? t("removeFavoriteAria", { title: entry.track.title })
+                    : t("addFavoriteAria", { title: entry.track.title })
                 }
                 aria-pressed={isFavorite}
                 disabled={isFavoritePending}
@@ -416,7 +425,7 @@ function LibraryGridCard({
                 type="button"
                 onClick={onOpenMenu}
                 className={`${cardActionButtonClass} ml-auto`}
-                aria-label={`Open actions for ${entry.track.title}`}
+                aria-label={t("openActionsFor", { title: entry.track.title })}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
@@ -449,7 +458,7 @@ function LibraryGridCard({
               onPlay();
             }}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-emerald-950 transition-colors duration-200 ease-out hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:outline-none"
-            aria-label={`Play ${entry.track.title}`}
+            aria-label={t("playTrackAria", { title: entry.track.title })}
           >
             <Play className="h-4 w-4" />
           </button>
@@ -463,8 +472,8 @@ function LibraryGridCard({
             className={mobileActionButtonClass}
             aria-label={
               isFavorite
-                ? `Remove ${entry.track.title} from favorites`
-                : `Add ${entry.track.title} to favorites`
+                ? t("removeFavoriteAria", { title: entry.track.title })
+                : t("addFavoriteAria", { title: entry.track.title })
             }
             aria-pressed={isFavorite}
             disabled={isFavoritePending}
@@ -478,7 +487,7 @@ function LibraryGridCard({
             type="button"
             onClick={onOpenMenu}
             className={`${mobileActionButtonClass} ml-auto`}
-            aria-label={`Open actions for ${entry.track.title}`}
+            aria-label={t("openActionsFor", { title: entry.track.title })}
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -489,6 +498,9 @@ function LibraryGridCard({
 }
 
 export default function LibraryPage() {
+  const t = useTranslations("library");
+  const tc = useTranslations("common");
+  const tp = useTranslations("player");
   const [activeTab, setActiveTab] = useState<TabType>("favorites");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
@@ -544,6 +556,16 @@ export default function LibraryPage() {
   const favoriteTrackIds = useMemo(
     () => new Set(favoriteEntries.map((entry) => entry.track.id)),
     [favoriteEntries],
+  );
+  const sortOptions = useMemo(
+    () => [
+      { value: "newest" as const, label: t("newest") },
+      { value: "oldest" as const, label: t("oldest") },
+      { value: "artist" as const, label: t("sortByArtist") },
+      { value: "album" as const, label: t("sortByAlbum") },
+      { value: "duration" as const, label: t("sortByDuration") },
+    ],
+    [t],
   );
 
   const activeEntries =
@@ -718,7 +740,7 @@ export default function LibraryPage() {
     );
 
     if (sourceTracks.length === 0) {
-      showToast("No tracks available to save as a playlist", "info");
+      showToast(t("noTracksForPlaylist"), "info");
       return;
     }
 
@@ -727,19 +749,19 @@ export default function LibraryPage() {
     try {
       const sourceLabel =
         selectedTracks.length > 0
-          ? "selected tracks"
+          ? t("sourceSelectedTracks")
           : hasSearchFilter
-            ? "filtered tab"
-            : "library tab";
+            ? t("sourceFilteredTab")
+            : t("sourceLibraryTab");
 
       const playlist = await createPlaylist.mutateAsync({
-        name: buildLibraryPlaylistName(activeTab),
-        description: `Generated from your ${sourceLabel}`,
+        name: buildLibraryPlaylistName(sectionLabel, tc("library")),
+        description: t("generatedPlaylistDescription", { source: sourceLabel }),
         isPublic: false,
       });
 
       if (!playlist) {
-        throw new Error("Playlist creation failed");
+        throw new Error(t("playlistCreationFailed"));
       }
 
       const results = await mapWithConcurrency(sourceTracks, (track) =>
@@ -759,20 +781,26 @@ export default function LibraryPage() {
 
       if (failedCount > 0) {
         showToast(
-          `Saved ${addedCount} track${addedCount === 1 ? "" : "s"} to "${
-            playlist.name
-          }" (${failedCount} failed to add)`,
+          t("savedPlaylistSummaryPartial", {
+            count: addedCount,
+            name: playlist.name,
+            failed: failedCount,
+          }),
           "warning",
         );
       } else {
         showToast(
-          `Saved ${addedCount} track${addedCount === 1 ? "" : "s"} to "${playlist.name}"`,
+          t("savedPlaylistSummary", {
+            count: addedCount,
+            name: playlist.name,
+          }),
           "success",
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to save playlist: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(t("failedToSavePlaylist", { error: message }), "error");
     } finally {
       setIsListActionPending(false);
     }
@@ -788,7 +816,7 @@ export default function LibraryPage() {
     );
 
     if (sourceTracks.length === 0) {
-      showToast("No tracks available to build smart queue", "info");
+      showToast(t("noTracksForSmartQueue"), "info");
       return;
     }
 
@@ -813,12 +841,16 @@ export default function LibraryPage() {
       playTrackList([...seedTracks, ...recommendedTracks]);
 
       showToast(
-        `Smart queue ready: ${seedTracks.length} seeds + ${recommendedTracks.length} recommendations`,
+        t("smartQueueReady", {
+          seeds: seedTracks.length,
+          recommendations: recommendedTracks.length,
+        }),
         "success",
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to build smart queue: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(t("failedToBuildSmartQueue", { error: message }), "error");
     } finally {
       setIsListActionPending(false);
     }
@@ -829,11 +861,7 @@ export default function LibraryPage() {
       return;
     }
 
-    if (
-      !window.confirm(
-        "Clear your full listening history? This cannot be undone.",
-      )
-    ) {
+    if (!window.confirm(t("confirmClearHistory"))) {
       return;
     }
 
@@ -849,15 +877,11 @@ export default function LibraryPage() {
         setRemovalUndo(null);
       }
 
-      showToast(
-        `Cleared ${result.removedCount} history entr${
-          result.removedCount === 1 ? "y" : "ies"
-        }`,
-        "success",
-      );
+      showToast(t("clearedHistory", { count: result.removedCount }), "success");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to clear history: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(t("failedToClearHistory", { error: message }), "error");
     } finally {
       setIsListActionPending(false);
     }
@@ -868,11 +892,7 @@ export default function LibraryPage() {
       return;
     }
 
-    if (
-      !window.confirm(
-        "Remove all non-favorite tracks from history? Favorite history entries will be kept.",
-      )
-    ) {
+    if (!window.confirm(t("confirmClearNonFavorites"))) {
       return;
     }
 
@@ -889,14 +909,13 @@ export default function LibraryPage() {
       }
 
       showToast(
-        `Removed ${result.removedCount} non-favorite history ${
-          result.removedCount === 1 ? "entry" : "entries"
-        }`,
+        t("clearedNonFavorites", { count: result.removedCount }),
         "success",
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to clear non-favorites: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(t("failedToClearNonFavorites", { error: message }), "error");
     } finally {
       setIsListActionPending(false);
     }
@@ -928,7 +947,7 @@ export default function LibraryPage() {
       const failedCount = removalResults.length - removedEntries.length;
 
       if (removedEntries.length === 0) {
-        showToast("Failed to remove tracks", "error");
+        showToast(t("failedToRemoveTracks"), "error");
         return;
       }
 
@@ -963,25 +982,32 @@ export default function LibraryPage() {
       });
 
       const targetLabel =
-        tabForRemoval === "favorites" ? "favorites" : "history";
+        tabForRemoval === "favorites" ? t("favorites") : t("recent");
       if (failedCount > 0) {
         showToast(
-          `Removed ${removedEntries.length} track${
-            removedEntries.length === 1 ? "" : "s"
-          } from ${targetLabel} (${failedCount} failed to remove)`,
+          t("removedTracksPartial", {
+            count: removedEntries.length,
+            target: targetLabel,
+            failed: failedCount,
+          }),
           "warning",
         );
       } else {
         showToast(
-          `Removed ${removedEntries.length} track${
-            removedEntries.length === 1 ? "" : "s"
-          } from ${targetLabel}`,
+          t("removedTracks", {
+            count: removedEntries.length,
+            target: targetLabel,
+          }),
           "info",
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to remove tracks: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(
+        t("failedToRemoveTracksWithError", { error: message }),
+        "error",
+      );
     } finally {
       setIsListActionPending(false);
     }
@@ -1042,28 +1068,31 @@ export default function LibraryPage() {
 
         if (restoredEntries.length > 0) {
           showToast(
-            `Restored ${restoredEntries.length} track${
-              restoredEntries.length === 1 ? "" : "s"
-            } (${failedEntries.length} failed to restore)`,
+            t("restoredTracksPartial", {
+              count: restoredEntries.length,
+              failed: failedEntries.length,
+            }),
             "warning",
           );
         } else {
-          showToast("Failed to restore tracks", "error");
+          showToast(t("failedToRestoreTracks"), "error");
         }
         return;
       }
 
       showToast(
-        `Restored ${restoredEntries.length} track${
-          restoredEntries.length === 1 ? "" : "s"
-        }`,
+        t("restoredTracks", { count: restoredEntries.length }),
         "success",
       );
 
       setRemovalUndo(null);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to restore tracks: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(
+        t("failedToRestoreTracksWithError", { error: message }),
+        "error",
+      );
     } finally {
       setIsListActionPending(false);
     }
@@ -1090,16 +1119,23 @@ export default function LibraryPage() {
 
       if (isFavorite) {
         await removeFavorite.mutateAsync({ trackId });
-        showToast(`Removed "${entry.track.title}" from favorites`, "info");
+        showToast(
+          t("removedFromFavorites", { title: entry.track.title }),
+          "info",
+        );
       } else {
         await addFavorite.mutateAsync({ track: entry.track });
-        showToast(`Added "${entry.track.title}" to favorites`, "success");
+        showToast(
+          t("addedToFavorites", { title: entry.track.title }),
+          "success",
+        );
       }
 
       await utils.music.getFavorites.invalidate();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      showToast(`Failed to update favorites: ${message}`, "error");
+      const message =
+        error instanceof Error ? error.message : t("unknownError");
+      showToast(t("failedToUpdateFavorites", { error: message }), "error");
     } finally {
       setFavoriteTrackPending(trackId, false);
     }
@@ -1112,8 +1148,8 @@ export default function LibraryPage() {
   ): void => {
     const removeLabel =
       activeTab === "favorites"
-        ? "Remove from Favorites"
-        : "Remove from Recently Played";
+        ? t("removeFromFavorites")
+        : t("removeFromRecentlyPlayed");
 
     hapticLight();
     openMenu(entry.track, x, y, {
@@ -1139,16 +1175,18 @@ export default function LibraryPage() {
 
   const isActionDisabled = isListActionPending || activeTabLoading;
   const hasVisibleTracks = visibleTracks.length > 0;
-  const selectionScopeLabel = hasSearchFilter ? "Select Visible" : "Select All";
+  const selectionScopeLabel = hasSearchFilter
+    ? t("selectVisible")
+    : t("selectAll");
   const selectableEntryCount = hasSearchFilter
     ? visibleEntries.length
     : activeEntries.length;
-  const sectionLabel = activeTab === "favorites" ? "Favorites" : "Recent";
-  const searchPlaceholder = `Search ${sectionLabel.toLowerCase()}...`;
+  const sectionLabel = activeTab === "favorites" ? t("favorites") : t("recent");
+  const searchPlaceholder = t("searchPlaceholder");
   const headerMenuActions: LibraryHeaderMenuAction[] = [
     {
       key: "save-playlist",
-      label: "Save as Playlist",
+      label: t("saveAsPlaylist"),
       icon: <Save className="h-3.5 w-3.5" />,
       onSelect: () => {
         void handleSaveTabAsPlaylist();
@@ -1157,7 +1195,7 @@ export default function LibraryPage() {
     },
     {
       key: "smart-queue",
-      label: "Build Smart Queue",
+      label: t("buildSmartQueue"),
       icon: <Sparkles className="h-3.5 w-3.5" />,
       onSelect: () => {
         void handleSmartQueueFromLibrary();
@@ -1169,7 +1207,7 @@ export default function LibraryPage() {
   if (activeTab === "history") {
     headerMenuActions.push({
       key: "clear-non-favorites",
-      label: "Clear Non-Favorites",
+      label: t("clearNonFavorites"),
       icon: <Trash2 className="h-3.5 w-3.5" />,
       onSelect: () => {
         void handleClearNonFavoritesHistory();
@@ -1178,7 +1216,7 @@ export default function LibraryPage() {
     });
     headerMenuActions.push({
       key: "clear-history",
-      label: "Clear Full History",
+      label: t("clearFullHistory"),
       icon: <Trash2 className="h-3.5 w-3.5" />,
       onSelect: () => {
         void handleClearHistory();
@@ -1192,17 +1230,17 @@ export default function LibraryPage() {
     return (
       <div className="container mx-auto flex min-h-screen flex-col px-3 py-4 md:px-6 md:py-8">
         <h1 className="mb-6 text-2xl font-bold text-[var(--color-text)] md:mb-8 md:text-3xl">
-          Your Library
+          {tc("library")}
         </h1>
 
         <div className="fade-in">
           <EmptyState
             icon={<Heart className="h-12 w-12 md:h-16 md:w-16" />}
-            title="Sign in to view your library"
-            description="Favorites and listening history are available after login."
+            title={t("signInTitle")}
+            description={t("signInDescription")}
             action={
               <Link href="/signin" className="btn-primary touch-target-lg">
-                Sign in
+                {tc("signIn")}
               </Link>
             }
           />
@@ -1219,15 +1257,15 @@ export default function LibraryPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-[var(--color-muted)] uppercase">
-                  Your Music
+                  {t("yourMusic")}
                 </p>
                 <h1 className="text-2xl font-bold text-[var(--color-text)] md:text-3xl">
-                  Your Library
+                  {tc("library")}
                 </h1>
               </div>
 
               <nav
-                aria-label="Library sections"
+                aria-label={t("sectionsAriaLabel")}
                 className="flex flex-wrap items-center gap-2"
               >
                 <button
@@ -1240,7 +1278,7 @@ export default function LibraryPage() {
                   }`}
                   aria-pressed={activeTab === "favorites"}
                 >
-                  Favorites
+                  {t("favorites")}
                 </button>
                 <button
                   type="button"
@@ -1252,13 +1290,13 @@ export default function LibraryPage() {
                   }`}
                   aria-pressed={activeTab === "history"}
                 >
-                  Recent
+                  {t("recent")}
                 </button>
                 <Link
                   href="/playlists"
                   className="touch-target inline-flex h-9 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-sm font-medium text-[var(--color-subtext)] transition-all duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
                 >
-                  Playlists
+                  {tc("playlists")}
                 </Link>
               </nav>
             </div>
@@ -1273,7 +1311,7 @@ export default function LibraryPage() {
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={searchPlaceholder}
                     className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] py-2 pr-3 pl-9 text-sm text-[var(--color-text)] transition-colors duration-200 ease-out outline-none focus:border-[var(--color-accent)]"
-                    aria-label="Search library tracks"
+                    aria-label={t("searchPlaceholder")}
                   />
                 </label>
 
@@ -1284,7 +1322,7 @@ export default function LibraryPage() {
                   disabled={!hasVisibleTracks || isActionDisabled}
                 >
                   <Play className="h-4 w-4" />
-                  <span>Play All</span>
+                  <span>{tp("playAll")}</span>
                 </button>
               </div>
             </div>
@@ -1299,9 +1337,9 @@ export default function LibraryPage() {
                   setSortOption(event.target.value as SortOption)
                 }
                 className="h-9 w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] py-1 pr-2 pl-8 text-xs text-[var(--color-text)] transition-colors duration-200 ease-out outline-none focus:border-[var(--color-accent)]"
-                aria-label="Sort library"
+                aria-label={t("sortAriaLabel")}
               >
-                {SORT_OPTIONS.map((option) => (
+                {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -1317,12 +1355,12 @@ export default function LibraryPage() {
               {isSelectionMode ? (
                 <>
                   <X className="h-3.5 w-3.5" />
-                  <span>Done</span>
+                  <span>{t("done")}</span>
                 </>
               ) : (
                 <>
                   <CheckSquare className="h-3.5 w-3.5" />
-                  <span>Select</span>
+                  <span>{t("selectMode")}</span>
                 </>
               )}
             </button>
@@ -1334,7 +1372,7 @@ export default function LibraryPage() {
               disabled={!hasVisibleTracks || isActionDisabled}
             >
               <Shuffle className="h-3.5 w-3.5" />
-              <span>Shuffle</span>
+              <span>{tc("shuffle")}</span>
             </button>
 
             <button
@@ -1344,7 +1382,7 @@ export default function LibraryPage() {
               disabled={!hasVisibleTracks || isActionDisabled}
             >
               <ListPlus className="h-3.5 w-3.5" />
-              <span>Queue Next</span>
+              <span>{t("queueNext")}</span>
             </button>
 
             <LibraryHeaderActionMenu actions={headerMenuActions} />
@@ -1352,8 +1390,11 @@ export default function LibraryPage() {
         </div>
 
         <p className="mt-3 text-xs text-[var(--color-subtext)]">
-          {visibleTracks.length} of {activeTracks.length} tracks shown in{" "}
-          {sectionLabel.toLowerCase()}.
+          {t("sectionSummary", {
+            visible: visibleTracks.length,
+            total: activeTracks.length,
+            section: sectionLabel,
+          })}
         </p>
       </header>
 
@@ -1361,9 +1402,11 @@ export default function LibraryPage() {
         <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 md:mb-6 md:p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-[var(--color-subtext)]">
-              {selectedEntries.length} selected
+              {t("selectionSummary", { count: selectedEntries.length })}
               {hasSearchFilter
-                ? ` (${selectedVisibleCount} visible with current filter)`
+                ? ` ${t("selectionVisibleHint", {
+                    count: selectedVisibleCount,
+                  })}`
                 : ""}
             </p>
 
@@ -1383,7 +1426,7 @@ export default function LibraryPage() {
                 disabled={selectedEntries.length === 0 || isActionDisabled}
               >
                 <X className="h-3.5 w-3.5" />
-                <span>Clear</span>
+                <span>{t("clearSelection")}</span>
               </button>
 
               <button
@@ -1392,7 +1435,7 @@ export default function LibraryPage() {
                 disabled={selectedTracks.length === 0 || isActionDisabled}
               >
                 <Play className="h-3.5 w-3.5" />
-                <span>Play Selected</span>
+                <span>{t("playSelected")}</span>
               </button>
 
               <button
@@ -1401,7 +1444,7 @@ export default function LibraryPage() {
                 disabled={selectedTracks.length === 0 || isActionDisabled}
               >
                 <ListPlus className="h-3.5 w-3.5" />
-                <span>Queue Selected</span>
+                <span>{t("queueSelected")}</span>
               </button>
 
               <button
@@ -1410,7 +1453,7 @@ export default function LibraryPage() {
                 disabled={selectedEntries.length === 0 || isActionDisabled}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span>Remove Selected</span>
+                <span>{t("removeSelected")}</span>
               </button>
             </div>
           </div>
@@ -1420,8 +1463,7 @@ export default function LibraryPage() {
       {removalUndo ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(244,178,102,0.22)] bg-[rgba(244,178,102,0.08)] px-3 py-2 text-sm text-[var(--color-text)] md:mb-6">
           <span>
-            Removed {removalUndo.entries.length} track
-            {removalUndo.entries.length === 1 ? "" : "s"}
+            {t("removedTracksBanner", { count: removalUndo.entries.length })}
           </span>
 
           <button
@@ -1432,7 +1474,7 @@ export default function LibraryPage() {
             disabled={isActionDisabled}
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Undo</span>
+            <span>{t("undo")}</span>
           </button>
         </div>
       ) : null}
@@ -1444,8 +1486,7 @@ export default function LibraryPage() {
               {sectionLabel}
             </h2>
             <p className="text-xs text-[var(--color-subtext)]">
-              {visibleTracks.length} track
-              {visibleTracks.length === 1 ? "" : "s"}
+              {tc("tracks", { count: visibleTracks.length })}
             </p>
           </div>
         ) : null}
@@ -1454,8 +1495,8 @@ export default function LibraryPage() {
           <LoadingState
             message={
               activeTab === "favorites"
-                ? "Loading your favorites..."
-                : "Loading your recent tracks..."
+                ? t("loadingFavorites")
+                : t("loadingRecent")
             }
           />
         ) : activeEntries.length > 0 ? (
@@ -1470,7 +1511,12 @@ export default function LibraryPage() {
                   <LibraryGridCard
                     key={entry.id}
                     entry={entry}
-                    entryLabel={formatEntryLabel(entry, activeTab)}
+                    entryLabel={formatEntryLabel(entry, activeTab, {
+                      recentlyPlayed: t("recentlyPlayed"),
+                      savedTrack: t("savedTrack"),
+                      played: (date) => t("played", { date }),
+                      saved: (date) => t("saved", { date }),
+                    })}
                     isFavorite={isFavorite}
                     isFavoritePending={favoritePendingTrackIds.has(trackId)}
                     isSelectionMode={isSelectionMode}
@@ -1501,16 +1547,16 @@ export default function LibraryPage() {
               }
               title={
                 activeTab === "favorites"
-                  ? "No favorites match your search"
-                  : "No recent tracks match your search"
+                  ? t("noFavoritesMatch")
+                  : t("noRecentMatch")
               }
-              description="Try another search or clear the current filter."
+              description={t("searchHint")}
               action={
                 <button
                   onClick={() => setSearchQuery("")}
                   className="btn-primary touch-target-lg"
                 >
-                  Clear search
+                  {t("clearSearch")}
                 </button>
               }
             />
@@ -1525,20 +1571,16 @@ export default function LibraryPage() {
               )
             }
             title={
-              activeTab === "favorites"
-                ? "No favorites yet"
-                : "No listening history yet"
+              activeTab === "favorites" ? t("noFavorites") : t("noHistory")
             }
             description={
-              activeTab === "favorites"
-                ? "Tracks you favorite will appear here"
-                : "Your recently played tracks will appear here"
+              activeTab === "favorites" ? t("favoritesHint") : t("historyHint")
             }
             action={
               <Link href="/" className="btn-primary touch-target-lg">
                 {activeTab === "favorites"
-                  ? "Search for music"
-                  : "Start listening to music"}
+                  ? t("searchForMusic")
+                  : t("startListening")}
               </Link>
             }
           />
@@ -1548,7 +1590,7 @@ export default function LibraryPage() {
       {activeEntries.length >= 100 ? (
         <footer className="mt-6 flex justify-center">
           <p className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-xs text-[var(--color-subtext)]">
-            Showing the latest 100 tracks in this section.
+            {t("showingLatest100")}
           </p>
         </footer>
       ) : null}

@@ -6,6 +6,7 @@ import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import type { Track } from "@starchild/types";
 import { hapticLight } from "@/utils/haptics";
 import { Play, Shuffle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface TrackPlayButtonsProps {
   tracks: Track[];
@@ -13,6 +14,8 @@ interface TrackPlayButtonsProps {
 
 export function TrackPlayButtons({ tracks }: TrackPlayButtonsProps) {
   const player = useGlobalPlayer();
+  const t = useTranslations("player");
+  const tc = useTranslations("common");
 
   const handlePlayAll = () => {
     if (tracks.length === 0) return;
@@ -45,7 +48,7 @@ export function TrackPlayButtons({ tracks }: TrackPlayButtonsProps) {
         className="btn-primary touch-target-lg flex items-center gap-2"
       >
         <Play className="h-5 w-5" />
-        <span>Play</span>
+        <span>{tc("play")}</span>
       </button>
       <button
         onClick={handleShufflePlay}
@@ -53,7 +56,7 @@ export function TrackPlayButtons({ tracks }: TrackPlayButtonsProps) {
         className="btn-secondary touch-target-lg flex items-center gap-2"
       >
         <Shuffle className="h-5 w-5" />
-        <span>Shuffle</span>
+        <span>{tc("shuffle")}</span>
       </button>
     </div>
   );

@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -84,6 +85,9 @@ function parseFeedPlaylistTracks(payload: unknown): Track[] {
 
 export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   const { data: session } = useSession();
+  const t = useTranslations("home");
+  const tc = useTranslations("common");
+  const tm = useTranslations("metadata");
   const { showToast } = useToast();
   const { openMenu: openPlaylistMenu } = usePlaylistContextMenu();
   const { share, isSupported: isShareSupported } = useWebShare();
@@ -449,25 +453,25 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
 
       if (isShareSupported) {
         const success = await share({
-          title: `Starchild search: ${searchQuery}`,
-          text: `Check out search results for "${searchQuery}" on Starchild Music.`,
+          title: tm("searchPrefix", { query: searchQuery }),
+          text: tm("searchResultsFor", { query: searchQuery }),
           url: shareUrl,
         });
 
         if (success) {
-          showToast("Search link shared successfully!", "success");
+          showToast(t("searchLinkShared"), "success");
         }
         return;
       }
 
       try {
         await navigator.clipboard.writeText(shareUrl);
-        showToast("Search link copied to clipboard!", "success");
+        showToast(t("searchLinkCopied"), "success");
       } catch {
-        showToast("Failed to share search link", "error");
+        showToast(t("searchLinkShareFailed"), "error");
       }
     },
-    [isShareSupported, share, showToast],
+    [isShareSupported, share, showToast, t, tm],
   );
 
   const handleLoadMore = async () => {
@@ -871,10 +875,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   const playlistTiles = (userPlaylists ?? []).slice(0, 4);
   const greeting =
     new Date().getHours() < 12
-      ? "Good morning"
+      ? t("greetingMorning")
       : new Date().getHours() < 18
-        ? "Good afternoon"
-        : "Good evening";
+        ? t("greetingAfternoon")
+        : t("greetingEvening");
 
   const handleShufflePlay = useCallback(async () => {
     hapticSuccess();
@@ -948,36 +952,28 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
-                    Discover
+                    {t("discover")}
                   </p>
                   <h1 className="mt-1 text-2xl font-extrabold text-[var(--color-text)] md:text-3xl">
                     {greeting}
                   </h1>
                   <p className="mt-1 text-sm text-[var(--color-subtext)]">
-                    Find tracks instantly, then keep playback going with queue
-                    and smart mix.
-                    {apiHostname ? ` Powered by ${apiHostname}.` : ""}
+                    {t("tagline")}
+                    {apiHostname
+                      ? ` ${t("poweredBy", { host: apiHostname })}`
+                      : ""}
                   </p>
                   <div className="mt-4 max-w-2xl rounded-2xl border border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-[var(--color-accent)]" />
                       <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
-                        What&apos;s New
+                        {t("whatsNew")}
                       </p>
                     </div>
                     <ul className="mt-3 space-y-1.5 text-sm text-[var(--color-subtext)]">
-                      <li>
-                        Spotify OAuth sign-in was retired due to current Spotify
-                        API limitations.
-                      </li>
-                      <li>
-                        Spotify features now live in Settings instead, using
-                        your own Spotify app values.
-                      </li>
-                      <li>
-                        Save your Spotify client ID, client secret, and username
-                        to activate the profile for your account.
-                      </li>
+                      <li>{t("spotifyRetiredNotice")}</li>
+                      <li>{t("spotifySettingsNotice")}</li>
+                      <li>{t("spotifySavePrompt")}</li>
                     </ul>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <button
@@ -987,7 +983,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         }}
                         className="btn-secondary inline-flex items-center gap-2 px-3 py-2 text-[11px] font-bold tracking-wide uppercase"
                       >
-                        Open Settings
+                        {t("openSettings")}
                       </button>
                       <a
                         href="https://developer.spotify.com/documentation/web-api/concepts/apps"
@@ -995,7 +991,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold tracking-wide text-[var(--color-text)] uppercase transition hover:border-[var(--color-accent)]/40 hover:bg-white/10"
                       >
-                        How To
+                        {t("howTo")}
                       </a>
                     </div>
                   </div>
@@ -1006,7 +1002,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                     className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-wide uppercase"
                   >
                     <Shuffle className="h-3.5 w-3.5" />
-                    Shuffle Play
+                    {t("shufflePlay")}
                   </button>
                   {currentQuery && (
                     <button
@@ -1014,7 +1010,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       className="btn-secondary inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-wide uppercase"
                     >
                       <Share2 className="h-3.5 w-3.5" />
-                      Share Query
+                      {t("shareQuery")}
                     </button>
                   )}
                 </div>
@@ -1035,17 +1031,18 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   <div>
                     <h2 className="text-lg font-bold text-[var(--color-text)] md:text-xl">
                       {isArtistSearch
-                        ? `Artist Radio: ${currentQuery}`
+                        ? t("artistRadio", { query: currentQuery })
                         : currentQuery
-                          ? `Results for "${currentQuery}"`
-                          : "Search Results"}
+                          ? t("resultsFor", { query: currentQuery })
+                          : t("searchResults")}
                     </h2>
                     <p className="mt-0.5 text-xs text-[var(--color-subtext)] md:mt-0.5 md:text-xs">
-                      {visibleResults.length.toLocaleString()}
                       {total > visibleResults.length
-                        ? ` of ${total.toLocaleString()}`
-                        : ""}{" "}
-                      tracks found
+                        ? t("resultsCountWithTotal", {
+                            visible: visibleResults.length,
+                            total,
+                          })
+                        : t("resultsCount", { count: visibleResults.length })}
                     </p>
                   </div>
                   {currentQuery && (
@@ -1054,7 +1051,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       className="btn-secondary hidden items-center gap-1 px-3 py-1.5 text-xs font-semibold md:inline-flex"
                     >
                       <Share2 className="h-3.5 w-3.5" />
-                      Share
+                      {tc("share")}
                     </button>
                   )}
                 </div>
@@ -1094,10 +1091,12 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       {loadingMore ? (
                         <>
                           <div className="spinner spinner-sm" />
-                          <span>Loading...</span>
+                          <span>{tc("loading")}</span>
                         </>
                       ) : (
-                        `Load More (${(total - visibleResults.length).toLocaleString()} remaining)`
+                        tc("loadMore", {
+                          remaining: total - visibleResults.length,
+                        })
                       )}
                     </button>
                   </motion.div>
@@ -1115,8 +1114,8 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                 {homeFeedEnabled && (
                   <div className="space-y-4">
                     <HomeFeedRow
-                      title="Continue Listening"
-                      subtitle="Pick up where you left off"
+                      title={t("continueListening")}
+                      subtitle={t("continueListeningSubtitle")}
                       tracks={continueListeningTracks}
                       onTrackSelect={(track) =>
                         handleFeedTrackSelect(track, continueListeningTracks)
@@ -1126,11 +1125,11 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         historyLoading &&
                         continueListeningTracks.length === 0
                       }
-                      emptyLabel="Play something to build your continue list."
+                      emptyLabel={t("continueListeningEmpty")}
                     />
                     <HomeFeedRow
-                      title="Recently Played"
-                      subtitle="Your latest listening history"
+                      title={t("recentlyPlayed")}
+                      subtitle={t("recentlyPlayedSubtitle")}
                       tracks={recentlyPlayedTracks}
                       onTrackSelect={(track) =>
                         handleFeedTrackSelect(track, recentlyPlayedTracks)
@@ -1140,14 +1139,16 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         historyLoading &&
                         recentlyPlayedTracks.length === 0
                       }
-                      emptyLabel="Recent plays appear here after playback."
+                      emptyLabel={t("recentlyPlayedEmpty")}
                     />
                     <HomeFeedRow
-                      title="Made for You"
+                      title={t("madeForYou")}
                       subtitle={
                         preferredGenreName
-                          ? `Built from your favorites and ${preferredGenreName} curation`
-                          : "Built from your favorites and listening patterns"
+                          ? t("madeForYouSubtitleGenre", {
+                              genre: preferredGenreName,
+                            })
+                          : t("madeForYouSubtitle")
                       }
                       tracks={madeForYouRowTracks}
                       onTrackSelect={(track) =>
@@ -1157,14 +1158,14 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         (favoritesLoading || isFeedLoading) &&
                         madeForYouRowTracks.length === 0
                       }
-                      emptyLabel="We are building personalized picks for you."
+                      emptyLabel={t("madeForYouEmpty")}
                     />
                     <section className="card p-4 text-left md:p-5">
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <ListMusic className="h-4 w-4 text-[var(--color-secondary-accent)]" />
                           <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
-                            Playlists for Your Taste
+                            {t("playlistsForYourTaste")}
                           </h4>
                         </div>
                         {preferredGenreName && (
@@ -1205,7 +1206,9 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                       id: playlist.id,
                                       name: playlist.title,
                                       description: playlist.user?.name
-                                        ? `by ${playlist.user.name}`
+                                        ? t("playlistBy", {
+                                            name: playlist.user.name,
+                                          })
                                         : null,
                                       isPublic: true,
                                       coverImage: artwork || null,
@@ -1223,7 +1226,13 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                           { cache: "no-store" },
                                         );
                                         if (!response.ok) {
-                                          let message = `Failed to fetch playlist tracks (${response.status} ${response.statusText})`;
+                                          let message = t(
+                                            "failedToFetchPlaylistTracks",
+                                            {
+                                              status: response.status,
+                                              statusText: response.statusText,
+                                            },
+                                          );
                                           try {
                                             const errorBody =
                                               await response.text();
@@ -1258,7 +1267,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-xs text-[var(--color-subtext)]">
-                                      playlist
+                                      {t("playlistCoverFallback")}
                                     </div>
                                   )}
                                 </div>
@@ -1266,7 +1275,9 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                   {playlist.title}
                                 </p>
                                 <p className="line-clamp-1 text-[11px] text-[var(--color-subtext)]">
-                                  {(playlist.nb_tracks ?? 0).toString()} tracks
+                                  {tc("tracks", {
+                                    count: playlist.nb_tracks ?? 0,
+                                  })}
                                 </p>
                               </button>
                             );
@@ -1274,14 +1285,13 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         </div>
                       ) : (
                         <p className="text-xs text-[var(--color-subtext)]">
-                          Taste-based playlists will appear after we learn more
-                          from your listening.
+                          {t("playlistsForYourTasteEmpty")}
                         </p>
                       )}
                     </section>
                     <HomeFeedRow
-                      title="New Releases"
-                      subtitle="Fresh tracks discovered right now"
+                      title={t("newReleases")}
+                      subtitle={t("newReleasesSubtitle")}
                       tracks={newReleaseRowTracks}
                       onTrackSelect={(track) =>
                         handleFeedTrackSelect(track, newReleaseRowTracks)
@@ -1289,7 +1299,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       isLoading={
                         isFeedLoading && newReleaseRowTracks.length === 0
                       }
-                      emptyLabel="No fresh releases found yet. Try again in a moment."
+                      emptyLabel={t("newReleasesEmpty")}
                     />
                   </div>
                 )}
@@ -1300,7 +1310,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       <div className="mb-3 flex items-center gap-2">
                         <Disc3 className="h-4 w-4 text-[var(--color-accent)]" />
                         <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
-                          Album Picks
+                          {t("albumPicks")}
                         </h4>
                       </div>
                       <div className="grid grid-cols-2 gap-2.5">
@@ -1329,7 +1339,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       <div className="mb-3 flex items-center gap-2">
                         <ListMusic className="h-4 w-4 text-[var(--color-secondary-accent)]" />
                         <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
-                          Playlist Grid
+                          {t("playlistGrid")}
                         </h4>
                       </div>
                       {playlistTiles.length > 0 ? (
@@ -1347,7 +1357,9 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                 {playlist.name}
                               </p>
                               <p className="mt-1 line-clamp-1 text-xs text-[var(--color-subtext)]">
-                                {(playlist.trackCount ?? 0).toString()} tracks
+                                {tc("tracks", {
+                                  count: playlist.trackCount ?? 0,
+                                })}
                               </p>
                             </button>
                           ))}
@@ -1362,10 +1374,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                             className="w-full rounded-xl border border-white/10 bg-[linear-gradient(160deg,rgba(88,198,177,0.24),rgba(14,14,14,0.94))] px-3 py-3 text-left transition-all hover:border-white/20"
                           >
                             <p className="text-sm font-semibold text-[var(--color-text)]">
-                              Example Playlist
+                              {t("examplePlaylist")}
                             </p>
                             <p className="text-xs text-[var(--color-subtext)]">
-                              curated starter selection
+                              {t("curatedStarterSelection")}
                             </p>
                           </button>
                           <button
@@ -1380,10 +1392,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                             className="w-full rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left transition-all hover:border-white/20"
                           >
                             <p className="text-sm font-semibold text-[var(--color-text)]">
-                              Your Playlists
+                              {t("yourPlaylists")}
                             </p>
                             <p className="text-xs text-[var(--color-subtext)]">
-                              open library and create your own
+                              {t("openLibraryDescription")}
                             </p>
                           </button>
                         </div>
@@ -1409,8 +1421,8 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   </motion.div>
                   <h3 className="mb-2 text-lg font-bold text-[var(--color-text)] md:mb-1.5 md:text-base">
                     {isMobile
-                      ? "Tap Shuffle to start instantly, or search for something specific."
-                      : "Search songs, artists, and albums to build your listening flow."}
+                      ? t("mobileStartPrompt")
+                      : t("desktopStartPrompt")}
                   </h3>
 
                   {session && recentSearches && recentSearches.length > 0 && (
@@ -1421,7 +1433,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       className="mt-4 w-full max-w-5xl"
                     >
                       <div className="mb-1.5 text-left text-[11px] font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
-                        Past Searches
+                        {t("pastSearches")}
                       </div>
                       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                         {recentSearches
@@ -1453,11 +1465,13 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                   void handleShareSearch(search);
                                 }}
                                 className="electron-no-drag inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-1 text-[11px] font-medium text-[var(--color-subtext)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
-                                title="Share search"
-                                aria-label={`Share search: ${search}`}
+                                title={t("shareSearch")}
+                                aria-label={t("shareSearchFor", {
+                                  query: search,
+                                })}
                               >
                                 <Share2 className="h-3 w-3" />
-                                Share
+                                {tc("share")}
                               </button>
                             </motion.div>
                           ))}
@@ -1475,12 +1489,12 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       {loading ? (
                         <>
                           <div className="spinner spinner-sm border-white" />
-                          <span>Loading...</span>
+                          <span>{tc("loading")}</span>
                         </>
                       ) : (
                         <>
                           <Shuffle className="h-6 w-6" />
-                          <span>Shuffle & Play</span>
+                          <span>{t("shuffleAndPlay")}</span>
                         </>
                       )}
                     </motion.button>
@@ -1530,7 +1544,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       >
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                       </svg>
-                      <span>View on GitHub</span>
+                      <span>{t("viewOnGithub")}</span>
                     </motion.a>
 
                     <motion.button
@@ -1542,7 +1556,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       className="flex items-center gap-2 rounded-xl bg-[rgba(244,178,102,0.1)] px-5 py-3 text-sm font-medium text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/20 transition-all hover:bg-[rgba(244,178,102,0.2)] hover:ring-[var(--color-accent)]/40 md:px-3 md:py-2 md:text-xs"
                     >
                       <BookOpen className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                      <span>Changelog</span>
+                      <span>{t("changelog")}</span>
                     </motion.button>
 
                     <motion.button
@@ -1554,13 +1568,12 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       className="ml-6 flex items-center gap-2 rounded-xl bg-[rgba(88,198,177,0.15)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] ring-1 ring-[var(--color-secondary-accent)]/20 transition-all hover:bg-[rgba(88,198,177,0.25)] hover:ring-[var(--color-secondary-accent)]/40 md:ml-4 md:px-3 md:py-2 md:text-xs"
                     >
                       <Music2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                      <span>Example Playlist</span>
+                      <span>{t("examplePlaylist")}</span>
                     </motion.button>
                   </div>
 
                   <p className="mt-8 text-xs font-medium tracking-wider text-[var(--color-muted)] uppercase md:mt-6">
-                    Copyright &copy; 2026 Starchild Music Player. All rights
-                    reserved.
+                    {tc("copyright", { year: new Date().getFullYear() })}
                   </p>
                 </div>
               </motion.div>

@@ -1,22 +1,24 @@
 "use client";
 
 import { resolvePostAuthPath } from "@/utils/authRedirect";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
 function SpotifyAuthCallbackFallback() {
+  const t = useTranslations("auth");
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4">
       <div className="surface-panel w-full p-8 text-center">
         <div
           role="status"
-          aria-label="Loading Spotify authentication callback"
+          aria-label={t("spotifyCallbackLoading")}
           className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent"
         >
-          <span className="sr-only">Loading Spotify authentication callback</span>
+          <span className="sr-only">{t("spotifyCallbackLoading")}</span>
         </div>
         <p className="mt-4 text-sm text-[var(--color-subtext)]">
-          Preparing Spotify authentication callback...
+          {t("spotifyCallbackPreparing")}
         </p>
       </div>
     </div>
@@ -26,9 +28,11 @@ function SpotifyAuthCallbackFallback() {
 function getLegacyCallbackMessage(
   error: string | null,
   errorDescription: string | null,
+  deniedMessage: string,
+  defaultMessage: string,
 ): string {
   if (error === "access_denied") {
-    return "Spotify authorization was denied. Discord is now the only supported sign-in method.";
+    return deniedMessage;
   }
 
   if (errorDescription && errorDescription.trim().length > 0) {
@@ -39,10 +43,12 @@ function getLegacyCallbackMessage(
     return error;
   }
 
-  return "Spotify OAuth sign-in has been removed. Use Discord to sign in, and configure Spotify features from Settings instead.";
+  return defaultMessage;
 }
 
 function SpotifyAuthCallbackContent() {
+  const t = useTranslations("auth");
+  const tc = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -60,6 +66,8 @@ function SpotifyAuthCallbackContent() {
       getLegacyCallbackMessage(
         searchParams.get("error"),
         searchParams.get("error_description"),
+        t("spotifyDenied"),
+        t("spotifyOAuthRemoved"),
       ),
     [searchParams],
   );
@@ -76,7 +84,7 @@ function SpotifyAuthCallbackContent() {
             onClick={() => router.replace(signInUrl)}
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)]"
           >
-            Continue to Sign In
+            {tc("continueToSignIn")}
           </button>
         </div>
       </div>

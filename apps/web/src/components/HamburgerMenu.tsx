@@ -23,6 +23,7 @@ import {
     Shield,
     User,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,6 +39,7 @@ interface MenuItem {
 }
 
 export default function HamburgerMenu() {
+  const t = useTranslations("common");
   const { isMenuOpen, closeMenu } = useMenu();
   const { openAuthModal } = useAuthModal();
   const { data: session } = useSession();
@@ -55,20 +57,20 @@ export default function HamburgerMenu() {
   const menuItems: MenuItem[] = [
     {
       id: "home",
-      label: "Home",
+      label: t("home"),
       icon: <Home className="h-5 w-5" />,
       path: "/",
     },
     {
       id: "library",
-      label: "Library",
+      label: t("library"),
       icon: <Library className="h-5 w-5" />,
       path: "/library",
       requiresAuth: true,
     },
     {
       id: "playlists",
-      label: "Playlists",
+      label: t("playlists"),
       icon: <ListMusic className="h-5 w-5" />,
       path: "/playlists",
       requiresAuth: true,
@@ -76,7 +78,7 @@ export default function HamburgerMenu() {
     },
     {
       id: "profile",
-      label: session ? "Profile" : "Sign In",
+      label: session ? t("profile") : t("signIn"),
       icon: <User className="h-5 w-5" />,
       path:
         session && userHash
@@ -89,20 +91,20 @@ export default function HamburgerMenu() {
     },
     {
       id: "settings",
-      label: "Settings",
+      label: t("settings"),
       icon: <Settings className="h-5 w-5" />,
       path: "/settings",
       requiresAuth: true,
     },
     {
       id: "about",
-      label: "About",
+      label: t("about"),
       icon: <Info className="h-5 w-5" />,
       path: "/about",
     },
     {
       id: "license",
-      label: "License",
+      label: t("license"),
       icon: <FileText className="h-5 w-5" />,
       path: "/license",
       dividerAfter: true,
@@ -112,7 +114,7 @@ export default function HamburgerMenu() {
   if (session?.user?.admin) {
     menuItems.push({
       id: "admin",
-      label: "Admin",
+      label: t("admin"),
       icon: <Shield className="h-5 w-5" />,
       path: "/admin",
       requiresAuth: true,
@@ -122,7 +124,7 @@ export default function HamburgerMenu() {
   if (session) {
     menuItems.push({
       id: "signout",
-      label: "Sign Out",
+      label: t("signOut"),
       icon: <LogOut className="h-5 w-5" />,
       action: handleSignOut,
     });
@@ -271,7 +273,7 @@ export default function HamburgerMenu() {
             {}
             <div className="border-t border-[var(--color-border)] p-6">
               <p className="text-center text-xs text-[var(--color-muted)]">
-                Starchild Music v{APP_VERSION}
+                {t("version", { version: APP_VERSION })}
               </p>
             </div>
           </motion.div>

@@ -1,5 +1,6 @@
 // File: apps/web/next.config.js
 
+import createNextIntlPlugin from "next-intl/plugin";
 import { config as dotenvConfig } from "dotenv";
 import { readFileSync } from "fs";
 import { dirname, join, resolve } from "path";
@@ -256,4 +257,6 @@ const config = {
   },
 };
 
-export default config;
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(config);

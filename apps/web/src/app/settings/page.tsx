@@ -34,6 +34,7 @@ import {
   User,
   Volume2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -61,7 +62,18 @@ interface SettingsItem {
   action?: () => void;
 }
 
+function getOptionLabel(
+  options: { label: string; value: string }[],
+  value: string | undefined,
+  fallback: string,
+) {
+  return options.find((option) => option.value === value)?.label ?? fallback;
+}
+
 export default function SettingsPage() {
+  const t = useTranslations("settings");
+  const ts = useTranslations("settingsSpotify");
+  const tc = useTranslations("common");
   const { data: session } = useSession();
   const { showToast } = useToast();
   const player = useGlobalPlayer();
@@ -87,12 +99,54 @@ export default function SettingsPage() {
     enabled: !!session,
   });
 
+  const repeatModeOptions = [
+    { label: t("repeatOff"), value: "none" },
+    { label: t("repeatOne"), value: "one" },
+    { label: t("repeatAll"), value: "all" },
+  ];
+  const equalizerPresetOptions = [
+    { label: t("equalizerFlat"), value: "Flat" },
+    { label: t("equalizerRock"), value: "Rock" },
+    { label: t("equalizerPop"), value: "Pop" },
+    { label: t("equalizerJazz"), value: "Jazz" },
+    { label: t("equalizerClassical"), value: "Classical" },
+    { label: t("equalizerElectronic"), value: "Electronic" },
+    { label: t("equalizerHipHop"), value: "Hip-Hop" },
+    { label: t("equalizerVocal"), value: "Vocal" },
+    { label: t("equalizerLoFi"), value: "Lo-Fi" },
+    { label: t("equalizerHighFi"), value: "High-Fi" },
+    { label: t("equalizerBassBoost"), value: "Bass Boost" },
+    { label: t("equalizerTrebleBoost"), value: "Treble Boost" },
+    { label: t("equalizerSka"), value: "Ska" },
+    { label: t("equalizerReggae"), value: "Reggae" },
+    { label: t("equalizerBlues"), value: "Blues" },
+    { label: t("equalizerFunk"), value: "Funk" },
+    { label: t("equalizerDisco"), value: "Disco" },
+    { label: t("equalizerSoul"), value: "Soul" },
+    { label: t("equalizerRnB"), value: "R&B" },
+    { label: t("equalizerCountry"), value: "Country" },
+  ];
+  const visualizerModeOptions = [
+    { label: t("visualizerRandom"), value: "random" },
+    { label: t("visualizerOff"), value: "off" },
+    { label: t("visualizerSpecific"), value: "specific" },
+  ];
+  const visualizerTypeOptions = [
+    { label: t("flowField"), value: "flowfield" },
+    { label: t("kaleidoscope"), value: "kaleidoscope" },
+  ];
+  const similarityOptions = [
+    { label: t("similarityStrict"), value: "strict" },
+    { label: t("similarityBalanced"), value: "balanced" },
+    { label: t("similarityDiverse"), value: "diverse" },
+  ];
+
   const updatePreferences = api.music.updatePreferences.useMutation({
     onSuccess: () => {
-      showToast("Settings saved", "success");
+      showToast(t("settingsSaved"), "success");
     },
     onError: () => {
-      showToast("Failed to save settings", "error");
+      showToast(t("failedToSave"), "error");
     },
   });
 
@@ -101,7 +155,7 @@ export default function SettingsPage() {
     if (key === "showFpsCounter") {
       settingsStorage.set("showFpsCounter", value);
       setLocalSettings((prev) => ({ ...prev, showFpsCounter: value }));
-      showToast("Visualizer debug setting updated", "success");
+      showToast(t("visualizerDebugUpdated"), "success");
       return;
     }
 
@@ -110,7 +164,7 @@ export default function SettingsPage() {
     } else {
       settingsStorage.set(key as SettingsKey, value);
       setLocalSettings((prev) => ({ ...prev, [key]: value }));
-      showToast("Settings saved locally", "success");
+      showToast(t("savedLocally"), "success");
     }
   };
 
@@ -133,7 +187,7 @@ export default function SettingsPage() {
   const handleSelect = (key: string, value: string) => {
     hapticToggle();
     if (key === "theme") {
-      const themeValue: "dark" = "dark";
+      const themeValue = "dark" as const;
       settingsStorage.set("theme", themeValue);
       const html = document.documentElement;
       html.classList.add("theme-dark");
@@ -145,7 +199,7 @@ export default function SettingsPage() {
         updatePreferences.mutate({ theme: themeValue });
       } else {
         setLocalSettings((prev) => ({ ...prev, theme: themeValue }));
-        showToast("Settings saved locally", "success");
+        showToast(t("savedLocally"), "success");
       }
       return;
     }
@@ -154,7 +208,7 @@ export default function SettingsPage() {
     } else {
       settingsStorage.set(key as SettingsKey, value);
       setLocalSettings((prev) => ({ ...prev, [key]: value }));
-      showToast("Settings saved locally", "success");
+      showToast(t("savedLocally"), "success");
     }
   };
 
@@ -284,16 +338,16 @@ export default function SettingsPage() {
         >
           <Settings className="mx-auto mb-4 h-16 w-16 text-[var(--color-muted)]" />
           <h1 className="mb-2 text-2xl font-bold text-[var(--color-text)]">
-            Sign in required
+            {t("signInRequired")}
           </h1>
           <p className="mb-6 text-[var(--color-subtext)]">
-            Please sign in to access settings
+            {t("signInDescription")}
           </p>
           <Link
             href="/signin?callbackUrl=%2Fsettings"
             className="touch-target-lg inline-block rounded-xl bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition hover:opacity-90"
           >
-            Sign In
+            {tc("signIn")}
           </Link>
         </motion.div>
       </div>
@@ -318,7 +372,7 @@ export default function SettingsPage() {
 
   const playbackSection: SettingsSection = {
     id: "playback",
-    title: "Playback",
+    title: t("playback"),
     icon: <Music className="h-5 w-5" />,
     items: [
       ...(isMobile
@@ -326,7 +380,7 @@ export default function SettingsPage() {
         : [
             {
               id: "volume",
-              label: "Volume",
+              label: t("volume"),
               description: `${Math.round((player.volume ?? 0.7) * 100)}%`,
               type: "slider" as const,
               value: player.volume ?? 0.7,
@@ -342,20 +396,15 @@ export default function SettingsPage() {
           ]),
       {
         id: "repeatMode",
-        label: "Repeat",
-        description:
-          player.repeatMode === "none"
-            ? "Off"
-            : player.repeatMode === "one"
-              ? "One"
-              : "All",
+        label: t("repeat"),
+        description: getOptionLabel(
+          repeatModeOptions,
+          player.repeatMode ?? "none",
+          t("repeatOff"),
+        ),
         type: "select",
         value: player.repeatMode ?? "none",
-        options: [
-          { label: "Off", value: "none" },
-          { label: "One", value: "one" },
-          { label: "All", value: "all" },
-        ],
+        options: repeatModeOptions,
         onChange: (value) => {
           const mode = value as "none" | "one" | "all";
           const modeOrder: ("none" | "one" | "all")[] = ["none", "all", "one"];
@@ -372,7 +421,7 @@ export default function SettingsPage() {
       },
       {
         id: "shuffleEnabled",
-        label: "Shuffle",
+        label: t("shuffleLabel"),
         type: "toggle",
         value: player.isShuffled ?? false,
         onChange: (value) => {
@@ -385,8 +434,8 @@ export default function SettingsPage() {
       },
       {
         id: "keepPlaybackAlive",
-        label: "Background Playback",
-        description: "Keep audio playing when the app is in the background",
+        label: t("backgroundPlayback"),
+        description: t("backgroundPlaybackDesc"),
         type: "toggle",
         value: effectivePreferences?.keepPlaybackAlive ?? true,
         onChange: (value) =>
@@ -397,45 +446,28 @@ export default function SettingsPage() {
 
   const audioSection: SettingsSection = {
     id: "audio",
-    title: "Audio",
+    title: t("audio"),
     icon: <Volume2 className="h-5 w-5" />,
     items: [
       {
         id: "equalizerEnabled",
-        label: "Equalizer",
-        description: "Enable audio equalizer",
+        label: t("equalizer"),
+        description: t("equalizerDesc"),
         type: "toggle",
         value: effectivePreferences?.equalizerEnabled ?? false,
         onChange: (value) => handleToggle("equalizerEnabled", value as boolean),
       },
       {
         id: "equalizerPreset",
-        label: "Equalizer Preset",
-        description: effectivePreferences?.equalizerPreset ?? "Flat",
+        label: t("equalizerPreset"),
+        description: getOptionLabel(
+          equalizerPresetOptions,
+          effectivePreferences?.equalizerPreset,
+          effectivePreferences?.equalizerPreset ?? t("equalizerFlat"),
+        ),
         type: "select",
         value: effectivePreferences?.equalizerPreset ?? "Flat",
-        options: [
-          { label: "Flat", value: "Flat" },
-          { label: "Rock", value: "Rock" },
-          { label: "Pop", value: "Pop" },
-          { label: "Jazz", value: "Jazz" },
-          { label: "Classical", value: "Classical" },
-          { label: "Electronic", value: "Electronic" },
-          { label: "Hip-Hop", value: "Hip-Hop" },
-          { label: "Vocal", value: "Vocal" },
-          { label: "Lo-Fi", value: "Lo-Fi" },
-          { label: "High-Fi", value: "High-Fi" },
-          { label: "Bass Boost", value: "Bass Boost" },
-          { label: "Treble Boost", value: "Treble Boost" },
-          { label: "Ska", value: "Ska" },
-          { label: "Reggae", value: "Reggae" },
-          { label: "Blues", value: "Blues" },
-          { label: "Funk", value: "Funk" },
-          { label: "Disco", value: "Disco" },
-          { label: "Soul", value: "Soul" },
-          { label: "R&B", value: "R&B" },
-          { label: "Country", value: "Country" },
-        ],
+        options: equalizerPresetOptions,
         onChange: (value) => handleSelect("equalizerPreset", value as string),
       },
     ],
@@ -443,48 +475,44 @@ export default function SettingsPage() {
 
   const visualSection: SettingsSection = {
     id: "visual",
-    title: "Visual",
+    title: t("visual"),
     icon: <Eye className="h-5 w-5" />,
     items: [
       {
         id: "theme",
-        label: "Theme",
-        description: "Dark (forced)",
+        label: t("theme"),
+        description: t("themeDark"),
         type: "select",
         value: "dark",
-        options: [{ label: "Dark", value: "dark" }],
+        options: [{ label: t("themeDark"), value: "dark" }],
         onChange: (value) => handleSelect("theme", value as string),
       },
       {
         id: "visualizerMode",
-        label: "Visualizer",
-        description:
-          effectivePreferences?.visualizerMode === "off"
-            ? "Off"
-            : effectivePreferences?.visualizerMode === "specific"
-              ? "Specific"
-              : "Random",
+        label: t("visualizer"),
+        description: getOptionLabel(
+          visualizerModeOptions,
+          effectivePreferences?.visualizerMode ?? "random",
+          t("visualizerRandom"),
+        ),
         type: "select",
         value: effectivePreferences?.visualizerMode ?? "random",
-        options: [
-          { label: "Random", value: "random" },
-          { label: "Off", value: "off" },
-          { label: "Specific", value: "specific" },
-        ],
+        options: visualizerModeOptions,
         onChange: (value) => handleSelect("visualizerMode", value as string),
       },
       ...(effectivePreferences?.visualizerMode === "specific"
         ? [
             {
               id: "visualizerType",
-              label: "Visualizer Type",
-              description: effectivePreferences?.visualizerType ?? "flowfield",
+              label: t("visualizerType"),
+              description: getOptionLabel(
+                visualizerTypeOptions,
+                effectivePreferences?.visualizerType ?? "flowfield",
+                effectivePreferences?.visualizerType ?? t("flowField"),
+              ),
               type: "select" as const,
               value: effectivePreferences?.visualizerType ?? "flowfield",
-              options: [
-                { label: "Flow Field", value: "flowfield" },
-                { label: "Kaleidoscope", value: "kaleidoscope" },
-              ],
+              options: visualizerTypeOptions,
               onChange: (value: boolean | number | string) =>
                 handleSelect("visualizerType", value as string),
             },
@@ -492,16 +520,16 @@ export default function SettingsPage() {
         : []),
       {
         id: "showFpsCounter",
-        label: "Show FPS Counter",
-        description: "Display visualizer performance metrics",
+        label: t("showFpsCounter"),
+        description: t("showFpsCounterDesc"),
         type: "toggle",
         value: localSettings.showFpsCounter ?? false,
         onChange: (value) => handleToggle("showFpsCounter", value as boolean),
       },
       {
         id: "compactMode",
-        label: "Compact Mode",
-        description: "Use compact player interface",
+        label: t("compactMode"),
+        description: t("compactModeDesc"),
         type: "toggle",
         value: effectivePreferences?.compactMode ?? false,
         onChange: (value) => handleToggle("compactMode", value as boolean),
@@ -511,21 +539,23 @@ export default function SettingsPage() {
 
   const smartQueueSection: SettingsSection = {
     id: "smart-queue",
-    title: "Smart Queue",
+    title: t("smartQueue"),
     icon: <Sparkles className="h-5 w-5" />,
     items: [
       {
         id: "autoQueueEnabled",
-        label: "Auto Queue",
-        description: "Automatically add similar tracks",
+        label: t("autoQueue"),
+        description: t("autoQueueDesc"),
         type: "toggle",
         value: effectivePreferences?.autoQueueEnabled ?? false,
         onChange: (value) => handleToggle("autoQueueEnabled", value as boolean),
       },
       {
         id: "autoQueueThreshold",
-        label: "Queue Threshold",
-        description: `${effectivePreferences?.autoQueueThreshold ?? 3} tracks`,
+        label: t("queueThreshold"),
+        description: t("queueThresholdDesc", {
+          count: effectivePreferences?.autoQueueThreshold ?? 3,
+        }),
         type: "slider",
         value: effectivePreferences?.autoQueueThreshold ?? 3,
         min: 1,
@@ -536,8 +566,10 @@ export default function SettingsPage() {
       },
       {
         id: "autoQueueCount",
-        label: "Tracks to Add",
-        description: `${effectivePreferences?.autoQueueCount ?? 5} tracks`,
+        label: t("tracksToAdd"),
+        description: t("tracksToAddDesc", {
+          count: effectivePreferences?.autoQueueCount ?? 5,
+        }),
         type: "slider",
         value: effectivePreferences?.autoQueueCount ?? 5,
         min: 1,
@@ -547,28 +579,23 @@ export default function SettingsPage() {
       },
       {
         id: "smartMixEnabled",
-        label: "Smart Mix",
-        description: "Generate personalized mixes",
+        label: t("smartMix"),
+        description: t("smartMixDesc"),
         type: "toggle",
         value: effectivePreferences?.smartMixEnabled ?? true,
         onChange: (value) => handleToggle("smartMixEnabled", value as boolean),
       },
       {
         id: "similarityPreference",
-        label: "Similarity",
-        description:
-          effectivePreferences?.similarityPreference === "strict"
-            ? "Strict"
-            : effectivePreferences?.similarityPreference === "diverse"
-              ? "Diverse"
-              : "Balanced",
+        label: t("similarity"),
+        description: getOptionLabel(
+          similarityOptions,
+          effectivePreferences?.similarityPreference ?? "balanced",
+          t("similarityBalanced"),
+        ),
         type: "select",
         value: effectivePreferences?.similarityPreference ?? "balanced",
-        options: [
-          { label: "Strict", value: "strict" },
-          { label: "Balanced", value: "balanced" },
-          { label: "Diverse", value: "diverse" },
-        ],
+        options: similarityOptions,
         onChange: (value) =>
           handleSelect("similarityPreference", value as string),
       },
@@ -577,19 +604,19 @@ export default function SettingsPage() {
 
   const accountSection: SettingsSection = {
     id: "account",
-    title: "Account",
+    title: t("account"),
     icon: <User className="h-5 w-5" />,
     items: [
       {
         id: "profile",
-        label: "Profile",
-        description: "View your public profile",
+        label: t("profileLink"),
+        description: t("profileDesc"),
         type: "link",
         href: userHash ? `/${userHash}` : "/profile",
       },
       {
         id: "signOut",
-        label: "Sign Out",
+        label: t("signOutLabel"),
         type: "button",
         action: handleSignOut,
       },
@@ -612,10 +639,10 @@ export default function SettingsPage() {
         className="mb-8 md:mb-10"
       >
         <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text)] md:text-4xl">
-          Settings
+          {t("title")}
         </h1>
         <p className="mt-2 text-sm text-[var(--color-subtext)]">
-          Customize your listening experience
+          {t("subtitle")}
         </p>
       </motion.div>
 
@@ -663,7 +690,7 @@ export default function SettingsPage() {
               <Disc3 className="h-5 w-5" />
             </div>
             <h2 className="text-base font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
-              Spotify
+              {ts("sectionTitle")}
             </h2>
           </div>
 
@@ -671,13 +698,10 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="text-[15px] font-medium text-[var(--color-text)]">
-                  Spotify feature profile
+                  {ts("featureProfile")}
                 </p>
                 <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[var(--color-subtext)]">
-                  These Spotify values are saved on your account, not just this
-                  device. Your Spotify feature profile becomes active for your
-                  user as soon as the client ID, client secret, and username are
-                  all present.
+                  {ts("profileDescription")}
                 </p>
               </div>
               <div
@@ -689,7 +713,11 @@ export default function SettingsPage() {
                       : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
                 }`}
               >
-                {spotifyDraftSummary.label}
+                {spotifyDraftSummary.state === "ready"
+                  ? tc("ready")
+                  : spotifyDraftSummary.state === "incomplete"
+                    ? tc("incomplete")
+                    : tc("inactive")}
               </div>
             </div>
 
@@ -697,47 +725,51 @@ export default function SettingsPage() {
               {!hasServerSpotifySettings && hasLegacySpotifySettings ? (
                 <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 md:col-span-2">
                   <p className="text-sm font-semibold text-amber-200">
-                    Local Spotify values detected
+                    {ts("localValuesDetected")}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-amber-100/90">
-                    This form was prefilled from local browser data. Save once
-                    to sync the Spotify profile to your account.
+                    {ts("localValuesHint")}
                   </p>
                 </div>
               ) : null}
 
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
                 <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Account activation
+                  {ts("accountActivation")}
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-text)]">
                   {spotifySettings.enabled
-                    ? "Active for your account"
-                    : "Waiting for a complete profile"}
+                    ? ts("activeForAccount")
+                    : ts("waitingForProfile")}
                 </p>
                 <p className="mt-2 text-xs text-[var(--color-subtext)]">
-                  Activation is automatic once all three Spotify fields are
-                  saved.
+                  {ts("activationHint")}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
                 <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Saved secret
+                  {ts("savedSecret")}
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {maskSpotifyClientSecret(spotifySettings.clientSecret)}
+                  {spotifySettings.clientSecret.trim().length > 0
+                    ? maskSpotifyClientSecret(spotifySettings.clientSecret)
+                    : ts("notSavedYet")}
                 </p>
                 <p className="mt-2 text-xs text-[var(--color-subtext)]">
                   {spotifySettings.updatedAt
-                    ? `Last saved ${new Date(spotifySettings.updatedAt).toLocaleString()}`
-                    : "Not saved yet"}
+                    ? ts("lastSaved", {
+                        date: new Date(
+                          spotifySettings.updatedAt,
+                        ).toLocaleString(),
+                      })
+                    : ts("notSavedYet")}
                 </p>
               </div>
 
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Spotify Client ID
+                  {ts("clientId")}
                 </span>
                 <input
                   type="text"
@@ -745,7 +777,7 @@ export default function SettingsPage() {
                   onChange={(event) =>
                     handleSpotifyDraftChange("clientId", event.target.value)
                   }
-                  placeholder="Spotify Client ID"
+                  placeholder={ts("clientIdPlaceholder")}
                   autoComplete="off"
                   className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
                 />
@@ -753,7 +785,7 @@ export default function SettingsPage() {
 
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Spotify Username
+                  {ts("username")}
                 </span>
                 <input
                   type="text"
@@ -761,7 +793,7 @@ export default function SettingsPage() {
                   onChange={(event) =>
                     handleSpotifyDraftChange("username", event.target.value)
                   }
-                  placeholder="Spotify username"
+                  placeholder={ts("usernamePlaceholder")}
                   autoComplete="off"
                   className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
                 />
@@ -769,7 +801,7 @@ export default function SettingsPage() {
 
               <label className="block md:col-span-2">
                 <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Spotify Client Secret
+                  {ts("clientSecret")}
                 </span>
                 <input
                   type="password"
@@ -777,7 +809,7 @@ export default function SettingsPage() {
                   onChange={(event) =>
                     handleSpotifyDraftChange("clientSecret", event.target.value)
                   }
-                  placeholder="Spotify Client Secret"
+                  placeholder={ts("clientSecretPlaceholder")}
                   autoComplete="new-password"
                   className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 px-4 py-3 text-sm text-[var(--color-text)] transition outline-none focus:border-[#1DB954]"
                 />
@@ -786,7 +818,7 @@ export default function SettingsPage() {
 
             <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/30 p-4">
               <p className="mb-3 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                Connection checklist
+                {ts("connectionChecklist")}
               </p>
               <div className="grid gap-2 md:grid-cols-2">
                 {spotifyDraftSummary.checks.map((check) => (
@@ -795,7 +827,13 @@ export default function SettingsPage() {
                     className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-2"
                   >
                     <span className="text-sm text-[var(--color-text)]">
-                      {check.label}
+                      {check.id === "enabled"
+                        ? ts("checkEnabled")
+                        : check.id === "clientId"
+                          ? ts("checkClientId")
+                          : check.id === "clientSecret"
+                            ? ts("checkClientSecret")
+                            : ts("checkUsername")}
                     </span>
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -804,7 +842,7 @@ export default function SettingsPage() {
                           : "bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
                       }`}
                     >
-                      {check.ready ? "Ready" : "Missing"}
+                      {check.ready ? tc("ready") : tc("missing")}
                     </span>
                   </div>
                 ))}
@@ -818,13 +856,13 @@ export default function SettingsPage() {
                 disabled={!spotifyDraftDirty}
                 className="rounded-xl bg-[#1DB954] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save Spotify setup
+                {ts("saveSpotifySetup")}
               </button>
               <Link
                 href="/spotify"
                 className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#1DB954] hover:text-[#1DB954]"
               >
-                Open Spotify page
+                {ts("openSpotifyPage")}
               </Link>
             </div>
           </div>
@@ -857,6 +895,25 @@ export default function SettingsPage() {
               />
             ))}
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            ...springPresets.gentle,
+            delay: (sections.length + 2) * 0.04,
+          }}
+          className="flex justify-center pt-2"
+        >
+          <a
+            href="https://legal.bluesix.dev"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+          >
+            {tc("legal")}
+          </a>
         </motion.div>
       </div>
     </div>

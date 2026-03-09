@@ -5,6 +5,8 @@ import "@/styles/globals.css";
 import { type Metadata, type Viewport } from "next";
 import localFont from "next/font/local";
 import { Suspense, type ReactNode } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 import { DynamicTitle } from "@/components/DynamicTitle";
 import { AuthGate } from "@/components/AuthGate";
@@ -112,17 +114,21 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" className={appSans.variable} suppressHydrationWarning>
+    <html lang={locale} className={appSans.variable} suppressHydrationWarning>
       <head>
         {}
         <link rel="preconnect" href="https://cdn-images.dzcdn.net" />
         <link rel="dns-prefetch" href="https://api.deezer.com" />
       </head>
       <body>
+        <NextIntlClientProvider messages={messages}>
         <LinuxTitlebar />
         <SuppressExtensionErrors />
         <ElectronStorageInit />
@@ -189,6 +195,7 @@ export default function RootLayout({
             </TRPCReactProvider>
           </SessionProvider>
         </ErrorBoundary>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

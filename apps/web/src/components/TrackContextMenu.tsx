@@ -4,16 +4,16 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    ChevronsDown,
-    Disc3,
-    Heart,
-    ListPlus,
-    Play,
-    Plus,
-    Share2,
-    SkipForward,
-    Trash2,
-    User,
+  ChevronsDown,
+  Disc3,
+  Heart,
+  ListPlus,
+  Play,
+  Plus,
+  Share2,
+  SkipForward,
+  Trash2,
+  User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -25,15 +25,25 @@ import { useWebShare } from "@/hooks/useWebShare";
 import { api } from "@starchild/api-client/trpc/react";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
+import { useTranslations } from "next-intl";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
 export function TrackContextMenu() {
-  const { track, position, excludePlaylistId, removeFromList, queueActions, closeMenu } =
-    useTrackContextMenu();
+  const {
+    track,
+    position,
+    excludePlaylistId,
+    removeFromList,
+    queueActions,
+    closeMenu,
+  } = useTrackContextMenu();
   const player = useGlobalPlayer();
   const { showToast } = useToast();
   const { share, isSupported: isShareSupported } = useWebShare();
   const { data: session } = useSession();
+  const t = useTranslations("trackMenu");
+  const tc = useTranslations("common");
+  const tm = useTranslations("metadata");
   const menuRef = useRef<HTMLDivElement>(null);
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const utils = api.useUtils();
@@ -48,10 +58,10 @@ export function TrackContextMenu() {
       if (!track) return;
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Added "${track.title}" to favorites`, "success");
+      showToast(t("addedToFavorites", { title: track.title }), "success");
     },
     onError: (error) => {
-      showToast(`Failed to add to favorites: ${error.message}`, "error");
+      showToast(t("failedToAddToFavorites", { error: error.message }), "error");
     },
   });
 
@@ -60,10 +70,13 @@ export function TrackContextMenu() {
       if (!track) return;
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Removed "${track.title}" from favorites`, "info");
+      showToast(t("removedFromFavorites", { title: track.title }), "info");
     },
     onError: (error) => {
-      showToast(`Failed to remove from favorites: ${error.message}`, "error");
+      showToast(
+        t("failedToRemoveFromFavorites", { error: error.message }),
+        "error",
+      );
     },
   });
 
@@ -138,7 +151,7 @@ export function TrackContextMenu() {
     if (!track) return;
     hapticLight();
     player.addToQueue(track);
-    showToast(`Added "${track.title}" to queue`, "success");
+    showToast(t("addedToQueue", { title: track.title }), "success");
     closeMenu();
   };
 
@@ -147,10 +160,10 @@ export function TrackContextMenu() {
     hapticLight();
     if (queueActions?.onMoveToNext) {
       queueActions.onMoveToNext();
-      showToast(`Moved "${track.title}" to play next`, "success");
+      showToast(t("movedPlayNext", { title: track.title }), "success");
     } else {
       player.addToPlayNext(track);
-      showToast(`"${track.title}" will play next`, "success");
+      showToast(t("willPlayNext", { title: track.title }), "success");
     }
     closeMenu();
   };
@@ -159,7 +172,7 @@ export function TrackContextMenu() {
     if (!track || !queueActions?.onMoveToEnd) return;
     hapticLight();
     queueActions.onMoveToEnd();
-    showToast(`Moved "${track.title}" to the end of the queue`, "success");
+    showToast(t("movedToEnd", { title: track.title }), "success");
     closeMenu();
   };
 
@@ -190,21 +203,28 @@ export function TrackContextMenu() {
 
     if (isShareSupported) {
       const success = await share({
-        title: `${track.title} - ${track.artist.name}`,
-        text: `Check out "${track.title}" by ${track.artist.name} on Starchild Music!`,
+        title: tm("trackByArtist", {
+          title: track.title,
+          artist: track.artist.name,
+        }),
+        text: tm("listenTo", {
+          title: track.title,
+          artist: track.artist.name,
+          album: track.album?.title ?? "none",
+        }),
         url: shareUrl,
       });
 
       if (success) {
-        showToast("Track shared successfully!", "success");
+        showToast(t("trackShared"), "success");
       }
     } else {
       try {
         await navigator.clipboard.writeText(shareUrl);
-        showToast("Link copied to clipboard!", "success");
+        showToast(t("linkCopied"), "success");
       } catch (error) {
         console.error("Failed to copy to clipboard:", error);
-        showToast("Failed to copy link", "error");
+        showToast(t("failedToCopyLink"), "error");
       }
     }
     closeMenu();
@@ -263,11 +283,11 @@ export function TrackContextMenu() {
               <button
                 onClick={handlePlay}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                title="Play now"
+                title={t("playNow")}
               >
                 <Play className="h-5 w-5 text-[var(--color-accent)] transition-transform group-hover:scale-110" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Play
+                  {tc("play")}
                 </span>
               </button>
 
@@ -279,11 +299,11 @@ export function TrackContextMenu() {
                 <button
                   onClick={handleAddToQueue}
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                  title="Add to queue"
+                  title={t("addToQueue")}
                 >
                   <Plus className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    Queue
+                    {t("queue")}
                   </span>
                 </button>
               )}
@@ -292,12 +312,12 @@ export function TrackContextMenu() {
               <button
                 onClick={handleAddToPlayNext}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                title={isQueuedItem ? "Move to play next" : "Play next"}
+                title={isQueuedItem ? t("movePlayNext") : t("playNext")}
                 disabled={isQueuedItem && !canMoveToNext}
               >
                 <SkipForward className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Next
+                  {t("next")}
                 </span>
               </button>
 
@@ -306,12 +326,12 @@ export function TrackContextMenu() {
                 <button
                   onClick={handleMoveToEnd}
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Move to end of queue"
+                  title={t("moveLast")}
                   disabled={!canMoveToEnd}
                 >
                   <ChevronsDown className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    Last
+                    {t("last")}
                   </span>
                 </button>
               )}
@@ -326,8 +346,8 @@ export function TrackContextMenu() {
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
                   title={
                     favoriteData?.isFavorite
-                      ? "Remove from favorites"
-                      : "Add to favorites"
+                      ? t("removeFromFavorites")
+                      : t("addToFavorites")
                   }
                   disabled={addFavorite.isPending || removeFavorite.isPending}
                 >
@@ -339,7 +359,7 @@ export function TrackContextMenu() {
                     }`}
                   />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    {favoriteData?.isFavorite ? "Saved" : "Save"}
+                    {favoriteData?.isFavorite ? t("saved") : tc("save")}
                   </span>
                 </button>
               )}
@@ -349,11 +369,11 @@ export function TrackContextMenu() {
                 <button
                   onClick={handleAddToPlaylist}
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                  title="Add to playlist"
+                  title={t("addToPlaylist")}
                 >
                   <ListPlus className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    Playlist
+                    {t("playlist")}
                   </span>
                 </button>
               )}
@@ -368,11 +388,11 @@ export function TrackContextMenu() {
                 <button
                   onClick={handleShare}
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                  title="Share track"
+                  title={t("shareTrack")}
                 >
                   <Share2 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    Share
+                    {tc("share")}
                   </span>
                 </button>
               )}
@@ -384,11 +404,11 @@ export function TrackContextMenu() {
               <button
                 onClick={handleGoToArtist}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                title="Go to artist"
+                title={t("goToArtist")}
               >
                 <User className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Artist
+                  {tc("artist")}
                 </span>
               </button>
 
@@ -396,11 +416,11 @@ export function TrackContextMenu() {
               <button
                 onClick={handleGoToAlbum}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                title="Go to album"
+                title={t("goToAlbum")}
               >
                 <Disc3 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Album
+                  {tc("album")}
                 </span>
               </button>
 
@@ -421,7 +441,7 @@ export function TrackContextMenu() {
                   >
                     <Trash2 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-danger)]" />
                     <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                      Remove
+                      {removeFromList.label}
                     </span>
                   </button>
                 </>

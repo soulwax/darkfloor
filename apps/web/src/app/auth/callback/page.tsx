@@ -7,6 +7,7 @@ import {
   isEnabledOAuthProviderId,
 } from "@/config/oauthProviders";
 import { resolvePostAuthPath } from "@/utils/authRedirect";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -18,19 +19,20 @@ const OAUTH_PROVIDER_FALLBACK_NAMES: Record<string, string> = {
 };
 
 function AuthCallbackFallback() {
+  const t = useTranslations("auth");
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4">
       <div className="surface-panel w-full p-8 text-center">
         <div className="flex flex-col items-center justify-center">
           <div
             role="status"
-            aria-label="Loading authentication callback"
+            aria-label={t("loadingCallback")}
             className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent"
           >
-            <span className="sr-only">Loading authentication callback</span>
+            <span className="sr-only">{t("loadingCallback")}</span>
           </div>
           <p className="mt-4 text-sm text-[var(--color-subtext)]">
-            Preparing authentication callback...
+            {t("preparingCallback")}
           </p>
         </div>
       </div>
@@ -39,6 +41,8 @@ function AuthCallbackFallback() {
 }
 
 function AuthCallbackContent() {
+  const t = useTranslations("auth");
+  const tc = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession();
@@ -46,7 +50,7 @@ function AuthCallbackContent() {
 
   const providerName = useMemo(() => {
     const providerId = searchParams.get("provider");
-    if (!providerId) return "your provider";
+    if (!providerId) return t("yourProvider");
     if (isEnabledOAuthProviderId(providerId)) {
       return getOAuthProviderDisplayName(providerId);
     }
@@ -75,10 +79,10 @@ function AuthCallbackContent() {
   }, [router, status, targetPath, timedOut]);
 
   const subtitle = timedOut
-    ? "Authentication is taking longer than expected."
+    ? t("authTakingLong")
     : status === "authenticated"
-      ? "Session established. Redirecting..."
-      : `Authenticating with ${providerName}...`;
+      ? t("sessionEstablished")
+      : t("authenticatingWith", { provider: providerName });
 
   const fallbackSignInUrl = `/signin?callbackUrl=${encodeURIComponent(targetPath)}`;
 
@@ -89,10 +93,10 @@ function AuthCallbackContent() {
           <div className="flex flex-col items-center justify-center">
             <div
               role="status"
-              aria-label={`Authenticating with ${providerName}`}
+              aria-label={t("authenticatingWith", { provider: providerName })}
               className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent"
             >
-              <span className="sr-only">Authenticating with {providerName}</span>
+              <span className="sr-only">{t("authenticatingWith", { provider: providerName })}</span>
             </div>
             <p className="mt-4 text-sm text-[var(--color-subtext)]">
               {subtitle}
@@ -107,14 +111,14 @@ function AuthCallbackContent() {
                 onClick={() => router.replace(fallbackSignInUrl)}
                 className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)]"
               >
-                Back to Sign In
+                {tc("backToSignIn")}
               </button>
               <button
                 type="button"
                 onClick={() => router.replace(targetPath)}
                 className="w-full rounded-xl bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
               >
-                Continue to App
+                {tc("continueToApp")}
               </button>
             </div>
           </div>

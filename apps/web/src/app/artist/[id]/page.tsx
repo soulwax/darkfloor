@@ -4,6 +4,7 @@ import { TrackListSection } from "@/components/TrackListSection";
 import { TrackPlayButtons } from "@/components/TrackPlayButtons";
 import { getRequestBaseUrl } from "@/utils/getBaseUrl";
 import type { Track } from "@starchild/types";
+import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -31,6 +32,8 @@ export default async function ArtistPage({
   }
 
   const baseUrl = await getRequestBaseUrl();
+  const t = await getTranslations("artist");
+  const tc = await getTranslations("common");
   let artist: ArtistData | null = null;
   let tracks: Track[] = [];
 
@@ -78,13 +81,13 @@ export default async function ArtistPage({
       <div className="container mx-auto px-3 py-4 md:py-8">
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
           <h1 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
-            Artist Not Found
+            {t("notFound")}
           </h1>
           <p className="mb-6 text-[var(--color-subtext)]">
-            The artist you&apos;re looking for doesn&apos;t exist.
+            {t("notFoundDescription")}
           </p>
           <Link href="/" className="btn-primary">
-            Go Home
+            {tc("goHome")}
           </Link>
         </div>
       </div>
@@ -110,7 +113,7 @@ export default async function ArtistPage({
         </div>
         <div className="flex flex-1 flex-col justify-end">
           <div className="mb-2 text-sm font-medium text-[var(--color-subtext)]">
-            Artist
+            {t("label")}
           </div>
           <h1 className="mb-4 text-3xl font-bold text-[var(--color-text)] md:text-4xl">
             {artist.name}
@@ -118,13 +121,13 @@ export default async function ArtistPage({
           <div className="mb-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted)]">
             {artist.nb_album !== undefined && (
               <span>
-                {artist.nb_album} album{artist.nb_album !== 1 ? "s" : ""}
+                {tc("albums", { count: artist.nb_album })}
               </span>
             )}
             {artist.nb_fan !== undefined && (
               <>
                 <span>•</span>
-                <span>{artist.nb_fan.toLocaleString()} fans</span>
+                <span>{tc("fans", { count: artist.nb_fan.toLocaleString() })}</span>
               </>
             )}
           </div>
@@ -134,8 +137,8 @@ export default async function ArtistPage({
 
       <TrackListSection
         tracks={tracks}
-        heading="Popular Tracks"
-        emptyMessage="No tracks available for this artist."
+        heading={t("popularTracks")}
+        emptyMessage={t("noTracks")}
       />
     </div>
   );

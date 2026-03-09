@@ -2,9 +2,11 @@
 
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 export default function CookieConsent() {
+  const t = useTranslations("cookie");
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -38,14 +40,13 @@ export default function CookieConsent() {
       <div className="rounded-lg border border-gray-700/50 bg-gray-900/95 p-4 shadow-xl backdrop-blur-sm">
         <div className="flex flex-col gap-3">
           <p className="text-sm text-gray-300">
-            We use functional cookies to ensure the best experience on our platform.
-            These are essential for the site to work properly.
+            {t("message")}
           </p>
           <button
             onClick={handleAccept}
             className="rounded-md bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 active:scale-95"
           >
-            Got it
+            {t("accept")}
           </button>
         </div>
       </div>

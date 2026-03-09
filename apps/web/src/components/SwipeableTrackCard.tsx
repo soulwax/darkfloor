@@ -19,6 +19,7 @@ import {
 } from "framer-motion";
 import { Heart, ListPlus, MoreHorizontal, Play, Share2 } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { memo, useRef, useState } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
@@ -46,10 +47,15 @@ function SwipeableTrackCard({
   onArtistClick,
   onAlbumClick,
 }: SwipeableTrackCardProps) {
+  const t = useTranslations("trackMenu");
+  const tc = useTranslations("common");
+  const tm = useTranslations("metadata");
   const [showMenu, setShowMenu] = useState(false);
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
-  const [optimisticIsFavorite, setOptimisticIsFavorite] = useState<boolean | null>(null);
+  const [optimisticIsFavorite, setOptimisticIsFavorite] = useState<
+    boolean | null
+  >(null);
   const constraintsRef = useRef<HTMLDivElement>(null);
 
   const utils = api.useUtils();
@@ -100,11 +106,11 @@ function SwipeableTrackCard({
       setOptimisticIsFavorite(null);
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Added "${track.title}" to favorites`, "success");
+      showToast(t("addedToFavorites", { title: track.title }), "success");
     },
     onError: (error) => {
       setOptimisticIsFavorite(null);
-      showToast(`Failed to add to favorites: ${error.message}`, "error");
+      showToast(t("failedToAddToFavorites", { error: error.message }), "error");
     },
   });
 
@@ -116,11 +122,14 @@ function SwipeableTrackCard({
       setOptimisticIsFavorite(null);
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Removed "${track.title}" from favorites`, "info");
+      showToast(t("removedFromFavorites", { title: track.title }), "info");
     },
     onError: (error) => {
       setOptimisticIsFavorite(null);
-      showToast(`Failed to remove from favorites: ${error.message}`, "error");
+      showToast(
+        t("failedToRemoveFromFavorites", { error: error.message }),
+        "error",
+      );
     },
   });
 
@@ -139,7 +148,7 @@ function SwipeableTrackCard({
   const handleAddToQueue = () => {
     hapticMedium();
     onAddToQueue(track);
-    showToast(`Added "${track.title}" to queue`, "success");
+    showToast(t("addedToQueue", { title: track.title }), "success");
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -148,12 +157,19 @@ function SwipeableTrackCard({
     const trackId = track.deezer_id ?? track.id;
     const shareUrl = `${window.location.origin}/track/${trackId}`;
     const success = await share({
-      title: `${track.title} - ${track.artist.name}`,
-      text: `Check out "${track.title}" by ${track.artist.name} on Starchild Music!`,
+      title: tm("trackByArtist", {
+        title: track.title,
+        artist: track.artist.name,
+      }),
+      text: tm("listenTo", {
+        title: track.title,
+        artist: track.artist.name,
+        album: track.album?.title ?? "none",
+      }),
       url: shareUrl,
     });
     if (success) {
-      showToast("Track shared successfully!", "success");
+      showToast(t("trackShared"), "success");
     }
   };
 
@@ -221,7 +237,7 @@ function SwipeableTrackCard({
               }`}
             />
             <span className="text-sm font-medium text-[var(--color-text)]">
-              {resolvedIsFavorite ? "Unfavorite" : "Favorite"}
+              {resolvedIsFavorite ? t("unfavorite") : t("favorite")}
             </span>
           </motion.div>
         </motion.div>
@@ -236,7 +252,7 @@ function SwipeableTrackCard({
             className="flex items-center gap-3"
           >
             <span className="text-sm font-medium text-[var(--color-text)]">
-              Add to Queue
+              {t("addToQueue")}
             </span>
             <ListPlus className="h-7 w-7 text-[var(--color-accent-strong)]" />
           </motion.div>
@@ -270,6 +286,7 @@ function SwipeableTrackCard({
             whileTap={{ scale: 0.9 }}
             transition={springPresets.immediate}
             className="absolute right-1 bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[0_8px_20px_rgba(244,178,102,0.4)] transition-all md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
+            aria-label={t("playTrack")}
           >
             <Play className="ml-0.5 h-4 w-4 fill-current text-current" />
           </motion.button>
@@ -322,7 +339,7 @@ function SwipeableTrackCard({
               )
             ) : (
               <span className="line-clamp-1 text-[var(--color-muted)]">
-                Unknown Album
+                {tc("unknownAlbum")}
               </span>
             )}
             <span>•</span>
@@ -349,6 +366,16 @@ function SwipeableTrackCard({
                   : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
               }`}
               disabled={addFavorite.isPending || removeFavorite.isPending}
+              title={
+                resolvedIsFavorite
+                  ? t("removeFromFavorites")
+                  : t("addToFavorites")
+              }
+              aria-label={
+                resolvedIsFavorite
+                  ? t("removeFromFavorites")
+                  : t("addToFavorites")
+              }
             >
               <Heart
                 className={`h-5 w-5 md:h-[18px] md:w-[18px] ${
@@ -365,7 +392,8 @@ function SwipeableTrackCard({
               whileTap={{ scale: 0.85 }}
               transition={springPresets.immediate}
               className="touch-target rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:text-[var(--color-accent)]"
-              title="Share track"
+              title={t("shareTrack")}
+              aria-label={t("shareTrack")}
             >
               <Share2 className="h-5 w-5 md:h-[18px] md:w-[18px]" />
             </motion.button>
@@ -380,7 +408,8 @@ function SwipeableTrackCard({
             whileTap={{ scale: 0.85 }}
             transition={springPresets.immediate}
             className="touch-target rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:text-[var(--color-accent-strong)]"
-            title="Add to queue"
+            title={t("addToQueue")}
+            aria-label={t("addToQueue")}
           >
             <ListPlus className="h-5 w-5 md:h-[18px] md:w-[18px]" />
           </motion.button>
@@ -395,6 +424,8 @@ function SwipeableTrackCard({
               whileTap={{ scale: 0.85 }}
               transition={springPresets.immediate}
               className="touch-target rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:text-[var(--color-text)]"
+              title={t("moreActions")}
+              aria-label={t("moreActions")}
             >
               <MoreHorizontal className="h-5 w-5 md:h-[18px] md:w-[18px]" />
             </motion.button>
@@ -418,7 +449,7 @@ function SwipeableTrackCard({
                         onClick={() => {
                           onAddToPlayNext(track);
                           showToast(
-                            `"${track.title}" will play next`,
+                            t("willPlayNext", { title: track.title }),
                             "success",
                           );
                           setShowMenu(false);
@@ -427,7 +458,7 @@ function SwipeableTrackCard({
                         className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[var(--color-text)] transition-colors hover:bg-[rgba(244,178,102,0.1)] md:py-2"
                       >
                         <Play className="h-4 w-4" />
-                        <span>Play next</span>
+                        <span>{t("playNext")}</span>
                       </button>
                       <div className="mx-3 my-1 border-t border-[rgba(245,241,232,0.08)]" />
                     </>
@@ -441,7 +472,7 @@ function SwipeableTrackCard({
                     className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[var(--color-text)] transition-colors hover:bg-[rgba(244,178,102,0.1)] md:py-2"
                   >
                     <ListPlus className="h-4 w-4" />
-                    <span>Add to Playlist</span>
+                    <span>{t("addToPlaylist")}</span>
                   </button>
                 </motion.div>
               </>

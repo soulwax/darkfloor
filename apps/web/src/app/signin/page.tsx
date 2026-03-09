@@ -13,6 +13,7 @@ import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { parsePreferredGenreId } from "@/utils/genre";
+import { useTranslations } from "next-intl";
 import { getProviders, signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -20,6 +21,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 const SIGN_IN_PENDING_TIMEOUT_MS = 15_000;
 
 function SignInContent() {
+  const t = useTranslations("signin");
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl") ?? "/library";
@@ -186,10 +188,10 @@ function SignInContent() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 px-4">
       <div className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/90 p-6 shadow-[var(--shadow-lg)]">
         <h1 className="text-center text-xl font-bold text-[var(--color-text)]">
-          Tune the start page and optionally sign in
+          {t("heading")}
         </h1>
         <p className="mt-2 text-center text-sm text-[var(--color-subtext)]">
-          Pick a style once and your start page opens with a better first mix.
+          {t("subtitle")}
         </p>
 
         {isBanned && (
@@ -197,23 +199,22 @@ function SignInContent() {
             className="mt-4 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/10 px-4 py-3 text-center text-sm font-medium text-[var(--color-danger)]"
             role="alert"
           >
-            Your account has been banned. If you believe this is an error,
-            please contact support.
+            {t("banned")}
           </div>
         )}
 
         <section className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-            Tune Start Page
+            {t("tuneStartPage")}
           </p>
           {genresLoading ? (
             <div className="mt-3 flex items-center justify-center py-2">
               <div
                 role="status"
-                aria-label="Loading genres"
+                aria-label={t("loadingGenres")}
                 className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent"
               >
-                <span className="sr-only">Loading genres</span>
+                <span className="sr-only">{t("loadingGenres")}</span>
               </div>
             </div>
           ) : genres.length > 0 ? (
@@ -222,7 +223,7 @@ function SignInContent() {
                 htmlFor="preferred-genre"
                 className="mt-2 block text-xs font-medium text-[var(--color-subtext)]"
               >
-                Preferred genre
+                {t("preferredGenre")}
               </label>
               <select
                 id="preferred-genre"
@@ -246,7 +247,7 @@ function SignInContent() {
                 }}
                 className="mt-1.5 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-accent)] focus:outline-none"
               >
-                <option value="">No preference</option>
+                <option value="">{t("noPreference")}</option>
                 {genres.map((genre) => (
                   <option key={genre.id} value={genre.id.toString()}>
                     {genre.name}
@@ -261,7 +262,7 @@ function SignInContent() {
                       key={genre.id}
                       type="button"
                       aria-pressed={isSelected}
-                      aria-label={`Select ${genre.name} genre`}
+                      aria-label={t("selectGenre", { genre: genre.name })}
                       onClick={() => setGenrePreference(genre)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                         isSelected
@@ -276,13 +277,13 @@ function SignInContent() {
               </div>
               <p className="mt-2 text-xs text-[var(--color-muted)]">
                 {preferredGenreName
-                  ? `Selected: ${preferredGenreName}`
-                  : "You can leave this empty and change it later."}
+                  ? t("selectedGenre", { genre: preferredGenreName })
+                  : t("genreHint")}
               </p>
             </>
           ) : (
             <p className="mt-2 text-xs text-[var(--color-subtext)]">
-              Genre presets are not available right now.
+              {t("genreUnavailable")}
             </p>
           )}
         </section>
@@ -292,10 +293,10 @@ function SignInContent() {
             <div className="flex items-center justify-center py-3">
               <div
                 role="status"
-                aria-label="Loading sign-in providers"
+                aria-label={t("loadingProviders")}
                 className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent"
               >
-                <span className="sr-only">Loading sign-in providers</span>
+                <span className="sr-only">{t("loadingProviders")}</span>
               </div>
             </div>
           ) : oauthProviders.length > 0 ? (
@@ -332,15 +333,15 @@ function SignInContent() {
                       {submittingProviderId === provider.id ? (
                         <div
                           role="status"
-                          aria-label={`Authenticating with ${provider.name}`}
+                          aria-label={t("authenticatingWith", { provider: provider.name })}
                           className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.82)] border-r-transparent border-b-transparent"
                         >
                           <span className="sr-only">
-                            Authenticating with {provider.name}
+                            {t("authenticatingWith", { provider: provider.name })}
                           </span>
                         </div>
                       ) : null}
-                      <span>{`Sign in with ${provider.name}`}</span>
+                      <span>{t("signInWith", { provider: provider.name })}</span>
                     </span>
                   </button>
                 );
@@ -348,12 +349,12 @@ function SignInContent() {
             </div>
           ) : (
             <p className="text-center text-sm text-[var(--color-subtext)]">
-              No sign-in providers are currently configured.
+              {t("noProviders")}
             </p>
           )}
           {submittingProvider ? (
             <p className="mt-3 text-center text-xs text-[var(--color-subtext)]">
-              Authenticating with {submittingProvider.name}...
+              {t("authenticatingWith", { provider: submittingProvider.name })}
             </p>
           ) : null}
         </div>
@@ -363,16 +364,17 @@ function SignInContent() {
 }
 
 export default function SignInPage() {
+  const t = useTranslations("signin");
   return (
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center">
           <div
             role="status"
-            aria-label="Loading sign-in page"
+            aria-label={t("loadingSignInPage")}
             className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent"
           >
-            <span className="sr-only">Loading sign-in page</span>
+            <span className="sr-only">{t("loadingSignInPage")}</span>
           </div>
         </div>
       }

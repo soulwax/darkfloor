@@ -23,5 +23,8 @@
     "db:migrate": "drizzle-kit migrate --config drizzle.config.cjs",
     "db:push": "drizzle-kit push --config drizzle.config.cjs",
     "db:studio": "drizzle-kit studio --config drizzle.config.cjs"
+  },
+  "dependencies": {
+    "next-intl": "^4.8.3"
   }
 }

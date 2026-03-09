@@ -11,6 +11,7 @@ import { hapticLight } from "@/utils/haptics";
 import { Play, Shuffle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { use } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -46,6 +47,9 @@ export default function DiscoverPlaylistPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslations("discover");
+  const tc = useTranslations("common");
+  const tp = useTranslations("player");
   const { id } = use(params);
   const playlistId = Number.parseInt(id, 10);
   const player = useGlobalPlayer();
@@ -62,7 +66,7 @@ export default function DiscoverPlaylistPage({
 
   useEffect(() => {
     if (!Number.isFinite(playlistId) || playlistId <= 0) {
-      setError("Invalid playlist ID");
+      setError(t("invalidPlaylistId"));
       setIsLoading(false);
       return;
     }
@@ -84,22 +88,20 @@ export default function DiscoverPlaylistPage({
         const parsedTracks = parsePlaylistTracks(payload);
 
         if (parsedTracks.length === 0) {
-          throw new Error("This playlist has no playable tracks.");
+          throw new Error(t("noPlayableTracks"));
         }
 
         setTracks(parsedTracks);
       } catch (err) {
         console.error("Failed to fetch discover playlist:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load playlist tracks",
-        );
+        setError(err instanceof Error ? err.message : t("failedToLoadTracks"));
       } finally {
         setIsLoading(false);
       }
     };
 
     void fetchPlaylist();
-  }, [playlistId]);
+  }, [playlistId, t]);
 
   const coverUrl =
     tracks[0]?.album.cover_xl ??
@@ -108,7 +110,8 @@ export default function DiscoverPlaylistPage({
     "/placeholder.png";
 
   const displayTitle =
-    titleFromQuery || (Number.isFinite(playlistId) ? `Playlist #${playlistId}` : "Playlist");
+    titleFromQuery ||
+    (Number.isFinite(playlistId) ? `${t("label")} #${playlistId}` : t("label"));
 
   const handlePlayAll = () => {
     if (tracks.length === 0) return;
@@ -140,7 +143,7 @@ export default function DiscoverPlaylistPage({
   if (isLoading) {
     return (
       <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
-        <LoadingState message="Loading playlist..." />
+        <LoadingState message={t("loadingPlaylist")} />
       </div>
     );
   }
@@ -150,11 +153,11 @@ export default function DiscoverPlaylistPage({
       <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
           <h1 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
-            Playlist Not Found
+            {t("playlistNotFound")}
           </h1>
           <p className="mb-6 text-[var(--color-subtext)]">{error}</p>
           <Link href="/" className="btn-primary">
-            Go Home
+            {tc("goHome")}
           </Link>
         </div>
       </div>
@@ -177,15 +180,13 @@ export default function DiscoverPlaylistPage({
         </div>
         <div className="flex flex-1 flex-col justify-end">
           <div className="mb-2 text-sm font-medium text-[var(--color-subtext)]">
-            Discover Playlist
+            {t("label")}
           </div>
           <h1 className="mb-2 text-3xl font-bold text-[var(--color-text)] md:text-4xl">
             {displayTitle}
           </h1>
           <div className="mb-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted)]">
-            <span>
-              {tracks.length} track{tracks.length !== 1 ? "s" : ""}
-            </span>
+            <span>{tc("tracks", { count: tracks.length })}</span>
           </div>
           <div className="flex gap-3">
             <button
@@ -194,7 +195,7 @@ export default function DiscoverPlaylistPage({
               className="btn-primary touch-target-lg flex items-center gap-2"
             >
               <Play className="h-5 w-5" />
-              <span>Play</span>
+              <span>{tp("playAll")}</span>
             </button>
             <button
               onClick={handleShufflePlay}
@@ -202,7 +203,7 @@ export default function DiscoverPlaylistPage({
               className="btn-secondary touch-target-lg flex items-center gap-2"
             >
               <Shuffle className="h-5 w-5" />
-              <span>Shuffle</span>
+              <span>{tc("shuffle")}</span>
             </button>
           </div>
         </div>
@@ -222,7 +223,7 @@ export default function DiscoverPlaylistPage({
         </div>
       ) : (
         <div className="py-12 text-center text-[var(--color-subtext)]">
-          No tracks available for this playlist.
+          {t("noTracksAvailable")}
         </div>
       )}
     </div>

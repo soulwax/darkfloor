@@ -5,6 +5,7 @@
 import EnhancedTrackCard from "@/components/EnhancedTrackCard";
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import type { Track } from "@starchild/types";
+import { useTranslations } from "next-intl";
 
 interface TrackListSectionProps {
   tracks: Track[];
@@ -15,14 +16,15 @@ interface TrackListSectionProps {
 export function TrackListSection({
   tracks,
   heading,
-  emptyMessage = "No tracks available.",
+  emptyMessage,
 }: TrackListSectionProps) {
   const player = useGlobalPlayer();
+  const t = useTranslations("trackList");
 
   if (tracks.length === 0) {
     return (
       <div className="py-12 text-center text-[var(--color-subtext)]">
-        {emptyMessage}
+        {emptyMessage ?? t("noTracksDefault")}
       </div>
     );
   }

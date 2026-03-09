@@ -20,6 +20,7 @@ import {
   RefreshCcw,
   User2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -229,7 +230,7 @@ function extractSpotifyPlaylistTracks(payload: unknown): SpotifyTrackSummary[] {
 }
 
 function formatDuration(durationMs: number | null): string {
-  if (!durationMs || durationMs <= 0) return "n/a";
+  if (!durationMs || durationMs <= 0) return "";
 
   const totalSeconds = Math.round(durationMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -238,34 +239,11 @@ function formatDuration(durationMs: number | null): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function normalizeSpotifyError(message: string | null): string | null {
-  if (!message) return null;
-
-  const normalized = message.toLowerCase();
-  if (normalized.includes("settings are incomplete")) {
-    return "Save your Spotify Client ID, Client Secret, and Username in Settings before loading public playlists.";
-  }
-
-  if (normalized.includes("credentials were rejected")) {
-    return "Spotify rejected the saved Client ID or Client Secret. Update the app credentials in Settings.";
-  }
-
-  if (normalized.includes("username was not found")) {
-    return "Spotify could not find that username. Check the username in Settings.";
-  }
-
-  if (normalized.includes("private or unavailable")) {
-    return "That playlist is private or unavailable to app-based public playlist access.";
-  }
-
-  if (normalized.includes("rate limit")) {
-    return "Spotify rate limited the request. Try again in a moment.";
-  }
-
-  return message;
-}
-
 export default function SpotifyPage() {
+  const t = useTranslations("spotify");
+  const ts = useTranslations("settingsSpotify");
+  const tc = useTranslations("common");
+  const th = useTranslations("home");
   const { data: session, status } = useSession();
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
@@ -330,6 +308,35 @@ export default function SpotifyPage() {
     () => extractSpotifyPlaylistTracks(selectedPlaylistPayload),
     [selectedPlaylistPayload],
   );
+  const normalizeSpotifyError = useCallback(
+    (message: string | null): string | null => {
+      if (!message) return null;
+
+      const normalized = message.toLowerCase();
+      if (normalized.includes("settings are incomplete")) {
+        return t("settingsIncomplete");
+      }
+
+      if (normalized.includes("credentials were rejected")) {
+        return t("credentialsRejected");
+      }
+
+      if (normalized.includes("username was not found")) {
+        return t("usernameNotFound");
+      }
+
+      if (normalized.includes("private or unavailable")) {
+        return t("playlistUnavailable");
+      }
+
+      if (normalized.includes("rate limit")) {
+        return t("rateLimited");
+      }
+
+      return message;
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!session || !hasServerSettings) {
@@ -365,36 +372,39 @@ export default function SpotifyPage() {
     } finally {
       setIsPlaylistsLoading(false);
     }
-  }, []);
+  }, [normalizeSpotifyError]);
 
-  const loadSpotifyPlaylistDetail = useCallback(async (playlistId: string) => {
-    setIsSelectedPlaylistLoading(true);
-    setSelectedPlaylistError(null);
+  const loadSpotifyPlaylistDetail = useCallback(
+    async (playlistId: string) => {
+      setIsSelectedPlaylistLoading(true);
+      setSelectedPlaylistError(null);
 
-    try {
-      const response = await fetch(
-        `/api/spotify/playlists/${encodeURIComponent(playlistId)}`,
-        {
-          cache: "no-store",
-        },
-      );
-      const payload = (await response.json()) as SpotifyPlaylistRouteResponse;
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? "Spotify playlist failed");
+      try {
+        const response = await fetch(
+          `/api/spotify/playlists/${encodeURIComponent(playlistId)}`,
+          {
+            cache: "no-store",
+          },
+        );
+        const payload = (await response.json()) as SpotifyPlaylistRouteResponse;
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error ?? "Spotify playlist failed");
+        }
+
+        setSelectedPlaylistPayload(payload.payload ?? null);
+      } catch (error) {
+        setSelectedPlaylistPayload(null);
+        setSelectedPlaylistError(
+          normalizeSpotifyError(
+            error instanceof Error ? error.message : "Spotify playlist failed",
+          ),
+        );
+      } finally {
+        setIsSelectedPlaylistLoading(false);
       }
-
-      setSelectedPlaylistPayload(payload.payload ?? null);
-    } catch (error) {
-      setSelectedPlaylistPayload(null);
-      setSelectedPlaylistError(
-        normalizeSpotifyError(
-          error instanceof Error ? error.message : "Spotify playlist failed",
-        ),
-      );
-    } finally {
-      setIsSelectedPlaylistLoading(false);
-    }
-  }, []);
+    },
+    [normalizeSpotifyError],
+  );
 
   useEffect(() => {
     if (!canLoadPublicPlaylists) {
@@ -451,17 +461,16 @@ export default function SpotifyPage() {
         >
           <Disc3 className="mx-auto mb-4 h-16 w-16 text-[#1DB954]" />
           <h1 className="mb-2 text-2xl font-bold text-[var(--color-text)]">
-            Sign in required
+            {t("signInRequired")}
           </h1>
           <p className="mb-6 max-w-md text-[var(--color-subtext)]">
-            Sign in with Discord to access the Spotify feature profile saved on
-            your account.
+            {t("signInPrompt")}
           </p>
           <Link
             href="/signin?callbackUrl=%2Fspotify"
             className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition hover:opacity-90"
           >
-            Sign In
+            {tc("signIn")}
           </Link>
         </motion.div>
       </div>
@@ -479,16 +488,13 @@ export default function SpotifyPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-xs font-semibold tracking-[0.2em] text-[#1DB954] uppercase">
-              Spotify features
+              {t("migrationReady")}
             </span>
             <h1 className="text-3xl font-bold text-[var(--color-text)] md:text-4xl">
-              Public Spotify playlists
+              {t("browseForTranslation")}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-subtext)] md:text-base">
-              Your saved Spotify app credentials and username are enough to load
-              the public playlists on that Spotify profile. That gives us a good
-              base for migration tools next, without bringing Spotify OAuth back
-              into sign-in.
+              {t("browseDescription")}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -497,7 +503,7 @@ export default function SpotifyPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/85 px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]"
             >
               <KeyRound className="h-4 w-4" />
-              Open Settings
+              {t("openSettingsLink")}
             </Link>
             <a
               href="https://developer.spotify.com/documentation/web-api/concepts/apps"
@@ -505,7 +511,7 @@ export default function SpotifyPage() {
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-4 py-2 text-sm font-medium text-[#1DB954] transition hover:bg-[rgba(29,185,84,0.2)]"
             >
-              How To
+              {th("howTo")}
               <ExternalLink className="h-4 w-4" />
             </a>
           </div>
@@ -514,10 +520,7 @@ export default function SpotifyPage() {
 
       {hasLegacyLocalOnly ? (
         <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 text-sm text-amber-200">
-          Local Spotify values were found on this device, but the public
-          playlist routes now read the account-saved profile from Settings. Save
-          the Spotify section in Settings once to make these features work
-          everywhere you sign in.
+          {t("localFallbackNotice")}
         </div>
       ) : null}
 
@@ -531,31 +534,45 @@ export default function SpotifyPage() {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-[var(--color-subtext)]">
-                Account profile
+                {t("savedAppProfile")}
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--color-text)]">
-                Spotify access
+                {t("featureProfileLabel")}
               </h2>
             </div>
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.16em] uppercase ${getStatusClasses(summary.state)}`}
             >
-              {summary.label}
+              {summary.state === "ready"
+                ? tc("ready")
+                : summary.state === "incomplete"
+                  ? tc("incomplete")
+                  : tc("inactive")}
             </span>
           </div>
 
           <p className="text-sm leading-6 text-[var(--color-subtext)]">
-            {summary.description}
+            {ts("profileDescription")}
           </p>
 
-          <div className="mt-5 space-y-3">
+          <p className="mt-5 text-xs font-semibold tracking-[0.16em] text-[var(--color-subtext)] uppercase">
+            {t("readinessChecklist")}
+          </p>
+
+          <div className="mt-3 space-y-3">
             {summary.checks.map((check) => (
               <div
                 key={check.id}
                 className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-4 py-3"
               >
                 <span className="text-sm text-[var(--color-text)]">
-                  {check.label}
+                  {check.id === "enabled"
+                    ? ts("checkEnabled")
+                    : check.id === "clientId"
+                      ? ts("checkClientId")
+                      : check.id === "clientSecret"
+                        ? ts("checkClientSecret")
+                        : ts("checkUsername")}
                 </span>
                 {check.ready ? (
                   <CircleCheck className="h-4 w-4 text-[#1DB954]" />
@@ -571,10 +588,10 @@ export default function SpotifyPage() {
               <User2 className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
               <div>
                 <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  Username
+                  {ts("username")}
                 </p>
                 <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                  {serverSettings.username || "Not saved"}
+                  {serverSettings.username || t("notSaved")}
                 </p>
               </div>
             </div>
@@ -582,10 +599,10 @@ export default function SpotifyPage() {
               <KeyRound className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
               <div>
                 <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  Client ID
+                  {ts("clientId")}
                 </p>
                 <p className="mt-1 text-sm font-medium break-all text-[var(--color-text)]">
-                  {serverSettings.clientId || "Not saved"}
+                  {serverSettings.clientId || t("notSaved")}
                 </p>
               </div>
             </div>
@@ -593,19 +610,19 @@ export default function SpotifyPage() {
               <KeyRound className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
               <div>
                 <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  Client Secret
+                  {ts("clientSecret")}
                 </p>
                 <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                  {maskSpotifyClientSecret(serverSettings.clientSecret)}
+                  {serverSettings.clientSecret.trim().length > 0
+                    ? maskSpotifyClientSecret(serverSettings.clientSecret)
+                    : t("notSaved")}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="mt-6 rounded-2xl border border-[rgba(29,185,84,0.24)] bg-[rgba(29,185,84,0.1)] p-4 text-sm leading-6 text-[var(--color-subtext)]">
-            No Spotify login is involved here. The server uses your saved app
-            credentials to request an app token and read public playlists for
-            the saved username only.
+            {t("publicAccessNotice")}
           </div>
         </motion.aside>
 
@@ -618,14 +635,17 @@ export default function SpotifyPage() {
           <div className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--color-subtext)]">
-                Playlist browser
+                {t("playlistMigration")}
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--color-text)]">
-                Public playlists for @{serverSettings.username || "username"}
+                {serverSettings.username
+                  ? t("playlistsForUsername", {
+                      username: serverSettings.username,
+                    })
+                  : t("browseForTranslation")}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--color-subtext)]">
-                This is the current Spotify data surface. Playlist migration can
-                build on the same public playlist inventory later.
+                {t("browseDescription")}
               </p>
             </div>
             <button
@@ -639,15 +659,13 @@ export default function SpotifyPage() {
               ) : (
                 <RefreshCcw className="h-4 w-4" />
               )}
-              Refresh
+              {tc("refresh")}
             </button>
           </div>
 
           {!canLoadPublicPlaylists ? (
             <div className="mt-6 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-5 text-sm leading-6 text-amber-200">
-              Save a complete Spotify feature profile in Settings first. Once
-              the Client ID, Client Secret, and Username are all present, this
-              page becomes active automatically for the signed-in user.
+              {t("settingsIncomplete")}
             </div>
           ) : playlistsError ? (
             <div className="mt-6 rounded-2xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] p-5 text-sm leading-6 text-red-200">
@@ -657,12 +675,12 @@ export default function SpotifyPage() {
             <div className="mt-6 flex min-h-[240px] items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/50">
               <div className="flex items-center gap-3 text-[var(--color-subtext)]">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Loading public Spotify playlists...
+                {t("loadingPlaylists")}
               </div>
             </div>
           ) : spotifyPlaylists.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/50 p-5 text-sm leading-6 text-[var(--color-subtext)]">
-              No public playlists were returned for this username yet.
+              {t("noPlaylistsReturned")}
             </div>
           ) : (
             <div className="mt-6 grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
@@ -698,10 +716,14 @@ export default function SpotifyPage() {
                             {playlist.name}
                           </p>
                           <p className="mt-1 text-xs text-[var(--color-subtext)]">
-                            {playlist.ownerName || "Spotify"}
+                            {t("byOwner", {
+                              owner: playlist.ownerName ?? "Spotify",
+                            })}
                           </p>
                           <p className="mt-2 text-xs text-[var(--color-subtext)]">
-                            {playlist.trackCount ?? "?"} tracks
+                            {typeof playlist.trackCount === "number"
+                              ? tc("tracks", { count: playlist.trackCount })
+                              : t("trackCountUnknown")}
                           </p>
                         </div>
                       </div>
@@ -744,22 +766,30 @@ export default function SpotifyPage() {
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-medium text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
                             >
-                              Open in Spotify
+                              {t("openOnSpotify")}
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           ) : null}
                         </div>
                         <p className="mt-2 text-sm text-[var(--color-subtext)]">
-                          {(selectedPlaylistDetail?.ownerName ??
-                            selectedPlaylistFromList.ownerName ??
-                            "Spotify") +
-                            " • " +
-                            String(
-                              selectedPlaylistDetail?.trackCount ??
-                                selectedPlaylistFromList.trackCount ??
-                                "?",
-                            ) +
-                            " tracks"}
+                          {t("ownedBy", {
+                            owner:
+                              selectedPlaylistDetail?.ownerName ??
+                              selectedPlaylistFromList.ownerName ??
+                              "Spotify",
+                          })}
+                          {" • "}
+                          {typeof (
+                            selectedPlaylistDetail?.trackCount ??
+                            selectedPlaylistFromList.trackCount
+                          ) === "number"
+                            ? tc("tracks", {
+                                count:
+                                  selectedPlaylistDetail?.trackCount ??
+                                  selectedPlaylistFromList.trackCount ??
+                                  0,
+                              })
+                            : t("trackCountUnknown")}
                         </p>
                         {(selectedPlaylistDetail?.description ??
                         selectedPlaylistFromList.description) ? (
@@ -769,9 +799,7 @@ export default function SpotifyPage() {
                           </p>
                         ) : (
                           <p className="mt-3 text-sm leading-6 text-[var(--color-subtext)]">
-                            Public playlist metadata is available now. Playlist
-                            translation and migration logic can build on this
-                            inventory later.
+                            {t("playlistMetadataFallback")}
                           </p>
                         )}
                       </div>
@@ -786,13 +814,12 @@ export default function SpotifyPage() {
                       <div className="mt-5 flex min-h-[200px] items-center justify-center">
                         <div className="flex items-center gap-3 text-[var(--color-subtext)]">
                           <Loader2 className="h-5 w-5 animate-spin" />
-                          Loading playlist detail...
+                          {t("loadingTracks")}
                         </div>
                       </div>
                     ) : selectedPlaylistTracks.length === 0 ? (
                       <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/65 p-4 text-sm leading-6 text-[var(--color-subtext)]">
-                        Track detail is not available yet for this playlist
-                        payload.
+                        {t("noTrackRows")}
                       </div>
                     ) : (
                       <div className="mt-5 space-y-3">
@@ -811,7 +838,8 @@ export default function SpotifyPage() {
                                   {track.name}
                                 </p>
                                 <p className="truncate text-xs text-[var(--color-subtext)]">
-                                  {track.artists.join(", ") || "Unknown artist"}
+                                  {track.artists.join(", ") ||
+                                    tc("unknownArtist")}
                                   {track.albumName
                                     ? ` • ${track.albumName}`
                                     : ""}
@@ -819,7 +847,8 @@ export default function SpotifyPage() {
                               </div>
                               <div className="flex items-center gap-3">
                                 <span className="text-xs text-[var(--color-subtext)]">
-                                  {formatDuration(track.durationMs)}
+                                  {formatDuration(track.durationMs) ||
+                                    tc("notAvailable")}
                                 </span>
                                 {track.externalUrl ? (
                                   <a
@@ -827,7 +856,9 @@ export default function SpotifyPage() {
                                     target="_blank"
                                     rel="noreferrer"
                                     className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-                                    aria-label={`Open ${track.name} in Spotify`}
+                                    aria-label={t("openTrackOnSpotify", {
+                                      title: track.name,
+                                    })}
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </a>
@@ -840,7 +871,7 @@ export default function SpotifyPage() {
                   </>
                 ) : (
                   <div className="flex min-h-[320px] items-center justify-center text-center text-sm leading-6 text-[var(--color-subtext)]">
-                    Select a playlist to inspect the public track payload.
+                    {t("selectPlaylistPrompt")}
                   </div>
                 )}
               </div>

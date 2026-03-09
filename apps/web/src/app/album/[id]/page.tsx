@@ -4,6 +4,7 @@ import { TrackListSection } from "@/components/TrackListSection";
 import { TrackPlayButtons } from "@/components/TrackPlayButtons";
 import { getRequestBaseUrl } from "@/utils/getBaseUrl";
 import type { Track } from "@starchild/types";
+import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -32,6 +33,8 @@ export default async function AlbumPage({
   }
 
   const baseUrl = await getRequestBaseUrl();
+  const t = await getTranslations("album");
+  const tc = await getTranslations("common");
   let album: AlbumData | null = null;
   let tracks: Track[] = [];
 
@@ -79,13 +82,13 @@ export default async function AlbumPage({
       <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
           <h1 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
-            Album Not Found
+            {t("notFound")}
           </h1>
           <p className="mb-6 text-[var(--color-subtext)]">
-            The album you&apos;re looking for doesn&apos;t exist.
+            {t("notFoundDescription")}
           </p>
           <Link href="/" className="btn-primary">
-            Go Home
+            {tc("goHome")}
           </Link>
         </div>
       </div>
@@ -111,7 +114,7 @@ export default async function AlbumPage({
         </div>
         <div className="flex flex-1 flex-col justify-end">
           <div className="mb-2 text-sm font-medium text-[var(--color-subtext)]">
-            Album
+            {t("label")}
           </div>
           <h1 className="mb-2 text-3xl font-bold text-[var(--color-text)] md:text-4xl">
             {album.title}
@@ -127,7 +130,7 @@ export default async function AlbumPage({
           <div className="mb-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted)]">
             {album.nb_tracks && (
               <span>
-                {album.nb_tracks} track{album.nb_tracks !== 1 ? "s" : ""}
+                {tc("tracks", { count: album.nb_tracks })}
               </span>
             )}
             {album.release_date && (
@@ -143,7 +146,7 @@ export default async function AlbumPage({
 
       <TrackListSection
         tracks={tracks}
-        emptyMessage="No tracks available for this album."
+        emptyMessage={t("noTracks")}
       />
     </div>
   );

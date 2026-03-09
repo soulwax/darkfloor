@@ -10,6 +10,7 @@ import { getCoverImage } from "@/utils/images";
 import { formatDuration } from "@/utils/time";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { memo, useState } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
@@ -35,9 +36,13 @@ function EnhancedTrackCard({
   onRemoveFromList,
   isFavorite: isFavoriteProp,
 }: EnhancedTrackCardProps) {
+  const t = useTranslations("trackMenu");
+  const tm = useTranslations("metadata");
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
-  const [optimisticIsFavorite, setOptimisticIsFavorite] = useState<boolean | null>(null);
+  const [optimisticIsFavorite, setOptimisticIsFavorite] = useState<
+    boolean | null
+  >(null);
   const utils = api.useUtils();
   const { showToast } = useToast();
   const { share } = useWebShare();
@@ -50,7 +55,8 @@ function EnhancedTrackCard({
     { enabled: showActions && isAuthenticated && isFavoriteProp === undefined },
   );
 
-  const resolvedIsFavorite = optimisticIsFavorite ?? isFavoriteProp ?? favoriteData?.isFavorite;
+  const resolvedIsFavorite =
+    optimisticIsFavorite ?? isFavoriteProp ?? favoriteData?.isFavorite;
 
   const addFavorite = api.music.addFavorite.useMutation({
     onMutate: () => {
@@ -60,11 +66,11 @@ function EnhancedTrackCard({
       setOptimisticIsFavorite(null);
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Added "${track.title}" to favorites`, "success");
+      showToast(t("addedToFavorites", { title: track.title }), "success");
     },
     onError: (error) => {
       setOptimisticIsFavorite(null);
-      showToast(`Failed to add to favorites: ${error.message}`, "error");
+      showToast(t("failedToAddToFavorites", { error: error.message }), "error");
     },
   });
 
@@ -76,11 +82,14 @@ function EnhancedTrackCard({
       setOptimisticIsFavorite(null);
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Removed "${track.title}" from favorites`, "info");
+      showToast(t("removedFromFavorites", { title: track.title }), "info");
     },
     onError: (error) => {
       setOptimisticIsFavorite(null);
-      showToast(`Failed to remove from favorites: ${error.message}`, "error");
+      showToast(
+        t("failedToRemoveFromFavorites", { error: error.message }),
+        "error",
+      );
     },
   });
 
@@ -107,7 +116,7 @@ function EnhancedTrackCard({
     e.stopPropagation();
     hapticLight();
     onAddToQueue(track);
-    showToast(`Added "${track.title}" to queue`, "success");
+    showToast(t("addedToQueue", { title: track.title }), "success");
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -116,13 +125,20 @@ function EnhancedTrackCard({
     const trackId = track.deezer_id ?? track.id;
     const shareUrl = `${window.location.origin}/track/${trackId}`;
     const success = await share({
-      title: `${track.title} - ${track.artist.name}`,
-      text: `Check out "${track.title}" by ${track.artist.name} on Starchild Music!`,
+      title: tm("trackByArtist", {
+        title: track.title,
+        artist: track.artist.name,
+      }),
+      text: tm("listenTo", {
+        title: track.title,
+        artist: track.artist.name,
+        album: track.album?.title ?? "none",
+      }),
       url: shareUrl,
     });
 
     if (success) {
-      showToast("Track shared successfully!", "success");
+      showToast(t("trackShared"), "success");
     }
   };
 
@@ -133,7 +149,13 @@ function EnhancedTrackCard({
 
   const menuOptions =
     removeFromListLabel && onRemoveFromList
-      ? { excludePlaylistId, removeFromList: { label: removeFromListLabel, onRemove: onRemoveFromList } }
+      ? {
+          excludePlaylistId,
+          removeFromList: {
+            label: removeFromListLabel,
+            onRemove: onRemoveFromList,
+          },
+        }
       : excludePlaylistId;
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -162,7 +184,7 @@ function EnhancedTrackCard({
         <button
           onClick={handlePlay}
           className="theme-card-overlay touch-active absolute inset-0 flex items-center justify-center rounded-lg opacity-80 backdrop-blur-sm transition-all duration-200 md:opacity-0 md:group-hover:opacity-100"
-          aria-label="Play track"
+          aria-label={t("playTrack")}
         >
           <svg
             className="h-10 w-10 text-white drop-shadow-lg transition-transform hover:scale-110 md:h-8 md:w-8"
@@ -244,7 +266,7 @@ function EnhancedTrackCard({
           <button
             onClick={handleShare}
             className="touch-target touch-active rounded-full text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent-light)]"
-            title="Share track"
+            title={t("shareTrack")}
           >
             <svg
               className="h-6 w-6 md:h-5 md:w-5"
@@ -264,7 +286,7 @@ function EnhancedTrackCard({
           <button
             onClick={handleAddToQueue}
             className="touch-target touch-active rounded-full text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent-light)]"
-            title="Add to queue"
+            title={t("addToQueue")}
           >
             <svg
               className="h-6 w-6 md:h-5 md:w-5"
@@ -288,7 +310,7 @@ function EnhancedTrackCard({
               setShowAddToPlaylistModal(true);
             }}
             className="touch-target touch-active rounded-full text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent)]"
-            title="Add to playlist"
+            title={t("addToPlaylist")}
           >
             <svg
               className="h-6 w-6 md:h-5 md:w-5"

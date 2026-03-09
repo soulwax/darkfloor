@@ -4,6 +4,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Heart, ListMusic, ListPlus, Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export interface MobilePlayerPlaylistOption {
   id: number;
@@ -48,14 +49,17 @@ export function MobilePlayerFooterActions({
   isHeartAnimating,
   onToggleFavorite,
 }: MobilePlayerFooterActionsProps) {
+  const t = useTranslations("trackMenu");
+  const tp = useTranslations("playlists");
+  const tc = useTranslations("common");
   const playlistLabel = isAuthenticated
-    ? "Add to playlist"
-    : "Sign in to add to playlists";
+    ? t("addToPlaylist")
+    : t("signInToAddToPlaylists");
   const favoriteLabel = !isAuthenticated
-    ? "Sign in to favorite tracks"
+    ? t("signInToFavoriteTracks")
     : favoriteIsActive
-      ? "Remove from favorites"
-      : "Add to favorites";
+      ? t("removeFromFavorites")
+      : t("addToFavorites");
 
   return (
     <div
@@ -67,9 +71,12 @@ export function MobilePlayerFooterActions({
         onClick={onToggleQueuePanel}
         whileTap={{ scale: 0.9 }}
         className={`touch-target relative ${
-          showQueuePanel ? "text-[var(--color-accent)]" : "text-[var(--color-subtext)]"
+          showQueuePanel
+            ? "text-[var(--color-accent)]"
+            : "text-[var(--color-subtext)]"
         }`}
-        aria-label="Show queue"
+        aria-label={t("queue")}
+        title={t("queue")}
       >
         <ListMusic className="h-5 w-5" />
         {queueLength > 0 && (
@@ -84,7 +91,9 @@ export function MobilePlayerFooterActions({
           onClick={onTogglePlaylistSelector}
           whileTap={{ scale: 0.9 }}
           className={`touch-target ${!isAuthenticated ? "opacity-50" : ""} ${
-            showPlaylistSelector ? "text-[var(--color-accent)]" : "text-[var(--color-subtext)]"
+            showPlaylistSelector
+              ? "text-[var(--color-accent)]"
+              : "text-[var(--color-subtext)]"
           }`}
           title={playlistLabel}
           aria-label={playlistLabel}
@@ -105,11 +114,13 @@ export function MobilePlayerFooterActions({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="theme-panel absolute bottom-full right-0 z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-xl border shadow-xl backdrop-blur-xl"
+                className="theme-panel absolute right-0 bottom-full z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-xl border shadow-xl backdrop-blur-xl"
                 data-drag-exempt="true"
               >
                 <div className="border-b border-[rgba(255,255,255,0.08)] p-3">
-                  <h3 className="text-sm font-semibold text-[var(--color-text)]">Add to Playlist</h3>
+                  <h3 className="text-sm font-semibold text-[var(--color-text)]">
+                    {t("addToPlaylist")}
+                  </h3>
                 </div>
                 <div className="py-2">
                   {playlists && playlists.length > 0 ? (
@@ -126,7 +137,9 @@ export function MobilePlayerFooterActions({
                               {playlist.name}
                             </p>
                             <p className="text-xs text-[var(--color-subtext)]">
-                              {playlist.trackCount ?? 0} {playlist.trackCount === 1 ? "track" : "tracks"}
+                              {tc("tracks", {
+                                count: playlist.trackCount ?? 0,
+                              })}
                             </p>
                           </div>
                         </div>
@@ -134,9 +147,11 @@ export function MobilePlayerFooterActions({
                     ))
                   ) : (
                     <div className="px-4 py-6 text-center">
-                      <p className="text-sm text-[var(--color-subtext)]">No playlists yet</p>
+                      <p className="text-sm text-[var(--color-subtext)]">
+                        {tp("noPlaylistsYet")}
+                      </p>
                       <p className="mt-1 text-xs text-[var(--color-muted)]">
-                        Create one from the Playlists page
+                        {tp("noPlaylistsDescription")}
                       </p>
                     </div>
                   )}
@@ -151,12 +166,18 @@ export function MobilePlayerFooterActions({
         onClick={onShare}
         whileTap={{ scale: 0.9 }}
         className={`touch-target transition-all ${
-          shareCopied ? "text-[var(--color-accent)]" : "text-[var(--color-subtext)]"
+          shareCopied
+            ? "text-[var(--color-accent)]"
+            : "text-[var(--color-subtext)]"
         }`}
-        title={shareCopied ? "Copied!" : "Share track"}
-        aria-label="Share track"
+        title={shareCopied ? t("linkCopied") : t("shareTrack")}
+        aria-label={t("shareTrack")}
       >
-        {shareCopied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
+        {shareCopied ? (
+          <Check className="h-5 w-5" />
+        ) : (
+          <Share2 className="h-5 w-5" />
+        )}
       </motion.button>
 
       <motion.button
