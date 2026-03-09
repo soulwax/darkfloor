@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
@@ -75,6 +76,9 @@ export default function MaturePlayer({
   visualizerEnabled,
   onTogglePatternControls,
 }: PlayerProps) {
+  const t = useTranslations("player");
+  const tq = useTranslations("queue");
+  const tm = useTranslations("trackMenu");
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
@@ -236,7 +240,8 @@ export default function MaturePlayer({
               setShowAddToPlaylistModal(true);
             }}
             className="rounded-full p-2 text-[var(--color-subtext)] transition-all hover:text-[var(--color-text)]"
-            title="Add to playlist"
+            title={tm("addToPlaylist")}
+            aria-label={tm("addToPlaylist")}
           >
             <ListPlus className="h-5 w-5" />
           </button>
@@ -253,8 +258,13 @@ export default function MaturePlayer({
             } ${addFavorite.isPending || removeFavorite.isPending ? "opacity-50" : ""}`}
             title={
               favoriteData?.isFavorite
-                ? "Remove from favorites"
-                : "Add to favorites"
+                ? tm("removeFromFavorites")
+                : tm("addToFavorites")
+            }
+            aria-label={
+              favoriteData?.isFavorite
+                ? tm("removeFromFavorites")
+                : tm("addToFavorites")
             }
           >
             <Heart
@@ -277,7 +287,8 @@ export default function MaturePlayer({
                   ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
                   : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
               }`}
-              title="Shuffle (S)"
+              title={t("shuffleShortcut")}
+              aria-label={t("shuffleShortcut")}
             >
               <Shuffle className="h-4 w-4" />
             </button>
@@ -287,7 +298,8 @@ export default function MaturePlayer({
               type="button"
               onClick={handlePrevious}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Previous (Shift + ←)"
+              title={t("previousTrackShortcut")}
+              aria-label={t("previousTrack")}
             >
               <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
@@ -299,7 +311,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onSkipBackward}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Skip backward 10s (←)"
+              title={t("skipBackwardShortcut")}
+              aria-label={t("skipBackward10Seconds")}
             >
               <svg
                 className="h-5 w-5"
@@ -321,7 +334,8 @@ export default function MaturePlayer({
               type="button"
               onClick={handlePlayPause}
               className="desktop-play-btn flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow-hover)] transition hover:scale-105 active:scale-95"
-              title="Play/Pause (Space)"
+              title={t("playPauseShortcut")}
+              aria-label={isPlaying ? t("pauseTrack") : t("playTrack")}
             >
               {isPlaying ? (
                 <svg
@@ -355,7 +369,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onSkipForward}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Skip forward 10s (→)"
+              title={t("skipForwardShortcut")}
+              aria-label={t("skipForward10Seconds")}
             >
               <svg
                 className="h-5 w-5"
@@ -378,7 +393,8 @@ export default function MaturePlayer({
               onClick={handleNext}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
               disabled={queue.length === 0}
-              title="Next (Shift + →)"
+              title={t("nextTrackShortcut")}
+              aria-label={t("nextTrack")}
             >
               <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z" />
@@ -394,7 +410,22 @@ export default function MaturePlayer({
                   ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
                   : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
               }`}
-              title={`Repeat: ${repeatMode} (R)`}
+              title={t("repeatShortcut", {
+                mode:
+                  repeatMode === "one"
+                    ? t("repeatModeOne")
+                    : repeatMode === "all"
+                      ? t("repeatModeAll")
+                      : t("repeatModeOff"),
+              })}
+              aria-label={t("repeatShortcut", {
+                mode:
+                  repeatMode === "one"
+                    ? t("repeatModeOne")
+                    : repeatMode === "all"
+                      ? t("repeatModeAll")
+                      : t("repeatModeOff"),
+              })}
             >
               {repeatMode === "one" ? (
                 <svg
@@ -450,7 +481,7 @@ export default function MaturePlayer({
           {}
           {queue.length > 0 && (
             <span className="hidden text-sm text-[var(--color-subtext)] lg:block">
-              {queue.length} in queue
+              {t("inQueue", { count: queue.length })}
             </span>
           )}
 
@@ -461,7 +492,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onToggleMute}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Mute/Unmute (M)"
+              title={t("muteShortcut")}
+              aria-label={t("muteShortcut")}
             >
               {isMuted || volume === 0 ? (
                 <svg
@@ -513,7 +545,8 @@ export default function MaturePlayer({
                 style={{
                   background: `linear-gradient(to right, var(--color-slider-fill) 0%, var(--color-slider-fill) ${volume * 100}%, var(--color-slider-track) ${volume * 100}%, var(--color-slider-track) 100%)`,
                 }}
-                title="Volume (↑↓)"
+                title={t("volumeShortcut")}
+                aria-label={t("volumeShortcut")}
               />
             </div>
           </div>
@@ -524,7 +557,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onToggleQueue}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Queue (Q)"
+              title={t("queueShortcut")}
+              aria-label={tq("title", { count: queue.length })}
             >
               <svg
                 className="h-5 w-5"
@@ -548,7 +582,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onToggleEqualizer}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Equalizer (E)"
+              title={t("equalizerShortcut")}
+              aria-label={t("equalizerShortcut")}
             >
               <svg
                 className="h-5 w-5"
@@ -577,9 +612,10 @@ export default function MaturePlayer({
                   : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
               }`}
               title={
-                visualizerEnabled
-                  ? "Hide visualizer (V)"
-                  : "Show visualizer (V)"
+                visualizerEnabled ? t("hideVisualizer") : t("showVisualizer")
+              }
+              aria-label={
+                visualizerEnabled ? t("hideVisualizer") : t("showVisualizer")
               }
               aria-pressed={visualizerEnabled}
             >
@@ -610,7 +646,8 @@ export default function MaturePlayer({
               type="button"
               onClick={onTogglePatternControls}
               className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-              title="Pattern Controls"
+              title={t("patternControls")}
+              aria-label={t("patternControls")}
             >
               <Layers className="h-5 w-5" />
             </button>
@@ -628,7 +665,8 @@ export default function MaturePlayer({
                 ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
                 : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
             }`}
-            title={hideUI ? "Show UI" : "Hide UI to enjoy visuals"}
+            title={hideUI ? t("showUi") : t("hideUi")}
+            aria-label={hideUI ? t("showUi") : t("hideUi")}
             aria-pressed={hideUI}
           >
             {hideUI ? (

@@ -10,16 +10,16 @@ import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SimilarityPreference, Track } from "@starchild/types";
 import {
-    extractColorsFromImage,
-    type ColorPalette,
+  extractColorsFromImage,
+  type ColorPalette,
 } from "@/utils/colorExtractor";
 import {
-    haptic,
-    hapticLight,
-    hapticMedium,
-    hapticSliderContinuous,
-    hapticSliderEnd,
-    hapticSuccess,
+  haptic,
+  hapticLight,
+  hapticMedium,
+  hapticSliderContinuous,
+  hapticSliderEnd,
+  hapticSuccess,
 } from "@/utils/haptics";
 import { getCoverImage } from "@/utils/images";
 import { settingsStorage } from "@/utils/settingsStorage";
@@ -28,37 +28,38 @@ import { formatDuration, formatTime } from "@/utils/time";
 import { MobilePlayerFooterActions } from "./MobilePlayerFooterActions";
 import { getMobilePlayerDragDecision } from "./mobilePlayerDrag";
 import {
-    animate,
-    AnimatePresence,
-    motion,
-    useDragControls,
-    useMotionValue,
-    useReducedMotion,
-    useTransform,
-    type PanInfo,
+  animate,
+  AnimatePresence,
+  motion,
+  useDragControls,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type PanInfo,
 } from "framer-motion";
 import {
-    ArrowUp,
-    ChevronDown,
-    GripVertical,
-    Pause,
-    Play,
-    Repeat,
-    Repeat1,
-    Save,
-    Search,
-    Settings,
-    Shuffle,
-    SkipBack,
-    SkipForward,
-    Sparkles,
-    Trash2,
-    RotateCcw,
-    X
+  ArrowUp,
+  ChevronDown,
+  GripVertical,
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  Save,
+  Search,
+  Settings,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Sparkles,
+  Trash2,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const QueueSettingsModal = dynamic(
@@ -86,12 +87,20 @@ const isPaletteUsable = (
   if (!palette) return false;
 
   const colors = [palette.primary, palette.secondary, palette.accent];
-  if (!colors.every((value) => typeof value === "string" && RGBA_PATTERN.test(value))) {
+  if (
+    !colors.every(
+      (value) => typeof value === "string" && RGBA_PATTERN.test(value),
+    )
+  ) {
     return false;
   }
 
   const { hue, saturation, lightness } = palette;
-  if (!Number.isFinite(hue) || !Number.isFinite(saturation) || !Number.isFinite(lightness)) {
+  if (
+    !Number.isFinite(hue) ||
+    !Number.isFinite(saturation) ||
+    !Number.isFinite(lightness)
+  ) {
     return false;
   }
 
@@ -143,6 +152,9 @@ function QueueItem({
   isDragging,
   onReorder,
 }: QueueItemProps) {
+  const t = useTranslations("queue");
+  const tc = useTranslations("common");
+  const tm = useTranslations("trackMenu");
   const [dragY, setDragY] = useState(0);
   const itemRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number>(0);
@@ -156,12 +168,12 @@ function QueueItem({
 
   const coverImage = getCoverImage(track, "small");
   const altText = track.album?.title?.trim()?.length
-    ? `${track.album.title} cover art`
-    : `${track.title} cover art`;
+    ? t("albumCoverArt", { album: track.album.title })
+    : t("trackCoverArt", { title: track.title });
 
   const artistName = track.artist?.name?.trim()?.length
     ? track.artist.name
-    : "Unknown Artist";
+    : tc("unknownArtist");
   const albumTitle = track.album?.title?.trim()?.length
     ? track.album.title
     : null;
@@ -261,7 +273,7 @@ function QueueItem({
       onTouchMove={handleItemTouchMove}
       onTouchEnd={handleItemTouchEnd}
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest('button')) {
+        if ((e.target as HTMLElement).closest("button")) {
           return;
         }
         onPlay();
@@ -269,7 +281,7 @@ function QueueItem({
     >
       {/* Smart track indicator */}
       {isSmartTrack && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[var(--color-accent-strong)] rounded-r" />
+        <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r bg-[var(--color-accent-strong)]" />
       )}
 
       {/* Drag handle */}
@@ -328,6 +340,8 @@ function QueueItem({
             onPlay();
           }}
           className="theme-card-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100"
+          aria-label={t("playFromHere")}
+          title={t("playFromHere")}
         >
           <Play className="h-5 w-5 fill-white text-white" />
         </button>
@@ -368,8 +382,8 @@ function QueueItem({
             e.stopPropagation();
           }}
           className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-[rgba(88,198,177,0.16)] active:text-[var(--color-text)]"
-          aria-label="Move to play next"
-          title="Play next"
+          aria-label={tm("movePlayNext")}
+          title={tm("playNext")}
         >
           <ArrowUp className="h-4 w-4" />
         </button>
@@ -389,7 +403,8 @@ function QueueItem({
             e.stopPropagation();
           }}
           className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-[rgba(244,178,102,0.12)] active:text-[var(--color-text)]"
-          aria-label="Remove from queue"
+          aria-label={t("removeFromQueue")}
+          title={t("removeFromQueue")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -449,6 +464,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     onClose,
     forceExpanded = false,
   } = props;
+  const t = useTranslations("player");
+  const tq = useTranslations("queue");
+  const tm = useTranslations("trackMenu");
 
   const {
     audioElement: contextAudioElement,
@@ -507,14 +525,23 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   >(null);
   const [showQueuePanel, setShowQueuePanel] = useState(false);
   const [queueSearchQuery, setQueueSearchQuery] = useState("");
-  const [selectedQueueIndices, setSelectedQueueIndices] = useState<Set<number>>(new Set());
-  const [lastSelectedQueueIndex, setLastSelectedQueueIndex] = useState<number | null>(null);
+  const [selectedQueueIndices, setSelectedQueueIndices] = useState<Set<number>>(
+    new Set(),
+  );
+  const [lastSelectedQueueIndex, setLastSelectedQueueIndex] = useState<
+    number | null
+  >(null);
   const [showQueueSettingsModal, setShowQueueSettingsModal] = useState(false);
   const [smartTracksCount, setSmartTracksCount] = useState(5);
-  const [similarityLevel, setSimilarityLevel] = useState<SimilarityPreference>("balanced");
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [similarityLevel, setSimilarityLevel] =
+    useState<SimilarityPreference>("balanced");
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(
+    null,
+  );
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [queueUndoState, setQueueUndoState] = useState<QueueUndoState | null>(null);
+  const [queueUndoState, setQueueUndoState] = useState<QueueUndoState | null>(
+    null,
+  );
   const [queueThumbHeight, setQueueThumbHeight] = useState(0);
   const [queueScrollbarVisible, setQueueScrollbarVisible] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -531,7 +558,11 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const shareFeedbackTimeoutRef = useRef<number | null>(null);
   const queueScrollbarVisibleRef = useRef(false);
   const queueThumbHeightRef = useRef(0);
-  const queueScrollDragRef = useRef<{ active: boolean; startY: number; startScrollTop: number }>({
+  const queueScrollDragRef = useRef<{
+    active: boolean;
+    startY: number;
+    startScrollTop: number;
+  }>({
     active: false,
     startY: 0,
     startScrollTop: 0,
@@ -598,7 +629,10 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       return;
     }
 
-    const thumbHeight = Math.max((clientHeight / scrollHeight) * clientHeight, 36);
+    const thumbHeight = Math.max(
+      (clientHeight / scrollHeight) * clientHeight,
+      36,
+    );
     if (thumbHeight !== queueThumbHeightRef.current) {
       queueThumbHeightRef.current = thumbHeight;
       setQueueThumbHeight(thumbHeight);
@@ -633,9 +667,16 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       const rect = track.getBoundingClientRect();
       const thumbHeight =
         queueThumbHeightRef.current ||
-        Math.max((container.clientHeight / container.scrollHeight) * rect.height, 36);
+        Math.max(
+          (container.clientHeight / container.scrollHeight) * rect.height,
+          36,
+        );
       const maxOffset = Math.max(rect.height - thumbHeight, 1);
-      const isThumb = Boolean((event.target as HTMLElement)?.closest("[data-queue-scroll-thumb='true']"));
+      const isThumb = Boolean(
+        (event.target as HTMLElement)?.closest(
+          "[data-queue-scroll-thumb='true']",
+        ),
+      );
 
       if (!isThumb) {
         const clickOffset = event.clientY - rect.top - thumbHeight / 2;
@@ -667,7 +708,11 @@ export default function MobilePlayer(props: MobilePlayerProps) {
 
       const thumbHeight =
         queueThumbHeightRef.current ||
-        Math.max((container.clientHeight / container.scrollHeight) * track.clientHeight, 36);
+        Math.max(
+          (container.clientHeight / container.scrollHeight) *
+            track.clientHeight,
+          36,
+        );
       const maxOffset = Math.max(track.clientHeight - thumbHeight, 1);
       const delta = event.clientY - queueScrollDragRef.current.startY;
       const scrollDelta = (delta / maxOffset) * scrollable;
@@ -730,29 +775,29 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       try {
         if (action === "refresh") {
           await refreshSmartTracks();
-          showToast("Smart tracks refreshed", "success");
+          showToast(tq("smartTracksRefreshed"), "success");
           return;
         }
 
         const added = await addSmartTracks();
         if (added.length === 0) {
-          showToast("No smart tracks found for this song", "info");
+          showToast(tq("noSmartTracksFound"), "info");
         } else {
-          showToast(
-            `Added ${added.length} smart track${added.length === 1 ? "" : "s"}`,
-            "success",
-          );
+          showToast(tq("addedSmartTracks", { count: added.length }), "success");
         }
       } catch (error) {
         console.error("[MobilePlayer] Smart tracks action failed:", error);
-        showToast("Failed to update smart tracks", "error");
+        showToast(tq("failedToUpdateSmartTracks"), "error");
       }
     },
-    [addSmartTracks, refreshSmartTracks, showToast],
+    [addSmartTracks, refreshSmartTracks, showToast, tq],
   );
 
   const handleApplyQueueSettings = useCallback(
-    async (settings: { count: number; similarityLevel: SimilarityPreference }) => {
+    async (settings: {
+      count: number;
+      similarityLevel: SimilarityPreference;
+    }) => {
       try {
         setSmartTracksCount(settings.count);
         setSimilarityLevel(settings.similarityLevel);
@@ -761,16 +806,19 @@ export default function MobilePlayer(props: MobilePlayerProps) {
           similarityLevel: settings.similarityLevel,
         });
         if (added.length === 0) {
-          showToast("No smart tracks found for this song", "info");
+          showToast(tq("noSmartTracksFound"), "info");
         } else {
-          showToast(`Added ${added.length} smart track${added.length === 1 ? "" : "s"}`, "success");
+          showToast(tq("addedSmartTracks", { count: added.length }), "success");
         }
       } catch (error) {
-        console.error("[MobilePlayer] Failed to add smart tracks with custom settings:", error);
-        showToast("Failed to add smart tracks", "error");
+        console.error(
+          "[MobilePlayer] Failed to add smart tracks with custom settings:",
+          error,
+        );
+        showToast(tq("failedToAddSmartTracks"), "error");
       }
     },
-    [addSmartTracks, showToast],
+    [addSmartTracks, showToast, tq],
   );
 
   // Queue data processing
@@ -780,7 +828,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
         track: qt.track,
         index,
         queueId: qt.queueId,
-        isSmartTrack: qt.queueSource === 'smart',
+        isSmartTrack: qt.queueSource === "smart",
       })),
     [queuedTracks],
   );
@@ -800,11 +848,11 @@ export default function MobilePlayer(props: MobilePlayerProps) {
 
   const filteredNowPlaying = filteredQueue.length > 0 ? filteredQueue[0] : null;
   const filteredUserTracks = useMemo(() => {
-    return filteredQueue.slice(1).filter(entry => !entry.isSmartTrack);
+    return filteredQueue.slice(1).filter((entry) => !entry.isSmartTrack);
   }, [filteredQueue]);
 
   const filteredSmartTracks = useMemo(() => {
-    return filteredQueue.slice(1).filter(entry => entry.isSmartTrack);
+    return filteredQueue.slice(1).filter((entry) => entry.isSmartTrack);
   }, [filteredQueue]);
 
   useEffect(() => {
@@ -831,41 +879,49 @@ export default function MobilePlayer(props: MobilePlayerProps) {
         queueScrollRafRef.current = null;
       }
     };
-  }, [filteredQueue.length, handleQueueScroll, showQueuePanel, updateQueueScrollbar]);
+  }, [
+    filteredQueue.length,
+    handleQueueScroll,
+    showQueuePanel,
+    updateQueueScrollbar,
+  ]);
 
   const totalDuration = useMemo(() => {
     return queue.reduce((acc, track) => acc + track.duration, 0);
   }, [queue]);
 
-  const handleToggleQueueSelect = useCallback((index: number, shiftKey = false) => {
-    setSelectedQueueIndices((prev) => {
-      const newSet = new Set(prev);
+  const handleToggleQueueSelect = useCallback(
+    (index: number, shiftKey = false) => {
+      setSelectedQueueIndices((prev) => {
+        const newSet = new Set(prev);
 
-      if (shiftKey && lastSelectedQueueIndex !== null) {
-        const start = Math.min(lastSelectedQueueIndex, index);
-        const end = Math.max(lastSelectedQueueIndex, index);
-        for (let i = start; i <= end; i++) {
-          if (i !== 0) {
-            newSet.add(i);
+        if (shiftKey && lastSelectedQueueIndex !== null) {
+          const start = Math.min(lastSelectedQueueIndex, index);
+          const end = Math.max(lastSelectedQueueIndex, index);
+          for (let i = start; i <= end; i++) {
+            if (i !== 0) {
+              newSet.add(i);
+            }
+          }
+        } else {
+          if (index !== 0) {
+            if (newSet.has(index)) {
+              newSet.delete(index);
+            } else {
+              newSet.add(index);
+            }
           }
         }
-      } else {
-        if (index !== 0) {
-          if (newSet.has(index)) {
-            newSet.delete(index);
-          } else {
-            newSet.add(index);
-          }
-        }
+
+        return newSet;
+      });
+
+      if (!shiftKey || lastSelectedQueueIndex === null) {
+        setLastSelectedQueueIndex(index);
       }
-
-      return newSet;
-    });
-
-    if (!shiftKey || lastSelectedQueueIndex === null) {
-      setLastSelectedQueueIndex(index);
-    }
-  }, [lastSelectedQueueIndex]);
+    },
+    [lastSelectedQueueIndex],
+  );
 
   const handleMoveQueueTrackToNext = useCallback(
     (index: number) => {
@@ -921,17 +977,22 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const handleRemoveSelectedQueueItems = useCallback(() => {
     if (selectedQueueIndices.size === 0) return;
 
-    const sortedIndices = Array.from(selectedQueueIndices).sort((a, b) => b - a);
+    const sortedIndices = Array.from(selectedQueueIndices).sort(
+      (a, b) => b - a,
+    );
 
-    sortedIndices.forEach(index => {
+    sortedIndices.forEach((index) => {
       removeFromQueue(index);
     });
 
     setSelectedQueueIndices(new Set());
     setLastSelectedQueueIndex(null);
     hapticSuccess();
-    showToast(`Removed ${sortedIndices.length} track${sortedIndices.length === 1 ? '' : 's'} from queue`, 'success');
-  }, [selectedQueueIndices, removeFromQueue, showToast]);
+    showToast(
+      tq("removedFromQueueSummary", { count: sortedIndices.length }),
+      "success",
+    );
+  }, [removeFromQueue, selectedQueueIndices, showToast, tq]);
 
   const handleClearQueueSelection = useCallback(() => {
     setSelectedQueueIndices(new Set());
@@ -983,10 +1044,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       currentTrack.title?.trim(),
       currentTrack.artist?.name?.trim(),
       currentTrack.album?.title?.trim(),
-    ].filter((value): value is string => typeof value === "string" && value.length > 0);
+    ].filter(
+      (value): value is string => typeof value === "string" && value.length > 0,
+    );
 
     if (queryParts.length === 0) {
-      showToast("Track details unavailable for sharing", "error");
+      showToast(t("trackDetailsUnavailable"), "error");
       return;
     }
 
@@ -1006,13 +1069,13 @@ export default function MobilePlayer(props: MobilePlayerProps) {
         setIsShareCopied(false);
         shareFeedbackTimeoutRef.current = null;
       }, 1400);
-      showToast("Share link copied to clipboard!", "success");
+      showToast(tm("linkCopied"), "success");
     } catch (error) {
       console.error("Failed to copy share link:", error);
       setIsShareCopied(false);
-      showToast("Failed to copy share link", "error");
+      showToast(tm("failedToCopyLink"), "error");
     }
-  }, [currentTrack, showToast]);
+  }, [currentTrack, showToast, t, tm]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -1059,7 +1122,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   useEffect(() => {
     const fallbackCover =
       "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect fill='%236495ed' width='1' height='1'/%3E%3C/svg%3E";
-    const coverUrl = currentTrack ? getCoverImage(currentTrack, "small") : fallbackCover;
+    const coverUrl = currentTrack
+      ? getCoverImage(currentTrack, "small")
+      : fallbackCover;
 
     if (lastPaletteCoverRef.current === coverUrl) {
       return;
@@ -1080,7 +1145,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
         .then((palette) => {
           if (cancelled || requestId !== paletteRequestRef.current) return;
           if (!isPaletteUsable(palette)) {
-            console.warn("Palette extraction returned invalid values; using fallback.");
+            console.warn(
+              "Palette extraction returned invalid values; using fallback.",
+            );
             setAlbumColorPalette(null);
             return;
           }
@@ -1095,11 +1162,16 @@ export default function MobilePlayer(props: MobilePlayerProps) {
 
     if (typeof window !== "undefined") {
       const idleWindow = window as Window & {
-        requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
+        requestIdleCallback?: (
+          cb: () => void,
+          options?: { timeout: number },
+        ) => number;
         cancelIdleCallback?: (id: number) => void;
       };
       if (idleWindow.requestIdleCallback) {
-        const idleId = idleWindow.requestIdleCallback(runExtraction, { timeout: 600 });
+        const idleId = idleWindow.requestIdleCallback(runExtraction, {
+          timeout: 600,
+        });
         cleanup = () => idleWindow.cancelIdleCallback?.(idleId);
       } else {
         const timeoutId = window.setTimeout(runExtraction, 120);
@@ -1186,7 +1258,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       setIsSeeking(false);
     }
   };
-
 
   const handleArtworkDrag = useCallback(
     (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -1278,13 +1349,19 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     info: PanInfo,
   ) => {
     const measuredPanelHeight =
-      expandedPanelHeightRef.current > 0 ? expandedPanelHeightRef.current : undefined;
-    const panelHeightFromRef = expandedPanelRef.current?.getBoundingClientRect().height;
+      expandedPanelHeightRef.current > 0
+        ? expandedPanelHeightRef.current
+        : undefined;
+    const panelHeightFromRef =
+      expandedPanelRef.current?.getBoundingClientRect().height;
     const panelHeight =
       measuredPanelHeight ??
       panelHeightFromRef ??
       (typeof window !== "undefined" ? window.innerHeight : 0);
-    const dragDecision = getMobilePlayerDragDecision(info.offset.y, panelHeight);
+    const dragDecision = getMobilePlayerDragDecision(
+      info.offset.y,
+      panelHeight,
+    );
 
     if (dragDecision === "dismiss") {
       closeExpandedPlayer();
@@ -1299,7 +1376,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     void animate(dragY, 0, springPresets.snappy);
   };
 
-
   if (!currentTrack) return null;
 
   const coverArt =
@@ -1311,19 +1387,31 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const extractRgbFromRgba = (rgba: string): [number, number, number] => {
     const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgba);
     if (match) {
-      return [parseInt(match[1] ?? "0"), parseInt(match[2] ?? "0"), parseInt(match[3] ?? "0")];
+      return [
+        parseInt(match[1] ?? "0"),
+        parseInt(match[2] ?? "0"),
+        parseInt(match[3] ?? "0"),
+      ];
     }
     return [59, 130, 246];
   };
 
   const rgbToHex = (r: number, g: number, b: number): string => {
-    return `#${[r, g, b].map(x => {
-      const hex = x.toString(16);
-      return hex.length === 1 ? `0${hex}` : hex;
-    }).join("")}`;
+    return `#${[r, g, b]
+      .map((x) => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? `0${hex}` : hex;
+      })
+      .join("")}`;
   };
 
-  const enhanceColor = (r: number, g: number, b: number, saturationBoost = 1.4, brightnessBoost = 1.15): [number, number, number] => {
+  const enhanceColor = (
+    r: number,
+    g: number,
+    b: number,
+    saturationBoost = 1.4,
+    brightnessBoost = 1.15,
+  ): [number, number, number] => {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
@@ -1338,14 +1426,27 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     const enhancedSaturation = Math.min(1, saturation * saturationBoost);
 
     const factor = enhancedSaturation / saturation;
-    const newR = Math.min(255, Math.max(0, avg + (r - avg) * factor * brightnessBoost));
-    const newG = Math.min(255, Math.max(0, avg + (g - avg) * factor * brightnessBoost));
-    const newB = Math.min(255, Math.max(0, avg + (b - avg) * factor * brightnessBoost));
+    const newR = Math.min(
+      255,
+      Math.max(0, avg + (r - avg) * factor * brightnessBoost),
+    );
+    const newG = Math.min(
+      255,
+      Math.max(0, avg + (g - avg) * factor * brightnessBoost),
+    );
+    const newB = Math.min(
+      255,
+      Math.max(0, avg + (b - avg) * factor * brightnessBoost),
+    );
 
     return [Math.round(newR), Math.round(newG), Math.round(newB)];
   };
 
-  const getComplementaryColor = (r: number, g: number, b: number): [number, number, number] => {
+  const getComplementaryColor = (
+    r: number,
+    g: number,
+    b: number,
+  ): [number, number, number] => {
     const rNorm = r / 255;
     const gNorm = g / 255;
     const bNorm = b / 255;
@@ -1375,10 +1476,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     const brightL = Math.min(0.75, l * 1.2);
 
     const c = (1 - Math.abs(2 * brightL - 1)) * highS;
-    const x = c * (1 - Math.abs((compH * 6) % 2 - 1));
+    const x = c * (1 - Math.abs(((compH * 6) % 2) - 1));
     const m = brightL - c / 2;
 
-    let rOut = 0, gOut = 0, bOut = 0;
+    let rOut = 0,
+      gOut = 0,
+      bOut = 0;
     const hue = compH * 6;
 
     if (hue < 1) {
@@ -1398,11 +1501,15 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     return [
       Math.round((rOut + m) * 255),
       Math.round((gOut + m) * 255),
-      Math.round((bOut + m) * 255)
+      Math.round((bOut + m) * 255),
     ];
   };
 
-  const getPaletteColor = (color: string, opacity = 1, enhance = false): string => {
+  const getPaletteColor = (
+    color: string,
+    opacity = 1,
+    enhance = false,
+  ): string => {
     let [r, g, b] = extractRgbFromRgba(color);
     if (enhance && albumColorPalette) {
       [r, g, b] = enhanceColor(r, g, b);
@@ -1425,17 +1532,26 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const primaryRgb = extractRgbFromRgba(palette.primary);
   const secondaryRgb = extractRgbFromRgba(palette.secondary);
   const accentRgb = extractRgbFromRgba(palette.accent);
-  
+
   // Enhanced colors for better visual appeal
-  const [enhancedPrimaryR, enhancedPrimaryG, enhancedPrimaryB] = enhanceColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  const [enhancedSecondaryR, enhancedSecondaryG, enhancedSecondaryB] = enhanceColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
-  const [enhancedAccentR, enhancedAccentG, enhancedAccentB] = enhanceColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-  
+  const [enhancedPrimaryR, enhancedPrimaryG, enhancedPrimaryB] = enhanceColor(
+    primaryRgb[0],
+    primaryRgb[1],
+    primaryRgb[2],
+  );
+  const [enhancedSecondaryR, enhancedSecondaryG, enhancedSecondaryB] =
+    enhanceColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
+  const [enhancedAccentR, enhancedAccentG, enhancedAccentB] = enhanceColor(
+    accentRgb[0],
+    accentRgb[1],
+    accentRgb[2],
+  );
+
   // Create gradient with multiple color stops covering the full section
   // Using 165deg angle for diagonal gradient, with colors distributed across 0% to 100%
   // Uses all three key colors (primary, secondary, accent) from the album cover
   const dynamicGradient = `linear-gradient(165deg, rgba(${enhancedPrimaryR}, ${enhancedPrimaryG}, ${enhancedPrimaryB}, 0.25) 0%, rgba(${enhancedPrimaryR}, ${enhancedPrimaryG}, ${enhancedPrimaryB}, 0.18) 25%, rgba(${enhancedSecondaryR}, ${enhancedSecondaryG}, ${enhancedSecondaryB}, 0.2) 50%, rgba(${enhancedSecondaryR}, ${enhancedSecondaryG}, ${enhancedSecondaryB}, 0.15) 70%, rgba(${enhancedAccentR}, ${enhancedAccentG}, ${enhancedAccentB}, 0.18) 85%, rgba(${enhancedAccentR}, ${enhancedAccentG}, ${enhancedAccentB}, 0.12) 100%)`;
-  
+
   const primaryColor = getPaletteHex(palette.primary, true);
   const secondaryColor = getPaletteHex(palette.secondary, true);
   const accentColor = getPaletteHex(palette.accent, true);
@@ -1450,10 +1566,19 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const primaryRgbaShadowButton = getPaletteColor(palette.primary, 0.5, true);
   const primaryRgbaBorder = getPaletteColor(palette.primary, 0.7, true);
 
-  const [compPrimaryR, compPrimaryG, compPrimaryB] = getComplementaryColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  const [compSecondaryR, compSecondaryG, compSecondaryB] = getComplementaryColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
+  const [compPrimaryR, compPrimaryG, compPrimaryB] = getComplementaryColor(
+    primaryRgb[0],
+    primaryRgb[1],
+    primaryRgb[2],
+  );
+  const [compSecondaryR, compSecondaryG, compSecondaryB] =
+    getComplementaryColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
   const skipBackColor = rgbToHex(compPrimaryR, compPrimaryG, compPrimaryB);
-  const skipForwardColor = rgbToHex(compSecondaryR, compSecondaryG, compSecondaryB);
+  const skipForwardColor = rgbToHex(
+    compSecondaryR,
+    compSecondaryG,
+    compSecondaryB,
+  );
 
   return (
     <>
@@ -1479,7 +1604,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
               drag="y"
               dragConstraints={{
                 top: 0,
-                bottom: typeof window !== "undefined" ? window.innerHeight : 1024,
+                bottom:
+                  typeof window !== "undefined" ? window.innerHeight : 1024,
               }}
               dragElastic={0}
               dragMomentum={false}
@@ -1488,7 +1614,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
               onPointerDownCapture={handleExpandedPointerDownCapture}
               onDragEnd={handleExpandedDragEnd}
               style={{ y: dragY, opacity }}
-              transition={shouldReduceMotion ? { duration: 0 } : springPresets.gentle}
+              transition={
+                shouldReduceMotion ? { duration: 0 } : springPresets.gentle
+              }
               className="fixed inset-0 z-[99] flex flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+20px)]"
             >
               {}
@@ -1509,7 +1637,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     onClick={closeExpandedPlayer}
                     whileTap={{ scale: 0.9 }}
                     className="touch-target rounded-full p-2 text-[var(--color-subtext)]"
-                    aria-label="Collapse player"
+                    aria-label={t("collapsePlayer")}
+                    title={t("collapsePlayer")}
                     data-drag-exempt="true"
                   >
                     <ChevronDown className="h-6 w-6" />
@@ -1523,579 +1652,690 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain"
                   >
                     <div className="mobile-player-body flex min-h-0 flex-1 flex-col items-center justify-start gap-4">
-                    <motion.div
-                      ref={artworkRef}
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      style={{ scale: artworkScale }}
-                      data-drag-exempt="true"
-                      drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.1}
-                      onDrag={handleArtworkDrag}
-                      onDragEnd={handleArtworkDragEnd}
-                      transition={springPresets.smooth}
-                      className={`mobile-player-artwork relative w-full cursor-grab active:cursor-grabbing ${
-                        effectivePreferences?.compactMode ? "max-w-[280px]" : "max-w-[360px]"
-                      }`}
-                    >
                       <motion.div
-                        key="artwork"
-                        initial={{ rotateY: -90, opacity: 0 }}
-                        animate={{ rotateY: 0, opacity: 1 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        style={{ transformStyle: "preserve-3d" }}
+                        ref={artworkRef}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        style={{ scale: artworkScale }}
+                        data-drag-exempt="true"
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.1}
+                        onDrag={handleArtworkDrag}
+                        onDragEnd={handleArtworkDragEnd}
+                        transition={springPresets.smooth}
+                        className={`mobile-player-artwork relative w-full cursor-grab active:cursor-grabbing ${
+                          effectivePreferences?.compactMode
+                            ? "max-w-[280px]"
+                            : "max-w-[360px]"
+                        }`}
                       >
-                        {coverArt ? (
-                          <div className="relative">
-                            <div
-                              className="absolute -inset-6 rounded-[40px] blur-2xl opacity-90"
-                              style={{
-                                background: `radial-gradient(circle, ${getPaletteColor(palette.accent, 0.6, true)} 0%, rgba(0,0,0,0) 70%)`,
-                              }}
-                            />
-                            <div
-                              className="absolute -inset-2 rounded-[34px] border"
-                              style={{
-                                borderColor: getPaletteColor(palette.primary, 0.4, true),
-                              }}
-                            />
-                            <div
-                              className="absolute -inset-1 rounded-[32px] border"
-                              style={{
-                                borderColor: getPaletteColor(palette.secondary, 0.3, true),
-                              }}
-                            />
-                            <div className="relative overflow-hidden rounded-[30px]">
-                              <Image
-                                src={coverArt}
-                                alt={currentTrack.title}
-                                width={450}
-                                height={450}
-                                className="relative z-10 aspect-square w-full rounded-[30px] object-cover shadow-[0_24px_64px_rgba(0,0,0,0.75)]"
-                                priority
-                                quality={90}
+                        <motion.div
+                          key="artwork"
+                          initial={{ rotateY: -90, opacity: 0 }}
+                          animate={{ rotateY: 0, opacity: 1 }}
+                          transition={{ duration: 0.4, ease: "easeInOut" }}
+                          style={{ transformStyle: "preserve-3d" }}
+                        >
+                          {coverArt ? (
+                            <div className="relative">
+                              <div
+                                className="absolute -inset-6 rounded-[40px] opacity-90 blur-2xl"
+                                style={{
+                                  background: `radial-gradient(circle, ${getPaletteColor(palette.accent, 0.6, true)} 0%, rgba(0,0,0,0) 70%)`,
+                                }}
                               />
-                              <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(145deg,rgba(255,255,255,0.18),transparent_45%,rgba(0,0,0,0.35))]" />
+                              <div
+                                className="absolute -inset-2 rounded-[34px] border"
+                                style={{
+                                  borderColor: getPaletteColor(
+                                    palette.primary,
+                                    0.4,
+                                    true,
+                                  ),
+                                }}
+                              />
+                              <div
+                                className="absolute -inset-1 rounded-[32px] border"
+                                style={{
+                                  borderColor: getPaletteColor(
+                                    palette.secondary,
+                                    0.3,
+                                    true,
+                                  ),
+                                }}
+                              />
+                              <div className="relative overflow-hidden rounded-[30px]">
+                                <Image
+                                  src={coverArt}
+                                  alt={currentTrack.title}
+                                  width={450}
+                                  height={450}
+                                  className="relative z-10 aspect-square w-full rounded-[30px] object-cover shadow-[0_24px_64px_rgba(0,0,0,0.75)]"
+                                  priority
+                                  quality={90}
+                                />
+                                <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(145deg,rgba(255,255,255,0.18),transparent_45%,rgba(0,0,0,0.35))]" />
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="flex aspect-square w-full items-center justify-center rounded-[30px] bg-[rgba(244,178,102,0.12)] text-6xl text-[var(--color-muted)]">
-                            🎵
+                          ) : (
+                            <div className="flex aspect-square w-full items-center justify-center rounded-[30px] bg-[rgba(244,178,102,0.12)] text-6xl text-[var(--color-muted)]">
+                              🎵
+                            </div>
+                          )}
+                        </motion.div>
+
+                        <AnimatePresence>
+                          {isSeeking && seekDirection && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-[30px]"
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <span className="text-4xl font-bold text-[var(--color-text)] tabular-nums">
+                                  {formatTime(seekTime)}
+                                </span>
+                                <span
+                                  className={`text-sm ${seekDirection === "forward" ? "text-[var(--color-accent-strong)]" : "text-[var(--color-accent)]"}`}
+                                >
+                                  {seekDirection === "forward" ? "+" : "-"}
+                                  {Math.abs(Math.round(seekTime - currentTime))}
+                                  s
+                                </span>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {isLoading && (
+                          <div className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-[30px]">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                              className="h-12 w-12 rounded-full border-4 border-[var(--color-accent)] border-t-transparent"
+                            />
                           </div>
                         )}
                       </motion.div>
 
-                      <AnimatePresence>
-                        {isSeeking && seekDirection && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-[30px]"
-                          >
-                            <div className="flex flex-col items-center gap-2">
-                              <span className="text-4xl font-bold text-[var(--color-text)] tabular-nums">
-                                {formatTime(seekTime)}
-                              </span>
-                              <span
-                                className={`text-sm ${seekDirection === "forward" ? "text-[var(--color-accent-strong)]" : "text-[var(--color-accent)]"}`}
-                              >
-                                {seekDirection === "forward" ? "+" : "-"}
-                                {Math.abs(Math.round(seekTime - currentTime))}s
-                              </span>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {isLoading && (
-                        <div className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-[30px]">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{
-                              duration: 1,
-                              repeat: Infinity,
-                              ease: "linear",
+                      <div
+                        className={`mobile-player-info-controls flex w-full flex-col items-center ${
+                          effectivePreferences?.compactMode ? "gap-2" : "gap-4"
+                        }`}
+                      >
+                        <div className="mobile-player-content w-full">
+                          <div
+                            className={`rounded-2xl backdrop-blur-xl ${
+                              effectivePreferences?.compactMode
+                                ? "px-3 py-1.5"
+                                : "px-4 py-2"
+                            }`}
+                            style={{
+                              border: `2px solid ${getPaletteColor(palette.primary, 0.5, true)}`,
+                              background: `linear-gradient(145deg, ${getPaletteColor(palette.primary, 0.15, true)}, ${getPaletteColor(palette.secondary, 0.1, true)}, var(--color-bg))`,
+                              boxShadow: `0 16px 40px rgba(0,0,0,0.45), 0 0 20px ${getPaletteColor(palette.primary, 0.3, true)}`,
                             }}
-                            className="h-12 w-12 rounded-full border-4 border-[var(--color-accent)] border-t-transparent"
-                          />
-                        </div>
-                      )}
-                    </motion.div>
-
-                    <div className={`mobile-player-info-controls flex w-full flex-col items-center ${
-                      effectivePreferences?.compactMode ? "gap-2" : "gap-4"
-                    }`}>
-                      <div className="mobile-player-content w-full">
-                        <div
-                          className={`rounded-2xl backdrop-blur-xl ${
-                            effectivePreferences?.compactMode ? "px-3 py-1.5" : "px-4 py-2"
-                          }`}
-                          style={{
-                            border: `2px solid ${getPaletteColor(palette.primary, 0.5, true)}`,
-                            background: `linear-gradient(145deg, ${getPaletteColor(palette.primary, 0.15, true)}, ${getPaletteColor(palette.secondary, 0.1, true)}, var(--color-bg))`,
-                            boxShadow: `0 16px 40px rgba(0,0,0,0.45), 0 0 20px ${getPaletteColor(palette.primary, 0.3, true)}`,
-                          }}
-                        >
-                          <div className={`flex items-start justify-between ${
-                            effectivePreferences?.compactMode ? "gap-2" : "gap-4"
-                          }`}>
-                            <div className="min-w-0 text-left">
-                              <motion.h2
-                                key={currentTrack.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`font-bold text-[var(--color-text)] leading-tight ${
-                                  effectivePreferences?.compactMode ? "text-lg" : "text-xl"
-                                }`}
-                              >
-                                {currentTrack.title}
-                              </motion.h2>
-                              <motion.p
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.1 }}
-                                className={`mt-0.5 font-semibold uppercase tracking-[0.25em] text-[var(--color-accent)] ${
-                                  effectivePreferences?.compactMode ? "text-[11px]" : "text-xs"
-                                }`}
-                              >
-                                {currentTrack.artist.name}
-                              </motion.p>
-                              {currentTrack.album?.title && (
-                                <p className={`mt-0.5 truncate text-[var(--color-subtext)] ${
-                                  effectivePreferences?.compactMode ? "text-[9px]" : "text-[10px]"
-                                }`}>
-                                  {currentTrack.album.title}
-                                </p>
-                              )}
+                          >
+                            <div
+                              className={`flex items-start justify-between ${
+                                effectivePreferences?.compactMode
+                                  ? "gap-2"
+                                  : "gap-4"
+                              }`}
+                            >
+                              <div className="min-w-0 text-left">
+                                <motion.h2
+                                  key={currentTrack.id}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className={`leading-tight font-bold text-[var(--color-text)] ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-lg"
+                                      : "text-xl"
+                                  }`}
+                                >
+                                  {currentTrack.title}
+                                </motion.h2>
+                                <motion.p
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.1 }}
+                                  className={`mt-0.5 font-semibold tracking-[0.25em] text-[var(--color-accent)] uppercase ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-[11px]"
+                                      : "text-xs"
+                                  }`}
+                                >
+                                  {currentTrack.artist.name}
+                                </motion.p>
+                                {currentTrack.album?.title && (
+                                  <p
+                                    className={`mt-0.5 truncate text-[var(--color-subtext)] ${
+                                      effectivePreferences?.compactMode
+                                        ? "text-[9px]"
+                                        : "text-[10px]"
+                                    }`}
+                                  >
+                                    {currentTrack.album.title}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end text-[11px] text-[var(--color-subtext)]">
+                                <span
+                                  className={`tracking-[0.3em] text-[var(--color-muted)] uppercase ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-[8px]"
+                                      : "text-[9px]"
+                                  }`}
+                                >
+                                  {tq("label")}
+                                </span>
+                                <span
+                                  className={`font-semibold text-[var(--color-text)] tabular-nums ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-base"
+                                      : "text-lg"
+                                  }`}
+                                >
+                                  {queue.length}
+                                </span>
+                                <span
+                                  className={`mt-1 tracking-[0.3em] text-[var(--color-muted)] uppercase ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-[8px]"
+                                      : "text-[9px]"
+                                  }`}
+                                >
+                                  {tq("total")}
+                                </span>
+                                <span
+                                  className={`font-semibold text-[var(--color-text)] tabular-nums ${
+                                    effectivePreferences?.compactMode
+                                      ? "text-xs"
+                                      : "text-sm"
+                                  }`}
+                                >
+                                  {formatDuration(totalDuration)}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex flex-col items-end text-[11px] text-[var(--color-subtext)]">
-                              <span className={`uppercase tracking-[0.3em] text-[var(--color-muted)] ${
-                                effectivePreferences?.compactMode ? "text-[8px]" : "text-[9px]"
-                              }`}>
-                                Queue
-                              </span>
-                              <span className={`font-semibold text-[var(--color-text)] tabular-nums ${
-                                effectivePreferences?.compactMode ? "text-base" : "text-lg"
-                              }`}>
-                                {queue.length}
-                              </span>
-                              <span className={`mt-1 uppercase tracking-[0.3em] text-[var(--color-muted)] ${
-                                effectivePreferences?.compactMode ? "text-[8px]" : "text-[9px]"
-                              }`}>
-                                Total
-                              </span>
-                              <span className={`font-semibold text-[var(--color-text)] tabular-nums ${
-                                effectivePreferences?.compactMode ? "text-xs" : "text-sm"
-                              }`}>
-                                {formatDuration(totalDuration)}
-                              </span>
+                          </div>
+                        </div>
+
+                        <div className="mobile-player-controls mobile-player-content mt-0.5 w-full pb-1">
+                          <div
+                            className="rounded-[20px] px-3 py-1.5 backdrop-blur-xl"
+                            style={{
+                              border: `2px solid ${primaryRgbaBorder}`,
+                              background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
+                              boxShadow: `0 12px 32px ${primaryRgbaShadow}, 0 0 20px ${primaryRgba}40`,
+                            }}
+                          >
+                            <div className="px-1 pb-1.5">
+                              <div
+                                ref={progressRef}
+                                className="slider-track group relative h-1.5 cursor-pointer rounded-full"
+                                onClick={handleProgressClick}
+                                onTouchStart={(e) => {
+                                  setIsSeeking(true);
+                                  haptic("selection");
+                                  handleProgressTouch(e);
+                                }}
+                                onTouchMove={(e) => {
+                                  handleProgressTouch(e);
+                                  hapticSliderContinuous(
+                                    seekTime,
+                                    0,
+                                    duration,
+                                    {
+                                      intervalMs: 35,
+                                      tickThreshold: 1.5,
+                                    },
+                                  );
+                                }}
+                                onTouchEnd={() => {
+                                  handleProgressTouchEnd();
+                                  hapticSliderEnd();
+                                }}
+                                role="slider"
+                                aria-label={t("seek")}
+                                aria-valuemin={0}
+                                aria-valuemax={duration}
+                                aria-valuenow={displayTime}
+                              >
+                                {isSeeking && (
+                                  <motion.div
+                                    className="absolute inset-0 rounded-full blur-md"
+                                    style={{
+                                      background: `linear-gradient(to right, ${getPaletteColor(palette.primary, 0.5, true)}, ${getPaletteColor(palette.secondary, 0.5, true)})`,
+                                      boxShadow: `0 0 20px ${getPaletteColor(palette.primary, 0.4, true)}`,
+                                    }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1.05 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={springPresets.slider}
+                                  />
+                                )}
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
+                                    width: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
+                                  }}
+                                  transition={
+                                    isSeeking
+                                      ? { duration: 0 }
+                                      : springPresets.slider
+                                  }
+                                />
+                                <motion.div
+                                  className="absolute top-1/2 rounded-full bg-white shadow-lg"
+                                  style={{
+                                    left: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
+                                  }}
+                                  initial={{ scale: 1, x: "-50%", y: "-50%" }}
+                                  animate={{
+                                    scale: isSeeking ? 1.3 : 1,
+                                    width: isSeeking ? 18 : 14,
+                                    height: isSeeking ? 18 : 14,
+                                  }}
+                                  whileHover={{ scale: 1.15 }}
+                                  transition={springPresets.sliderThumb}
+                                >
+                                  {isSeeking && (
+                                    <motion.div
+                                      className="absolute inset-0 rounded-full"
+                                      style={{
+                                        backgroundColor: secondaryColor,
+                                      }}
+                                      initial={{ scale: 1, opacity: 0.5 }}
+                                      animate={{ scale: 2, opacity: 0 }}
+                                      transition={{
+                                        duration: 0.5,
+                                        repeat: Infinity,
+                                      }}
+                                    />
+                                  )}
+                                </motion.div>
+                              </div>
+                              <div className="mt-1 flex justify-between text-[10px] text-[var(--color-subtext)] tabular-nums">
+                                <motion.span
+                                  animate={{ scale: isSeeking ? 1.05 : 1 }}
+                                  transition={springPresets.snappy}
+                                >
+                                  {formatTime(displayTime)}
+                                </motion.span>
+                                <motion.span
+                                  animate={{ scale: isSeeking ? 1.05 : 1 }}
+                                  transition={springPresets.snappy}
+                                >
+                                  -
+                                  {formatTime(
+                                    Math.max(0, duration - displayTime),
+                                  )}
+                                </motion.span>
+                              </div>
+                            </div>
+
+                            <div
+                              className="h-[2px] w-full bg-gradient-to-r from-transparent to-transparent"
+                              style={{
+                                background: `linear-gradient(to right, transparent, ${secondaryRgba}, transparent)`,
+                                boxShadow: `0 0 8px ${secondaryRgba}`,
+                              }}
+                            />
+
+                            <div className="flex items-center justify-between px-1">
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleToggleShuffle();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className={`touch-target rounded-full p-1 transition-colors ${
+                                  isShuffled
+                                    ? ""
+                                    : "text-[var(--color-subtext)]"
+                                }`}
+                                style={
+                                  isShuffled
+                                    ? { color: secondaryColor }
+                                    : undefined
+                                }
+                                aria-label={
+                                  isShuffled
+                                    ? t("disableShuffle")
+                                    : t("enableShuffle")
+                                }
+                                title={t("shuffleShortcut")}
+                              >
+                                <Shuffle
+                                  style={{
+                                    width:
+                                      "var(--mobile-player-control-button-size)",
+                                    height:
+                                      "var(--mobile-player-control-button-size)",
+                                  }}
+                                />
+                              </motion.button>
+
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  hapticLight();
+                                  onSkipBackward();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
+                                style={
+                                  {
+                                    "--hover-color": secondaryColor,
+                                  } as React.CSSProperties
+                                }
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = secondaryColor;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = "";
+                                }}
+                                title={t("skipBackwardShort")}
+                                aria-label={t("skipBackward10Seconds")}
+                              >
+                                <svg
+                                  style={{
+                                    width:
+                                      "var(--mobile-player-control-button-size)",
+                                    height:
+                                      "var(--mobile-player-control-button-size)",
+                                  }}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"
+                                  />
+                                </svg>
+                              </motion.button>
+
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  hapticLight();
+                                  onSkipForward();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
+                                style={
+                                  {
+                                    "--hover-color": secondaryColor,
+                                  } as React.CSSProperties
+                                }
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = secondaryColor;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = "";
+                                }}
+                                title={t("skipForwardShort")}
+                                aria-label={t("skipForward10Seconds")}
+                              >
+                                <svg
+                                  style={{
+                                    width:
+                                      "var(--mobile-player-control-button-size)",
+                                    height:
+                                      "var(--mobile-player-control-button-size)",
+                                  }}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z"
+                                  />
+                                </svg>
+                              </motion.button>
+
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCycleRepeat();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className={`touch-target rounded-full p-1 transition-colors ${
+                                  repeatMode !== "none"
+                                    ? ""
+                                    : "text-[var(--color-subtext)]"
+                                }`}
+                                style={
+                                  repeatMode !== "none"
+                                    ? { color: secondaryColor }
+                                    : undefined
+                                }
+                                aria-label={
+                                  repeatMode === "none"
+                                    ? t("enableRepeat")
+                                    : repeatMode === "one"
+                                      ? t("repeatOneNext")
+                                      : t("repeatAllNext")
+                                }
+                                title={t("repeatShortcut", {
+                                  mode:
+                                    repeatMode === "one"
+                                      ? t("repeatModeOne")
+                                      : repeatMode === "all"
+                                        ? t("repeatModeAll")
+                                        : t("repeatModeOff"),
+                                })}
+                              >
+                                {repeatMode === "one" ? (
+                                  <Repeat1
+                                    style={{
+                                      width:
+                                        "var(--mobile-player-control-button-size)",
+                                      height:
+                                        "var(--mobile-player-control-button-size)",
+                                    }}
+                                  />
+                                ) : (
+                                  <Repeat
+                                    style={{
+                                      width:
+                                        "var(--mobile-player-control-button-size)",
+                                      height:
+                                        "var(--mobile-player-control-button-size)",
+                                    }}
+                                  />
+                                )}
+                              </motion.button>
+                            </div>
+
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                gap: "var(--mobile-player-controls-gap)",
+                              }}
+                            >
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handlePrevious();
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className="touch-target-lg"
+                                style={{ color: skipBackColor }}
+                                aria-label={t("previousTrack")}
+                                title={t("previousTrack")}
+                              >
+                                <SkipBack
+                                  style={{
+                                    width:
+                                      "var(--mobile-player-skip-button-size)",
+                                    height:
+                                      "var(--mobile-player-skip-button-size)",
+                                  }}
+                                  className="fill-current"
+                                />
+                              </motion.button>
+
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handlePlayPause();
+                                }}
+                                whileTap={{ scale: 0.92 }}
+                                whileHover={{ scale: 1.05 }}
+                                className="relative flex items-center justify-center rounded-full text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                style={{
+                                  width:
+                                    "var(--mobile-player-play-button-size)",
+                                  height:
+                                    "var(--mobile-player-play-button-size)",
+                                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
+                                  boxShadow: `0 8px 24px ${primaryRgbaShadowButton}, 0 0 30px ${primaryRgbaGlow}60`,
+                                  border: `3px solid ${primaryRgbaRing}`,
+                                }}
+                                aria-label={
+                                  isPlaying ? t("pauseTrack") : t("playTrack")
+                                }
+                                title={
+                                  isPlaying ? t("pauseTrack") : t("playTrack")
+                                }
+                                disabled={isLoading}
+                              >
+                                <div
+                                  className="absolute -inset-3 rounded-full opacity-90 blur-2xl"
+                                  style={{
+                                    background: `radial-gradient(circle, ${primaryRgbaGlow} 0%, transparent 70%)`,
+                                    boxShadow: `0 0 40px ${primaryRgbaGlow}`,
+                                  }}
+                                />
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/15 to-transparent" />
+                                {isPlaying ? (
+                                  <Pause className="relative h-7 w-7 fill-current" />
+                                ) : (
+                                  <Play className="relative ml-0.5 h-7 w-7 fill-current" />
+                                )}
+                              </motion.button>
+
+                              <motion.button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (queue.length > 0) {
+                                    handleNext();
+                                  }
+                                }}
+                                disabled={queue.length === 0}
+                                whileTap={{ scale: 0.9 }}
+                                className="touch-target-lg disabled:cursor-not-allowed disabled:opacity-40"
+                                style={{ color: skipForwardColor }}
+                                aria-label={t("nextTrack")}
+                                title={t("nextTrack")}
+                              >
+                                <SkipForward
+                                  style={{
+                                    width:
+                                      "var(--mobile-player-skip-button-size)",
+                                    height:
+                                      "var(--mobile-player-skip-button-size)",
+                                  }}
+                                  className="fill-current"
+                                />
+                              </motion.button>
                             </div>
                           </div>
                         </div>
                       </div>
-
-                      <div className="mobile-player-controls mobile-player-content mt-0.5 w-full pb-1">
-                    <div 
-                      className="rounded-[20px] px-3 py-1.5 backdrop-blur-xl"
-                      style={{
-                        border: `2px solid ${primaryRgbaBorder}`,
-                        background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
-                        boxShadow: `0 12px 32px ${primaryRgbaShadow}, 0 0 20px ${primaryRgba}40`,
-                      }}
-                    >
-                      <div className="px-1 pb-1.5">
-                        <div
-                          ref={progressRef}
-                          className="slider-track group relative h-1.5 cursor-pointer rounded-full"
-                          onClick={handleProgressClick}
-                          onTouchStart={(e) => {
-                            setIsSeeking(true);
-                            haptic("selection");
-                            handleProgressTouch(e);
-                          }}
-                          onTouchMove={(e) => {
-                            handleProgressTouch(e);
-                            hapticSliderContinuous(seekTime, 0, duration, {
-                              intervalMs: 35,
-                              tickThreshold: 1.5,
-                            });
-                          }}
-                          onTouchEnd={() => {
-                            handleProgressTouchEnd();
-                            hapticSliderEnd();
-                          }}
-                          role="slider"
-                          aria-label="Seek"
-                          aria-valuemin={0}
-                          aria-valuemax={duration}
-                          aria-valuenow={displayTime}
-                        >
-                          {isSeeking && (
-                            <motion.div
-                              className="absolute inset-0 rounded-full blur-md"
-                              style={{
-                                background: `linear-gradient(to right, ${getPaletteColor(palette.primary, 0.5, true)}, ${getPaletteColor(palette.secondary, 0.5, true)})`,
-                                boxShadow: `0 0 20px ${getPaletteColor(palette.primary, 0.4, true)}`,
-                              }}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1.05 }}
-                              exit={{ opacity: 0 }}
-                              transition={springPresets.slider}
-                            />
-                          )}
-                          <motion.div
-                            className="h-full rounded-full"
-                            style={{
-                              background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
-                              width: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
-                            }}
-                            transition={
-                              isSeeking ? { duration: 0 } : springPresets.slider
-                            }
-                          />
-                          <motion.div
-                            className="absolute top-1/2 rounded-full bg-white shadow-lg"
-                            style={{
-                              left: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
-                            }}
-                            initial={{ scale: 1, x: "-50%", y: "-50%" }}
-                            animate={{
-                              scale: isSeeking ? 1.3 : 1,
-                              width: isSeeking ? 18 : 14,
-                              height: isSeeking ? 18 : 14,
-                            }}
-                            whileHover={{ scale: 1.15 }}
-                            transition={springPresets.sliderThumb}
-                          >
-                            {isSeeking && (
-                              <motion.div
-                                className="absolute inset-0 rounded-full"
-                                style={{ backgroundColor: secondaryColor }}
-                                initial={{ scale: 1, opacity: 0.5 }}
-                                animate={{ scale: 2, opacity: 0 }}
-                                transition={{ duration: 0.5, repeat: Infinity }}
-                              />
-                            )}
-                          </motion.div>
-                        </div>
-                        <div className="mt-1 flex justify-between text-[10px] text-[var(--color-subtext)] tabular-nums">
-                          <motion.span
-                            animate={{ scale: isSeeking ? 1.05 : 1 }}
-                            transition={springPresets.snappy}
-                          >
-                            {formatTime(displayTime)}
-                          </motion.span>
-                          <motion.span
-                            animate={{ scale: isSeeking ? 1.05 : 1 }}
-                            transition={springPresets.snappy}
-                          >
-                            -{formatTime(Math.max(0, duration - displayTime))}
-                          </motion.span>
-                        </div>
-                      </div>
-
-                      <div 
-                        className="h-[2px] w-full bg-gradient-to-r from-transparent to-transparent"
-                        style={{
-                          background: `linear-gradient(to right, transparent, ${secondaryRgba}, transparent)`,
-                          boxShadow: `0 0 8px ${secondaryRgba}`,
-                        }}
-                      />
-
-                      <div className="flex items-center justify-between px-1">
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleToggleShuffle();
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          className={`touch-target rounded-full p-1 transition-colors ${
-                            isShuffled
-                              ? ""
-                              : "text-[var(--color-subtext)]"
-                          }`}
-                          style={isShuffled ? { color: secondaryColor } : undefined}
-                          aria-label={
-                            isShuffled ? "Disable shuffle" : "Enable shuffle"
-                          }
-                        >
-                          <Shuffle
-                            style={{
-                              width: 'var(--mobile-player-control-button-size)',
-                              height: 'var(--mobile-player-control-button-size)'
-                            }}
-                          />
-                        </motion.button>
-
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            hapticLight();
-                            onSkipBackward();
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
-                          style={{ "--hover-color": secondaryColor } as React.CSSProperties}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = secondaryColor;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "";
-                          }}
-                          title="Skip backward 10s"
-                          aria-label="Skip backward 10 seconds"
-                        >
-                          <svg
-                            style={{
-                              width: 'var(--mobile-player-control-button-size)',
-                              height: 'var(--mobile-player-control-button-size)'
-                            }}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"
-                            />
-                          </svg>
-                        </motion.button>
-
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            hapticLight();
-                            onSkipForward();
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
-                          style={{ "--hover-color": secondaryColor } as React.CSSProperties}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = secondaryColor;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "";
-                          }}
-                          title="Skip forward 10s"
-                          aria-label="Skip forward 10 seconds"
-                        >
-                          <svg
-                            style={{
-                              width: 'var(--mobile-player-control-button-size)',
-                              height: 'var(--mobile-player-control-button-size)'
-                            }}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z"
-                            />
-                          </svg>
-                        </motion.button>
-
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleCycleRepeat();
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          className={`touch-target rounded-full p-1 transition-colors ${
-                            repeatMode !== "none"
-                              ? ""
-                              : "text-[var(--color-subtext)]"
-                          }`}
-                          style={repeatMode !== "none" ? { color: secondaryColor } : undefined}
-                          aria-label={
-                            repeatMode === "none"
-                              ? "Enable repeat"
-                              : repeatMode === "one"
-                                ? "Repeat one (click to repeat all)"
-                                : "Repeat all (click to disable)"
-                          }
-                        >
-                          {repeatMode === "one" ? (
-                            <Repeat1
-                              style={{
-                                width: 'var(--mobile-player-control-button-size)',
-                                height: 'var(--mobile-player-control-button-size)'
-                              }}
-                            />
-                          ) : (
-                            <Repeat
-                              style={{
-                                width: 'var(--mobile-player-control-button-size)',
-                                height: 'var(--mobile-player-control-button-size)'
-                              }}
-                            />
-                          )}
-                        </motion.button>
-                      </div>
-
-                      <div
-                        className="flex items-center justify-center"
-                        style={{ gap: 'var(--mobile-player-controls-gap)' }}
-                      >
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handlePrevious();
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          className="touch-target-lg"
-                          style={{ color: skipBackColor }}
-                          aria-label="Previous track"
-                        >
-                          <SkipBack
-                            style={{
-                              width: 'var(--mobile-player-skip-button-size)',
-                              height: 'var(--mobile-player-skip-button-size)'
-                            }}
-                            className="fill-current"
-                          />
-                        </motion.button>
-
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handlePlayPause();
-                          }}
-                          whileTap={{ scale: 0.92 }}
-                          whileHover={{ scale: 1.05 }}
-                          className="relative flex items-center justify-center rounded-full text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
-                          style={{
-                            width: 'var(--mobile-player-play-button-size)',
-                            height: 'var(--mobile-player-play-button-size)',
-                            background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
-                            boxShadow: `0 8px 24px ${primaryRgbaShadowButton}, 0 0 30px ${primaryRgbaGlow}60`,
-                            border: `3px solid ${primaryRgbaRing}`,
-                          }}
-                          aria-label={isPlaying ? "Pause track" : "Play track"}
-                          disabled={isLoading}
-                        >
-                          <div 
-                            className="absolute -inset-3 rounded-full opacity-90 blur-2xl"
-                            style={{
-                              background: `radial-gradient(circle, ${primaryRgbaGlow} 0%, transparent 70%)`,
-                              boxShadow: `0 0 40px ${primaryRgbaGlow}`,
-                            }}
-                          />
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/15 to-transparent" />
-                          {isPlaying ? (
-                            <Pause className="relative h-7 w-7 fill-current" />
-                          ) : (
-                            <Play className="relative ml-0.5 h-7 w-7 fill-current" />
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (queue.length > 0) {
-                              handleNext();
-                            }
-                          }}
-                          disabled={queue.length === 0}
-                          whileTap={{ scale: 0.9 }}
-                          className="touch-target-lg disabled:cursor-not-allowed disabled:opacity-40"
-                          style={{ color: skipForwardColor }}
-                          aria-label="Next track"
-                        >
-                          <SkipForward
-                            style={{
-                              width: 'var(--mobile-player-skip-button-size)',
-                              height: 'var(--mobile-player-skip-button-size)'
-                            }}
-                            className="fill-current"
-                          />
-                        </motion.button>
-                      </div>
-
                     </div>
                   </div>
-                    </div>
-                  </div>
-                </div>
 
-                <div
-                      className="mobile-player-content w-full pb-[calc(env(safe-area-inset-bottom)+4px)] pt-2"
-                      data-drag-exempt="true"
-                >
                   <div
-                        className="rounded-[16px] px-2 py-1.5 backdrop-blur-xl"
-                        style={{
-                          border: `1px solid ${primaryRgbaBorder}`,
-                          background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
-                          boxShadow: `0 10px 26px ${primaryRgbaShadow}, 0 0 16px ${primaryRgbaShadow}`,
-                        }}
-                        data-drag-exempt="true"
+                    className="mobile-player-content w-full pt-2 pb-[calc(env(safe-area-inset-bottom)+4px)]"
+                    data-drag-exempt="true"
                   >
-                    <MobilePlayerFooterActions
-                          queueLength={queue.length}
-                          showQueuePanel={showQueuePanel}
-                          onToggleQueuePanel={() => {
+                    <div
+                      className="rounded-[16px] px-2 py-1.5 backdrop-blur-xl"
+                      style={{
+                        border: `1px solid ${primaryRgbaBorder}`,
+                        background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
+                        boxShadow: `0 10px 26px ${primaryRgbaShadow}, 0 0 16px ${primaryRgbaShadow}`,
+                      }}
+                      data-drag-exempt="true"
+                    >
+                      <MobilePlayerFooterActions
+                        queueLength={queue.length}
+                        showQueuePanel={showQueuePanel}
+                        onToggleQueuePanel={() => {
+                          hapticMedium();
+                          setShowPlaylistSelector(false);
+                          setShowQueuePanel((prev) => {
+                            const next = !prev;
+                            if (!next) {
+                              clearQueueUndoState();
+                            }
+                            return next;
+                          });
+                        }}
+                        isAuthenticated={isAuthenticated}
+                        showPlaylistSelector={showPlaylistSelector}
+                        onTogglePlaylistSelector={() => {
+                          if (!isAuthenticated) {
                             hapticMedium();
-                            setShowPlaylistSelector(false);
-                            setShowQueuePanel((prev) => {
-                              const next = !prev;
-                              if (!next) {
-                                clearQueueUndoState();
-                              }
-                              return next;
-                            });
-                          }}
-                          isAuthenticated={isAuthenticated}
-                          showPlaylistSelector={showPlaylistSelector}
-                          onTogglePlaylistSelector={() => {
-                            if (!isAuthenticated) {
-                              hapticMedium();
-                              return;
-                            }
-                            hapticLight();
-                            setShowPlaylistSelector((prev) => !prev);
-                          }}
-                          onClosePlaylistSelector={() => setShowPlaylistSelector(false)}
-                          playlists={playlists}
-                          onAddToPlaylist={(playlistId) => {
-                            if (currentTrack) {
-                              addToPlaylist.mutate({
-                                playlistId,
-                                track: currentTrack,
-                              });
-                            }
-                          }}
-                          isAddingToPlaylist={addToPlaylist.isPending}
-                          onShare={() => {
-                            void handleShareTrack();
-                          }}
-                          shareCopied={isShareCopied}
-                          favoriteIsActive={Boolean(favoriteData?.isFavorite)}
-                          favoriteDisabled={
-                            !isAuthenticated ||
-                            addFavorite.isPending ||
-                            removeFavorite.isPending
+                            return;
                           }
-                          isHeartAnimating={isHeartAnimating}
-                          onToggleFavorite={toggleFavorite}
-                    />
+                          hapticLight();
+                          setShowPlaylistSelector((prev) => !prev);
+                        }}
+                        onClosePlaylistSelector={() =>
+                          setShowPlaylistSelector(false)
+                        }
+                        playlists={playlists}
+                        onAddToPlaylist={(playlistId) => {
+                          if (currentTrack) {
+                            addToPlaylist.mutate({
+                              playlistId,
+                              track: currentTrack,
+                            });
+                          }
+                        }}
+                        isAddingToPlaylist={addToPlaylist.isPending}
+                        onShare={() => {
+                          void handleShareTrack();
+                        }}
+                        shareCopied={isShareCopied}
+                        favoriteIsActive={Boolean(favoriteData?.isFavorite)}
+                        favoriteDisabled={
+                          !isAuthenticated ||
+                          addFavorite.isPending ||
+                          removeFavorite.isPending
+                        }
+                        isHeartAnimating={isHeartAnimating}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             </motion.div>
 
             {}
@@ -2128,12 +2368,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                       }
                     }}
                     transition={springPresets.gentle}
-                    className="theme-chrome-drawer safe-bottom fixed right-0 top-0 z-[101] flex h-full w-full max-w-md flex-col border-l backdrop-blur-xl"
+                    className="theme-chrome-drawer safe-bottom fixed top-0 right-0 z-[101] flex h-full w-full max-w-md flex-col border-l backdrop-blur-xl"
                   >
                     <div className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.08)] p-4">
                       <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-[var(--color-text)]">
-                          Queue ({queue.length})
+                          {tq("title", { count: queue.length })}
                         </h2>
                         <div className="flex items-center gap-2">
                           {queue.length > 0 && (
@@ -2142,20 +2382,30 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 onClick={() => {
                                   hapticLight();
                                   void handleSmartQueueAction(
-                                    smartQueueState.isActive ? "refresh" : "add",
+                                    smartQueueState.isActive
+                                      ? "refresh"
+                                      : "add",
                                   );
                                 }}
                                 disabled={smartQueueState.isLoading}
                                 whileTap={{ scale: 0.9 }}
-                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(88,198,177,0.16)] hover:text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(88,198,177,0.16)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
                                 aria-label={
                                   smartQueueState.isActive
-                                    ? "Refresh smart tracks"
-                                    : "Add smart tracks"
+                                    ? tq("refreshSmartTracks")
+                                    : tq("addSmartTracks")
+                                }
+                                title={
+                                  smartQueueState.isActive
+                                    ? tq("refreshSmartTracks")
+                                    : tq("addSmartTracks")
                                 }
                               >
                                 {smartQueueState.isLoading ? (
-                                  <LoadingSpinner size="sm" label="Loading smart tracks" />
+                                  <LoadingSpinner
+                                    size="sm"
+                                    label={tq("loadingSmartTracks")}
+                                  />
                                 ) : (
                                   <Sparkles className="h-5 w-5" />
                                 )}
@@ -2167,30 +2417,36 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 }}
                                 whileTap={{ scale: 0.9 }}
                                 className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
-                                aria-label="Smart tracks settings"
+                                aria-label={tq("smartTracksSettings")}
+                                title={tq("smartTracksSettings")}
                               >
                                 <Settings className="h-5 w-5" />
                               </motion.button>
                             </>
                           )}
-                          {isAuthenticated && (queue.length > 0 || currentTrack) && (
-                            <motion.button
-                              onClick={async () => {
-                                hapticLight();
-                                try {
-                                  await saveQueueAsPlaylist();
-                                  showToast("Queue saved as playlist", "success");
-                                } catch {
-                                  showToast("Failed to save playlist", "error");
-                                }
-                              }}
-                              whileTap={{ scale: 0.9 }}
-                              className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
-                              aria-label="Save as playlist"
-                            >
-                              <Save className="h-5 w-5" />
-                            </motion.button>
-                          )}
+                          {isAuthenticated &&
+                            (queue.length > 0 || currentTrack) && (
+                              <motion.button
+                                onClick={async () => {
+                                  hapticLight();
+                                  try {
+                                    await saveQueueAsPlaylist();
+                                    showToast(tq("savedAsPlaylist"), "success");
+                                  } catch {
+                                    showToast(
+                                      tq("failedToSavePlaylist"),
+                                      "error",
+                                    );
+                                  }
+                                }}
+                                whileTap={{ scale: 0.9 }}
+                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+                                aria-label={tq("saveAsPlaylist")}
+                                title={tq("saveAsPlaylist")}
+                              >
+                                <Save className="h-5 w-5" />
+                              </motion.button>
+                            )}
                           {queue.length > 0 && (
                             <motion.button
                               onClick={() => {
@@ -2198,11 +2454,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 clearQueue();
                                 handleClearQueueSelection();
                                 clearQueueUndoState();
-                                showToast("Queue cleared", "success");
+                                showToast(tq("cleared"), "success");
                               }}
                               whileTap={{ scale: 0.9 }}
                               className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(242,139,130,0.12)] hover:text-[var(--color-text)]"
-                              aria-label="Clear queue"
+                              aria-label={tq("clearQueue")}
+                              title={tq("clearQueue")}
                             >
                               <Trash2 className="h-5 w-5" />
                             </motion.button>
@@ -2217,7 +2474,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             }}
                             whileTap={{ scale: 0.9 }}
                             className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)]"
-                            aria-label="Close queue"
+                            aria-label={tq("closeQueue")}
+                            title={tq("closeQueue")}
                           >
                             <X className="h-6 w-6" />
                           </motion.button>
@@ -2233,7 +2491,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           className="flex items-center gap-2 rounded-lg border border-[rgba(88,198,177,0.25)] bg-[rgba(88,198,177,0.12)] p-3"
                         >
                           <span className="text-sm font-medium text-[var(--color-text)]">
-                            {selectedQueueIndices.size} selected
+                            {tq("selectedSummary", {
+                              count: selectedQueueIndices.size,
+                            })}
                           </span>
                           <div className="flex-1" />
                           <motion.button
@@ -2242,7 +2502,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             className="flex items-center gap-2 rounded-lg bg-[rgba(248,139,130,0.2)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(248,139,130,0.3)]"
                           >
                             <Trash2 className="h-4 w-4" />
-                            Remove
+                            {tq("removeSelected")}
                           </motion.button>
                           <motion.button
                             onClick={() => {
@@ -2252,7 +2512,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             whileTap={{ scale: 0.95 }}
                             className="rounded-lg bg-[rgba(255,255,255,0.1)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(255,255,255,0.15)]"
                           >
-                            Clear
+                            {tq("clearSelection")}
                           </motion.button>
                         </motion.div>
                       )}
@@ -2265,7 +2525,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           className="flex items-center gap-2 rounded-lg border border-[rgba(244,178,102,0.25)] bg-[rgba(244,178,102,0.12)] p-3"
                         >
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text)]">
-                            Removed &quot;{queueUndoState.track.title}&quot;
+                            {tq("removedTrack", {
+                              title: queueUndoState.track.title,
+                            })}
                           </span>
                           <motion.button
                             onClick={() => {
@@ -2275,7 +2537,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             className="inline-flex items-center gap-1 rounded-lg bg-[rgba(88,198,177,0.2)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(88,198,177,0.3)]"
                           >
                             <RotateCcw className="h-4 w-4" />
-                            Undo
+                            {tq("undo")}
                           </motion.button>
                         </motion.div>
                       )}
@@ -2286,9 +2548,11 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
                           <input
                             type="text"
-                            placeholder="Search queue..."
+                            placeholder={tq("searchPlaceholder")}
                             value={queueSearchQuery}
-                            onChange={(e) => setQueueSearchQuery(e.target.value)}
+                            onChange={(e) =>
+                              setQueueSearchQuery(e.target.value)
+                            }
                             className="theme-input w-full rounded-lg py-2 pr-4 pl-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
                           />
                           {queueSearchQuery && (
@@ -2297,6 +2561,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               animate={{ opacity: 1 }}
                               onClick={() => setQueueSearchQuery("")}
                               className="absolute top-1/2 right-3 -translate-y-1/2 text-[var(--color-subtext)] transition-colors active:text-[var(--color-text)]"
+                              aria-label={tq("clearSearch")}
+                              title={tq("clearSearch")}
                             >
                               <X className="h-4 w-4" />
                             </motion.button>
@@ -2307,30 +2573,30 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     <div className="relative flex-1">
                       <div
                         ref={queueScrollRef}
-                        className="h-full overflow-y-auto overscroll-contain scroll-smooth pr-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-track]:mr-1 [&::-webkit-scrollbar-thumb]:bg-[rgba(88,198,177,0.3)] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-[rgba(88,198,177,0.5)] [&::-webkit-scrollbar-thumb]:transition-colors"
+                        className="h-full overflow-y-auto overscroll-contain scroll-smooth pr-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(88,198,177,0.3)] [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb]:hover:bg-[rgba(88,198,177,0.5)] [&::-webkit-scrollbar-track]:mr-1 [&::-webkit-scrollbar-track]:bg-transparent"
                         style={{
-                          scrollbarWidth: 'thin',
-                          scrollbarColor: 'rgba(88, 198, 177, 0.3) transparent'
+                          scrollbarWidth: "thin",
+                          scrollbarColor: "rgba(88, 198, 177, 0.3) transparent",
                         }}
                       >
                         {queue.length === 0 ? (
                           <div className="flex h-full flex-col items-center justify-center p-8 text-center">
                             <div className="mb-4 text-6xl">🎵</div>
                             <p className="mb-2 text-lg font-medium text-[var(--color-text)]">
-                              Queue is empty
+                              {tq("emptyTitle")}
                             </p>
                             <p className="text-sm text-[var(--color-subtext)]">
-                              Add tracks to start building your queue
+                              {tq("emptyDescription")}
                             </p>
                           </div>
                         ) : filteredQueue.length === 0 ? (
                           <div className="flex h-full flex-col items-center justify-center p-8 text-center">
                             <Search className="mb-4 h-12 w-12 text-[var(--color-muted)]" />
                             <p className="mb-2 text-lg font-medium text-[var(--color-text)]">
-                              No results found
+                              {tq("noResultsTitle")}
                             </p>
                             <p className="text-sm text-[var(--color-subtext)]">
-                              Try a different search term
+                              {tq("noResultsDescription")}
                             </p>
                           </div>
                         ) : (
@@ -2338,31 +2604,45 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             {/* Now Playing */}
                             {filteredNowPlaying && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="px-3 py-2 text-xs font-semibold text-[var(--color-subtext)] uppercase tracking-wider bg-[rgba(245,241,232,0.02)]">
-                                  Now Playing on
+                                <div className="bg-[rgba(245,241,232,0.02)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                  {tq("nowPlaying")}
                                 </div>
                                 <QueueItem
                                   track={filteredNowPlaying.track}
                                   index={filteredNowPlaying.index}
-                                  isActive={currentTrack?.id === filteredNowPlaying.track.id}
-                                  isSelected={selectedQueueIndices.has(filteredNowPlaying.index)}
+                                  isActive={
+                                    currentTrack?.id ===
+                                    filteredNowPlaying.track.id
+                                  }
+                                  isSelected={selectedQueueIndices.has(
+                                    filteredNowPlaying.index,
+                                  )}
                                   isSmartTrack={filteredNowPlaying.isSmartTrack}
                                   onPlay={() => {
                                     hapticLight();
                                     playFromQueue(filteredNowPlaying.index);
                                   }}
                                   onPlayNext={() => {
-                                    handleMoveQueueTrackToNext(filteredNowPlaying.index);
+                                    handleMoveQueueTrackToNext(
+                                      filteredNowPlaying.index,
+                                    );
                                   }}
                                   onRemove={() => {
-                                    handleRemoveQueueItemWithUndo(filteredNowPlaying.index);
+                                    handleRemoveQueueItemWithUndo(
+                                      filteredNowPlaying.index,
+                                    );
                                   }}
                                   onToggleSelect={(e) => {
-                                    if (e.type === 'touchstart' && 'touches' in e) {
+                                    if (
+                                      e.type === "touchstart" &&
+                                      "touches" in e
+                                    ) {
                                       if (e.touches.length === 1) {
                                         const timer = setTimeout(() => {
                                           hapticMedium();
-                                          handleToggleQueueSelect(filteredNowPlaying.index);
+                                          handleToggleQueueSelect(
+                                            filteredNowPlaying.index,
+                                          );
                                         }, 500);
                                         setLongPressTimer(timer);
                                       }
@@ -2371,7 +2651,10 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                         clearTimeout(longPressTimer);
                                         setLongPressTimer(null);
                                       }
-                                      handleToggleQueueSelect(filteredNowPlaying.index, e.shiftKey);
+                                      handleToggleQueueSelect(
+                                        filteredNowPlaying.index,
+                                        e.shiftKey,
+                                      );
                                     }
                                   }}
                                   onTouchEnd={() => {
@@ -2382,12 +2665,19 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   }}
                                   canRemove={filteredNowPlaying.index !== 0}
                                   canPlayNext={filteredNowPlaying.index > 1}
-                                  onDragStart={() => setDraggedIndex(filteredNowPlaying.index)}
+                                  onDragStart={() =>
+                                    setDraggedIndex(filteredNowPlaying.index)
+                                  }
                                   onDragEnd={() => setDraggedIndex(null)}
-                                  isDragging={draggedIndex === filteredNowPlaying.index}
+                                  isDragging={
+                                    draggedIndex === filteredNowPlaying.index
+                                  }
                                   onReorder={(newIndex) => {
                                     if (newIndex !== filteredNowPlaying.index) {
-                                      reorderQueue(filteredNowPlaying.index, newIndex);
+                                      reorderQueue(
+                                        filteredNowPlaying.index,
+                                        newIndex,
+                                      );
                                       hapticSuccess();
                                     }
                                   }}
@@ -2398,8 +2688,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             {/* User Tracks */}
                             {filteredUserTracks.length > 0 && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="px-3 py-2 text-xs font-semibold text-[var(--color-subtext)] uppercase tracking-wider border-b border-[rgba(245,241,232,0.05)]">
-                                  Next in queue
+                                <div className="border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                  {tq("nextInQueue")}
                                 </div>
                                 <div className="divide-y divide-[rgba(255,255,255,0.05)]">
                                   {filteredUserTracks.map((entry) => (
@@ -2407,8 +2697,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                       key={entry.queueId}
                                       track={entry.track}
                                       index={entry.index}
-                                      isActive={currentTrack?.id === entry.track.id}
-                                      isSelected={selectedQueueIndices.has(entry.index)}
+                                      isActive={
+                                        currentTrack?.id === entry.track.id
+                                      }
+                                      isSelected={selectedQueueIndices.has(
+                                        entry.index,
+                                      )}
                                       isSmartTrack={entry.isSmartTrack}
                                       onPlay={() => {
                                         hapticLight();
@@ -2418,14 +2712,21 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                         handleMoveQueueTrackToNext(entry.index);
                                       }}
                                       onRemove={() => {
-                                        handleRemoveQueueItemWithUndo(entry.index);
+                                        handleRemoveQueueItemWithUndo(
+                                          entry.index,
+                                        );
                                       }}
                                       onToggleSelect={(e) => {
-                                        if (e.type === 'touchstart' && 'touches' in e) {
+                                        if (
+                                          e.type === "touchstart" &&
+                                          "touches" in e
+                                        ) {
                                           if (e.touches.length === 1) {
                                             const timer = setTimeout(() => {
                                               hapticMedium();
-                                              handleToggleQueueSelect(entry.index);
+                                              handleToggleQueueSelect(
+                                                entry.index,
+                                              );
                                             }, 500);
                                             setLongPressTimer(timer);
                                           }
@@ -2434,7 +2735,10 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                             clearTimeout(longPressTimer);
                                             setLongPressTimer(null);
                                           }
-                                          handleToggleQueueSelect(entry.index, e.shiftKey);
+                                          handleToggleQueueSelect(
+                                            entry.index,
+                                            e.shiftKey,
+                                          );
                                         }
                                       }}
                                       onTouchEnd={() => {
@@ -2445,7 +2749,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                       }}
                                       canRemove={entry.index !== 0}
                                       canPlayNext={entry.index > 1}
-                                      onDragStart={() => setDraggedIndex(entry.index)}
+                                      onDragStart={() =>
+                                        setDraggedIndex(entry.index)
+                                      }
                                       onDragEnd={() => setDraggedIndex(null)}
                                       isDragging={draggedIndex === entry.index}
                                       onReorder={(newIndex) => {
@@ -2461,20 +2767,28 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             )}
 
                             {/* Smart Tracks */}
-                            {(filteredSmartTracks.length > 0 || smartQueueState.isLoading) && (
+                            {(filteredSmartTracks.length > 0 ||
+                              smartQueueState.isLoading) && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="px-3 py-2 text-xs font-semibold text-[var(--color-subtext)] uppercase tracking-wider border-b border-[rgba(245,241,232,0.05)] flex items-center gap-2">
-                                  <span>Smart tracks</span>
+                                <div className="flex items-center gap-2 border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                  <span>{tq("smartTracks")}</span>
                                   {smartQueueState.isLoading && (
-                                    <LoadingSpinner size="sm" label="Loading smart tracks" />
+                                    <LoadingSpinner
+                                      size="sm"
+                                      label={tq("loadingSmartTracks")}
+                                    />
                                   )}
                                 </div>
-                                {smartQueueState.isLoading && filteredSmartTracks.length === 0 ? (
-                                  <div className="px-3 py-4 flex items-center justify-center">
+                                {smartQueueState.isLoading &&
+                                filteredSmartTracks.length === 0 ? (
+                                  <div className="flex items-center justify-center px-3 py-4">
                                     <div className="flex flex-col items-center gap-2">
-                                      <LoadingSpinner size="md" label="Loading smart tracks" />
+                                      <LoadingSpinner
+                                        size="md"
+                                        label={tq("loadingSmartTracks")}
+                                      />
                                       <p className="text-xs text-[var(--color-subtext)]">
-                                        Finding similar tracks...
+                                        {tq("findingSimilarTracks")}
                                       </p>
                                     </div>
                                   </div>
@@ -2485,25 +2799,38 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                         key={entry.queueId}
                                         track={entry.track}
                                         index={entry.index}
-                                        isActive={currentTrack?.id === entry.track.id}
-                                        isSelected={selectedQueueIndices.has(entry.index)}
+                                        isActive={
+                                          currentTrack?.id === entry.track.id
+                                        }
+                                        isSelected={selectedQueueIndices.has(
+                                          entry.index,
+                                        )}
                                         isSmartTrack={entry.isSmartTrack}
                                         onPlay={() => {
                                           hapticLight();
                                           playFromQueue(entry.index);
                                         }}
                                         onPlayNext={() => {
-                                          handleMoveQueueTrackToNext(entry.index);
+                                          handleMoveQueueTrackToNext(
+                                            entry.index,
+                                          );
                                         }}
                                         onRemove={() => {
-                                          handleRemoveQueueItemWithUndo(entry.index);
+                                          handleRemoveQueueItemWithUndo(
+                                            entry.index,
+                                          );
                                         }}
                                         onToggleSelect={(e) => {
-                                          if (e.type === 'touchstart' && 'touches' in e) {
+                                          if (
+                                            e.type === "touchstart" &&
+                                            "touches" in e
+                                          ) {
                                             if (e.touches.length === 1) {
                                               const timer = setTimeout(() => {
                                                 hapticMedium();
-                                                handleToggleQueueSelect(entry.index);
+                                                handleToggleQueueSelect(
+                                                  entry.index,
+                                                );
                                               }, 500);
                                               setLongPressTimer(timer);
                                             }
@@ -2512,7 +2839,10 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                               clearTimeout(longPressTimer);
                                               setLongPressTimer(null);
                                             }
-                                            handleToggleQueueSelect(entry.index, e.shiftKey);
+                                            handleToggleQueueSelect(
+                                              entry.index,
+                                              e.shiftKey,
+                                            );
                                           }
                                         }}
                                         onTouchEnd={() => {
@@ -2523,9 +2853,13 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                         }}
                                         canRemove={entry.index !== 0}
                                         canPlayNext={entry.index > 1}
-                                        onDragStart={() => setDraggedIndex(entry.index)}
+                                        onDragStart={() =>
+                                          setDraggedIndex(entry.index)
+                                        }
                                         onDragEnd={() => setDraggedIndex(null)}
-                                        isDragging={draggedIndex === entry.index}
+                                        isDragging={
+                                          draggedIndex === entry.index
+                                        }
                                         onReorder={(newIndex) => {
                                           if (newIndex !== entry.index) {
                                             reorderQueue(entry.index, newIndex);
@@ -2545,7 +2879,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                         <div
                           ref={queueScrollTrackRef}
                           data-drag-exempt="true"
-                          className="absolute right-2 top-3 bottom-3 w-3 touch-none"
+                          className="absolute top-3 right-2 bottom-3 w-3 touch-none"
                           onPointerDown={handleQueueScrollbarPointerDown}
                           onPointerMove={handleQueueScrollbarPointerMove}
                           onPointerUp={handleQueueScrollbarPointerUp}
@@ -2568,26 +2902,32 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     {queue.length > 0 && (
                       <div className="border-t border-[var(--color-border)] p-4 text-sm text-[var(--color-subtext)]">
                         <div className="flex items-center justify-between">
-                          <span>Total duration:</span>
-                          <span className="font-medium">{formatDuration(totalDuration)}</span>
+                          <span>{tq("totalDuration")}</span>
+                          <span className="font-medium">
+                            {formatDuration(totalDuration)}
+                          </span>
                         </div>
-                        {queueSearchQuery && filteredQueue.length !== queue.length && (
-                          <div className="mt-2 text-xs text-[var(--color-muted)]">
-                            Showing {filteredQueue.length} of {queue.length} tracks
-                          </div>
-                        )}
-                        {!queueSearchQuery && selectedQueueIndices.size === 0 && (
-                          <div className="mt-2 text-xs text-[var(--color-muted)]">
-                            Tip: Tap to play • Long-press to select • Drag handle to reorder
-                          </div>
-                        )}
+                        {queueSearchQuery &&
+                          filteredQueue.length !== queue.length && (
+                            <div className="mt-2 text-xs text-[var(--color-muted)]">
+                              {tq("showingFiltered", {
+                                visible: filteredQueue.length,
+                                total: queue.length,
+                              })}
+                            </div>
+                          )}
+                        {!queueSearchQuery &&
+                          selectedQueueIndices.size === 0 && (
+                            <div className="mt-2 text-xs text-[var(--color-muted)]">
+                              {tq("mobileSelectionTip")}
+                            </div>
+                          )}
                       </div>
                     )}
                   </motion.div>
                 </>
               )}
             </AnimatePresence>
-
 
             {showQueueSettingsModal && (
               <QueueSettingsModal

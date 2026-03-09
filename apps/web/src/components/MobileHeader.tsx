@@ -14,12 +14,15 @@ import { motion } from "framer-motion";
 import { Library, Menu, Music2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function MobileHeader() {
   const isMobile = useIsMobile();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const th = useTranslations("header");
+  const ts = useTranslations("search");
   const searchParamsKey = searchParams.toString();
   const urlQuery = useMemo(
     () => new URLSearchParams(searchParamsKey).get("q") ?? "",
@@ -192,7 +195,7 @@ export default function MobileHeader() {
           whileTap={{ scale: 0.92 }}
           transition={springPresets.snappy}
           className="flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-2 text-[var(--color-text)] transition-colors active:bg-[var(--color-surface-hover)]"
-          aria-label="Open menu"
+          aria-label={th("openMenu")}
           type="button"
         >
           <Menu className="h-5 w-5" strokeWidth={2} />
@@ -203,7 +206,7 @@ export default function MobileHeader() {
             onChange={setSearchQuery}
             onSearch={handleSearch}
             onClear={handleClear}
-            placeholder="Search music..."
+            placeholder={ts("placeholderShort")}
             isLoading={isSearching}
             recentSearches={recentSearches ?? []}
             onRecentSearchClick={(search) => {
@@ -227,7 +230,7 @@ export default function MobileHeader() {
                 : "border-white/15 bg-white/5"
             } disabled:opacity-90`}
             type="button"
-            aria-label="Reopen greeter modal"
+            aria-label={th("reopenGreeter")}
             disabled={isGuestModalOpen}
           >
             <Music2 className="h-4 w-4" />
@@ -244,7 +247,7 @@ export default function MobileHeader() {
             whileTap={{ scale: 0.94 }}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[var(--color-text)]"
             type="button"
-            aria-label="Open library"
+            aria-label={th("openLibrary")}
           >
             <Library className="h-4 w-4" />
           </motion.button>

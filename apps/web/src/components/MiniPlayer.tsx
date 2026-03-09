@@ -5,8 +5,14 @@
 import type { Track } from "@starchild/types";
 import { hapticLight, hapticMedium } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
-import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+} from "framer-motion";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { AutoQueueBadge } from "./AutoQueueBadge";
 
 interface MiniPlayerProps {
@@ -28,7 +34,7 @@ export default function MiniPlayer({
   isPlaying,
   currentTime,
   duration,
-  queue: _queue,
+  queue,
   lastAutoQueueCount = 0,
   onPlayPause,
   onNext: _onNext,
@@ -36,6 +42,8 @@ export default function MiniPlayer({
   onTap,
   onToggleQueue,
 }: MiniPlayerProps) {
+  const t = useTranslations("player");
+  const tq = useTranslations("queue");
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, -50], [1, 0.85]);
@@ -70,8 +78,9 @@ export default function MiniPlayer({
     );
   };
 
-  const handleContainerTap = (event: PointerEvent | MouseEvent | TouchEvent) => {
-
+  const handleContainerTap = (
+    event: PointerEvent | MouseEvent | TouchEvent,
+  ) => {
     if (shouldIgnoreTap(event.target)) {
       return;
     }
@@ -100,12 +109,12 @@ export default function MiniPlayer({
       animate={{ y: 0 }}
       exit={{ y: 100 }}
       transition={springPresets.gentle}
-      className="theme-chrome-bar safe-bottom fixed right-0 left-0 z-[60] bottom-16 border-t backdrop-blur-2xl md:bottom-0"
+      className="theme-chrome-bar safe-bottom fixed right-0 bottom-16 left-0 z-[60] border-t backdrop-blur-2xl md:bottom-0"
     >
-      { }
+      {}
       <AutoQueueBadge count={lastAutoQueueCount} />
 
-      { }
+      {}
       <div
         className="slider-track h-1 w-full cursor-pointer"
         data-drag-exempt="true"
@@ -118,9 +127,9 @@ export default function MiniPlayer({
         />
       </div>
 
-      { }
+      {}
       <motion.div
-        className="flex cursor-pointer items-center gap-3 px-4 py-3 relative"
+        className="relative flex cursor-pointer items-center gap-3 px-4 py-3"
         onTap={handleContainerTap}
         drag="y"
         dragConstraints={{ top: -80, bottom: 0 }}
@@ -170,8 +179,9 @@ export default function MiniPlayer({
             data-drag-exempt="true"
             whileTap={{ scale: 0.88 }}
             transition={springPresets.snappy}
-            className="touch-target flex-shrink-0 text-[var(--color-subtext)] rounded-full p-1.5"
-            aria-label="Open queue"
+            className="touch-target flex-shrink-0 rounded-full p-1.5 text-[var(--color-subtext)]"
+            aria-label={tq("title", { count: queue.length })}
+            title={tq("title", { count: queue.length })}
             type="button"
           >
             <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -195,8 +205,9 @@ export default function MiniPlayer({
           data-drag-exempt="true"
           whileTap={{ scale: 0.88 }}
           transition={springPresets.snappy}
-          className="touch-target flex-shrink-0 text-[var(--color-text)] rounded-full p-1.5"
-          aria-label={isPlaying ? "Pause track" : "Play track"}
+          className="touch-target flex-shrink-0 rounded-full p-1.5 text-[var(--color-text)]"
+          aria-label={isPlaying ? t("pauseTrack") : t("playTrack")}
+          title={isPlaying ? t("pauseTrack") : t("playTrack")}
           type="button"
         >
           {isPlaying ? (

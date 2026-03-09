@@ -4,15 +4,16 @@
 
 import type { useEqualizer } from "@/hooks/useEqualizer";
 import {
-    haptic,
-    hapticLight,
-    hapticMedium,
-    hapticSliderContinuous,
-    hapticSliderEnd,
+  haptic,
+  hapticLight,
+  hapticMedium,
+  hapticSliderContinuous,
+  hapticSliderEnd,
 } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
 import { motion, type PanInfo } from "framer-motion";
 import { Power, RotateCcw, Sparkles, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface EqualizerProps {
@@ -133,7 +134,9 @@ function VerticalEqSlider({
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div
           className={`relative h-full w-1.5 overflow-hidden rounded-full ${
-            isEnabled ? "bg-[rgba(244,178,102,0.08)]" : "bg-[rgba(255,255,255,0.05)]"
+            isEnabled
+              ? "bg-[rgba(244,178,102,0.08)]"
+              : "bg-[rgba(255,255,255,0.05)]"
           } ${isAnimating ? "animate-pulse" : ""}`}
         >
           {}
@@ -165,7 +168,10 @@ function VerticalEqSlider({
               height: `${Math.abs(percentage - 50)}%`,
               top: percentage < 50 ? "50%" : "auto",
               bottom: percentage >= 50 ? "50%" : "auto",
-              boxShadow: isHovered || isDragging ? "0 0 18px rgba(244,178,102,0.35)" : "none",
+              boxShadow:
+                isHovered || isDragging
+                  ? "0 0 18px rgba(244,178,102,0.35)"
+                  : "none",
             }}
             transition={springPresets.slider}
           />
@@ -219,8 +225,38 @@ function VerticalEqSlider({
 }
 
 export function Equalizer({ equalizer, onClose }: EqualizerProps) {
+  const t = useTranslations("equalizer");
+  const ts = useTranslations("settings");
+  const tc = useTranslations("common");
   const [hoveredBand, setHoveredBand] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  const getPresetLabel = (presetName: string) => {
+    switch (presetName) {
+      case "Flat":
+        return ts("equalizerFlat");
+      case "Rock":
+        return ts("equalizerRock");
+      case "Pop":
+        return ts("equalizerPop");
+      case "Jazz":
+        return ts("equalizerJazz");
+      case "Classical":
+        return ts("equalizerClassical");
+      case "Electronic":
+        return ts("equalizerElectronic");
+      case "Bass Boost":
+        return ts("equalizerBassBoost");
+      case "Treble Boost":
+        return ts("equalizerTrebleBoost");
+      case "Vocal":
+        return ts("equalizerVocal");
+      case "Custom":
+        return ts("equalizerCustom");
+      default:
+        return presetName;
+    }
+  };
 
   useEffect(() => {
     if (!equalizer.isInitialized && equalizer.isSupported) {
@@ -295,14 +331,15 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                   <Sparkles className="h-4 w-4 text-[var(--color-on-accent)]" />
                 </div>
                 <h2 className="text-lg font-bold text-[var(--color-text)]">
-                  Equalizer
+                  {ts("equalizer")}
                 </h2>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleReset}
                   className="group rounded-lg p-2 text-[var(--color-subtext)] transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] active:scale-95"
-                  title="Reset to flat"
+                  title={t("resetToFlat")}
+                  aria-label={t("resetToFlat")}
                 >
                   <RotateCcw className="h-4 w-4 transition-transform group-hover:rotate-180" />
                 </button>
@@ -316,10 +353,17 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                   } ${!equalizer.isSupported ? "cursor-not-allowed opacity-50" : ""}`}
                   title={
                     !equalizer.isSupported
-                      ? "Equalizer unavailable on iOS Safari"
+                      ? t("unavailableOnIosSafari")
                       : equalizer.isEnabled
-                        ? "Disable EQ"
-                        : "Enable EQ"
+                        ? t("disableEq")
+                        : t("enableEq")
+                  }
+                  aria-label={
+                    !equalizer.isSupported
+                      ? t("unavailableOnIosSafari")
+                      : equalizer.isEnabled
+                        ? t("disableEq")
+                        : t("enableEq")
                   }
                 >
                   <Power className="h-4 w-4" />
@@ -330,6 +374,8 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                 <button
                   onClick={handleClose}
                   className="rounded-lg p-2 text-[var(--color-subtext)] transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] active:scale-95"
+                  title={tc("close")}
+                  aria-label={tc("close")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -344,10 +390,10 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                       <Power className="h-8 w-8 text-[var(--color-subtext)]" />
                     </div>
                     <p className="text-sm text-[var(--color-text)]">
-                      Equalizer unavailable on iOS Safari
+                      {t("unavailableOnIosSafari")}
                     </p>
                     <p className="text-xs text-[var(--color-subtext)]">
-                      Disabled to keep background playback running.
+                      {t("disabledToKeepPlayback")}
                     </p>
                   </div>
                 </div>
@@ -358,10 +404,10 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                       <Sparkles className="h-8 w-8 animate-pulse text-[var(--color-on-accent)]" />
                     </div>
                     <p className="text-sm text-[var(--color-text)]">
-                      Click anywhere to enable equalizer
+                      {t("clickAnywhereToEnable")}
                     </p>
                     <p className="text-xs text-[var(--color-subtext)]">
-                      Web Audio API requires user interaction
+                      {t("webAudioRequiresInteraction")}
                     </p>
                   </div>
                 </div>
@@ -370,7 +416,7 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                   {}
                   <div className="relative border-b border-[var(--color-border)] bg-[var(--color-surface)]/50 p-4">
                     <label className="mb-2 block text-xs font-medium tracking-wider text-[var(--color-subtext)] uppercase">
-                      Preset
+                      {ts("equalizerPreset")}
                     </label>
                     <select
                       value={equalizer.currentPreset}
@@ -383,7 +429,7 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                           value={preset.name}
                           className="bg-[var(--color-bg)] text-[var(--color-text)]"
                         >
-                          {preset.name}
+                          {getPresetLabel(preset.name)}
                         </option>
                       ))}
                       {equalizer.currentPreset === "Custom" && (
@@ -391,7 +437,7 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                           value="Custom"
                           className="bg-[var(--color-bg)] text-[var(--color-text)]"
                         >
-                          Custom
+                          {getPresetLabel("Custom")}
                         </option>
                       )}
                     </select>
@@ -464,7 +510,7 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
                     {}
                     <div className="mt-6 text-center">
                       <p className="text-xs text-[var(--color-muted)]">
-                        Drag sliders to adjust • Range: -12dB to +12dB
+                        {t("adjustInstruction")}
                       </p>
                     </div>
                   </div>

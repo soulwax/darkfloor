@@ -22,6 +22,7 @@ import {
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 export default function Header() {
@@ -30,6 +31,9 @@ export default function Header() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { data: session } = useSession();
+  const tc = useTranslations("common");
+  const th = useTranslations("header");
+  const ts = useTranslations("search");
   const { isGuestModalOpen, openGuestModal } = useGuestModal();
   const [apiHealthy, setApiHealthy] = useState<
     "healthy" | "degraded" | "down" | null
@@ -319,10 +323,10 @@ export default function Header() {
             type="button"
             onClick={toggleCompactMode}
             aria-label={
-              compactMode ? "Switch to expanded view" : "Switch to compact view"
+              compactMode ? th("switchExpanded") : th("switchCompact")
             }
             aria-pressed={compactMode}
-            title={compactMode ? "Expanded view" : "Compact view"}
+            title={compactMode ? th("expandedView") : th("compactView")}
             className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all ${
               compactMode
                 ? "border-[rgba(88,198,177,0.45)] bg-[rgba(88,198,177,0.2)] text-[var(--color-text)]"
@@ -335,7 +339,7 @@ export default function Header() {
               <Minimize2 className="h-3.5 w-3.5" />
             )}
             <span className="hidden 2xl:inline">
-              {compactMode ? "Expanded" : "Compact"}
+              {compactMode ? th("expanded") : th("compact")}
             </span>
           </button>
 
@@ -374,8 +378,8 @@ export default function Header() {
                 }}
                 onKeyDown={handleSearchKeyDown}
                 className="h-8 min-w-0 flex-1 bg-transparent text-sm leading-none text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none"
-                placeholder="Search for songs, artists, or albums..."
-                aria-label="Search music"
+                placeholder={ts("placeholder")}
+                aria-label={ts("ariaLabel")}
                 autoComplete="off"
               />
               <button
@@ -384,7 +388,7 @@ export default function Header() {
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className={compactMode ? "hidden" : "hidden lg:inline"}>
-                  Search
+                  {tc("search")}
                 </span>
               </button>
             </form>
@@ -411,7 +415,7 @@ export default function Header() {
           >
             <Home className="h-3.5 w-3.5" />
             <span className={compactMode ? "hidden" : "hidden xl:inline"}>
-              Home
+              {tc("home")}
             </span>
           </Link>
           <Link
@@ -424,13 +428,13 @@ export default function Header() {
           >
             <Library className="h-3.5 w-3.5" />
             <span className={compactMode ? "hidden" : "hidden xl:inline"}>
-              Library
+              {tc("library")}
             </span>
           </Link>
           <button
             type="button"
             onClick={openGuestModal}
-            aria-label="Reopen greeter modal"
+            aria-label={th("reopenGreeter")}
             disabled={isGuestModalOpen}
             className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
               isGuestModalOpen
@@ -440,7 +444,7 @@ export default function Header() {
           >
             <Music2 className="h-3.5 w-3.5" />
             <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
-              Greeter
+              {th("greeter")}
             </span>
           </button>
           {!isElectronRuntime && (
@@ -448,20 +452,20 @@ export default function Header() {
               href="https://analyze.darkfloor.org"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open Analyse tool"
+              aria-label={th("openAnalyse")}
               className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs font-semibold text-[var(--color-subtext)] transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
             >
               <BarChart3 className="h-3.5 w-3.5" />
               <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
-                Analyse
+                {th("analyse")}
               </span>
             </a>
           )}
           {!compactMode && apiHealthy !== null && (
             <div
               className="api-health-pill hidden items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] px-2 py-0.5 text-xs text-[var(--color-subtext)] 2xl:flex"
-              aria-label="API health status"
-              title="API V2 health status"
+              aria-label={th("apiHealthStatus")}
+              title={th("apiV2HealthStatus")}
             >
               <span
                 className={`inline-block h-2 w-2 rounded-full ${
@@ -474,10 +478,10 @@ export default function Header() {
               />
               <span>
                 {apiHealthy === "healthy"
-                  ? "API Healthy"
+                  ? th("apiHealthy")
                   : apiHealthy === "degraded"
-                    ? "API Degraded"
-                    : "API Down"}
+                    ? th("apiDegraded")
+                    : th("apiDown")}
               </span>
             </div>
           )}

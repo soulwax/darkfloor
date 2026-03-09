@@ -15,6 +15,7 @@ import {
 import { springPresets } from "@/utils/spring-animations";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Mic, MicOff, Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface MobileSearchBarProps {
@@ -76,7 +77,7 @@ export default function MobileSearchBar({
   onChange,
   onSearch,
   onClear,
-  placeholder = "Search for songs, artists, albums...",
+  placeholder,
   isLoading = false,
   autoFocus = false,
   recentSearches = [],
@@ -84,6 +85,7 @@ export default function MobileSearchBar({
   showAutoSearchIndicator = true,
   autoSearchCountdown = 0,
 }: MobileSearchBarProps) {
+  const t = useTranslations("search");
   const isMobile = useIsMobile();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -225,6 +227,7 @@ export default function MobileSearchBar({
     0,
     Math.min(100, (1 - autoSearchCountdown / 2000) * 100),
   );
+  const resolvedPlaceholder = placeholder ?? t("placeholder");
 
   const selectSuggestion = (suggestion: SearchSuggestionItem) => {
     hapticLight();
@@ -378,7 +381,7 @@ export default function MobileSearchBar({
               onFocus={handleFocus}
               onBlur={handleBlur}
               onKeyDown={handleInputKeyDown}
-              placeholder={isListening ? "Listening..." : placeholder}
+              placeholder={isListening ? t("listening") : resolvedPlaceholder}
               autoFocus={autoFocus}
               className={`w-full bg-transparent text-base text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none ${
                 isListening ? "italic" : ""
@@ -406,8 +409,10 @@ export default function MobileSearchBar({
                   </div>
                   <span className="font-medium whitespace-nowrap text-[var(--color-accent)]">
                     {autoSearchCountdown > 0
-                      ? `Searching in ${Math.ceil(autoSearchCountdown / 1000)}s`
-                      : "Searching now..."}
+                      ? t("searchingIn", {
+                          seconds: Math.ceil(autoSearchCountdown / 1000),
+                        })
+                      : t("searchingNow")}
                   </span>
                 </div>
               </motion.div>
@@ -426,7 +431,7 @@ export default function MobileSearchBar({
                   ? "bg-[rgba(242,139,130,0.2)] text-[var(--color-danger)]"
                   : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
               }`}
-              aria-label={isListening ? "Stop listening" : "Voice search"}
+              aria-label={isListening ? t("stopListening") : t("voiceSearch")}
             >
               {isListening ? (
                 <motion.div
@@ -453,7 +458,7 @@ export default function MobileSearchBar({
                 whileTap={{ scale: 0.9 }}
                 transition={springPresets.snappy}
                 className="touch-target flex-shrink-0 rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:text-[var(--color-text)]"
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
               >
                 <X className="h-5 w-5" />
               </motion.button>
@@ -522,7 +527,7 @@ export default function MobileSearchBar({
           >
             <div className="px-4 py-2">
               <span className="text-xs font-semibold tracking-wider text-[var(--color-muted)] uppercase">
-                Recent Searches
+                {t("recentSearches")}
               </span>
             </div>
             <div className="max-h-64 overflow-y-auto">

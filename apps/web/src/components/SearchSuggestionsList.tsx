@@ -5,6 +5,7 @@
 import type { SearchSuggestionItem } from "@starchild/types/searchSuggestions";
 import { Disc3, Music2, Search, UserRound } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 interface SearchSuggestionsListProps {
   suggestions: SearchSuggestionItem[];
@@ -21,13 +22,6 @@ const iconByType = {
   album: Disc3,
 } as const;
 
-const labelByType = {
-  query: "Recent",
-  track: "Track",
-  artist: "Artist",
-  album: "Album",
-} as const;
-
 export function SearchSuggestionsList({
   suggestions,
   activeIndex,
@@ -35,15 +29,25 @@ export function SearchSuggestionsList({
   onSelect,
   className = "",
 }: SearchSuggestionsListProps) {
+  const t = useTranslations("search");
+  const tc = useTranslations("common");
+
   if (suggestions.length === 0) {
     return null;
   }
+
+  const labelByType = {
+    query: t("recentLabel"),
+    track: t("trackLabel"),
+    artist: tc("artist"),
+    album: tc("album"),
+  } as const;
 
   return (
     <div
       className={`theme-panel overflow-hidden rounded-xl border shadow-xl backdrop-blur-xl ${className}`.trim()}
       role="listbox"
-      aria-label="Search suggestions"
+      aria-label={t("suggestions")}
     >
       <div className="max-h-80 overflow-y-auto py-1.5">
         {suggestions.map((suggestion, index) => {
