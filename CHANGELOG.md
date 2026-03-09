@@ -5,6 +5,21 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-03-09
+
+### Changed
+
+- **Discord is now the only supported OAuth sign-in method on web**: Spotify was removed from NextAuth provider registration and from the shared provider list, so sign-in flows now authenticate through Discord only.
+- **Spotify setup is now explicitly settings-driven**: The Spotify settings and `/spotify` readiness views now treat the local `clientId`, `clientSecret`, `username`, and feature toggle as the source of truth instead of checking for an Auth.js Spotify provider.
+
+### Removed
+
+- **Frontend Spotify login entry points**: Removed the remaining Spotify sign-in affordances from the guest modal and converted the legacy Spotify callback page into an informational dead-end that routes users back to Discord sign-in.
+
+### Fixed
+
+- **False auth prompts for Discord users**: The frontend no longer raises a misleading `Sign in to continue` modal just because Spotify refresh artifacts are missing while the user already has a valid Discord/Auth.js session.
+
 ## [1.3.0] - 2026-03-08
 
 ### tl;dr

@@ -23,9 +23,8 @@ describe("spotifyFeatureSettings", () => {
     });
   });
 
-  it("reports ready when provider and local fields are all present", () => {
+  it("reports ready when the local Spotify settings are complete", () => {
     const summary = getSpotifyFeatureConnectionSummary({
-      providerAvailable: true,
       settings: {
         enabled: true,
         clientId: "client-id",
@@ -39,20 +38,19 @@ describe("spotifyFeatureSettings", () => {
     expect(summary.checks.every((check) => check.ready)).toBe(true);
   });
 
-  it("reports unavailable when the spotify provider is missing", () => {
+  it("reports incomplete when required Spotify settings are missing", () => {
     const summary = getSpotifyFeatureConnectionSummary({
-      providerAvailable: false,
       settings: {
         enabled: true,
         clientId: "client-id",
-        clientSecret: "client-secret",
+        clientSecret: "",
         username: "spotify-user",
         updatedAt: "2026-03-08T00:00:00.000Z",
       },
     });
 
-    expect(summary.state).toBe("unavailable");
-    expect(summary.label).toMatch(/unavailable/i);
+    expect(summary.state).toBe("incomplete");
+    expect(summary.label).toMatch(/incomplete/i);
   });
 
   it("masks spotify client secrets for display", () => {

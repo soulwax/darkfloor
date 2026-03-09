@@ -1,17 +1,8 @@
 // File: apps/web/src/config/oauthProviders.ts
 
-export const SPOTIFY_MIGRATION_GUIDE_URL =
-  "https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide";
-export const SPOTIFY_MIGRATION_GUIDE_LABEL = `Fuck you Spotify, instead of logging in, point to: "${SPOTIFY_MIGRATION_GUIDE_URL}"`;
-
 type OAuthProviderAction =
   | {
       kind: "signin";
-    }
-  | {
-      kind: "link";
-      href: string;
-      target: "_self" | "_blank";
     };
 
 /**
@@ -26,18 +17,6 @@ const OAUTH_PROVIDERS = {
     } satisfies OAuthProviderAction,
     buttonStyle:
       "bg-[#5865F2] text-white hover:brightness-110 active:brightness-95",
-  },
-  spotify: {
-    name: "Spotify",
-    authSource: "nextauth",
-    action: {
-      kind: "link",
-      href: SPOTIFY_MIGRATION_GUIDE_URL,
-      target: "_self",
-    } satisfies OAuthProviderAction,
-    ctaLabel: SPOTIFY_MIGRATION_GUIDE_LABEL,
-    buttonStyle:
-      "bg-[#1DB954] text-white hover:brightness-110 active:brightness-95",
   },
 } as const;
 
@@ -65,17 +44,13 @@ export const OAUTH_PROVIDER_BUTTON_STYLES: Record<
   string
 > = {
   discord: OAUTH_PROVIDERS.discord.buttonStyle,
-  spotify: OAUTH_PROVIDERS.spotify.buttonStyle,
 } as const;
 
 /**
  * Enabled providers based on environment configuration
  */
-const isSpotifyEnabled =
-  process.env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED === "true";
-
 export const ENABLED_OAUTH_PROVIDER_IDS: readonly SupportedOAuthProviderId[] =
-  isSpotifyEnabled ? ["discord", "spotify"] : ["discord"];
+  ["discord"];
 
 const enabledProviderIds = new Set<SupportedOAuthProviderId>(
   ENABLED_OAUTH_PROVIDER_IDS,
@@ -155,8 +130,5 @@ export function getOAuthProviderCtaLabel(
   providerId: SupportedOAuthProviderId,
   defaultLabel: string,
 ): string {
-  const providerConfig = OAUTH_PROVIDERS[providerId];
-  return "ctaLabel" in providerConfig
-    ? providerConfig.ctaLabel
-    : defaultLabel;
+  return defaultLabel;
 }

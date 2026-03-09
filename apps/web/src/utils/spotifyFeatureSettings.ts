@@ -12,7 +12,7 @@ export const SPOTIFY_FEATURE_SETTINGS_UPDATED_EVENT =
   "starchild:spotify-feature-settings-updated";
 
 type SpotifyFeatureConnectionCheck = {
-  id: "enabled" | "provider" | "clientId" | "clientSecret" | "username";
+  id: "enabled" | "clientId" | "clientSecret" | "username";
   label: string;
   ready: boolean;
 };
@@ -130,20 +130,14 @@ export const spotifyFeatureSettingsStorage = {
 
 export function getSpotifyFeatureConnectionSummary(options: {
   settings: SpotifyFeatureSettings;
-  providerAvailable: boolean;
 }): SpotifyFeatureConnectionSummary {
-  const { providerAvailable, settings } = options;
+  const { settings } = options;
 
   const checks: SpotifyFeatureConnectionCheck[] = [
     {
       id: "enabled",
       label: "Spotify features enabled",
       ready: settings.enabled,
-    },
-    {
-      id: "provider",
-      label: "Spotify provider available in this build",
-      ready: providerAvailable,
     },
     {
       id: "clientId",
@@ -162,16 +156,6 @@ export function getSpotifyFeatureConnectionSummary(options: {
     },
   ];
 
-  if (!providerAvailable) {
-    return {
-      state: "unavailable",
-      label: "Spotify provider unavailable",
-      description:
-        "This build does not currently expose the Auth.js Spotify provider, so Spotify features cannot become ready yet.",
-      checks,
-    };
-  }
-
   if (!settings.enabled) {
     return {
       state: "disabled",
@@ -182,16 +166,14 @@ export function getSpotifyFeatureConnectionSummary(options: {
     };
   }
 
-  const hasMissingFields = checks.some(
-    (check) => check.id !== "provider" && !check.ready,
-  );
+  const hasMissingFields = checks.some((check) => !check.ready);
 
   if (hasMissingFields) {
     return {
       state: "incomplete",
       label: "Spotify setup incomplete",
       description:
-        "Spotify is available in this build, but the local feature profile is still missing required fields.",
+        "The local Spotify feature profile is still missing required fields.",
       checks,
     };
   }
@@ -200,7 +182,7 @@ export function getSpotifyFeatureConnectionSummary(options: {
     state: "ready",
     label: "Spotify features ready",
     description:
-      "The local Spotify feature profile is complete and the Auth.js Spotify provider is available.",
+      "The local Spotify feature profile is complete for the settings-driven Spotify integration path.",
     checks,
   };
 }

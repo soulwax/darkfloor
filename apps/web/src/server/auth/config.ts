@@ -14,7 +14,6 @@ import {
   verificationTokens,
 } from "@/server/db/schema";
 import {
-  createSpotifyProvider,
   hashForLog,
   isAuthDebugEnabled,
   isOAuthVerboseDebugEnabled,
@@ -45,15 +44,7 @@ declare module "next-auth" {
 
 const authDebugEnabled = isAuthDebugEnabled();
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
-const spotifyProvider = createSpotifyProvider({
-  enabled: env.AUTH_SPOTIFY_ENABLED,
-  clientId: env.SPOTIFY_CLIENT_ID,
-  clientSecret: env.SPOTIFY_CLIENT_SECRET,
-});
-const configuredProviders = [
-  "discord",
-  ...(spotifyProvider ? ["spotify"] : []),
-];
+const configuredProviders = ["discord"];
 
 logAuthInfo("NextAuth config bootstrap", {
   authDebugEnabled,
@@ -63,25 +54,15 @@ logAuthInfo("NextAuth config bootstrap", {
   hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
   authSpotifyEnabled: env.AUTH_SPOTIFY_ENABLED,
   publicAuthSpotifyEnabled: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,
-  spotifyOAuthOwner: "frontend",
+  spotifyOAuthOwner: "disabled",
 });
 
-if (env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED && !spotifyProvider) {
+if (env.AUTH_SPOTIFY_ENABLED || env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
   logAuthWarn(
-    "Spotify sign-in is enabled in the UI but the Auth.js Spotify provider is unavailable",
+    "Spotify OAuth sign-in is disabled in the web runtime",
     {
       impact:
-        "Check AUTH_SPOTIFY_ENABLED, SPOTIFY_CLIENT_ID, and SPOTIFY_CLIENT_SECRET.",
-    },
-  );
-}
-
-if (env.AUTH_SPOTIFY_ENABLED && !env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
-  logAuthWarn(
-    "Spotify Auth.js provider is configured but hidden in the public provider list",
-    {
-      impact:
-        "Users will not see Spotify as a sign-in option until NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED=true.",
+        "Discord is now the only supported OAuth login method. Spotify features should be configured from Settings instead of Auth.js.",
     },
   );
 }
@@ -101,7 +82,6 @@ export const authConfig = {
       clientId: env.AUTH_DISCORD_ID,
       clientSecret: env.AUTH_DISCORD_SECRET,
     }),
-    ...(spotifyProvider ? [spotifyProvider] : []),
   ],
   adapter: DrizzleAdapter(db, {
     usersTable: users,
@@ -147,10 +127,7 @@ export const authConfig = {
           profileKeys: profile ? Object.keys(profile) : [],
         });
 
-        if (
-          oauthVerboseDebugEnabled &&
-          (account?.provider === "spotify" || account?.provider === "discord")
-        ) {
+        if (oauthVerboseDebugEnabled && account?.provider === "discord") {
           const provider = account.provider;
           const typedAccount = account as {
             access_token?: string;
@@ -376,10 +353,7 @@ export const authConfig = {
         hasProfile: Boolean(profile),
       });
 
-      if (
-        oauthVerboseDebugEnabled &&
-        (account?.provider === "spotify" || account?.provider === "discord")
-      ) {
+      if (oauthVerboseDebugEnabled && account?.provider === "discord") {
         logAuthDebug("event.signIn verbose provider details", {
           userId: user?.id ?? null,
           provider: account?.provider ?? null,
@@ -422,10 +396,7 @@ export const authConfig = {
         providerAccountHash: hashForLog(account.providerAccountId),
       });
 
-      if (
-        oauthVerboseDebugEnabled &&
-        (account.provider === "spotify" || account.provider === "discord")
-      ) {
+      if (oauthVerboseDebugEnabled && account.provider === "discord") {
         logAuthDebug("event.linkAccount verbose provider details", {
           userId: user?.id ?? null,
           provider: account.provider,

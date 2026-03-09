@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  getOAuthProviderAction,
-  getOAuthProviderCtaLabel,
-} from "@/config/oauthProviders";
 import { resolvePostAuthPath } from "@/utils/authRedirect";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 
 function SpotifyAuthCallbackFallback() {
   return (
@@ -32,7 +28,7 @@ function getLegacyCallbackMessage(
   errorDescription: string | null,
 ): string {
   if (error === "access_denied") {
-    return "Spotify authorization was denied. Retry sign-in if you still want to connect Spotify.";
+    return "Spotify authorization was denied. Discord is now the only supported sign-in method.";
   }
 
   if (errorDescription && errorDescription.trim().length > 0) {
@@ -43,13 +39,12 @@ function getLegacyCallbackMessage(
     return error;
   }
 
-  return "Spotify sign-in is now handled through the standard Auth.js callback flow. This legacy callback page is no longer used for normal authentication.";
+  return "Spotify OAuth sign-in has been removed. Use Discord to sign in, and configure Spotify features from Settings instead.";
 }
 
 function SpotifyAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isRetrying, setIsRetrying] = useState(false);
 
   const nextPath = useMemo(() => {
     if (typeof window === "undefined") return "/library";
@@ -76,37 +71,12 @@ function SpotifyAuthCallbackContent() {
       <div className="surface-panel w-full p-8 text-center">
         <p className="text-sm text-[var(--color-subtext)]">{errorMessage}</p>
         <div className="mt-4 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRetrying(true);
-                const providerAction = getOAuthProviderAction("spotify");
-                if (providerAction.kind === "link") {
-                  window.open(
-                    providerAction.href,
-                    providerAction.target,
-                    providerAction.target === "_blank"
-                      ? "noopener,noreferrer"
-                      : undefined,
-                  );
-                }
-              }}
-              disabled={isRetrying}
-              className="w-full rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-            >
-              {isRetrying
-                ? "Opening guide..."
-                : getOAuthProviderCtaLabel(
-                    "spotify",
-                    "Retry Spotify Sign-In",
-                  )}
-            </button>
           <button
             type="button"
             onClick={() => router.replace(signInUrl)}
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)]"
           >
-            Back to Sign In
+            Continue to Sign In
           </button>
         </div>
       </div>

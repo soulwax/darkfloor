@@ -29,7 +29,7 @@ import {
   User,
   Volume2,
 } from "lucide-react";
-import { getProviders, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -73,10 +73,6 @@ export default function SettingsPage() {
   const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(() =>
     spotifyFeatureSettingsStorage.getAll(),
   );
-  const [spotifyProviderAvailable, setSpotifyProviderAvailable] =
-    useState(false);
-  const [isCheckingSpotifyProvider, setIsCheckingSpotifyProvider] =
-    useState(true);
 
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
@@ -159,35 +155,12 @@ export default function SettingsPage() {
     void appSignOut({ callbackUrl: "/" });
   };
 
-  useEffect(() => {
-    let cancelled = false;
-
-    void getProviders()
-      .then((providers) => {
-        if (cancelled) return;
-        setSpotifyProviderAvailable(Boolean(providers?.spotify));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSpotifyProviderAvailable(false);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setIsCheckingSpotifyProvider(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const spotifySummary = useMemo(
     () =>
       getSpotifyFeatureConnectionSummary({
         settings: spotifySettings,
-        providerAvailable: spotifyProviderAvailable,
       }),
-    [spotifyProviderAvailable, spotifySettings],
+    [spotifySettings],
   );
   const spotifyDraftDirty = useMemo(
     () => JSON.stringify(spotifyDraft) !== JSON.stringify(spotifySettings),
@@ -623,16 +596,12 @@ export default function SettingsPage() {
                 className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${
                   spotifySummary.state === "ready"
                     ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[#1DB954]"
-                    : spotifySummary.state === "unavailable"
-                      ? "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] text-red-300"
-                      : spotifySummary.state === "incomplete"
+                    : spotifySummary.state === "incomplete"
                         ? "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] text-amber-300"
                         : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
                 }`}
               >
-                {isCheckingSpotifyProvider
-                  ? "Checking Spotify provider..."
-                  : spotifySummary.label}
+                {spotifySummary.label}
               </div>
             </div>
 

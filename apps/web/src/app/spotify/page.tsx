@@ -15,7 +15,6 @@ import {
   ShieldCheck,
   User2,
 } from "lucide-react";
-import { getProviders } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -39,14 +38,9 @@ export default function SpotifyPage() {
   const [settings, setSettings] = useState<SpotifyFeatureSettings>(() =>
     spotifyFeatureSettingsStorage.getAll(),
   );
-  const [providerAvailable, setProviderAvailable] = useState(false);
-  const [isCheckingProvider, setIsCheckingProvider] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
     const syncSettings = () => {
-      if (cancelled) return;
       setSettings(spotifyFeatureSettingsStorage.getAll());
     };
 
@@ -62,22 +56,7 @@ export default function SpotifyPage() {
     );
     window.addEventListener("storage", handleSettingsUpdated);
 
-    void getProviders()
-      .then((providers) => {
-        if (cancelled) return;
-        setProviderAvailable(Boolean(providers?.spotify));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setProviderAvailable(false);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setIsCheckingProvider(false);
-      });
-
     return () => {
-      cancelled = true;
       window.removeEventListener(
         SPOTIFY_FEATURE_SETTINGS_UPDATED_EVENT,
         handleSettingsUpdated,
@@ -90,9 +69,8 @@ export default function SpotifyPage() {
     () =>
       getSpotifyFeatureConnectionSummary({
         settings,
-        providerAvailable,
       }),
-    [providerAvailable, settings],
+    [settings],
   );
 
   return (
@@ -137,20 +115,16 @@ export default function SpotifyPage() {
               Connection health
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-[var(--color-text)]">
-              {isCheckingProvider
-                ? "Checking Spotify provider..."
-                : summary.label}
+              {summary.label}
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-[var(--color-subtext)]">
-              {isCheckingProvider
-                ? "Inspecting the current build for an active Spotify provider."
-                : summary.description}
+              {summary.description}
             </p>
           </div>
           <div
             className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold ${getStatusClasses(summary.state)}`}
           >
-            {isCheckingProvider ? "Checking" : summary.label}
+            {summary.label}
           </div>
         </div>
 
