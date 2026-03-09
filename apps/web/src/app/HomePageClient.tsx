@@ -958,6 +958,47 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                     and smart mix.
                     {apiHostname ? ` Powered by ${apiHostname}.` : ""}
                   </p>
+                  <div className="mt-4 max-w-2xl rounded-2xl border border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-[var(--color-accent)]" />
+                      <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
+                        What&apos;s New
+                      </p>
+                    </div>
+                    <ul className="mt-3 space-y-1.5 text-sm text-[var(--color-subtext)]">
+                      <li>
+                        Spotify OAuth sign-in was retired due to current Spotify
+                        API limitations.
+                      </li>
+                      <li>
+                        Spotify features now live in Settings instead, using
+                        your own Spotify app values.
+                      </li>
+                      <li>
+                        Save your Spotify client ID, client secret, and username
+                        to activate the profile for your account.
+                      </li>
+                    </ul>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => {
+                          hapticLight();
+                          router.push("/settings");
+                        }}
+                        className="btn-secondary inline-flex items-center gap-2 px-3 py-2 text-[11px] font-bold tracking-wide uppercase"
+                      >
+                        Open Settings
+                      </button>
+                      <a
+                        href="https://developer.spotify.com/documentation/web-api/concepts/apps"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold tracking-wide text-[var(--color-text)] uppercase transition hover:border-[var(--color-accent)]/40 hover:bg-white/10"
+                      >
+                        How To
+                      </a>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button

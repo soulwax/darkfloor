@@ -169,6 +169,13 @@
       "when": 1770666522280,
       "tag": "0023_handy_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1773078000000,
+      "tag": "0024_spotify_feature_profile",
+      "breakpoints": true
     }
   ]
 }

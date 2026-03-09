@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildSpotifyFeaturePreferenceInput,
+  extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
+  hasCompleteSpotifyFeatureSettings,
   maskSpotifyClientSecret,
   normalizeSpotifyFeatureSettings,
 } from "@/utils/spotifyFeatureSettings";
@@ -14,13 +17,68 @@ describe("spotifyFeatureSettings", () => {
         clientId: "  client-id  ",
         clientSecret: "  secret  ",
         username: "  user-name  ",
+        updatedAt: new Date("2026-03-08T00:00:00.000Z"),
       }),
     ).toMatchObject({
       enabled: true,
       clientId: "client-id",
       clientSecret: "secret",
       username: "user-name",
+      updatedAt: "2026-03-08T00:00:00.000Z",
     });
+  });
+
+  it("extracts spotify settings from per-user preferences records", () => {
+    expect(
+      extractSpotifyFeatureSettingsFromPreferences({
+        spotifyFeaturesEnabled: true,
+        spotifyClientId: " client-id ",
+        spotifyClientSecret: " secret ",
+        spotifyUsername: " user-name ",
+        spotifySettingsUpdatedAt: new Date("2026-03-09T00:00:00.000Z"),
+      }),
+    ).toEqual({
+      enabled: true,
+      clientId: "client-id",
+      clientSecret: "secret",
+      username: "user-name",
+      updatedAt: "2026-03-09T00:00:00.000Z",
+    });
+  });
+
+  it("auto-enables complete spotify settings when building preference input", () => {
+    expect(
+      buildSpotifyFeaturePreferenceInput({
+        enabled: false,
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        username: "spotify-user",
+        updatedAt: null,
+      }),
+    ).toEqual({
+      spotifyFeaturesEnabled: true,
+      spotifyClientId: "client-id",
+      spotifyClientSecret: "client-secret",
+      spotifyUsername: "spotify-user",
+    });
+  });
+
+  it("reports when required spotify fields are complete", () => {
+    expect(
+      hasCompleteSpotifyFeatureSettings({
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        username: "spotify-user",
+      }),
+    ).toBe(true);
+
+    expect(
+      hasCompleteSpotifyFeatureSettings({
+        clientId: "client-id",
+        clientSecret: "",
+        username: "spotify-user",
+      }),
+    ).toBe(false);
   });
 
   it("reports ready when the local Spotify settings are complete", () => {

@@ -1,12 +1,13 @@
 "use client";
 
 import {
+  extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
+  hasConfiguredSpotifyFeatureSettings,
   maskSpotifyClientSecret,
   spotifyFeatureSettingsStorage,
-  SPOTIFY_FEATURE_SETTINGS_UPDATED_EVENT,
 } from "@/utils/spotifyFeatureSettings";
-import type { SpotifyFeatureSettings } from "@starchild/types/spotifySettings";
+import { api } from "@starchild/api-client/trpc/react";
 import { springPresets } from "@/utils/spring-animations";
 import {
   Disc3,
@@ -15,8 +16,9 @@ import {
   ShieldCheck,
   User2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 
 function getStatusClasses(
@@ -35,35 +37,40 @@ function getStatusClasses(
 }
 
 export default function SpotifyPage() {
-  const [settings, setSettings] = useState<SpotifyFeatureSettings>(() =>
-    spotifyFeatureSettingsStorage.getAll(),
+  const { data: session, status } = useSession();
+  const { data: preferences, isLoading } =
+    api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
+  const legacySettings = useMemo(
+    () => spotifyFeatureSettingsStorage.getAll(),
+    [],
+  );
+  const serverSettings = useMemo(
+    () => extractSpotifyFeatureSettingsFromPreferences(preferences),
+    [preferences],
+  );
+  const settings = useMemo(
+    () =>
+      hasConfiguredSpotifyFeatureSettings(serverSettings)
+        ? serverSettings
+        : legacySettings,
+    [legacySettings, serverSettings],
+  );
+  const isUsingLocalFallback = useMemo(
+    () =>
+      !hasConfiguredSpotifyFeatureSettings(serverSettings) &&
+      hasConfiguredSpotifyFeatureSettings(legacySettings),
+    [legacySettings, serverSettings],
   );
 
   useEffect(() => {
-    const syncSettings = () => {
-      setSettings(spotifyFeatureSettingsStorage.getAll());
-    };
+    if (!session || !hasConfiguredSpotifyFeatureSettings(serverSettings)) {
+      return;
+    }
 
-    const handleSettingsUpdated = () => {
-      syncSettings();
-    };
-
-    syncSettings();
-
-    window.addEventListener(
-      SPOTIFY_FEATURE_SETTINGS_UPDATED_EVENT,
-      handleSettingsUpdated,
-    );
-    window.addEventListener("storage", handleSettingsUpdated);
-
-    return () => {
-      window.removeEventListener(
-        SPOTIFY_FEATURE_SETTINGS_UPDATED_EVENT,
-        handleSettingsUpdated,
-      );
-      window.removeEventListener("storage", handleSettingsUpdated);
-    };
-  }, []);
+    spotifyFeatureSettingsStorage.save(serverSettings, {
+      preserveUpdatedAt: true,
+    });
+  }, [serverSettings, session]);
 
   const summary = useMemo(
     () =>
@@ -72,6 +79,42 @@ export default function SpotifyPage() {
       }),
     [settings],
   );
+
+  if (status === "loading" || (session && isLoading)) {
+    return (
+      <div className="container mx-auto flex min-h-screen flex-col px-4 py-8 md:px-6 md:py-10">
+        <div className="mb-8 h-12 w-48 animate-pulse rounded bg-[var(--color-muted)]/20" />
+        <div className="h-80 animate-pulse rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/60" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="container mx-auto flex min-h-screen flex-col items-center justify-center px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={springPresets.gentle}
+          className="text-center"
+        >
+          <Disc3 className="mx-auto mb-4 h-16 w-16 text-[#1DB954]" />
+          <h1 className="mb-2 text-2xl font-bold text-[var(--color-text)]">
+            Sign in required
+          </h1>
+          <p className="mb-6 max-w-md text-[var(--color-subtext)]">
+            Sign in with Discord to view your synced Spotify feature profile.
+          </p>
+          <Link
+            href="/signin?callbackUrl=%2Fspotify"
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition hover:opacity-90"
+          >
+            Sign In
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto flex min-h-screen flex-col px-4 py-8 md:px-6 md:py-10">
@@ -88,9 +131,9 @@ export default function SpotifyPage() {
               Spotify
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--color-subtext)]">
-              This page is a readiness checkpoint for Spotify features. Playlist
-              flows and deeper integrations can be layered on later without
-              changing the saved setup shape.
+              This page reflects your account-level Spotify feature profile. The
+              profile activates automatically when client ID, client secret, and
+              username are all saved.
             </p>
           </div>
           <Link
@@ -109,6 +152,14 @@ export default function SpotifyPage() {
         transition={springPresets.gentle}
         className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/92 p-6 shadow-[var(--shadow-lg)]"
       >
+        {isUsingLocalFallback ? (
+          <div className="mb-6 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] px-4 py-3 text-sm text-amber-200">
+            Local Spotify values were found on this device, but they have not
+            been synced to your account yet. Save them from Settings to make the
+            profile available for this user everywhere.
+          </div>
+        ) : null}
+
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-semibold tracking-[0.16em] text-[var(--color-subtext)] uppercase">
@@ -132,10 +183,10 @@ export default function SpotifyPage() {
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 p-4">
             <p className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
               <ShieldCheck className="h-4 w-4 text-[#1DB954]" />
-              Feature toggle
+              Account activation
             </p>
             <p className="text-lg font-semibold text-[var(--color-text)]">
-              {settings.enabled ? "Enabled" : "Disabled"}
+              {settings.enabled ? "Active" : "Inactive"}
             </p>
           </div>
 

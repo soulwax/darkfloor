@@ -24,22 +24,101 @@ export type SpotifyFeatureConnectionSummary = {
   checks: SpotifyFeatureConnectionCheck[];
 };
 
+type SpotifyFeaturePreferenceRecord = Partial<
+  Record<
+    | "spotifyFeaturesEnabled"
+    | "spotifyClientId"
+    | "spotifyClientSecret"
+    | "spotifyUsername"
+    | "spotifySettingsUpdatedAt",
+    unknown
+  >
+>;
+
+type SpotifyFeatureSettingsInput = Partial<
+  Omit<SpotifyFeatureSettings, "updatedAt">
+> & {
+  updatedAt?: string | Date | null;
+};
+
 function normalizeText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
 export function normalizeSpotifyFeatureSettings(
-  value: Partial<SpotifyFeatureSettings> | null | undefined,
+  value: SpotifyFeatureSettingsInput | null | undefined,
 ): SpotifyFeatureSettings {
+  const updatedAt =
+    typeof value?.updatedAt === "string" && value.updatedAt.trim().length > 0
+      ? value.updatedAt
+      : value?.updatedAt instanceof Date
+        ? value.updatedAt.toISOString()
+        : null;
+
   return {
     enabled: value?.enabled === true,
     clientId: normalizeText(value?.clientId),
     clientSecret: normalizeText(value?.clientSecret),
     username: normalizeText(value?.username),
+    updatedAt,
+  };
+}
+
+export function hasConfiguredSpotifyFeatureSettings(
+  settings: SpotifyFeatureSettings,
+): boolean {
+  return Boolean(
+    settings.enabled ||
+    settings.clientId.length > 0 ||
+    settings.clientSecret.length > 0 ||
+    settings.username.length > 0,
+  );
+}
+
+export function hasCompleteSpotifyFeatureSettings(
+  settings: Pick<
+    SpotifyFeatureSettings,
+    "clientId" | "clientSecret" | "username"
+  >,
+): boolean {
+  return Boolean(
+    settings.clientId.trim().length > 0 &&
+    settings.clientSecret.trim().length > 0 &&
+    settings.username.trim().length > 0,
+  );
+}
+
+export function extractSpotifyFeatureSettingsFromPreferences(
+  value: SpotifyFeaturePreferenceRecord | null | undefined,
+): SpotifyFeatureSettings {
+  return normalizeSpotifyFeatureSettings({
+    enabled: value?.spotifyFeaturesEnabled === true,
+    clientId: normalizeText(value?.spotifyClientId),
+    clientSecret: normalizeText(value?.spotifyClientSecret),
+    username: normalizeText(value?.spotifyUsername),
     updatedAt:
-      typeof value?.updatedAt === "string" && value.updatedAt.trim().length > 0
-        ? value.updatedAt
+      typeof value?.spotifySettingsUpdatedAt === "string" ||
+      value?.spotifySettingsUpdatedAt instanceof Date
+        ? value.spotifySettingsUpdatedAt
         : null,
+  });
+}
+
+export function buildSpotifyFeaturePreferenceInput(
+  settings: SpotifyFeatureSettings,
+): {
+  spotifyFeaturesEnabled: boolean;
+  spotifyClientId: string;
+  spotifyClientSecret: string;
+  spotifyUsername: string;
+} {
+  const spotifyFeaturesEnabled = hasCompleteSpotifyFeatureSettings(settings);
+
+  return {
+    spotifyFeaturesEnabled,
+    spotifyClientId: settings.clientId,
+    spotifyClientSecret: settings.clientSecret,
+    spotifyUsername: settings.username,
   };
 }
 
@@ -85,7 +164,8 @@ export const spotifyFeatureSettingsStorage = {
       ...value,
       updatedAt:
         options?.preserveUpdatedAt === true
-          ? this.getAll().updatedAt
+          ? (normalizeSpotifyFeatureSettings(value).updatedAt ??
+            this.getAll().updatedAt)
           : new Date().toISOString(),
     });
 

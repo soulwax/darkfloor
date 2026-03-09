@@ -8,8 +8,13 @@ import { useToast } from "@/contexts/ToastContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { appSignOut } from "@/services/authSignOut";
 import {
+  buildSpotifyFeaturePreferenceInput,
+  extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
+  hasCompleteSpotifyFeatureSettings,
+  hasConfiguredSpotifyFeatureSettings,
   maskSpotifyClientSecret,
+  normalizeSpotifyFeatureSettings,
   spotifyFeatureSettingsStorage,
 } from "@/utils/spotifyFeatureSettings";
 import { api } from "@starchild/api-client/trpc/react";
@@ -66,12 +71,13 @@ export default function SettingsPage() {
   const [localSettings, setLocalSettings] = useState(() =>
     settingsStorage.getAll(),
   );
-  const [spotifySettings, setSpotifySettings] =
-    useState<SpotifyFeatureSettings>(() =>
-      spotifyFeatureSettingsStorage.getAll(),
-    );
-  const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(() =>
+  const legacySpotifySettingsRef = useRef<SpotifyFeatureSettings>(
     spotifyFeatureSettingsStorage.getAll(),
+  );
+  const [spotifySettings, setSpotifySettings] =
+    useState<SpotifyFeatureSettings>(() => legacySpotifySettingsRef.current);
+  const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(
+    () => legacySpotifySettingsRef.current,
   );
 
   const { data: preferences, isLoading } =
@@ -119,6 +125,10 @@ export default function SettingsPage() {
   };
 
   const utils = api.useUtils();
+  const serverSpotifySettings = useMemo(
+    () => extractSpotifyFeatureSettingsFromPreferences(preferences),
+    [preferences],
+  );
 
   const handleSelect = (key: string, value: string) => {
     hapticToggle();
@@ -155,34 +165,112 @@ export default function SettingsPage() {
     void appSignOut({ callbackUrl: "/" });
   };
 
-  const spotifySummary = useMemo(
+  const spotifyDraftSummary = useMemo(
     () =>
       getSpotifyFeatureConnectionSummary({
-        settings: spotifySettings,
+        settings: normalizeSpotifyFeatureSettings({
+          ...spotifyDraft,
+          enabled: hasCompleteSpotifyFeatureSettings(spotifyDraft),
+        }),
       }),
-    [spotifySettings],
+    [spotifyDraft],
   );
   const spotifyDraftDirty = useMemo(
     () => JSON.stringify(spotifyDraft) !== JSON.stringify(spotifySettings),
     [spotifyDraft, spotifySettings],
   );
+  const spotifyDraftDirtyRef = useRef(false);
+  const hasServerSpotifySettings = useMemo(
+    () => hasConfiguredSpotifyFeatureSettings(serverSpotifySettings),
+    [serverSpotifySettings],
+  );
+  const hasLegacySpotifySettings = useMemo(
+    () => hasConfiguredSpotifyFeatureSettings(legacySpotifySettingsRef.current),
+    [],
+  );
+
+  useEffect(() => {
+    spotifyDraftDirtyRef.current = spotifyDraftDirty;
+  }, [spotifyDraftDirty]);
+
+  useEffect(() => {
+    if (!session || preferences === undefined) {
+      return;
+    }
+
+    const nextSpotifySettings = hasServerSpotifySettings
+      ? serverSpotifySettings
+      : extractSpotifyFeatureSettingsFromPreferences(preferences);
+    const nextSpotifyDraft = hasServerSpotifySettings
+      ? serverSpotifySettings
+      : hasLegacySpotifySettings
+        ? legacySpotifySettingsRef.current
+        : nextSpotifySettings;
+
+    setSpotifySettings(nextSpotifySettings);
+    setSpotifyDraft((prev) =>
+      spotifyDraftDirtyRef.current ? prev : nextSpotifyDraft,
+    );
+
+    if (hasServerSpotifySettings) {
+      spotifyFeatureSettingsStorage.save(nextSpotifySettings, {
+        preserveUpdatedAt: true,
+      });
+    }
+  }, [
+    hasLegacySpotifySettings,
+    hasServerSpotifySettings,
+    preferences,
+    serverSpotifySettings,
+    session,
+  ]);
 
   const handleSpotifyDraftChange = (
-    key: keyof SpotifyFeatureSettings,
-    value: string | boolean,
+    key: keyof Pick<
+      SpotifyFeatureSettings,
+      "clientId" | "clientSecret" | "username"
+    >,
+    value: string,
   ) => {
-    setSpotifyDraft((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setSpotifyDraft((prev) => {
+      const nextDraft = normalizeSpotifyFeatureSettings({
+        ...prev,
+        [key]: value,
+      });
+
+      return {
+        ...nextDraft,
+        enabled: hasCompleteSpotifyFeatureSettings(nextDraft),
+      };
+    });
   };
 
-  const handleSpotifySettingsSave = () => {
+  const handleSpotifySettingsSave = async () => {
     hapticLight();
-    const saved = spotifyFeatureSettingsStorage.save(spotifyDraft);
+    const normalizedDraft = normalizeSpotifyFeatureSettings({
+      ...spotifyDraft,
+      enabled: hasCompleteSpotifyFeatureSettings(spotifyDraft),
+    });
+
+    await updatePreferences.mutateAsync(
+      buildSpotifyFeaturePreferenceInput(normalizedDraft),
+    );
+
+    const saved = spotifyFeatureSettingsStorage.save(normalizedDraft);
     setSpotifySettings(saved);
     setSpotifyDraft(saved);
-    showToast("Spotify feature settings saved locally", "success");
+    utils.music.getUserPreferences.setData(undefined, (prev) =>
+      prev
+        ? {
+            ...prev,
+            ...buildSpotifyFeaturePreferenceInput(saved),
+            spotifySettingsUpdatedAt: saved.updatedAt
+              ? new Date(saved.updatedAt)
+              : null,
+          }
+        : prev,
+    );
+    await utils.music.getUserPreferences.invalidate();
   };
 
   if (!session) {
@@ -583,45 +671,55 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="text-[15px] font-medium text-[var(--color-text)]">
-                  Local Spotify feature profile
+                  Spotify feature profile
                 </p>
                 <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[var(--color-subtext)]">
-                  Save Spotify feature inputs locally for this device and use
-                  the readiness check below to confirm the app can surface
-                  Spotify features later. Client secrets stored in a browser are
-                  not safe for shared or production environments.
+                  These Spotify values are saved on your account, not just this
+                  device. Your Spotify feature profile becomes active for your
+                  user as soon as the client ID, client secret, and username are
+                  all present.
                 </p>
               </div>
               <div
                 className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                  spotifySummary.state === "ready"
+                  spotifyDraftSummary.state === "ready"
                     ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[#1DB954]"
-                    : spotifySummary.state === "incomplete"
-                        ? "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] text-amber-300"
-                        : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
+                    : spotifyDraftSummary.state === "incomplete"
+                      ? "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] text-amber-300"
+                      : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
                 }`}
               >
-                {spotifySummary.label}
+                {spotifyDraftSummary.label}
               </div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
-                <span className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                  Spotify features
-                </span>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[var(--color-text)]">
-                    Enable Spotify features on this device
-                  </span>
-                  <ToggleSwitch
-                    checked={spotifyDraft.enabled}
-                    onChange={(checked) =>
-                      handleSpotifyDraftChange("enabled", checked)
-                    }
-                  />
+              {!hasServerSpotifySettings && hasLegacySpotifySettings ? (
+                <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 md:col-span-2">
+                  <p className="text-sm font-semibold text-amber-200">
+                    Local Spotify values detected
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-amber-100/90">
+                    This form was prefilled from local browser data. Save once
+                    to sync the Spotify profile to your account.
+                  </p>
                 </div>
-              </label>
+              ) : null}
+
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
+                <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                  Account activation
+                </p>
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  {spotifySettings.enabled
+                    ? "Active for your account"
+                    : "Waiting for a complete profile"}
+                </p>
+                <p className="mt-2 text-xs text-[var(--color-subtext)]">
+                  Activation is automatic once all three Spotify fields are
+                  saved.
+                </p>
+              </div>
 
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
                 <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
@@ -691,7 +789,7 @@ export default function SettingsPage() {
                 Connection checklist
               </p>
               <div className="grid gap-2 md:grid-cols-2">
-                {spotifySummary.checks.map((check) => (
+                {spotifyDraftSummary.checks.map((check) => (
                   <div
                     key={check.id}
                     className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-2"
@@ -716,7 +814,7 @@ export default function SettingsPage() {
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={handleSpotifySettingsSave}
+                onClick={() => void handleSpotifySettingsSave()}
                 disabled={!spotifyDraftDirty}
                 className="rounded-xl bg-[#1DB954] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >

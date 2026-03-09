@@ -27,17 +27,23 @@ type MockDb = {
     };
   };
   insert: ReturnType<typeof vi.fn>;
+  insertValues: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
+  updateSet: ReturnType<typeof vi.fn>;
+  updateWhere: ReturnType<typeof vi.fn>;
 };
 
 const createMockDb = (findFirstResult: unknown = null): MockDb => {
+  const insertValues = vi.fn().mockResolvedValue(undefined);
+  const updateWhere = vi.fn().mockResolvedValue(undefined);
+  const updateSet = vi.fn().mockReturnValue({
+    where: updateWhere,
+  });
   const insert = vi.fn().mockReturnValue({
-    values: vi.fn().mockResolvedValue(undefined),
+    values: insertValues,
   });
   const update = vi.fn().mockReturnValue({
-    set: vi.fn().mockReturnValue({
-      where: vi.fn().mockResolvedValue(undefined),
-    }),
+    set: updateSet,
   });
   return {
     query: {
@@ -46,7 +52,10 @@ const createMockDb = (findFirstResult: unknown = null): MockDb => {
       },
     },
     insert,
+    insertValues,
     update,
+    updateSet,
+    updateWhere,
   };
 };
 
@@ -93,5 +102,58 @@ describe("musicRouter tRPC operations", () => {
 
     expect(result).toEqual({ success: true });
     expect(db.insert).toHaveBeenCalled();
+  });
+
+  it("persists spotify feature settings per user and auto-enables complete profiles", async () => {
+    const db = createMockDb(null);
+
+    const context = createCallerContext(db);
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.updatePreferences({
+      spotifyClientId: " client-id ",
+      spotifyClientSecret: " client-secret ",
+      spotifyUsername: " spotify-user ",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        spotifyFeaturesEnabled: true,
+        spotifyClientId: "client-id",
+        spotifyClientSecret: "client-secret",
+        spotifyUsername: "spotify-user",
+        spotifySettingsUpdatedAt: expect.any(Date),
+      }),
+    );
+  });
+
+  it("disables spotify features when a saved profile becomes incomplete", async () => {
+    const db = createMockDb({
+      userId: "user-1",
+      spotifyFeaturesEnabled: true,
+      spotifyClientId: "client-id",
+      spotifyClientSecret: "client-secret",
+      spotifyUsername: "spotify-user",
+    });
+
+    const context = createCallerContext(db);
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.updatePreferences({
+      spotifyClientSecret: "",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(db.updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spotifyFeaturesEnabled: false,
+        spotifyClientId: "client-id",
+        spotifyClientSecret: "",
+        spotifyUsername: "spotify-user",
+        spotifySettingsUpdatedAt: expect.any(Date),
+      }),
+    );
   });
 });

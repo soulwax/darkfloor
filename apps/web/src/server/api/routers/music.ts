@@ -122,6 +122,36 @@ type PostgresConstraintError = {
   constraint?: string;
 };
 
+type SpotifyFeaturePreferenceDraft = {
+  spotifyFeaturesEnabled?: boolean;
+  spotifyClientId?: string;
+  spotifyClientSecret?: string;
+  spotifyUsername?: string;
+};
+
+function hasSpotifyFeaturePreferenceInput(
+  input: SpotifyFeaturePreferenceDraft,
+): boolean {
+  return (
+    input.spotifyFeaturesEnabled !== undefined ||
+    input.spotifyClientId !== undefined ||
+    input.spotifyClientSecret !== undefined ||
+    input.spotifyUsername !== undefined
+  );
+}
+
+function isSpotifyFeatureProfileComplete(input: {
+  clientId: string;
+  clientSecret: string;
+  username: string;
+}): boolean {
+  return (
+    input.clientId.trim().length > 0 &&
+    input.clientSecret.trim().length > 0 &&
+    input.username.trim().length > 0
+  );
+}
+
 function isUniqueConstraintError(
   error: unknown,
   constraint?: string,
@@ -1863,6 +1893,10 @@ export const musicRouter = createTRPCRouter({
         visualizerEnabled: z.boolean().optional(),
         compactMode: z.boolean().optional(),
         theme: z.enum(["dark", "light"]).optional(),
+        spotifyFeaturesEnabled: z.boolean().optional(),
+        spotifyClientId: z.string().trim().max(255).optional(),
+        spotifyClientSecret: z.string().trim().max(4096).optional(),
+        spotifyUsername: z.string().trim().max(255).optional(),
         autoQueueEnabled: z.boolean().optional(),
         autoQueueThreshold: z.number().min(1).max(10).optional(),
         autoQueueCount: z.number().min(1).max(20).optional(),
@@ -1873,7 +1907,7 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const normalizedInput = {
+      const normalizedInput: Partial<typeof userPreferences.$inferInsert> = {
         ...input,
         ...(input.theme !== undefined ? { theme: "dark" as const } : {}),
       };
@@ -1881,6 +1915,23 @@ export const musicRouter = createTRPCRouter({
       const existing = await ctx.db.query.userPreferences.findFirst({
         where: eq(userPreferences.userId, ctx.session.user.id),
       });
+
+      if (hasSpotifyFeaturePreferenceInput(input)) {
+        const nextSpotifyProfile = {
+          clientId: input.spotifyClientId ?? existing?.spotifyClientId ?? "",
+          clientSecret:
+            input.spotifyClientSecret ?? existing?.spotifyClientSecret ?? "",
+          username: input.spotifyUsername ?? existing?.spotifyUsername ?? "",
+        };
+
+        normalizedInput.spotifyFeaturesEnabled =
+          isSpotifyFeatureProfileComplete(nextSpotifyProfile);
+        normalizedInput.spotifyClientId = nextSpotifyProfile.clientId.trim();
+        normalizedInput.spotifyClientSecret =
+          nextSpotifyProfile.clientSecret.trim();
+        normalizedInput.spotifyUsername = nextSpotifyProfile.username.trim();
+        normalizedInput.spotifySettingsUpdatedAt = new Date();
+      }
 
       if (!existing) {
         await ctx.db.insert(userPreferences).values({
