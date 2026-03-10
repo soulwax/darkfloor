@@ -3,6 +3,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface ProfileStats {
@@ -29,6 +30,8 @@ export default function ProfileHeader({
   isShareSupported,
   onShare,
 }: ProfileHeaderProps) {
+  const t = useTranslations("profile");
+  const tc = useTranslations("common");
   const [imageError, setImageError] = useState(false);
 
   return (
@@ -42,10 +45,10 @@ export default function ProfileHeader({
           {profile.image && !imageError ? (
             <Image
               src={profile.image}
-              alt={profile.name ?? "User"}
+              alt={profile.name ?? t("user")}
               width={128}
               height={128}
-              className="h-32 w-32 rounded-full border-4 border-[var(--color-accent)]/55 shadow-lg shadow-[var(--color-accent)]/28"
+              className="h-32 w-32 rounded-full border-4 border-[var(--color-accent)]/55 shadow-[var(--color-accent)]/28 shadow-lg"
               onError={() => setImageError(true)}
             />
           ) : (
@@ -67,7 +70,7 @@ export default function ProfileHeader({
         {}
         <div className="relative flex-1 text-center md:text-left">
           <h1 className="text-glow mb-2 text-4xl font-bold text-[var(--color-text)]">
-            {profile.name ?? "Anonymous User"}
+            {profile.name ?? t("anonymousUser")}
           </h1>
           {profile.bio && (
             <p className="mb-4 text-lg text-[var(--color-subtext)]">
@@ -82,7 +85,7 @@ export default function ProfileHeader({
                 {profile.stats?.tracksPlayed ?? 0}
               </div>
               <div className="text-sm text-[var(--color-subtext)]">
-                Tracks Played
+                {t("tracksPlayed")}
               </div>
             </div>
             <div className="text-center">
@@ -90,7 +93,7 @@ export default function ProfileHeader({
                 {profile.stats?.favorites ?? 0}
               </div>
               <div className="text-sm text-[var(--color-subtext)]">
-                Favorites
+                {t("favorites")}
               </div>
             </div>
             <div className="text-center">
@@ -98,7 +101,7 @@ export default function ProfileHeader({
                 {profile.stats?.playlists ?? 0}
               </div>
               <div className="text-sm text-[var(--color-subtext)]">
-                Playlists
+                {tc("playlists")}
               </div>
             </div>
           </div>
@@ -109,7 +112,9 @@ export default function ProfileHeader({
           <button
             onClick={onShare}
             className="touch-target flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-4 py-2 text-[var(--color-text)] transition-colors hover:bg-[var(--color-accent)]/20"
-            aria-label={`Share ${profile.name ?? "user"}'s profile`}
+            aria-label={t("shareProfileAria", {
+              name: profile.name ?? t("user"),
+            })}
           >
             <svg
               className="h-5 w-5"
@@ -124,7 +129,7 @@ export default function ProfileHeader({
                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
               />
             </svg>
-            Share Profile
+            {t("shareProfile")}
           </button>
         )}
       </div>

@@ -4,6 +4,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Music2, Sparkles, Play } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface WelcomeHeroProps {
@@ -12,6 +13,7 @@ interface WelcomeHeroProps {
 }
 
 export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
+  const t = useTranslations("welcome");
   const [mounted] = useState(() => typeof window !== "undefined");
 
   if (!mounted) return null;
@@ -77,7 +79,7 @@ export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
                 </motion.div>
 
                 {}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -85,7 +87,7 @@ export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
                     className="flex items-center gap-2"
                   >
                     <h2 className="bg-gradient-to-r from-[var(--color-text)] to-[var(--color-accent)] bg-clip-text text-lg font-bold text-transparent md:text-xl">
-                      Welcome to Starchild Music
+                      {t("title")}
                     </h2>
                     <motion.div
                       animate={{
@@ -107,7 +109,7 @@ export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
                     transition={{ delay: 0.3, duration: 0.5 }}
                     className="mt-1 text-sm text-[var(--color-subtext)] md:text-base"
                   >
-                    Search and play from 50 million+ tracks instantly
+                    {t("subtitle")}
                   </motion.p>
                 </div>
 
@@ -119,7 +121,7 @@ export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
                     transition={{ delay: 0.4, duration: 0.3 }}
                     onClick={onDismiss}
                     className="group flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(255,255,255,0.05)] text-[var(--color-muted)] transition-all hover:bg-[rgba(244,178,102,0.15)] hover:text-[var(--color-accent)] active:scale-95"
-                    aria-label="Dismiss"
+                    aria-label={t("dismiss")}
                   >
                     <svg
                       width="14"
@@ -144,7 +146,7 @@ export function WelcomeHero({ isVisible, onDismiss }: WelcomeHeroProps) {
                 className="mt-4 flex items-center gap-2 text-xs text-[var(--color-muted)] md:text-sm"
               >
                 <Play className="h-3 w-3" />
-                <span>Start playing to unlock the visualizer experience</span>
+                <span>{t("startPlayingHint")}</span>
               </motion.div>
             </div>
 

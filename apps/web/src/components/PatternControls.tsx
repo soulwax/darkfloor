@@ -3,7 +3,8 @@
 "use client";
 
 import { ChevronDown, Layers } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FlowFieldRenderer } from "@starchild/visualizers/FlowFieldRenderer";
 import type { Pattern } from "@starchild/visualizers/flowfieldPatterns/patternIds";
 
@@ -37,7 +38,7 @@ function SliderControl({
     <div>
       <div className="mb-2 flex items-center justify-between">
         <label className="text-sm text-[var(--color-subtext)]">{label}</label>
-        <span className="text-xs font-mono text-[var(--color-accent)]">
+        <span className="font-mono text-xs text-[var(--color-accent)]">
           {value.toFixed(decimals)}
           {unit}
         </span>
@@ -59,6 +60,7 @@ export default function PatternControls({
   renderer,
   onClose,
 }: PatternControlsProps) {
+  const t = useTranslations("patterns");
   const [patternState, setPatternState] = useState<{
     currentPattern: string;
     nextPattern: string;
@@ -72,8 +74,59 @@ export default function PatternControls({
     juliaC: { re: number; im: number };
     hueBase: number;
   } | null>(null);
-  const [availablePatterns, setAvailablePatterns] = useState<Pattern[]>([]);
   const [rawCurrentPattern, setRawCurrentPattern] = useState<string>("");
+
+  const sectionTitleMap = useMemo<Record<string, string>>(
+    () => ({
+      fractal: t("sections.fractal"),
+      rays: t("sections.rays"),
+      waves: t("sections.waves"),
+      swarm: t("sections.particles"),
+      fluid: t("sections.particles"),
+      bubbles: t("sections.bubbles"),
+      starfield: t("sections.starfield"),
+      rings: t("sections.rings"),
+      tunnel: t("sections.tunnel"),
+      matrix: t("sections.matrix"),
+      lightning: t("sections.lightning"),
+      galaxy: t("sections.galaxy"),
+      mandala: t("sections.mandala"),
+      tarot: t("sections.tarot"),
+      sacredSpiral: t("sections.sacredSpiral"),
+      pentagram: t("sections.pentagram"),
+      runes: t("sections.runes"),
+      sigils: t("sections.sigils"),
+      chakras: t("sections.chakras"),
+      portal: t("sections.portal"),
+      phoenix: t("sections.phoenix"),
+      crystalGrid: t("sections.crystalGrid"),
+      moonPhases: t("sections.moonPhases"),
+      flowerOfLife: t("sections.flowerOfLife"),
+      metatron: t("sections.metatron"),
+      torusField: t("sections.torusField"),
+      labyrinth: t("sections.labyrinth"),
+      vortexSpiral: t("sections.vortexSpiral"),
+      dragonEye: t("sections.dragonEye"),
+      ancientGlyphs: t("sections.ancientGlyphs"),
+      platonic: t("sections.platonic"),
+      cosmicLotus: t("sections.cosmicLotus"),
+      kaleidoscope: t("sections.kaleidoscope"),
+    }),
+    [t],
+  );
+
+  const availablePatterns = useMemo(
+    () => (renderer ? renderer.getAllPatterns() : []),
+    [renderer],
+  );
+
+  const getPatternName = useCallback(
+    (pattern: string) =>
+      sectionTitleMap[pattern] ??
+      renderer?.getFormattedPatternName(pattern as Pattern) ??
+      pattern,
+    [renderer, sectionTitleMap],
+  );
 
   const [patternParams, setPatternParams] = useState<{
     particleCount: number;
@@ -136,15 +189,6 @@ export default function PatternControls({
     kaleidoscopeColorShift: number;
   } | null>(null);
 
-  // Initialize available patterns from renderer - intentional sync
-  useEffect(() => {
-    if (!renderer) return;
-
-    const patterns = renderer.getAllPatterns();
-    /* eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: init from external renderer */
-    setAvailablePatterns(patterns);
-  }, [renderer]);
-
   useEffect(() => {
     if (!renderer) return;
 
@@ -152,8 +196,8 @@ export default function PatternControls({
       const state = renderer.getPatternState();
       setRawCurrentPattern(state.currentPattern);
       setPatternState({
-        currentPattern: renderer.getFormattedPatternName(state.currentPattern),
-        nextPattern: renderer.getFormattedPatternName(state.nextPattern),
+        currentPattern: getPatternName(state.currentPattern),
+        nextPattern: getPatternName(state.nextPattern),
         patternDuration: state.patternDuration,
         transitionSpeed: state.transitionSpeed,
         transitionProgress: state.transitionProgress,
@@ -231,7 +275,7 @@ export default function PatternControls({
     const interval = setInterval(updateState, 500);
 
     return () => clearInterval(interval);
-  }, [renderer]);
+  }, [getPatternName, renderer, t]);
 
   if (!renderer || !patternState || !patternParams) {
     return null;
@@ -252,14 +296,14 @@ export default function PatternControls({
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-[var(--color-accent)]" />
             <h3 className="font-semibold text-[var(--color-text)]">
-              Pattern Controls
+              {t("title")}
             </h3>
           </div>
           <button
             onClick={onClose}
             className="rounded px-2 py-1 text-sm text-[var(--color-subtext)] transition hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
           >
-            ✕
+            {t("close")}
           </button>
         </div>
 
@@ -268,7 +312,7 @@ export default function PatternControls({
           {}
           <div className="mb-6">
             <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-              Select Pattern
+              {t("selectPattern")}
             </label>
             <div className="relative">
               <select
@@ -280,16 +324,18 @@ export default function PatternControls({
               >
                 {availablePatterns.map((pattern) => (
                   <option key={pattern} value={pattern}>
-                    {renderer.getFormattedPatternName(pattern)}
+                    {getPatternName(pattern)}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
             </div>
             {patternState.isTransitioning && (
               <div className="mt-2 text-xs text-[var(--color-subtext)]">
-                Transitioning to: {patternState.nextPattern} (
-                {Math.round(patternState.transitionProgress * 100)}%)
+                {t("transitioningTo", {
+                  pattern: patternState.nextPattern,
+                  progress: Math.round(patternState.transitionProgress * 100),
+                })}
               </div>
             )}
           </div>
@@ -297,11 +343,11 @@ export default function PatternControls({
           {}
           <div className="mb-6 space-y-4">
             <h4 className="text-sm font-semibold text-[var(--color-text)]">
-              General
+              {t("sections.general")}
             </h4>
 
             <SliderControl
-              label="Pattern Duration"
+              label={t("labels.patternDuration")}
               value={patternState.patternDuration}
               min={10}
               max={10000}
@@ -316,7 +362,7 @@ export default function PatternControls({
             />
 
             <SliderControl
-              label="Transition Speed"
+              label={t("labels.transitionSpeed")}
               value={patternState.transitionSpeed}
               min={0.001}
               max={0.1}
@@ -331,7 +377,7 @@ export default function PatternControls({
             />
 
             <SliderControl
-              label="Hue Base"
+              label={t("labels.hueBase")}
               value={patternState.hueBase}
               min={0}
               max={360}
@@ -351,153 +397,153 @@ export default function PatternControls({
           {rawCurrentPattern === "fractal" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Fractal Controls
+                {sectionTitleMap.fractal}
               </h4>
 
-            {}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm text-[var(--color-subtext)]">
-                  Zoom
-                </label>
-                <span className="text-xs font-mono text-[var(--color-accent)]">
-                  {patternState.fractalZoom.toFixed(2)}
-                </span>
+              {}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm text-[var(--color-subtext)]">
+                    {t("labels.zoom")}
+                  </label>
+                  <span className="font-mono text-xs text-[var(--color-accent)]">
+                    {patternState.fractalZoom.toFixed(2)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  value={patternState.fractalZoom}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    renderer.setFractalZoom(value);
+                    setPatternState((prev) =>
+                      prev ? { ...prev, fractalZoom: value } : null,
+                    );
+                  }}
+                  className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
+                />
               </div>
-              <input
-                type="range"
-                min="0.1"
-                max="10"
-                step="0.1"
-                value={patternState.fractalZoom}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  renderer.setFractalZoom(value);
-                  setPatternState((prev) =>
-                    prev ? { ...prev, fractalZoom: value } : null,
-                  );
-                }}
-                className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
-              />
-            </div>
 
-            {}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm text-[var(--color-subtext)]">
-                  Offset X
-                </label>
-                <span className="text-xs font-mono text-[var(--color-accent)]">
-                  {patternState.fractalOffsetX.toFixed(2)}
-                </span>
+              {}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm text-[var(--color-subtext)]">
+                    {t("labels.offsetX")}
+                  </label>
+                  <span className="font-mono text-xs text-[var(--color-accent)]">
+                    {patternState.fractalOffsetX.toFixed(2)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-2"
+                  max="2"
+                  step="0.01"
+                  value={patternState.fractalOffsetX}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    renderer.setFractalOffsetX(value);
+                    setPatternState((prev) =>
+                      prev ? { ...prev, fractalOffsetX: value } : null,
+                    );
+                  }}
+                  className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
+                />
               </div>
-              <input
-                type="range"
-                min="-2"
-                max="2"
-                step="0.01"
-                value={patternState.fractalOffsetX}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  renderer.setFractalOffsetX(value);
-                  setPatternState((prev) =>
-                    prev ? { ...prev, fractalOffsetX: value } : null,
-                  );
-                }}
-                className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
-              />
-            </div>
 
-            {}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm text-[var(--color-subtext)]">
-                  Offset Y
-                </label>
-                <span className="text-xs font-mono text-[var(--color-accent)]">
-                  {patternState.fractalOffsetY.toFixed(2)}
-                </span>
+              {}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm text-[var(--color-subtext)]">
+                    {t("labels.offsetY")}
+                  </label>
+                  <span className="font-mono text-xs text-[var(--color-accent)]">
+                    {patternState.fractalOffsetY.toFixed(2)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-2"
+                  max="2"
+                  step="0.01"
+                  value={patternState.fractalOffsetY}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    renderer.setFractalOffsetY(value);
+                    setPatternState((prev) =>
+                      prev ? { ...prev, fractalOffsetY: value } : null,
+                    );
+                  }}
+                  className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
+                />
               </div>
-              <input
-                type="range"
-                min="-2"
-                max="2"
-                step="0.01"
-                value={patternState.fractalOffsetY}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  renderer.setFractalOffsetY(value);
-                  setPatternState((prev) =>
-                    prev ? { ...prev, fractalOffsetY: value } : null,
-                  );
-                }}
-                className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
-              />
-            </div>
 
-            {}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm text-[var(--color-subtext)]">
-                  Julia C (Real)
-                </label>
-                <span className="text-xs font-mono text-[var(--color-accent)]">
-                  {patternState.juliaC.re.toFixed(3)}
-                </span>
+              {}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm text-[var(--color-subtext)]">
+                    {t("labels.juliaCReal")}
+                  </label>
+                  <span className="font-mono text-xs text-[var(--color-accent)]">
+                    {patternState.juliaC.re.toFixed(3)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-2"
+                  max="2"
+                  step="0.01"
+                  value={patternState.juliaC.re}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    renderer.setJuliaC(value, patternState.juliaC.im);
+                    setPatternState((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            juliaC: { ...prev.juliaC, re: value },
+                          }
+                        : null,
+                    );
+                  }}
+                  className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
+                />
               </div>
-              <input
-                type="range"
-                min="-2"
-                max="2"
-                step="0.01"
-                value={patternState.juliaC.re}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  renderer.setJuliaC(value, patternState.juliaC.im);
-                  setPatternState((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          juliaC: { ...prev.juliaC, re: value },
-                        }
-                      : null,
-                  );
-                }}
-                className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
-              />
-            </div>
 
-            {}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm text-[var(--color-subtext)]">
-                  Julia C (Imaginary)
-                </label>
-                <span className="text-xs font-mono text-[var(--color-accent)]">
-                  {patternState.juliaC.im.toFixed(3)}
-                </span>
+              {}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-sm text-[var(--color-subtext)]">
+                    {t("labels.juliaCImaginary")}
+                  </label>
+                  <span className="font-mono text-xs text-[var(--color-accent)]">
+                    {patternState.juliaC.im.toFixed(3)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-2"
+                  max="2"
+                  step="0.01"
+                  value={patternState.juliaC.im}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    renderer.setJuliaC(patternState.juliaC.re, value);
+                    setPatternState((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            juliaC: { ...prev.juliaC, im: value },
+                          }
+                        : null,
+                    );
+                  }}
+                  className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
+                />
               </div>
-              <input
-                type="range"
-                min="-2"
-                max="2"
-                step="0.01"
-                value={patternState.juliaC.im}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  renderer.setJuliaC(patternState.juliaC.re, value);
-                  setPatternState((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          juliaC: { ...prev.juliaC, im: value },
-                        }
-                      : null,
-                  );
-                }}
-                className="slider-track accent-accent h-2 w-full cursor-pointer appearance-none rounded-full"
-              />
-            </div>
             </div>
           )}
 
@@ -505,10 +551,10 @@ export default function PatternControls({
           {rawCurrentPattern === "rays" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Rays Controls
+                {sectionTitleMap.rays}
               </h4>
               <SliderControl
-                label="Ray Count"
+                label={t("labels.rayCount")}
                 value={patternParams.rayCount}
                 min={6}
                 max={72}
@@ -523,10 +569,10 @@ export default function PatternControls({
           {rawCurrentPattern === "waves" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Waves Controls
+                {sectionTitleMap.waves}
               </h4>
               <SliderControl
-                label="Wave Count"
+                label={t("labels.waveCount")}
                 value={patternParams.waveCount}
                 min={1}
                 max={15}
@@ -535,7 +581,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setWaveCount(value)}
               />
               <SliderControl
-                label="Wave Amplitude"
+                label={t("labels.waveAmplitude")}
                 value={patternParams.waveAmplitude}
                 min={0.1}
                 max={3.0}
@@ -551,10 +597,10 @@ export default function PatternControls({
           {(rawCurrentPattern === "swarm" || rawCurrentPattern === "fluid") && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Particle Controls
+                {sectionTitleMap.swarm}
               </h4>
               <SliderControl
-                label="Particle Count"
+                label={t("labels.particleCount")}
                 value={patternParams.particleCount}
                 min={50}
                 max={2000}
@@ -563,7 +609,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setParticleCount(value)}
               />
               <SliderControl
-                label="Particle Size"
+                label={t("labels.particleSize")}
                 value={patternParams.particleSize}
                 min={0.5}
                 max={5.0}
@@ -573,7 +619,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setParticleSize(value)}
               />
               <SliderControl
-                label="Particle Speed"
+                label={t("labels.particleSpeed")}
                 value={patternParams.particleSpeed}
                 min={0.1}
                 max={3.0}
@@ -589,10 +635,10 @@ export default function PatternControls({
           {rawCurrentPattern === "bubbles" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Bubble Controls
+                {sectionTitleMap.bubbles}
               </h4>
               <SliderControl
-                label="Bubble Count"
+                label={t("labels.bubbleCount")}
                 value={patternParams.bubbleCount}
                 min={10}
                 max={100}
@@ -601,7 +647,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setBubbleCount(value)}
               />
               <SliderControl
-                label="Bubble Size"
+                label={t("labels.bubbleSize")}
                 value={patternParams.bubbleSize}
                 min={0.5}
                 max={3.0}
@@ -611,7 +657,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setBubbleSize(value)}
               />
               <SliderControl
-                label="Bubble Speed"
+                label={t("labels.bubbleSpeed")}
                 value={patternParams.bubbleSpeed}
                 min={0.1}
                 max={3.0}
@@ -627,10 +673,10 @@ export default function PatternControls({
           {rawCurrentPattern === "starfield" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Starfield Controls
+                {sectionTitleMap.starfield}
               </h4>
               <SliderControl
-                label="Star Count"
+                label={t("labels.starCount")}
                 value={patternParams.starCount}
                 min={50}
                 max={500}
@@ -639,7 +685,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setStarCount(value)}
               />
               <SliderControl
-                label="Star Speed"
+                label={t("labels.starSpeed")}
                 value={patternParams.starSpeed}
                 min={0.1}
                 max={3.0}
@@ -655,10 +701,10 @@ export default function PatternControls({
           {rawCurrentPattern === "rings" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Rings Controls
+                {sectionTitleMap.rings}
               </h4>
               <SliderControl
-                label="Ring Count"
+                label={t("labels.ringCount")}
                 value={patternParams.ringCount}
                 min={3}
                 max={30}
@@ -673,10 +719,10 @@ export default function PatternControls({
           {rawCurrentPattern === "tunnel" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Tunnel Controls
+                {sectionTitleMap.tunnel}
               </h4>
               <SliderControl
-                label="Tunnel Speed"
+                label={t("labels.tunnelSpeed")}
                 value={patternParams.tunnelSpeed}
                 min={0.1}
                 max={3.0}
@@ -692,10 +738,10 @@ export default function PatternControls({
           {rawCurrentPattern === "matrix" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Matrix Controls
+                {sectionTitleMap.matrix}
               </h4>
               <SliderControl
-                label="Fall Speed"
+                label={t("labels.fallSpeed")}
                 value={patternParams.matrixSpeed}
                 min={0.1}
                 max={3.0}
@@ -711,10 +757,10 @@ export default function PatternControls({
           {rawCurrentPattern === "lightning" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Lightning Controls
+                {sectionTitleMap.lightning}
               </h4>
               <SliderControl
-                label="Lightning Count"
+                label={t("labels.lightningCount")}
                 value={patternParams.lightningCount}
                 min={1}
                 max={10}
@@ -729,10 +775,10 @@ export default function PatternControls({
           {rawCurrentPattern === "galaxy" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Galaxy Controls
+                {sectionTitleMap.galaxy}
               </h4>
               <SliderControl
-                label="Arm Count"
+                label={t("labels.armCount")}
                 value={patternParams.galaxyArmCount}
                 min={2}
                 max={8}
@@ -747,10 +793,10 @@ export default function PatternControls({
           {rawCurrentPattern === "mandala" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Mandala Controls
+                {sectionTitleMap.mandala}
               </h4>
               <SliderControl
-                label="Layer Count"
+                label={t("labels.layerCount")}
                 value={patternParams.mandalaLayers}
                 min={1}
                 max={12}
@@ -765,10 +811,10 @@ export default function PatternControls({
           {rawCurrentPattern === "tarot" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Tarot Controls
+                {sectionTitleMap.tarot}
               </h4>
               <SliderControl
-                label="Card Size"
+                label={t("labels.cardSize")}
                 value={patternParams.tarotCardSize}
                 min={0.5}
                 max={3.0}
@@ -778,7 +824,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setTarotCardSize(value)}
               />
               <SliderControl
-                label="Card Count"
+                label={t("labels.cardCount")}
                 value={patternParams.tarotCardCount}
                 min={3}
                 max={22}
@@ -793,10 +839,10 @@ export default function PatternControls({
           {rawCurrentPattern === "sacredSpiral" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Sacred Spiral Controls
+                {sectionTitleMap.sacredSpiral}
               </h4>
               <SliderControl
-                label="Spiral Count"
+                label={t("labels.spiralCount")}
                 value={patternParams.sacredSpiralCount}
                 min={1}
                 max={8}
@@ -805,7 +851,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setSacredSpiralCount(value)}
               />
               <SliderControl
-                label="Spiral Tightness"
+                label={t("labels.spiralTightness")}
                 value={patternParams.sacredSpiralTightness}
                 min={0.1}
                 max={3.0}
@@ -821,10 +867,10 @@ export default function PatternControls({
           {rawCurrentPattern === "pentagram" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Pentagram Controls
+                {sectionTitleMap.pentagram}
               </h4>
               <SliderControl
-                label="Size"
+                label={t("labels.size")}
                 value={patternParams.pentagramSize}
                 min={0.5}
                 max={2.0}
@@ -834,7 +880,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setPentagramSize(value)}
               />
               <SliderControl
-                label="Rotation Speed"
+                label={t("labels.rotationSpeed")}
                 value={patternParams.pentagramRotationSpeed}
                 min={0.1}
                 max={3.0}
@@ -850,10 +896,10 @@ export default function PatternControls({
           {rawCurrentPattern === "runes" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Runes Controls
+                {sectionTitleMap.runes}
               </h4>
               <SliderControl
-                label="Rune Size"
+                label={t("labels.runeSize")}
                 value={patternParams.runeSize}
                 min={0.5}
                 max={2.5}
@@ -863,7 +909,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setRuneSize(value)}
               />
               <SliderControl
-                label="Rune Count"
+                label={t("labels.runeCount")}
                 value={patternParams.runeCount}
                 min={4}
                 max={16}
@@ -878,10 +924,10 @@ export default function PatternControls({
           {rawCurrentPattern === "sigils" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Sigils Controls
+                {sectionTitleMap.sigils}
               </h4>
               <SliderControl
-                label="Sigil Count"
+                label={t("labels.sigilCount")}
                 value={patternParams.sigilCount}
                 min={3}
                 max={12}
@@ -890,7 +936,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setSigilCount(value)}
               />
               <SliderControl
-                label="Sigil Size"
+                label={t("labels.sigilSize")}
                 value={patternParams.sigilSize}
                 min={0.5}
                 max={2.5}
@@ -906,10 +952,10 @@ export default function PatternControls({
           {rawCurrentPattern === "chakras" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Chakras Controls
+                {sectionTitleMap.chakras}
               </h4>
               <SliderControl
-                label="Chakra Size"
+                label={t("labels.chakraSize")}
                 value={patternParams.chakraSize}
                 min={0.5}
                 max={2.5}
@@ -919,7 +965,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setChakraSize(value)}
               />
               <SliderControl
-                label="Chakra Spacing"
+                label={t("labels.chakraSpacing")}
                 value={patternParams.chakraSpacing}
                 min={0.5}
                 max={2.0}
@@ -935,10 +981,10 @@ export default function PatternControls({
           {rawCurrentPattern === "portal" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Portal Controls
+                {sectionTitleMap.portal}
               </h4>
               <SliderControl
-                label="Portal Size"
+                label={t("labels.portalSize")}
                 value={patternParams.portalSize}
                 min={0.5}
                 max={2.5}
@@ -948,7 +994,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setPortalSize(value)}
               />
               <SliderControl
-                label="Ring Count"
+                label={t("labels.ringCount")}
                 value={patternParams.portalRingCount}
                 min={3}
                 max={12}
@@ -963,10 +1009,10 @@ export default function PatternControls({
           {rawCurrentPattern === "phoenix" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Phoenix Controls
+                {sectionTitleMap.phoenix}
               </h4>
               <SliderControl
-                label="Wing Span"
+                label={t("labels.wingSpan")}
                 value={patternParams.phoenixWingSpan}
                 min={0.5}
                 max={2.5}
@@ -982,10 +1028,10 @@ export default function PatternControls({
           {rawCurrentPattern === "crystalGrid" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Crystal Grid Controls
+                {sectionTitleMap.crystalGrid}
               </h4>
               <SliderControl
-                label="Crystal Size"
+                label={t("labels.crystalSize")}
                 value={patternParams.crystalGridSize}
                 min={0.5}
                 max={2.0}
@@ -995,7 +1041,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setCrystalGridSize(value)}
               />
               <SliderControl
-                label="Crystal Count"
+                label={t("labels.crystalCount")}
                 value={patternParams.crystalCount}
                 min={6}
                 max={24}
@@ -1010,10 +1056,10 @@ export default function PatternControls({
           {rawCurrentPattern === "moonPhases" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Moon Phases Controls
+                {sectionTitleMap.moonPhases}
               </h4>
               <SliderControl
-                label="Phase Count"
+                label={t("labels.phaseCount")}
                 value={patternParams.moonPhaseCount}
                 min={4}
                 max={13}
@@ -1022,7 +1068,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setMoonPhaseCount(value)}
               />
               <SliderControl
-                label="Moon Size"
+                label={t("labels.moonSize")}
                 value={patternParams.moonPhaseSize}
                 min={0.5}
                 max={2.5}
@@ -1038,10 +1084,10 @@ export default function PatternControls({
           {rawCurrentPattern === "flowerOfLife" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Flower of Life Controls
+                {sectionTitleMap.flowerOfLife}
               </h4>
               <SliderControl
-                label="Circle Count"
+                label={t("labels.circleCount")}
                 value={patternParams.flowerOfLifeCircleCount}
                 min={1}
                 max={19}
@@ -1050,7 +1096,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setFlowerOfLifeCircleCount(value)}
               />
               <SliderControl
-                label="Pattern Size"
+                label={t("labels.patternSize")}
                 value={patternParams.flowerOfLifeSize}
                 min={0.5}
                 max={2.0}
@@ -1066,10 +1112,10 @@ export default function PatternControls({
           {rawCurrentPattern === "metatron" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Metatron&apos;s Cube Controls
+                {sectionTitleMap.metatron}
               </h4>
               <SliderControl
-                label="Node Count"
+                label={t("labels.nodeCount")}
                 value={patternParams.metatronNodeCount}
                 min={7}
                 max={19}
@@ -1078,7 +1124,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setMetatronNodeCount(value)}
               />
               <SliderControl
-                label="Cube Size"
+                label={t("labels.cubeSize")}
                 value={patternParams.metatronSize}
                 min={0.5}
                 max={2.0}
@@ -1094,10 +1140,10 @@ export default function PatternControls({
           {rawCurrentPattern === "torusField" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Torus Field Controls
+                {sectionTitleMap.torusField}
               </h4>
               <SliderControl
-                label="Ring Count"
+                label={t("labels.ringCount")}
                 value={patternParams.torusRingCount}
                 min={6}
                 max={24}
@@ -1106,7 +1152,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setTorusRingCount(value)}
               />
               <SliderControl
-                label="Torus Thickness"
+                label={t("labels.torusThickness")}
                 value={patternParams.torusThickness}
                 min={0.3}
                 max={2.0}
@@ -1122,10 +1168,10 @@ export default function PatternControls({
           {rawCurrentPattern === "labyrinth" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Labyrinth Controls
+                {sectionTitleMap.labyrinth}
               </h4>
               <SliderControl
-                label="Complexity"
+                label={t("labels.complexity")}
                 value={patternParams.labyrinthComplexity}
                 min={0.5}
                 max={2.5}
@@ -1135,7 +1181,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setLabyrinthComplexity(value)}
               />
               <SliderControl
-                label="Path Width"
+                label={t("labels.pathWidth")}
                 value={patternParams.labyrinthPathWidth}
                 min={0.5}
                 max={2.0}
@@ -1151,10 +1197,10 @@ export default function PatternControls({
           {rawCurrentPattern === "vortexSpiral" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Vortex Spiral Controls
+                {sectionTitleMap.vortexSpiral}
               </h4>
               <SliderControl
-                label="Spiral Count"
+                label={t("labels.spiralCount")}
                 value={patternParams.vortexSpiralCount}
                 min={2}
                 max={12}
@@ -1163,7 +1209,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setVortexSpiralCount(value)}
               />
               <SliderControl
-                label="Rotation Speed"
+                label={t("labels.rotationSpeed")}
                 value={patternParams.vortexRotationSpeed}
                 min={0.1}
                 max={3.0}
@@ -1179,10 +1225,10 @@ export default function PatternControls({
           {rawCurrentPattern === "dragonEye" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Dragon Eye Controls
+                {sectionTitleMap.dragonEye}
               </h4>
               <SliderControl
-                label="Eye Size"
+                label={t("labels.eyeSize")}
                 value={patternParams.dragonEyeSize}
                 min={0.5}
                 max={2.5}
@@ -1192,7 +1238,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setDragonEyeSize(value)}
               />
               <SliderControl
-                label="Pupil Size"
+                label={t("labels.pupilSize")}
                 value={patternParams.dragonPupilSize}
                 min={0.3}
                 max={1.5}
@@ -1208,10 +1254,10 @@ export default function PatternControls({
           {rawCurrentPattern === "ancientGlyphs" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Ancient Glyphs Controls
+                {sectionTitleMap.ancientGlyphs}
               </h4>
               <SliderControl
-                label="Glyph Count"
+                label={t("labels.glyphCount")}
                 value={patternParams.ancientGlyphCount}
                 min={8}
                 max={32}
@@ -1220,7 +1266,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setAncientGlyphCount(value)}
               />
               <SliderControl
-                label="Glyph Size"
+                label={t("labels.glyphSize")}
                 value={patternParams.ancientGlyphSize}
                 min={0.5}
                 max={2.5}
@@ -1236,10 +1282,10 @@ export default function PatternControls({
           {rawCurrentPattern === "platonic" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Platonic Solids Controls
+                {sectionTitleMap.platonic}
               </h4>
               <SliderControl
-                label="Solid Size"
+                label={t("labels.solidSize")}
                 value={patternParams.platonicSize}
                 min={0.5}
                 max={2.0}
@@ -1249,7 +1295,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setPlatonicSize(value)}
               />
               <SliderControl
-                label="Rotation Speed"
+                label={t("labels.rotationSpeed")}
                 value={patternParams.platonicRotationSpeed}
                 min={0.1}
                 max={3.0}
@@ -1265,10 +1311,10 @@ export default function PatternControls({
           {rawCurrentPattern === "cosmicLotus" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Cosmic Lotus Controls
+                {sectionTitleMap.cosmicLotus}
               </h4>
               <SliderControl
-                label="Layer Count"
+                label={t("labels.layerCount")}
                 value={patternParams.cosmicLotusLayerCount}
                 min={2}
                 max={12}
@@ -1277,7 +1323,7 @@ export default function PatternControls({
                 onChange={(value) => renderer.setCosmicLotusLayerCount(value)}
               />
               <SliderControl
-                label="Petal Count"
+                label={t("labels.petalCount")}
                 value={patternParams.cosmicLotusPetalCount}
                 min={4}
                 max={16}
@@ -1292,10 +1338,10 @@ export default function PatternControls({
           {rawCurrentPattern === "kaleidoscope" && (
             <div className="mb-6 space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Kaleidoscope Controls
+                {sectionTitleMap.kaleidoscope}
               </h4>
               <SliderControl
-                label="Segments"
+                label={t("labels.segments")}
                 value={patternParams.kaleidoscopeSegments}
                 min={3}
                 max={48}
@@ -1304,27 +1350,31 @@ export default function PatternControls({
                 onChange={(value) => renderer.setKaleidoscopeSegments(value)}
               />
               <SliderControl
-                label="Rotation Speed"
+                label={t("labels.rotationSpeed")}
                 value={patternParams.kaleidoscopeRotationSpeed}
                 min={0.1}
                 max={5.0}
                 step={0.1}
                 decimals={1}
                 unit="x"
-                onChange={(value) => renderer.setKaleidoscopeRotationSpeed(value)}
+                onChange={(value) =>
+                  renderer.setKaleidoscopeRotationSpeed(value)
+                }
               />
               <SliderControl
-                label="Particle Density"
+                label={t("labels.particleDensity")}
                 value={patternParams.kaleidoscopeParticleDensity}
                 min={0.1}
                 max={3.0}
                 step={0.1}
                 decimals={1}
                 unit="x"
-                onChange={(value) => renderer.setKaleidoscopeParticleDensity(value)}
+                onChange={(value) =>
+                  renderer.setKaleidoscopeParticleDensity(value)
+                }
               />
               <SliderControl
-                label="Color Shift"
+                label={t("labels.colorShift")}
                 value={patternParams.kaleidoscopeColorShift}
                 min={0.0}
                 max={3.0}

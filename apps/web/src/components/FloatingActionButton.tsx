@@ -13,6 +13,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { Plus, Search, Shuffle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
@@ -26,6 +27,7 @@ interface QuickAction {
 }
 
 export default function FloatingActionButton() {
+  const tc = useTranslations("common");
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -49,7 +51,7 @@ export default function FloatingActionButton() {
   const quickActions: QuickAction[] = [
     {
       id: "search",
-      label: "Search",
+      label: tc("search"),
       icon: <Search className="h-5 w-5" />,
       color: "text-[#8ca7ff]",
       bgColor: "bg-[rgba(140,167,255,0.2)]",
@@ -61,7 +63,7 @@ export default function FloatingActionButton() {
     },
     {
       id: "shuffle",
-      label: "Shuffle",
+      label: tc("shuffle"),
       icon: <Shuffle className="h-5 w-5" />,
       color: "text-[var(--color-warning)]",
       bgColor: "bg-[rgba(242,199,97,0.2)]",

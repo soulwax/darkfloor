@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Heart, ListPlus, MoreVertical, Share2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
@@ -26,8 +27,9 @@ export default function TrackCard({
   track,
   onPlay,
   onAddToQueue,
-  showActions = true
+  showActions = true,
 }: TrackCardProps) {
+  const t = useTranslations("trackMenu");
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const coverImage = getCoverImage(track);
@@ -45,10 +47,10 @@ export default function TrackCard({
     onSuccess: async () => {
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Added "${track.title}" to favorites`, "success");
+      showToast(t("addedToFavorites", { title: track.title }), "success");
     },
     onError: (error) => {
-      showToast(`Failed to add to favorites: ${error.message}`, "error");
+      showToast(t("failedToAddToFavorites", { error: error.message }), "error");
     },
   });
 
@@ -56,10 +58,13 @@ export default function TrackCard({
     onSuccess: async () => {
       await utils.music.isFavorite.invalidate({ trackId: track.id });
       await utils.music.getFavorites.invalidate();
-      showToast(`Removed "${track.title}" from favorites`, "info");
+      showToast(t("removedFromFavorites", { title: track.title }), "info");
     },
     onError: (error) => {
-      showToast(`Failed to remove from favorites: ${error.message}`, "error");
+      showToast(
+        t("failedToRemoveFromFavorites", { error: error.message }),
+        "error",
+      );
     },
   });
 
@@ -82,7 +87,7 @@ export default function TrackCard({
     if (onAddToQueue) {
       hapticLight();
       onAddToQueue(track);
-      showToast(`Added "${track.title}" to queue`, "success");
+      showToast(t("addedToQueue", { title: track.title }), "success");
     }
   };
 
@@ -101,17 +106,17 @@ export default function TrackCard({
       if (navigator.share) {
         await navigator.share({
           title: track.title,
-          text: `Listen to "${track.title}" by ${track.artist.name}`,
+          text: `${track.title} - ${track.artist.name}`,
           url: shareUrl,
         });
-        showToast("Shared successfully!", "success");
+        showToast(t("trackShared"), "success");
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        showToast(`Link copied to clipboard!`, "success");
+        showToast(t("linkCopied"), "success");
       }
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
-        showToast("Failed to share", "error");
+        showToast(t("failedToShareTrack"), "error");
       }
     }
   };
@@ -168,7 +173,16 @@ export default function TrackCard({
                 : "text-[var(--color-subtext)] hover:scale-110 hover:text-[var(--color-text)]"
             }`}
             disabled={addFavorite.isPending || removeFavorite.isPending}
-            title={favoriteData?.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            title={
+              favoriteData?.isFavorite
+                ? t("removeFromFavorites")
+                : t("addToFavorites")
+            }
+            aria-label={
+              favoriteData?.isFavorite
+                ? t("removeFromFavorites")
+                : t("addToFavorites")
+            }
           >
             <Heart
               className={`h-5 w-5 ${
@@ -181,7 +195,8 @@ export default function TrackCard({
           <button
             onClick={handleShare}
             className="rounded-full p-2 text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent-light)]"
-            title="Share track"
+            title={t("shareTrack")}
+            aria-label={t("shareTrack")}
           >
             <Share2 className="h-5 w-5" />
           </button>
@@ -191,7 +206,8 @@ export default function TrackCard({
             <button
               onClick={handleAddToQueue}
               className="rounded-full p-2 text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent-light)]"
-              title="Add to queue"
+              title={t("addToQueue")}
+              aria-label={t("addToQueue")}
             >
               <ListPlus className="h-5 w-5" />
             </button>
@@ -205,7 +221,8 @@ export default function TrackCard({
               setShowAddToPlaylistModal(true);
             }}
             className="rounded-full p-2 text-[var(--color-subtext)] transition-all hover:scale-110 hover:text-[var(--color-accent)]"
-            title="Add to playlist"
+            title={t("addToPlaylist")}
+            aria-label={t("addToPlaylist")}
           >
             <MoreVertical className="h-5 w-5" />
           </button>

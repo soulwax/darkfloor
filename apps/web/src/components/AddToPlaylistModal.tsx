@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 import { useToast } from "@/contexts/ToastContext";
 import { useAuthModal } from "@/contexts/AuthModalContext";
@@ -42,6 +43,9 @@ export function AddToPlaylistModal({
   track,
   excludePlaylistId,
 }: AddToPlaylistModalProps) {
+  const tc = useTranslations("common");
+  const tp = useTranslations("playlists");
+  const tm = useTranslations("trackMenu");
   const [searchQuery, setSearchQuery] = useState("");
   const [submittingPlaylistId, setSubmittingPlaylistId] = useState<
     number | null
@@ -63,12 +67,12 @@ export function AddToPlaylistModal({
   const addToPlaylist = api.music.addToPlaylist.useMutation({
     onSuccess: async (data, variables) => {
       if (data.alreadyExists) {
-        showToast(`"${track.title}" is already in this playlist`, "info");
+        showToast(tp("alreadyInPlaylist", { title: track.title }), "info");
       } else {
         const playlistName =
           playlists?.find((p) => p.id === variables.playlistId)?.name ??
-          "playlist";
-        showToast(`Added to "${playlistName}"`, "success");
+          tm("playlist");
+        showToast(tp("addedToPlaylist", { name: playlistName }), "success");
         hapticSuccess();
 
         await utils.music.getPlaylistsWithTrackStatus.invalidate({
@@ -79,7 +83,7 @@ export function AddToPlaylistModal({
       setSubmittingPlaylistId(null);
     },
     onError: (error) => {
-      showToast(`Failed: ${error.message}`, "error");
+      showToast(tp("failedToAddToPlaylist", { error: error.message }), "error");
       setSubmittingPlaylistId(null);
     },
   });
@@ -174,7 +178,7 @@ export function AddToPlaylistModal({
               <div className="flex items-start gap-3 border-b border-[rgba(245,241,232,0.08)] px-4 py-4">
                 <div className="flex-1">
                   <h2 className="mb-1 text-lg font-bold text-[var(--color-text)]">
-                    Add to Playlist
+                    {tm("addToPlaylist")}
                   </h2>
                   <p className="text-sm text-[var(--color-subtext)]">
                     {track.title} • {track.artist.name}
@@ -186,7 +190,8 @@ export function AddToPlaylistModal({
                     onClose();
                   }}
                   className="rounded-lg p-2 text-[var(--color-subtext)] transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] active:scale-95"
-                  title="Close"
+                  title={tc("close")}
+                  aria-label={tc("close")}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -201,7 +206,7 @@ export function AddToPlaylistModal({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search playlists..."
+                    placeholder={tp("searchPlaylists")}
                     className="theme-input w-full rounded-lg py-2 pr-4 pl-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
                   />
                 </div>
@@ -213,10 +218,10 @@ export function AddToPlaylistModal({
                   <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
                     <Music className="mb-4 h-16 w-16 text-[var(--color-muted)]" />
                     <p className="mb-2 text-sm font-medium text-[var(--color-text)]">
-                      Sign in to create playlists
+                      {tp("signInToCreate")}
                     </p>
                     <p className="mb-4 text-xs text-[var(--color-subtext)]">
-                      Create an account to organize your music
+                      {tp("createAccountToOrganize")}
                     </p>
                     <button
                       type="button"
@@ -227,7 +232,7 @@ export function AddToPlaylistModal({
                       }}
                       className="rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95"
                     >
-                      Sign In
+                      {tc("signIn")}
                     </button>
                   </div>
                 ) : isLoading ? (
@@ -249,7 +254,6 @@ export function AddToPlaylistModal({
                       <PlaylistItem
                         key={playlist.id}
                         playlist={playlist}
-                        track={track}
                         onAdd={() => handleAddToPlaylist(playlist.id)}
                         isSubmitting={submittingPlaylistId === playlist.id}
                         index={index}
@@ -275,7 +279,7 @@ export function AddToPlaylistModal({
                       className="flex items-center justify-center gap-2 rounded-lg bg-[rgba(244,178,102,0.1)] px-4 py-2.5 text-sm font-medium text-[var(--color-accent)] transition-all hover:bg-[rgba(244,178,102,0.18)] active:scale-[0.98]"
                     >
                       <Plus className="h-4 w-4" />
-                      Create New Playlist
+                      {tp("createNewPlaylist")}
                     </Link>
                   </div>
                 )}
@@ -290,7 +294,6 @@ export function AddToPlaylistModal({
 
 interface PlaylistItemProps {
   playlist: PlaylistWithTrackStatus;
-  track: Track;
   onAdd: () => void;
   isSubmitting: boolean;
   index: number;
@@ -302,12 +305,13 @@ interface PlaylistItemProps {
 
 function PlaylistItem({
   playlist,
-  track: _track,
   onAdd,
   isSubmitting,
   index,
   variants,
 }: PlaylistItemProps) {
+  const tc = useTranslations("common");
+
   return (
     <motion.button
       custom={index}
@@ -342,7 +346,7 @@ function PlaylistItem({
             )}
           </div>
           <p className="text-xs text-[var(--color-subtext)]">
-            {playlist.trackCount} track{playlist.trackCount !== 1 ? "s" : ""}
+            {tc("tracks", { count: playlist.trackCount })}
           </p>
         </div>
 
@@ -367,15 +371,17 @@ interface EmptyStateProps {
 }
 
 function EmptyState({ hasSearchQuery, onClose }: EmptyStateProps) {
+  const tp = useTranslations("playlists");
+
   if (hasSearchQuery) {
     return (
       <div className="flex flex-col items-center py-12">
         <Search className="mb-3 h-12 w-12 text-[var(--color-muted)]" />
         <p className="mb-2 text-sm font-medium text-[var(--color-text)]">
-          No playlists found
+          {tp("noPlaylistsFound")}
         </p>
         <p className="text-xs text-[var(--color-subtext)]">
-          Try a different search term
+          {tp("tryDifferentSearchTerm")}
         </p>
       </div>
     );
@@ -385,10 +391,10 @@ function EmptyState({ hasSearchQuery, onClose }: EmptyStateProps) {
     <div className="flex flex-col items-center py-12">
       <Music className="mb-3 h-12 w-12 text-[var(--color-muted)]" />
       <p className="mb-2 text-sm font-medium text-[var(--color-text)]">
-        No playlists yet
+        {tp("noPlaylistsYet")}
       </p>
       <p className="mb-4 text-xs text-[var(--color-subtext)]">
-        Create your first playlist to get started
+        {tp("noPlaylistsDescription")}
       </p>
       <Link
         href="/playlists"
@@ -398,7 +404,7 @@ function EmptyState({ hasSearchQuery, onClose }: EmptyStateProps) {
         }}
         className="rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95"
       >
-        Create Playlist
+        {tp("createPlaylist")}
       </Link>
     </div>
   );

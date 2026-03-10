@@ -10,6 +10,7 @@ import { useAuthModal } from "@/contexts/AuthModalContext";
 import { motion } from "framer-motion";
 import { Home, Library, Plus, Search, User } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -18,6 +19,7 @@ interface MobileFooterProps {
 }
 
 export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
+  const tc = useTranslations("common");
   const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
@@ -95,14 +97,14 @@ export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
   const tabs = [
     {
       name: "home",
-      label: "Home",
+      label: tc("home"),
       icon: Home,
       path: "/",
       requiresAuth: false,
     },
     {
       name: "search",
-      label: "Search",
+      label: tc("search"),
       icon: Search,
       path: "/",
       requiresAuth: false,
@@ -110,14 +112,14 @@ export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
     },
     {
       name: "library",
-      label: "Library",
+      label: tc("library"),
       icon: Library,
       path: "/library",
       requiresAuth: true,
     },
     {
       name: "profile",
-      label: "Profile",
+      label: tc("profile"),
       icon: User,
       path: userHash ? `/${userHash}` : null,
       requiresAuth: true,
@@ -125,7 +127,7 @@ export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
     },
     {
       name: "create",
-      label: "Create",
+      label: tc("create"),
       icon: Plus,
       path: null,
       requiresAuth: true,

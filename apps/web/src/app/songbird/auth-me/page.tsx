@@ -3,8 +3,10 @@
 "use client";
 
 import { useSongbirdAuthMe } from "@/hooks/useSongbirdAuthMe";
+import { useTranslations } from "next-intl";
 
 export default function SongbirdAuthMePage() {
+  const t = useTranslations("songbird");
   const { data, error, isLoading, refetch } = useSongbirdAuthMe();
 
   return (
@@ -12,10 +14,10 @@ export default function SongbirdAuthMePage() {
       <header className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--color-text)]">
-            Songbird Auth Me
+            {t("authMeTitle")}
           </h1>
           <p className="text-sm text-[var(--color-subtext)]">
-            Data source: <code>GET /api/auth/me</code>
+            {t("dataSource")}: <code>GET /api/auth/me</code>
           </p>
         </div>
         <button
@@ -25,12 +27,12 @@ export default function SongbirdAuthMePage() {
           }}
           className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
         >
-          Refresh
+          {t("refresh")}
         </button>
       </header>
 
       {isLoading ? (
-        <p className="text-sm text-[var(--color-subtext)]">Loading...</p>
+        <p className="text-sm text-[var(--color-subtext)]">{t("loading")}</p>
       ) : null}
 
       {error ? (

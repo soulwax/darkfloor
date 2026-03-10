@@ -14,6 +14,7 @@ import type { Track } from "@starchild/types";
 import { haptic } from "@/utils/haptics";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { use } from "react";
 
 export default function PublicProfilePage({
@@ -22,6 +23,8 @@ export default function PublicProfilePage({
   params: Promise<{ userhash: string }>;
 }) {
   const { userhash } = use(params);
+  const tc = useTranslations("common");
+  const tp = useTranslations("profile");
   const { share, isSupported: isShareSupported } = useWebShare();
   const { openMenu: openPlaylistMenu } = usePlaylistContextMenu();
   const { playTrack, addToQueue } = useGlobalPlayer();
@@ -31,8 +34,7 @@ export default function PublicProfilePage({
     undefined,
     { staleTime: 5 * 60 * 1000 },
   );
-  const isOwnProfile =
-    !!currentUserHash && currentUserHash === userhash;
+  const isOwnProfile = !!currentUserHash && currentUserHash === userhash;
 
   const { data: profile, isLoading: profileLoading } =
     api.music.getPublicProfile.useQuery(
@@ -82,8 +84,8 @@ export default function PublicProfilePage({
   const handleShareProfile = async () => {
     haptic("light");
     await share({
-      title: `${profile?.name}'s Music Profile`,
-      text: `Check out ${profile?.name}'s music on Starchild Music!`,
+      title: tp("shareTitle", { name: profile?.name ?? tp("user") }),
+      text: tp("shareText", { name: profile?.name ?? tp("user") }),
       url: window.location.href,
     });
   };
@@ -93,7 +95,7 @@ export default function PublicProfilePage({
       <div className="page-shell flex min-h-screen items-center justify-center px-6">
         <div className="surface-panel w-full max-w-sm space-y-4 p-8 text-center">
           <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-[var(--color-accent)]/35 border-t-transparent"></div>
-          <p className="text-[var(--color-subtext)]">Loading profile...</p>
+          <p className="text-[var(--color-subtext)]">{tp("loadingProfile")}</p>
         </div>
       </div>
     );
@@ -105,13 +107,13 @@ export default function PublicProfilePage({
         <div className="surface-panel w-full max-w-md space-y-4 p-8 text-center">
           <div className="mb-4 text-6xl">🔒</div>
           <h1 className="mb-2 text-2xl font-bold text-[var(--color-text)]">
-            Profile Not Found
+            {tp("profileNotFound")}
           </h1>
           <p className="mb-6 text-[var(--color-subtext)]">
-            This profile doesn&apos;t exist or is private.
+            {tp("profileNotFoundDescription")}
           </p>
-          <Button href="/" variant="primary" ariaLabel="Go to home page">
-            Go Home
+          <Button href="/" variant="primary" ariaLabel={tc("goHome")}>
+            {tc("goHome")}
           </Button>
         </div>
       </div>
@@ -128,7 +130,7 @@ export default function PublicProfilePage({
         />
 
         <Section
-          title="🎧 Recently Played"
+          title={tp("recentlyPlayed")}
           loading={tracksLoading}
           items={recentTracks}
           renderItem={(item, idx) => {
@@ -147,7 +149,7 @@ export default function PublicProfilePage({
                 onPlay={(track) => playTrack(track)}
                 onAddToQueue={(track) => addToQueue(track)}
                 removeFromListLabel={
-                  isOwnProfile ? "Remove from Recently Played" : undefined
+                  isOwnProfile ? tp("removeFromRecentlyPlayed") : undefined
                 }
                 onRemoveFromList={
                   isOwnProfile
@@ -161,11 +163,11 @@ export default function PublicProfilePage({
             );
           }}
           gridColumns={2}
-          emptyMessage="No recent tracks yet"
+          emptyMessage={tp("noRecentTracksYet")}
         />
 
         <Section
-          title="🔥 Top Tracks (All Time)"
+          title={tp("topTracksAllTime")}
           loading={topTracksLoading}
           items={topTracks}
           renderItem={(item, idx) => {
@@ -190,17 +192,17 @@ export default function PublicProfilePage({
                   onAddToQueue={(track) => addToQueue(track)}
                 />
                 <div className="badge-accent absolute top-2 right-2 text-[0.65rem] leading-none">
-                  {topTrack.playCount} plays
+                  {tp("plays", { count: topTrack.playCount })}
                 </div>
               </div>
             );
           }}
           gridColumns={2}
-          emptyMessage="No top tracks yet"
+          emptyMessage={tp("noTopTracksYet")}
         />
 
         <Section
-          title="⭐ Top Artists (All Time)"
+          title={tp("topArtistsAllTime")}
           loading={topArtistsLoading}
           items={topArtists}
           renderItem={(item, idx) => {
@@ -243,7 +245,7 @@ export default function PublicProfilePage({
                   {topArtist.artist.name}
                 </h3>
                 <p className="text-xs text-[var(--color-subtext)]">
-                  {topArtist.playCount} plays
+                  {tp("plays", { count: topArtist.playCount })}
                 </p>
               </div>
             );
@@ -251,15 +253,14 @@ export default function PublicProfilePage({
           gridColumns={6}
           skeletonHeight="h-32"
           emptyIcon="🎤"
-          emptyMessage="No top artists yet"
+          emptyMessage={tp("noTopArtistsYet")}
         />
 
         <Section
-          title="⭐ Favorite Tracks"
+          title={tp("favoriteTracks")}
           loading={favoritesLoading}
           items={favorites}
           renderItem={(item, idx) => {
-
             if (typeof item !== "object" || item === null) {
               return null;
             }
@@ -275,11 +276,11 @@ export default function PublicProfilePage({
           }}
           gridColumns={2}
           emptyIcon="💫"
-          emptyMessage="No favorites yet"
+          emptyMessage={tp("noFavoritesYet")}
         />
 
         <Section
-          title="📚 Public Playlists"
+          title={tp("publicPlaylists")}
           loading={playlistsLoading}
           items={playlists}
           renderItem={(item) => {
@@ -322,9 +323,10 @@ export default function PublicProfilePage({
                       openPath: path,
                       shareUrl: `${window.location.origin}${path}`,
                       resolveTracks: async () => {
-                        const fullPlaylist = await utils.music.getPublicPlaylist.fetch({
-                          id: playlist.id,
-                        });
+                        const fullPlaylist =
+                          await utils.music.getPublicPlaylist.fetch({
+                            id: playlist.id,
+                          });
                         return [...(fullPlaylist.tracks ?? [])]
                           .sort((a, b) => a.position - b.position)
                           .map((entry) => entry.track);
@@ -336,7 +338,6 @@ export default function PublicProfilePage({
               >
                 <div className="mb-3 aspect-square overflow-hidden rounded-lg bg-[linear-gradient(135deg,rgba(244,178,102,0.3),rgba(88,198,177,0.3))]">
                   {(() => {
-
                     let albumCovers: string[] = [];
                     try {
                       if (playlist.coverImage?.startsWith("[")) {
@@ -344,12 +345,9 @@ export default function PublicProfilePage({
                           playlist.coverImage,
                         ) as string[];
                       }
-                    } catch {
-
-                    }
+                    } catch {}
 
                     if (albumCovers.length > 0) {
-
                       return (
                         <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
                           {albumCovers.slice(0, 4).map((cover, i) => (
@@ -382,7 +380,6 @@ export default function PublicProfilePage({
                         </div>
                       );
                     } else if (playlist.coverImage) {
-
                       return (
                         <Image
                           src={playlist.coverImage}
@@ -393,7 +390,6 @@ export default function PublicProfilePage({
                         />
                       );
                     } else {
-
                       return (
                         <div className="flex h-full items-center justify-center text-6xl text-[var(--color-muted)]">
                           🎵
@@ -417,7 +413,7 @@ export default function PublicProfilePage({
           skeletonCount={4}
           skeletonHeight="h-48"
           emptyIcon="📚"
-          emptyMessage="No public playlists yet"
+          emptyMessage={tp("noPublicPlaylistsYet")}
           className="mb-0"
         />
       </div>

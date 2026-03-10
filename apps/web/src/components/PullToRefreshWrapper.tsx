@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import { RefreshCw, ArrowDown, Check } from "lucide-react";
 import { springPresets } from "@/utils/spring-animations";
 import { hapticLight, hapticSuccess } from "@/utils/haptics";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 export interface PullToRefreshWrapperProps {
@@ -32,6 +33,7 @@ export function PullToRefreshWrapper({
   className = "",
   threshold = 80,
 }: PullToRefreshWrapperProps) {
+  const t = useTranslations("refresh");
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const pullY = useMotionValue(0);
 
@@ -84,28 +86,28 @@ export function PullToRefreshWrapper({
       case "pulling":
         return {
           icon: <ArrowDown className="h-5 w-5" />,
-          text: "Pull to refresh",
+          text: t("pullToRefresh"),
           color: "text-[var(--color-subtext)]",
           bgColor: "bg-[var(--color-surface)]",
         };
       case "ready":
         return {
           icon: <RefreshCw className="h-5 w-5" />,
-          text: "Release to refresh",
+          text: t("releaseToRefresh"),
           color: "text-[var(--color-accent)]",
           bgColor: "bg-[rgba(244,178,102,0.15)]",
         };
       case "refreshing":
         return {
           icon: <RefreshCw className="h-5 w-5 animate-spin" />,
-          text: "Refreshing...",
+          text: t("refreshing"),
           color: "text-[var(--color-accent)]",
           bgColor: "bg-[rgba(244,178,102,0.15)]",
         };
       case "success":
         return {
           icon: <Check className="h-5 w-5" />,
-          text: "Updated!",
+          text: t("updated"),
           color: "text-[var(--color-success)]",
           bgColor: "bg-[rgba(88,198,177,0.15)]",
         };

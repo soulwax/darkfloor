@@ -23,10 +23,17 @@ import {
   User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 type NavItem = {
   href: string;
@@ -50,12 +57,18 @@ const clampSidebarWidth = (value: unknown): number => {
         : Number.NaN;
 
   if (!Number.isFinite(numericValue)) return DEFAULT_EXPANDED_WIDTH;
-  return Math.max(MIN_EXPANDED_WIDTH, Math.min(MAX_EXPANDED_WIDTH, Math.round(numericValue)));
+  return Math.max(
+    MIN_EXPANDED_WIDTH,
+    Math.min(MAX_EXPANDED_WIDTH, Math.round(numericValue)),
+  );
 };
 
 export function DesktopSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const tc = useTranslations("common");
+  const tp = useTranslations("playlists");
+  const ts = useTranslations("shell");
   const isAdmin = session?.user?.admin === true;
   const { openAuthModal } = useAuthModal();
 
@@ -157,7 +170,9 @@ export function DesktopSidebar() {
   const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (collapsed || event.button !== 0) return;
     if (!Number.isFinite(event.clientX)) {
-      console.warn("[DesktopSidebar] Invalid pointer position while starting resize.");
+      console.warn(
+        "[DesktopSidebar] Invalid pointer position while starting resize.",
+      );
       return;
     }
 
@@ -184,7 +199,7 @@ export function DesktopSidebar() {
     if (!session) {
       items.push({
         href: profileHref,
-        label: "Sign In",
+        label: tc("signIn"),
         icon: <User className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/",
@@ -192,17 +207,17 @@ export function DesktopSidebar() {
     }
 
     items.push(
-      { href: "/", label: "Home", icon: <Home className="h-5 w-5" /> },
+      { href: "/", label: tc("home"), icon: <Home className="h-5 w-5" /> },
       {
         href: "/library",
-        label: "Library",
+        label: tc("library"),
         icon: <Library className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/library",
       },
       {
         href: "/playlists",
-        label: "Playlists",
+        label: tc("playlists"),
         icon: <ListMusic className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/playlists",
@@ -212,7 +227,7 @@ export function DesktopSidebar() {
     if (session) {
       items.push({
         href: profileHref,
-        label: "Profile",
+        label: tc("profile"),
         icon: <User className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/",
@@ -222,21 +237,21 @@ export function DesktopSidebar() {
     if (isAdmin) {
       items.push({
         href: "/admin",
-        label: "Admin",
+        label: tc("admin"),
         icon: <Shield className="h-5 w-5" />,
       });
     }
 
     items.push({
       href: "/settings",
-      label: "Settings",
+      label: tc("settings"),
       icon: <Settings className="h-5 w-5" />,
       requiresAuth: true,
       callbackUrl: "/settings",
     });
 
     return items;
-  }, [session, profileHref, isAdmin]);
+  }, [session, profileHref, isAdmin, tc]);
 
   const playlistsQuery = api.music.getPlaylists.useQuery(undefined, {
     enabled: !!session,
@@ -260,7 +275,7 @@ export function DesktopSidebar() {
           onPointerDown={startResize}
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize sidebar"
+          aria-label={ts("resizeSidebar")}
           aria-valuemin={MIN_EXPANDED_WIDTH}
           aria-valuemax={MAX_EXPANDED_WIDTH}
           aria-valuenow={expandedWidth}
@@ -275,8 +290,8 @@ export function DesktopSidebar() {
             setCollapsed(next);
             localStorage.set(STORAGE_KEYS.DESKTOP_SIDEBAR_COLLAPSED, next);
           }}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
+          title={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
         >
           {collapsed ? (
             <ChevronRight className="h-3.5 w-3.5" />
@@ -306,13 +321,13 @@ export function DesktopSidebar() {
                   </div>
                   <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
                     {session
-                      ? `Hi ${
+                      ? `${ts("greeting")} ${
                           session.user?.name ??
                           session.user?.email ??
                           session.user?.userHash ??
-                          "there"
+                          ts("there")
                         }`
-                      : "Hi there"}
+                      : ts("greetingFallback")}
                   </div>
                 </div>
               )}
@@ -321,7 +336,7 @@ export function DesktopSidebar() {
 
           {!collapsed && (
             <div className="px-4 pb-1 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-              Menu
+              {ts("menu")}
             </div>
           )}
 
@@ -376,7 +391,7 @@ export function DesktopSidebar() {
                 <div className="flex items-center justify-between px-2">
                   {!collapsed ? (
                     <div className="text-[10px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-                      Your Library
+                      {ts("yourLibrary")}
                     </div>
                   ) : (
                     <div className="h-3" />
@@ -385,8 +400,8 @@ export function DesktopSidebar() {
                   <button
                     className="electron-no-drag flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.35)] hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
                     onClick={() => setCreateModalOpen(true)}
-                    aria-label="Create playlist"
-                    title={collapsed ? "Create playlist" : undefined}
+                    aria-label={tp("createPlaylist")}
+                    title={collapsed ? tp("createPlaylist") : undefined}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -440,7 +455,9 @@ export function DesktopSidebar() {
                               <div className="min-w-0 flex-1">
                                 <div className="truncate">{playlist.name}</div>
                                 <div className="truncate text-xs text-[var(--color-muted)]">
-                                  {(playlist.trackCount ?? 0).toString()} tracks
+                                  {tc("tracks", {
+                                    count: playlist.trackCount ?? 0,
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -456,7 +473,7 @@ export function DesktopSidebar() {
                           onClick={() => setCreateModalOpen(true)}
                         >
                           <Plus className="h-4 w-4" />
-                          Create your first playlist
+                          {tp("createYourFirst")}
                         </button>
                       ) : (
                         <span>—</span>
@@ -472,7 +489,7 @@ export function DesktopSidebar() {
                       className="electron-no-drag inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-subtext)] hover:text-[var(--color-text)]"
                     >
                       <ListMusic className="h-4 w-4" />
-                      See all playlists
+                      {ts("seeAllPlaylists")}
                     </Link>
                   </div>
                 )}
@@ -482,10 +499,10 @@ export function DesktopSidebar() {
                 {!collapsed ? (
                   <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-4 text-sm text-[var(--color-subtext)]">
                     <div className="text-xs font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-                      Your Library
+                      {ts("yourLibrary")}
                     </div>
                     <div className="mt-2 text-[var(--color-muted)]">
-                      Your playlists will appear here.
+                      {ts("yourPlaylistsWillAppearHere")}
                     </div>
                   </div>
                 ) : (
@@ -504,7 +521,7 @@ export function DesktopSidebar() {
                 onClick={() => setCreateModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
-                New playlist
+                {ts("newPlaylist")}
               </button>
               {session ? (
                 <button
@@ -512,7 +529,7 @@ export function DesktopSidebar() {
                   onClick={() => void appSignOut({ callbackUrl: "/" })}
                 >
                   <LogOut className="h-4 w-4" />
-                  Sign out
+                  {tc("signOut")}
                 </button>
               ) : null}
             </div>
@@ -522,8 +539,8 @@ export function DesktopSidebar() {
               <button
                 className="electron-no-drag flex h-9 w-full items-center justify-center rounded-full border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.06)] text-[var(--color-subtext)] transition hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
                 onClick={() => void appSignOut({ callbackUrl: "/" })}
-                title="Sign out"
-                aria-label="Sign out"
+                title={tc("signOut")}
+                aria-label={tc("signOut")}
               >
                 <LogOut className="h-4 w-4" />
               </button>

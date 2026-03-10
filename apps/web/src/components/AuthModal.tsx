@@ -13,6 +13,7 @@ import { springPresets } from "@/utils/spring-animations";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { AnimatePresence, motion } from "framer-motion";
 import { getProviders, signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -31,10 +32,12 @@ const SIGN_IN_PENDING_TIMEOUT_MS = 15_000;
 export function AuthModal({
   isOpen,
   callbackUrl,
-  title = "Sign in to continue",
-  message = "Choose an OAuth provider to continue.",
+  title,
+  message,
   onClose,
 }: AuthModalProps) {
+  const ta = useTranslations("auth");
+  const tc = useTranslations("common");
   const [providers, setProviders] = useState<ProvidersResponse>(null);
   const [submittingProviderId, setSubmittingProviderId] = useState<
     string | null
@@ -156,6 +159,9 @@ export function AuthModal({
 
   if (typeof document === "undefined") return null;
 
+  const resolvedTitle = title ?? ta("signInToContinue");
+  const resolvedMessage = message ?? ta("chooseProviderToContinue");
+
   return createPortal(
     <AnimatePresence>
       {isOpen && (
@@ -179,10 +185,10 @@ export function AuthModal({
           >
             <div className="surface-panel p-6">
               <h2 className="text-center text-xl font-bold text-[var(--color-text)]">
-                {title}
+                {resolvedTitle}
               </h2>
               <p className="mt-2 text-center text-sm text-[var(--color-subtext)]">
-                {message}
+                {resolvedMessage}
               </p>
 
               <div className="mt-6 space-y-3">
@@ -190,10 +196,12 @@ export function AuthModal({
                   <div className="flex items-center justify-center py-4">
                     <div
                       role="status"
-                      aria-label="Loading sign-in providers"
+                      aria-label={ta("loadingSignInProviders")}
                       className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent"
                     >
-                      <span className="sr-only">Loading sign-in providers</span>
+                      <span className="sr-only">
+                        {ta("loadingSignInProviders")}
+                      </span>
                     </div>
                   </div>
                 ) : oauthProviders.length > 0 ? (
@@ -215,28 +223,36 @@ export function AuthModal({
                           {isSubmitting && (
                             <div
                               role="status"
-                              aria-label={`Authenticating with ${provider.name}`}
+                              aria-label={ta("authenticatingWith", {
+                                provider: provider.name,
+                              })}
                               className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.82)] border-r-transparent border-b-transparent"
                             >
                               <span className="sr-only">
-                                Authenticating with {provider.name}
+                                {ta("authenticatingWith", {
+                                  provider: provider.name,
+                                })}
                               </span>
                             </div>
                           )}
-                          <span>{`Continue with ${provider.name}`}</span>
+                          <span>
+                            {ta("continueWith", { provider: provider.name })}
+                          </span>
                         </span>
                       </button>
                     );
                   })
                 ) : (
                   <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-center text-sm text-[var(--color-subtext)]">
-                    No OAuth providers are currently available.
+                    {ta("noProvidersAvailable")}
                   </p>
                 )}
               </div>
               {submittingProvider ? (
                 <p className="mt-3 text-center text-xs text-[var(--color-subtext)]">
-                  Authenticating with {submittingProvider.name}...
+                  {ta("authenticatingWith", {
+                    provider: submittingProvider.name,
+                  })}
                 </p>
               ) : null}
 
@@ -246,7 +262,7 @@ export function AuthModal({
                 disabled={submittingProviderId !== null}
                 className="mt-4 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)]"
               >
-                Cancel
+                {tc("cancel")}
               </button>
             </div>
           </motion.div>

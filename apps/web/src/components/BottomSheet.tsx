@@ -5,13 +5,14 @@
 import { hapticLight, hapticMedium } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
 import {
-    AnimatePresence,
-    motion,
-    useMotionValue,
-    useTransform,
-    type PanInfo,
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
 } from "framer-motion";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface BottomSheetProps {
@@ -39,6 +40,8 @@ export default function BottomSheet({
   dismissible = true,
   className = "",
 }: BottomSheetProps) {
+  const tc = useTranslations("common");
+  const ts = useTranslations("shell");
   const constraintsRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const [currentSnapIndex, setCurrentSnapIndex] = useState(initialSnap);
@@ -198,7 +201,7 @@ export default function BottomSheet({
                       whileTap={{ scale: 0.9 }}
                       transition={springPresets.immediate}
                       className="touch-target rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
-                      aria-label="Close"
+                      aria-label={tc("close")}
                     >
                       <X className="h-5 w-5" />
                     </motion.button>
@@ -228,7 +231,7 @@ export default function BottomSheet({
                           : "bg-[var(--color-surface-hover)] hover:bg-[var(--color-surface-hover)]"
                       }`}
                       whileTap={{ scale: 0.8 }}
-                      aria-label={`Snap to ${snap}%`}
+                      aria-label={ts("snapTo", { snap })}
                     />
                   ))}
                 </div>

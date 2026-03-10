@@ -6,6 +6,7 @@ import type { Track } from "@starchild/types";
 import { getCoverImage } from "@/utils/images";
 import { formatDuration } from "@/utils/time";
 import { Play } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { memo } from "react";
 
@@ -24,8 +25,9 @@ function HomeFeedRowInner({
   tracks,
   onTrackSelect,
   isLoading = false,
-  emptyLabel = "No tracks yet.",
+  emptyLabel,
 }: HomeFeedRowProps) {
+  const tc = useTranslations("common");
   return (
     <section className="space-y-2">
       <div className="flex items-end justify-between gap-3">
@@ -56,7 +58,7 @@ function HomeFeedRowInner({
         </div>
       ) : tracks.length === 0 ? (
         <div className="rounded-xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-xs text-[var(--color-subtext)]">
-          {emptyLabel}
+          {emptyLabel ?? tc("noTracksYet")}
         </div>
       ) : (
         <div className="desktop-scroll flex gap-3 overflow-x-auto pb-1">

@@ -26,8 +26,12 @@ import { useWebShare } from "@/hooks/useWebShare";
 import { api } from "@starchild/api-client/trpc/react";
 import { hapticLight, hapticMedium } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
+import { useTranslations } from "next-intl";
 
 export function PlaylistContextMenu() {
+  const tc = useTranslations("common");
+  const tm = useTranslations("trackMenu");
+  const tp = useTranslations("playlistMenu");
   const { playlist, position, options, closeMenu } = usePlaylistContextMenu();
   const player = useGlobalPlayer();
   const { showToast } = useToast();
@@ -40,26 +44,29 @@ export function PlaylistContextMenu() {
 
   const deletePlaylist = api.music.deletePlaylist.useMutation({
     onSuccess: async () => {
-      showToast(`Deleted playlist "${playlist?.name}"`, "success");
+      showToast(tp("deleted", { name: playlist?.name ?? "" }), "success");
       await utils.music.getPlaylists.invalidate();
       closeMenu();
     },
     onError: (error) => {
-      showToast(`Failed to delete playlist: ${error.message}`, "error");
+      showToast(tp("failedToDelete", { error: error.message }), "error");
     },
   });
 
   const updateVisibility = api.music.updatePlaylistVisibility.useMutation({
     onSuccess: async (data) => {
       showToast(
-        `Playlist is now ${data.isPublic ? "public" : "private"}`,
+        data.isPublic ? tp("playlistNowPublic") : tp("playlistNowPrivate"),
         "success",
       );
       await utils.music.getPlaylists.invalidate();
       closeMenu();
     },
     onError: (error) => {
-      showToast(`Failed to update visibility: ${error.message}`, "error");
+      showToast(
+        tp("failedToUpdateVisibility", { error: error.message }),
+        "error",
+      );
     },
   });
 
@@ -78,12 +85,12 @@ export function PlaylistContextMenu() {
         );
       }
 
-      showToast(`Duplicated "${playlist.name}" successfully`, "success");
+      showToast(tp("duplicated", { name: playlist.name }), "success");
       await utils.music.getPlaylists.invalidate();
       closeMenu();
     },
     onError: (error) => {
-      showToast(`Failed to duplicate playlist: ${error.message}`, "error");
+      showToast(tp("failedToDuplicate", { error: error.message }), "error");
     },
   });
 
@@ -183,7 +190,7 @@ export function PlaylistContextMenu() {
     try {
       const tracks = await resolveMenuTracks();
       if (tracks.length === 0) {
-        showToast("This playlist has no tracks", "info");
+        showToast(tp("noTracks"), "info");
         closeMenu();
         return;
       }
@@ -197,13 +204,13 @@ export function PlaylistContextMenu() {
           player.addToQueue(rest);
         }
         showToast(
-          `Playing "${playlist.name}" (${tracks.length} tracks)`,
+          tp("playingPlaylist", { name: playlist.name, count: tracks.length }),
           "success",
         );
       }
     } catch (error) {
       console.error("Failed to fetch full playlist:", error);
-      showToast("Failed to load playlist tracks", "error");
+      showToast(tp("failedToLoadTracks"), "error");
     }
 
     closeMenu();
@@ -217,16 +224,16 @@ export function PlaylistContextMenu() {
     try {
       const tracks = await resolveMenuTracks();
       if (tracks.length === 0) {
-        showToast("This playlist has no tracks", "info");
+        showToast(tp("noTracks"), "info");
         closeMenu();
         return;
       }
 
       player.addToQueue(tracks);
-      showToast(`Added ${tracks.length} tracks to queue`, "success");
+      showToast(tp("addedToQueue", { count: tracks.length }), "success");
     } catch (error) {
       console.error("Failed to fetch full playlist:", error);
-      showToast("Failed to load playlist tracks", "error");
+      showToast(tp("failedToLoadTracks"), "error");
     }
 
     closeMenu();
@@ -241,7 +248,7 @@ export function PlaylistContextMenu() {
     if (!playlist) return;
 
     if (!canShare) {
-      showToast("Only public playlists can be shared", "info");
+      showToast(tp("onlyPublicCanShare"), "info");
       closeMenu();
       return;
     }
@@ -250,19 +257,21 @@ export function PlaylistContextMenu() {
     const url = options.shareUrl ?? `${window.location.origin}${playlistPath}`;
 
     const success = await share({
-      title: `${playlist.name} - Starchild Music`,
-      text: `Check out this playlist: ${playlist.name}${playlist.description ? ` - ${playlist.description}` : ""}`,
+      title: playlist.name,
+      text: playlist.description
+        ? `${playlist.name} - ${playlist.description}`
+        : playlist.name,
       url,
     });
 
     if (success) {
-      showToast("Playlist shared successfully!", "success");
+      showToast(tp("playlistShared"), "success");
     } else {
       try {
         await navigator.clipboard.writeText(url);
-        showToast("Link copied to clipboard!", "success");
+        showToast(tp("linkCopied"), "success");
       } catch {
-        showToast("Failed to share playlist", "error");
+        showToast(tp("failedToSharePlaylist"), "error");
       }
     }
     closeMenu();
@@ -294,9 +303,7 @@ export function PlaylistContextMenu() {
   const handleDelete = () => {
     if (!playlist || !isOwnerMenu) return;
 
-    const confirmed = confirm(
-      `Are you sure you want to delete "${playlist.name}"? This cannot be undone.`,
-    );
+    const confirmed = confirm(tp("confirmDelete", { name: playlist.name }));
 
     if (confirmed) {
       hapticMedium();
@@ -311,7 +318,7 @@ export function PlaylistContextMenu() {
 
     hapticLight();
     duplicatePlaylist.mutate({
-      name: `${playlist.name} (Copy)`,
+      name: `${playlist.name} (${tp("copy")})`,
       description: playlist.description ?? undefined,
       isPublic: false,
     });
@@ -351,11 +358,11 @@ export function PlaylistContextMenu() {
               <button
                 onClick={handlePlayAll}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                title="Play all tracks"
+                title={tp("playAll")}
               >
                 <Play className="h-5 w-5 text-[var(--color-accent)] transition-transform group-hover:scale-110" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Play
+                  {tc("play")}
                 </span>
               </button>
 
@@ -363,11 +370,11 @@ export function PlaylistContextMenu() {
               <button
                 onClick={handleAddAllToQueue}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                title="Add all to queue"
+                title={tp("addAllToQueue")}
               >
                 <Plus className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Queue
+                  {tm("queue")}
                 </span>
               </button>
 
@@ -377,11 +384,11 @@ export function PlaylistContextMenu() {
                   <button
                     onClick={handleMergePlaylist}
                     className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                    title="Merge with another playlist"
+                    title={tp("merge")}
                   >
                     <GitMerge className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                     <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                      Merge
+                      {tp("mergeLabel")}
                     </span>
                   </button>
                 </>
@@ -392,9 +399,7 @@ export function PlaylistContextMenu() {
                 onClick={handleShare}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
                 title={
-                  canShare
-                    ? "Share playlist"
-                    : "Only public playlists can be shared"
+                  canShare ? tp("sharePlaylist") : tp("onlyPublicCanShare")
                 }
                 disabled={!canShare}
               >
@@ -406,7 +411,7 @@ export function PlaylistContextMenu() {
                   }`}
                 />
                 <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                  Share
+                  {tc("share")}
                 </span>
               </button>
 
@@ -417,18 +422,20 @@ export function PlaylistContextMenu() {
                   <button
                     onClick={handleEdit}
                     className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                    title="Edit playlist"
+                    title={tp("editPlaylist")}
                   >
                     <Edit3 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                     <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                      Edit
+                      {tc("edit")}
                     </span>
                   </button>
 
                   <button
                     onClick={handleToggleVisibility}
                     className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                    title={playlist.isPublic ? "Make private" : "Make public"}
+                    title={
+                      playlist.isPublic ? tp("makePrivate") : tp("makePublic")
+                    }
                     disabled={updateVisibility.isPending}
                   >
                     {playlist.isPublic ? (
@@ -437,19 +444,19 @@ export function PlaylistContextMenu() {
                       <Lock className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                     )}
                     <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                      {playlist.isPublic ? "Public" : "Private"}
+                      {playlist.isPublic ? tc("public") : tc("private")}
                     </span>
                   </button>
 
                   <button
                     onClick={handleDuplicate}
                     className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                    title="Duplicate playlist"
+                    title={tp("duplicatePlaylist")}
                     disabled={duplicatePlaylist.isPending}
                   >
                     <Copy className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                     <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                      Copy
+                      {tp("copy")}
                     </span>
                   </button>
 
@@ -458,12 +465,12 @@ export function PlaylistContextMenu() {
                   <button
                     onClick={handleDelete}
                     className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] hover:bg-red-500/10 active:scale-95"
-                    title="Delete playlist"
+                    title={tp("deletePlaylist")}
                     disabled={deletePlaylist.isPending}
                   >
                     <Trash2 className="h-5 w-5 text-[var(--color-danger)] transition-all group-hover:scale-110" />
                     <span className="text-[10px] font-medium text-[var(--color-danger)] group-hover:text-red-400">
-                      Delete
+                      {tc("delete")}
                     </span>
                   </button>
                 </>
@@ -471,11 +478,11 @@ export function PlaylistContextMenu() {
                 <button
                   onClick={handleOpen}
                   className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                  title="Open playlist"
+                  title={tp("openPlaylist")}
                 >
                   <ExternalLink className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
                   <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    Open
+                    {tc("open")}
                   </span>
                 </button>
               )}
@@ -489,11 +496,10 @@ export function PlaylistContextMenu() {
         <div className="theme-chrome-backdrop fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm">
           <div className="surface-panel max-w-md p-6">
             <h3 className="mb-4 text-xl font-bold text-[var(--color-text)]">
-              Merge Playlists
+              {tp("mergeTitle")}
             </h3>
             <p className="mb-4 text-sm text-[var(--color-subtext)]">
-              Merge functionality coming soon! This will allow you to combine
-              tracks from multiple playlists.
+              {tp("mergeComingSoon")}
             </p>
             <button
               onClick={() => {
@@ -502,7 +508,7 @@ export function PlaylistContextMenu() {
               }}
               className="btn-primary w-full"
             >
-              Close
+              {tc("close")}
             </button>
           </div>
         </div>

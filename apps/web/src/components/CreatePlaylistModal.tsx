@@ -10,6 +10,7 @@ import { springPresets } from "@/utils/spring-animations";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -18,7 +19,12 @@ interface CreatePlaylistModalProps {
   onClose: () => void;
 }
 
-export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProps) {
+export function CreatePlaylistModal({
+  isOpen,
+  onClose,
+}: CreatePlaylistModalProps) {
+  const tc = useTranslations("common");
+  const tp = useTranslations("playlists");
   const { data: session } = useSession();
   const { openAuthModal } = useAuthModal();
   const router = useRouter();
@@ -34,7 +40,7 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
     onSuccess: async (playlist) => {
       await utils.music.getPlaylists.invalidate();
       if (playlist) {
-        showToast(`Created playlist "${playlist.name}"`, "success");
+        showToast(tp("createdPlaylist", { name: playlist.name }), "success");
         onClose();
         setNewPlaylistName("");
         setNewPlaylistDescription("");
@@ -43,7 +49,7 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
       }
     },
     onError: (error) => {
-      showToast(`Failed to create playlist: ${error.message}`, "error");
+      showToast(tp("failedToCreate", { error: error.message }), "error");
     },
   });
 
@@ -55,7 +61,7 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
     }
 
     if (!newPlaylistName.trim()) {
-      showToast("Please enter a playlist name", "error");
+      showToast(tp("pleaseEnterName"), "error");
       return;
     }
 
@@ -97,7 +103,17 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose, newPlaylistName, session, router, newPlaylistDescription, isPublic, createPlaylist, openAuthModal]);
+  }, [
+    isOpen,
+    onClose,
+    newPlaylistName,
+    session,
+    router,
+    newPlaylistDescription,
+    isPublic,
+    createPlaylist,
+    openAuthModal,
+  ]);
 
   if (!mounted) return null;
 
@@ -132,13 +148,13 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
           >
             <div className="surface-panel overflow-hidden p-6">
               <h2 className="mb-6 text-2xl font-bold text-[var(--color-text)]">
-                Create Playlist
+                {tp("createPlaylist")}
               </h2>
 
               {!session ? (
-                <div className="text-center py-8">
+                <div className="py-8 text-center">
                   <p className="mb-4 text-sm text-[var(--color-subtext)]">
-                    Sign in to create playlists
+                    {tp("signInToCreate")}
                   </p>
                   <button
                     type="button"
@@ -149,7 +165,7 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
                     }}
                     className="inline-block rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-6 py-3 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95"
                   >
-                    Sign In
+                    {tc("signIn")}
                   </button>
                 </div>
               ) : (
@@ -157,28 +173,30 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
                   <div className="space-y-4">
                     <div>
                       <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                        Playlist Name *
+                        {tp("playlistNameRequired")}
                       </label>
                       <input
                         type="text"
                         value={newPlaylistName}
                         onChange={(e) => setNewPlaylistName(e.target.value)}
-                        placeholder="My Awesome Playlist"
-                        className="theme-input w-full rounded-lg py-3 px-4 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
+                        placeholder={tp("playlistNamePlaceholder")}
+                        className="theme-input w-full rounded-lg px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
                         autoFocus
                       />
                     </div>
 
                     <div>
                       <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                        Description (optional)
+                        {tp("descriptionOptional")}
                       </label>
                       <textarea
                         value={newPlaylistDescription}
-                        onChange={(e) => setNewPlaylistDescription(e.target.value)}
-                        placeholder="Add a description..."
+                        onChange={(e) =>
+                          setNewPlaylistDescription(e.target.value)
+                        }
+                        placeholder={tp("descriptionPlaceholder")}
                         rows={3}
-                        className="theme-input w-full resize-none rounded-lg py-3 px-4 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
+                        className="theme-input w-full resize-none rounded-lg px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
                       />
                     </div>
 
@@ -190,8 +208,11 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
                         onChange={(e) => setIsPublic(e.target.checked)}
                         className="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25"
                       />
-                      <label htmlFor="isPublic" className="text-sm text-[var(--color-subtext)]">
-                        Make this playlist public
+                      <label
+                        htmlFor="isPublic"
+                        className="text-sm text-[var(--color-subtext)]"
+                      >
+                        {tp("makePublic")}
                       </label>
                     </div>
                   </div>
@@ -207,14 +228,16 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
                       }}
                       className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-3 text-sm font-medium text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-hover)] active:scale-[0.98]"
                     >
-                      Cancel
+                      {tc("cancel")}
                     </button>
                     <button
                       onClick={handleCreatePlaylist}
-                      disabled={createPlaylist.isPending || !newPlaylistName.trim()}
+                      disabled={
+                        createPlaylist.isPending || !newPlaylistName.trim()
+                      }
                       className="flex-1 rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-4 py-3 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                     >
-                      {createPlaylist.isPending ? "Creating..." : "Create"}
+                      {createPlaylist.isPending ? tp("creating") : tc("create")}
                     </button>
                   </div>
                 </>

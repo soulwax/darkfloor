@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
 type RemovedQueueItem = {
@@ -31,6 +32,8 @@ type RemovedQueueItem = {
 };
 
 export function DesktopRightRail() {
+  const t = useTranslations("rightRail");
+  const tq = useTranslations("queue");
   const player = useGlobalPlayer();
   const { openMenu } = useTrackContextMenu();
   const currentTrack = player.currentTrack;
@@ -137,12 +140,12 @@ export function DesktopRightRail() {
             : undefined,
         },
         removeFromList: {
-          label: "Remove from queue",
+          label: t("removeFromQueue"),
           onRemove: () => handleRemoveWithUndo(queueIndex),
         },
       });
     },
-    [handleRemoveWithUndo, openMenu, player],
+    [handleRemoveWithUndo, openMenu, player, t],
   );
 
   return (
@@ -150,7 +153,7 @@ export function DesktopRightRail() {
       <div className="desktop-surface flex h-full min-h-0 flex-col overflow-hidden rounded-[1.25rem] border px-4 py-4">
         <section className="border-b border-[rgba(255,255,255,0.08)] pb-4">
           <p className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-            Now Playing
+            {t("nowPlaying")}
           </p>
           {currentTrack ? (
             <div className="flex items-start gap-3">
@@ -175,14 +178,14 @@ export function DesktopRightRail() {
             </div>
           ) : (
             <div className="rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-xs text-[var(--color-subtext)]">
-              Start playback to populate your queue.
+              {t("startPlaybackToPopulate")}
             </div>
           )}
         </section>
 
         <section className="pt-4">
           <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-            Quick Actions
+            {t("quickActions")}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -196,7 +199,7 @@ export function DesktopRightRail() {
               ) : (
                 <Play className="h-3.5 w-3.5" />
               )}
-              {player.isPlaying ? "Pause" : "Play"}
+              {player.isPlaying ? t("pause") : t("play")}
             </button>
             <button
               type="button"
@@ -205,7 +208,7 @@ export function DesktopRightRail() {
               className="btn-secondary inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
             >
               <SkipForward className="h-3.5 w-3.5" />
-              Next
+              {t("next")}
             </button>
             <button
               type="button"
@@ -213,7 +216,7 @@ export function DesktopRightRail() {
               className="btn-secondary inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs"
             >
               <Shuffle className="h-3.5 w-3.5" />
-              {player.isShuffled ? "Shuffling" : "Shuffle"}
+              {player.isShuffled ? t("shuffling") : t("shuffle")}
             </button>
             <button
               type="button"
@@ -222,7 +225,7 @@ export function DesktopRightRail() {
               className="btn-secondary inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Clear
+              {t("clear")}
             </button>
             <button
               type="button"
@@ -231,7 +234,7 @@ export function DesktopRightRail() {
               className="btn-secondary inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Save className="h-3.5 w-3.5" />
-              Save Queue
+              {t("saveQueue")}
             </button>
             <button
               type="button"
@@ -240,7 +243,7 @@ export function DesktopRightRail() {
               className="btn-secondary inline-flex items-center justify-center gap-1.5 px-2 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Smart +5
+              {t("smartPlus", { count: 5 })}
             </button>
           </div>
         </section>
@@ -248,18 +251,21 @@ export function DesktopRightRail() {
         <section className="mt-4 min-h-0 flex-1 overflow-hidden border-t border-[rgba(255,255,255,0.08)] pt-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-              Up Next
+              {t("upNext")}
             </p>
             <span className="text-[10px] text-[var(--color-muted)]">
               {upNext.length > 0
-                ? `${upNext.length} tracks • ${formatDuration(upcomingDuration)}`
-                : "No upcoming tracks"}
+                ? t("upcomingSummary", {
+                    count: upNext.length,
+                    duration: formatDuration(upcomingDuration),
+                  })
+                : t("noUpcomingTracks")}
             </span>
           </div>
 
           {upNext.length === 0 ? (
             <div className="flex h-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-3 text-xs text-[var(--color-subtext)]">
-              Queue is empty.
+              {t("queueEmpty")}
             </div>
           ) : (
             <div className="desktop-scroll h-full overflow-y-auto pr-1">
@@ -300,7 +306,7 @@ export function DesktopRightRail() {
                         type="button"
                         onClick={() => player.playFromQueue(queueIndex)}
                         className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-                        title="Play now"
+                        title={t("playNow")}
                       >
                         <Image
                           src={getCoverImage(track, "small")}
@@ -326,8 +332,12 @@ export function DesktopRightRail() {
                         onClick={() => handleMoveToNext(queueIndex)}
                         disabled={queueIndex === 1}
                         className="rounded-md p-1 text-[var(--color-subtext)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[rgba(88,198,177,0.16)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-30"
-                        aria-label={`Move ${track.title} to play next`}
-                        title={queueIndex === 1 ? "Already next" : "Play next"}
+                        aria-label={t("moveToPlayNextAria", {
+                          title: track.title,
+                        })}
+                        title={
+                          queueIndex === 1 ? t("alreadyNext") : t("playNext")
+                        }
                       >
                         <ArrowUp className="h-3.5 w-3.5" />
                       </button>
@@ -335,7 +345,9 @@ export function DesktopRightRail() {
                         type="button"
                         onClick={() => handleRemoveWithUndo(queueIndex)}
                         className="rounded-md p-1 text-[var(--color-subtext)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[rgba(242,139,130,0.16)] hover:text-[var(--color-text)]"
-                        aria-label={`Remove ${track.title} from queue`}
+                        aria-label={t("removeFromQueueAria", {
+                          title: track.title,
+                        })}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -350,12 +362,12 @@ export function DesktopRightRail() {
         <div className="mt-3 border-t border-[rgba(255,255,255,0.08)] pt-3">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.04)] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
             <ListMusic className="h-3 w-3" />
-            Queue Controls
+            {t("queueControls")}
           </div>
           {lastRemoved ? (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[rgba(244,178,102,0.22)] bg-[rgba(244,178,102,0.08)] px-2.5 py-2 text-xs text-[var(--color-text)]">
               <span className="line-clamp-2 min-w-0 flex-1">
-                Removed &quot;{lastRemoved.track.title}&quot;
+                {t("removedTrack", { title: lastRemoved.track.title })}
               </span>
               <button
                 type="button"
@@ -363,7 +375,7 @@ export function DesktopRightRail() {
                 className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[rgba(88,198,177,0.18)] px-2 py-1 text-[11px] font-semibold text-[var(--color-text)] transition-colors hover:bg-[rgba(88,198,177,0.28)]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Undo
+                {tq("undo")}
               </button>
             </div>
           ) : null}

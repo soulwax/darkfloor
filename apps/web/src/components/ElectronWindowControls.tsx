@@ -3,6 +3,7 @@
 "use client";
 
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 type WindowStateMessage = {
@@ -13,10 +14,13 @@ type WindowStateMessage = {
 const isWindowStateMessage = (value: unknown): value is WindowStateMessage => {
   if (!value || typeof value !== "object") return false;
   const payload = value as { type?: unknown; isMaximized?: unknown };
-  return payload.type === "windowState" && typeof payload.isMaximized === "boolean";
+  return (
+    payload.type === "windowState" && typeof payload.isMaximized === "boolean"
+  );
 };
 
 export function ElectronWindowControls() {
+  const t = useTranslations("shell");
   const [isLinuxElectron] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -40,24 +44,32 @@ export function ElectronWindowControls() {
   if (!isLinuxElectron) return null;
 
   return (
-    <div className="electron-window-controls" role="group" aria-label="Window controls">
+    <div
+      className="electron-window-controls"
+      role="group"
+      aria-label={t("windowControls")}
+    >
       <div className="electron-window-controls-shell">
         <button
           type="button"
-          aria-label="Minimize window"
-          title="Minimize"
+          aria-label={t("minimizeWindow")}
+          title={t("minimize")}
           className="electron-window-control electron-window-control-minimize"
-          onClick={() => window.electron?.send?.("toMain", { type: "window:minimize" })}
+          onClick={() =>
+            window.electron?.send?.("toMain", { type: "window:minimize" })
+          }
         >
           <Minus className="h-3.5 w-3.5 stroke-[2.5]" />
         </button>
 
         <button
           type="button"
-          aria-label={isMaximized ? "Restore window" : "Maximize window"}
-          title={isMaximized ? "Restore" : "Maximize"}
+          aria-label={isMaximized ? t("restoreWindow") : t("maximizeWindow")}
+          title={isMaximized ? t("restore") : t("maximize")}
           className="electron-window-control electron-window-control-maximize"
-          onClick={() => window.electron?.send?.("toMain", { type: "window:toggleMaximize" })}
+          onClick={() =>
+            window.electron?.send?.("toMain", { type: "window:toggleMaximize" })
+          }
         >
           {isMaximized ? (
             <Minimize2 className="h-[11px] w-[11px] stroke-[2.3]" />
@@ -68,10 +80,12 @@ export function ElectronWindowControls() {
 
         <button
           type="button"
-          aria-label="Close window"
-          title="Close"
+          aria-label={t("closeWindow")}
+          title={t("close")}
           className="electron-window-control electron-window-control-close"
-          onClick={() => window.electron?.send?.("toMain", { type: "window:close" })}
+          onClick={() =>
+            window.electron?.send?.("toMain", { type: "window:close" })
+          }
         >
           <X className="h-3.5 w-3.5 stroke-[2.5]" />
         </button>

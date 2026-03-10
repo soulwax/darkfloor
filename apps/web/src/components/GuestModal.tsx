@@ -27,6 +27,7 @@ import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { ChevronDown, Music2, X } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -40,8 +41,6 @@ type MoodPresetId = "chill" | "focus" | "hype" | "discover";
 
 type MoodPreset = {
   id: MoodPresetId;
-  label: string;
-  hint: string;
   similarity: SimilarityPreference;
   autoQueue: boolean;
   smartMix: boolean;
@@ -60,32 +59,24 @@ const GENRE_MENU_HORIZONTAL_PADDING = 8;
 const MOOD_PRESETS: MoodPreset[] = [
   {
     id: "chill",
-    label: "Chill",
-    hint: "Smooth + relaxed",
     similarity: "diverse",
     autoQueue: false,
     smartMix: true,
   },
   {
     id: "focus",
-    label: "Focus",
-    hint: "Tighter matches",
     similarity: "strict",
     autoQueue: false,
     smartMix: true,
   },
   {
     id: "hype",
-    label: "Hype",
-    hint: "Faster queue flow",
     similarity: "balanced",
     autoQueue: true,
     smartMix: true,
   },
   {
     id: "discover",
-    label: "Discover",
-    hint: "Broader variety",
     similarity: "diverse",
     autoQueue: true,
     smartMix: false,
@@ -144,6 +135,7 @@ export function GuestModal({
   onContinueAsGuest,
   callbackUrl = "/library",
 }: GuestModalProps) {
+  const t = useTranslations("guest");
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isOpen, setIsOpen] = useState(true);
   const [genres, setGenres] = useState<GenreListItem[]>([]);
@@ -185,20 +177,20 @@ export function GuestModal({
     [selectedMoodId],
   );
   const genreOptions = useMemo<GenreOption[]>(
-    () => [{ id: null, name: "No preference" }, ...genres],
-    [genres],
+    () => [{ id: null, name: t("noPreference") }, ...genres],
+    [genres, t],
   );
   const selectedGenre = useMemo(
     () => genres.find((genre) => genre.id === preferredGenreId) ?? null,
     [genres, preferredGenreId],
   );
   const selectedGenreLabel = useMemo(() => {
-    if (genresLoading) return "Loading genres...";
+    if (genresLoading) return t("loadingGenres");
     if (preferredGenreName.trim().length > 0) return preferredGenreName;
     if (selectedGenre?.name) return selectedGenre.name;
-    if (genres.length > 0) return "No preference";
-    return "Genres unavailable";
-  }, [genres, genresLoading, preferredGenreName, selectedGenre]);
+    if (genres.length > 0) return t("noPreference");
+    return t("genresUnavailable");
+  }, [genres, genresLoading, preferredGenreName, selectedGenre, t]);
   const genreSelectDisabled = genresLoading || genres.length === 0;
   const genreSummaryLabel = selectedGenre?.name ?? preferredGenreName;
   const selectedGenreOptionIndex = useMemo(() => {
@@ -354,7 +346,7 @@ export function GuestModal({
             <div
               id="guest-preferred-genre-listbox"
               role="listbox"
-              aria-label="Genre options"
+              aria-label={t("genreOptions")}
               className="theme-panel pointer-events-auto fixed z-[241] overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl"
               style={genreMenuStyle}
             >
@@ -422,6 +414,7 @@ export function GuestModal({
     };
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Sync initial browser-specific visualizer preference into local UI state. */
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -448,6 +441,7 @@ export function GuestModal({
       );
     };
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!isGenreMenuOpen || !genreTriggerRef.current) return;
@@ -549,11 +543,10 @@ export function GuestModal({
                 </div>
                 <div>
                   <DialogTitle className="text-[15px] leading-5 text-white sm:text-lg sm:leading-6">
-                    Tune the start page and optionally sign in
+                    {t("title")}
                   </DialogTitle>
                   <DialogDescription className="mt-1 text-xs leading-relaxed text-white/72 sm:text-sm">
-                    Save local tuning defaults now. You can still skip and start
-                    listening immediately.
+                    {t("description")}
                   </DialogDescription>
                 </div>
               </div>
@@ -562,7 +555,7 @@ export function GuestModal({
                 <button
                   type="button"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/[0.03] text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white sm:h-10 sm:w-10"
-                  aria-label="Close and skip sign-in"
+                  aria-label={t("closeAndSkip")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -579,7 +572,7 @@ export function GuestModal({
           >
             <section className="space-y-3 rounded-2xl border border-white/12 p-2.5 sm:p-3">
               <p className="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">
-                Tune Start Page
+                {t("tuneStartPage")}
               </p>
 
               <div className="space-y-1">
@@ -587,7 +580,7 @@ export function GuestModal({
                   id="guest-preferred-genre-label"
                   className="text-xs font-medium text-white/80"
                 >
-                  Genre
+                  {t("genre")}
                 </p>
                 <div className="relative">
                   <button
@@ -630,7 +623,7 @@ export function GuestModal({
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-medium text-white/80">Mood</p>
+                <p className="text-xs font-medium text-white/80">{t("mood")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {MOOD_PRESETS.map((preset) => {
                     const selected = selectedMoodId === preset.id;
@@ -649,10 +642,10 @@ export function GuestModal({
                         )}
                       >
                         <p className="text-[13px] leading-tight font-medium sm:text-sm">
-                          {preset.label}
+                          {t(`moodOptions.${preset.id}.label`)}
                         </p>
                         <p className="text-[11px] text-white/65">
-                          {preset.hint}
+                          {t(`moodOptions.${preset.id}.hint`)}
                         </p>
                       </button>
                     );
@@ -662,9 +655,14 @@ export function GuestModal({
 
               <p className="text-xs text-white/65">
                 {genreSummaryLabel
-                  ? `Genre: ${genreSummaryLabel}`
-                  : "Genre: none selected"}{" "}
-                · Mood: {selectedMood?.label ?? "Chill"}
+                  ? t("genreSummarySelected", { genre: genreSummaryLabel })
+                  : t("genreSummaryNone")}{" "}
+                ·{" "}
+                {t("moodSummary", {
+                  mood: selectedMood
+                    ? t(`moodOptions.${selectedMood.id}.label`)
+                    : t("moodOptions.chill.label"),
+                })}
               </p>
             </section>
 
@@ -678,26 +676,23 @@ export function GuestModal({
                 }
                 className="h-12 w-full rounded-xl bg-[linear-gradient(135deg,#5865F2,#7480ff)] px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:brightness-110 active:brightness-95 sm:text-sm"
               >
-                Sign in to sync preferences
+                {t("signInToSync")}
               </button>
               <DialogClose asChild>
                 <button
                   type="button"
                   className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/92 transition duration-200 ease-out hover:border-white/30 hover:bg-white/[0.1] sm:text-sm"
                 >
-                  Skip for now
+                  {t("skipForNow")}
                 </button>
               </DialogClose>
 
               {showFirefoxVisualsOptIn && (
                 <div className="rounded-xl border border-white/12 bg-white/[0.02] px-3 py-2 text-[11px] leading-relaxed text-white/68">
-                  <p>
-                    Firefox can struggle with advanced live visuals, so they are
-                    disabled by default to keep playback smooth.
-                  </p>
+                  <p>{t("firefoxVisualsDescription")}</p>
                   {firefoxVisualsOptedIn ? (
                     <p className="mt-1.5 font-medium text-[#1DB954]">
-                      Visuals are enabled for this browser.
+                      {t("visualsEnabled")}
                     </p>
                   ) : (
                     <button
@@ -705,7 +700,7 @@ export function GuestModal({
                       onClick={enableFirefoxVisuals}
                       className="mt-2 inline-flex h-8 items-center rounded-lg border border-[#1DB954]/45 bg-[#1DB954]/14 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-[#1DB954]/22"
                     >
-                      Enable visuals anyway
+                      {t("enableVisualsAnyway")}
                     </button>
                   )}
                 </div>

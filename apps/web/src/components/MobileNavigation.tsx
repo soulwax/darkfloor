@@ -21,6 +21,7 @@ import {
   User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -37,13 +38,14 @@ interface NavTab {
 export default function MobileNavigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const tc = useTranslations("common");
+  const tm = useTranslations("mobileNav");
   const { openAuthModal } = useAuthModal();
   const player = useGlobalPlayer();
   const [showQuickActions, setShowQuickActions] = useState(false);
   const dragY = useMotionValue(0);
 
   const isActive = (path: string) => {
-
     if (path === "#now-playing") {
       return player.showMobilePlayer;
     }
@@ -54,19 +56,19 @@ export default function MobileNavigation() {
 
   const tabs: NavTab[] = [
     {
-      name: "Home",
+      name: tc("home"),
       path: "/",
       icon: <Home className="h-5 w-5" strokeWidth={1.5} />,
       activeIcon: <Home className="h-5 w-5" strokeWidth={2.5} />,
     },
     {
-      name: "Now Playing",
+      name: tm("nowPlaying"),
       path: "#now-playing",
       icon: <Music2 className="h-5 w-5" strokeWidth={1.5} />,
       activeIcon: <Music2 className="h-5 w-5" strokeWidth={2.5} />,
     },
     {
-      name: "Library",
+      name: tc("library"),
       path: "/library",
       icon: <Library className="h-5 w-5" strokeWidth={1.5} />,
       activeIcon: <Library className="h-5 w-5" strokeWidth={2.5} />,
@@ -74,7 +76,7 @@ export default function MobileNavigation() {
       callbackUrl: "/library",
     },
     {
-      name: "Playlists",
+      name: tc("playlists"),
       path: "/playlists",
       icon: <ListMusic className="h-5 w-5" strokeWidth={1.5} />,
       activeIcon: <ListMusic className="h-5 w-5" strokeWidth={2.5} />,
@@ -82,7 +84,7 @@ export default function MobileNavigation() {
       callbackUrl: "/playlists",
     },
     {
-      name: session ? "Profile" : "Sign In",
+      name: session ? tc("profile") : tc("signIn"),
       path: session ? "/settings" : "/signin",
       icon: <User className="h-5 w-5" strokeWidth={1.5} />,
       activeIcon: <User className="h-5 w-5" strokeWidth={2.5} />,
@@ -91,14 +93,11 @@ export default function MobileNavigation() {
     },
   ];
 
-  const visibleTabs = tabs.filter(
-    (tab) => {
+  const visibleTabs = tabs.filter((tab) => {
+    if (tab.path === "#now-playing" && !player.currentTrack) return false;
 
-      if (tab.path === "#now-playing" && !player.currentTrack) return false;
-
-      return true;
-    },
-  );
+    return true;
+  });
 
   const activeIndex = visibleTabs.findIndex((tab) => isActive(tab.path));
 
@@ -146,7 +145,7 @@ export default function MobileNavigation() {
               <div className="flex flex-col items-center pt-4">
                 <div className="mb-4 h-1 w-10 rounded-full bg-[rgba(255,255,255,0.2)]" />
                 <h3 className="mb-4 text-lg font-semibold text-[var(--color-text)]">
-                  Quick Actions
+                  {tm("quickActions")}
                 </h3>
               </div>
 
@@ -176,7 +175,7 @@ export default function MobileNavigation() {
                     />
                   </svg>
                   <span className="text-xs text-[var(--color-text)]">
-                    Search
+                    {tc("search")}
                   </span>
                 </motion.button>
               </div>
