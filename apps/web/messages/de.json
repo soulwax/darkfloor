@@ -287,6 +287,18 @@
     "noProviders": "No sign-in providers are currently configured.",
     "loadingSignInPage": "Loading sign-in page"
   },
+  "songbird": {
+    "authMeTitle": "Songbird Auth Me",
+    "cacheStatsTitle": "Songbird Cache-Statistiken",
+    "dataSource": "Datenquelle",
+    "refresh": "Aktualisieren",
+    "loading": "Wird geladen..."
+  },
+  "trackRedirect": {
+    "openingTrack": "Track wird geöffnet...",
+    "notRedirectedPrefix": "Wenn du nicht weitergeleitet wirst, öffne",
+    "trackPlayerLink": "den Track-Player"
+  },
   "about": {
     "title": "About - Starchild Music",
     "description": "Learn about the team behind Starchild Music",

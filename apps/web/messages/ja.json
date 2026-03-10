@@ -287,6 +287,18 @@
     "noProviders": "現在、設定されているログインプロバイダはありません。",
     "loadingSignInPage": "ログインページを読み込み中"
   },
+  "songbird": {
+    "authMeTitle": "Songbird Auth Me",
+    "cacheStatsTitle": "Songbird キャッシュ統計",
+    "dataSource": "データソース",
+    "refresh": "更新",
+    "loading": "読み込み中..."
+  },
+  "trackRedirect": {
+    "openingTrack": "トラックを開いています...",
+    "notRedirectedPrefix": "リダイレクトされない場合は、",
+    "trackPlayerLink": "トラックプレーヤー"
+  },
   "about": {
     "title": "Starchild Music について",
     "description": "Starchild Music を支えるチームについて知る",

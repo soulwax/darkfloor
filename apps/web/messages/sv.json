@@ -287,6 +287,18 @@
     "noProviders": "Inga inloggningsleverantörer är för närvarande konfigurerade.",
     "loadingSignInPage": "Laddar inloggningssida"
   },
+  "songbird": {
+    "authMeTitle": "Songbird Auth Me",
+    "cacheStatsTitle": "Songbird Cache-statistik",
+    "dataSource": "Datakälla",
+    "refresh": "Uppdatera",
+    "loading": "Laddar..."
+  },
+  "trackRedirect": {
+    "openingTrack": "Öppnar spår...",
+    "notRedirectedPrefix": "Om du inte omdirigeras, öppna",
+    "trackPlayerLink": "spårspelaren"
+  },
   "about": {
     "title": "Om – Starchild Music",
     "description": "Lär känna teamet bakom Starchild Music",
