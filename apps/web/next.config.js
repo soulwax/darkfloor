@@ -11,11 +11,11 @@ const repoRoot = resolve(__dirname, "../..");
 const nodeEnv = process.env.NODE_ENV ?? "development";
 
 // When running Next from apps/web, load env vars from the repo root.
-dotenvConfig({ path: join(repoRoot, ".env.local"), override: false });
+dotenvConfig({ path: join(repoRoot, ".env.local"), override: false, quiet: true });
 if (nodeEnv === "production") {
-  dotenvConfig({ path: join(repoRoot, ".env.production"), override: false });
+  dotenvConfig({ path: join(repoRoot, ".env.production"), override: false, quiet: true });
 }
-dotenvConfig({ path: join(repoRoot, ".env"), override: false });
+dotenvConfig({ path: join(repoRoot, ".env"), override: false, quiet: true });
 
 await import("./src/env.js");
 
