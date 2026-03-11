@@ -11,13 +11,26 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "../../..");
 const winUnpackedDir = path.join(rootDir, "dist", "win-unpacked");
 const winTargets = ["nsis", "portable"];
+const forceNativeRebuild = /^(1|true)$/i.test(
+  String(process.env.STARCHILD_ELECTRON_WIN_NATIVE_REBUILD ?? ""),
+);
+const noNativeRebuildFlags = [
+  "-c.npmRebuild=false",
+  "-c.nodeGypRebuild=false",
+  "-c.buildDependenciesFromSource=false",
+];
 
-function runBuilder(target) {
+function runBuilder(target, options = {}) {
+  const commandParts = ["electron-builder", "--win", target];
+  if (options.disableNativeRebuild === true) {
+    commandParts.push(...noNativeRebuildFlags);
+  }
+
   return spawnSync(
     process.execPath,
     [
       "apps/desktop/scripts/load-env-build.js",
-      `electron-builder --win ${target}`,
+      commandParts.join(" "),
     ],
     {
       cwd: rootDir,
@@ -48,6 +61,13 @@ function isMissingElectronExeRenameError(output) {
   );
 }
 
+function isMissingVisualStudioForNativeRebuild(output) {
+  return (
+    /Could not find any Visual Studio installation to use/i.test(output) &&
+    /node-gyp failed to rebuild/i.test(output)
+  );
+}
+
 function cleanupWinUnpacked() {
   try {
     fs.rmSync(winUnpackedDir, { recursive: true, force: true });
@@ -56,11 +76,25 @@ function cleanupWinUnpacked() {
   }
 }
 
+const shouldAttemptNativeRebuildFirst = forceNativeRebuild;
+
+if (forceNativeRebuild) {
+  console.log(
+    "[electron-builder:win] STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true detected; native rebuild is enabled.",
+  );
+} else {
+  console.log(
+    "[electron-builder:win] Packaging with native rebuild disabled by default. Set STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true to force @electron/rebuild.",
+  );
+}
+
 for (const target of winTargets) {
   console.log(`[electron-builder:win] Building target "${target}"...`);
   cleanupWinUnpacked();
 
-  const firstRun = runBuilder(target);
+  const firstRun = runBuilder(target, {
+    disableNativeRebuild: !shouldAttemptNativeRebuildFirst,
+  });
   printRun(firstRun);
 
   if (firstRun.status === 0) {
@@ -68,11 +102,29 @@ for (const target of winTargets) {
   }
 
   const firstOutput = `${firstRun.stdout ?? ""}\n${firstRun.stderr ?? ""}`;
-  const shouldRetry =
+  const shouldRetryWithoutNativeRebuild =
+    shouldAttemptNativeRebuildFirst &&
+    isMissingVisualStudioForNativeRebuild(firstOutput);
+  if (shouldRetryWithoutNativeRebuild) {
+    console.log(
+      `\n[electron-builder:win] Native rebuild failed due to missing Visual Studio Build Tools for "${target}". Retrying with native rebuild disabled...\n`,
+    );
+    cleanupWinUnpacked();
+
+    const fallbackRun = runBuilder(target, { disableNativeRebuild: true });
+    printRun(fallbackRun);
+
+    if (fallbackRun.status !== 0) {
+      process.exit(typeof fallbackRun.status === "number" ? fallbackRun.status : 1);
+    }
+    continue;
+  }
+
+  const shouldRetryTransient =
     isMissingResourcesError(firstOutput) ||
     isMissingElectronExeRenameError(firstOutput);
 
-  if (!shouldRetry) {
+  if (!shouldRetryTransient) {
     process.exit(typeof firstRun.status === "number" ? firstRun.status : 1);
   }
 
@@ -81,7 +133,9 @@ for (const target of winTargets) {
   );
   cleanupWinUnpacked();
 
-  const secondRun = runBuilder(target);
+  const secondRun = runBuilder(target, {
+    disableNativeRebuild: !shouldAttemptNativeRebuildFirst,
+  });
   printRun(secondRun);
 
   if (secondRun.status !== 0) {

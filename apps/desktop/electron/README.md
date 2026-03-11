@@ -32,6 +32,8 @@ For Windows:
 npm run electron:build:win
 ```
 
+The Windows build wrapper now defaults to packaging with native rebuild disabled (to avoid `node-gyp`/Visual Studio C++ Build Tools failures from transitive modules like `@parcel/watcher`). If you explicitly need native rebuild, set `STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true` before running the build. Linux and macOS build flows are unchanged.
+
 For macOS:
 
 ```bash
