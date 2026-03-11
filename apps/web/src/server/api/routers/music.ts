@@ -1893,6 +1893,7 @@ export const musicRouter = createTRPCRouter({
         visualizerEnabled: z.boolean().optional(),
         compactMode: z.boolean().optional(),
         theme: z.enum(["dark", "light"]).optional(),
+        language: z.enum(["en", "de", "sv", "ja"]).optional(),
         spotifyFeaturesEnabled: z.boolean().optional(),
         spotifyClientId: z.string().trim().max(255).optional(),
         spotifyClientSecret: z.string().trim().max(4096).optional(),

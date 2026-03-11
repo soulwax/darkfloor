@@ -5,6 +5,23 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-03-11
+
+### Added
+
+- **Per-user language preference persistence in DB**: Added `user_preferences.language` plus migration wiring so signed-in language selection can be stored account-wide.
+
+### Changed
+
+- **Settings language selector persistence behavior**: Language changes now update `NEXT_LOCALE` and are persisted to both `localStorage` and `sessionStorage`, with signed-in selections also persisted through `music.updatePreferences`.
+- **Linux package icon source standardized for installer output**: Linux packaging now points to a square `512x512` Emily icon variant for more consistent launcher rendering.
+
+### Fixed
+
+- **Translation rollout route regressions**: Removed locale path rewrite behavior that caused `/about`, `/library`, and other non-home routes to 404 under translation-enabled builds.
+- **Electron standalone startup errors in AppImage/deb**: Hardened pnpm standalone module handling and Linux runtime node resolution to prevent packaged boot failures (`Cannot find module 'next'`, `styled-jsx/package.json`).
+- **Next.js i18n runtime compatibility in standalone server**: Updated i18n request config to use async-safe `cookies()`/`headers()` access, preventing packaged server boot loops with `.get is not a function`.
+
 ## [1.5.0] - 2026-03-11
 
 ### Added

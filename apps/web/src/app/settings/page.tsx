@@ -237,6 +237,7 @@ export default function SettingsPage() {
     [spotifyDraft, spotifySettings],
   );
   const spotifyDraftDirtyRef = useRef(false);
+  const hasSyncedLanguageFromPreferencesRef = useRef(false);
   const hasServerSpotifySettings = useMemo(
     () => hasConfiguredSpotifyFeatureSettings(serverSpotifySettings),
     [serverSpotifySettings],
@@ -281,6 +282,31 @@ export default function SettingsPage() {
     serverSpotifySettings,
     session,
   ]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    if (hasSyncedLanguageFromPreferencesRef.current) {
+      return;
+    }
+
+    const preferredLanguage = preferences?.language;
+    if (
+      !preferredLanguage ||
+      !["en", "de", "sv", "ja"].includes(preferredLanguage) ||
+      preferredLanguage === locale
+    ) {
+      if (preferences !== undefined) {
+        hasSyncedLanguageFromPreferencesRef.current = true;
+      }
+      return;
+    }
+
+    hasSyncedLanguageFromPreferencesRef.current = true;
+    setLocale(preferredLanguage as AppLocale);
+  }, [locale, preferences, session, setLocale]);
 
   const handleSpotifyDraftChange = (
     key: keyof Pick<
@@ -497,7 +523,16 @@ export default function SettingsPage() {
         type: "select",
         value: locale,
         options: languageOptions,
-        onChange: (value) => setLocale(value as AppLocale),
+        onChange: (value) => {
+          const nextLocale = value as AppLocale;
+          setLocale(nextLocale);
+          if (session) {
+            utils.music.getUserPreferences.setData(undefined, (prev) =>
+              prev ? { ...prev, language: nextLocale } : prev,
+            );
+            updatePreferences.mutate({ language: nextLocale });
+          }
+        },
       },
       {
         id: "visualizerMode",

@@ -176,6 +176,13 @@
       "when": 1773078000000,
       "tag": "0024_spotify_feature_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1773209416000,
+      "tag": "0025_user_language_preference",
+      "breakpoints": true
     }
   ]
 }

@@ -250,6 +250,7 @@ export const userPreferences = createTable(
     visualizerMode: d.varchar({ length: 20 }).default("random"),
     compactMode: d.boolean().default(false).notNull(),
     theme: d.varchar({ length: 20 }).default("dark"),
+    language: d.varchar({ length: 8 }).default("en").notNull(),
     spotifyFeaturesEnabled: d.boolean().default(false).notNull(),
     spotifyClientId: d.varchar({ length: 255 }).default("").notNull(),
     spotifyClientSecret: d.text().default("").notNull(),
