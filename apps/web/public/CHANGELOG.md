@@ -14,10 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Expanded supported locales in the web app**: The Next.js i18n routing now recognizes English, German, Swedish, and Japanese and applies locale-aware navigation consistently across the app.
+- **Locale routing switched to cookie-based selection**: Internationalization now resolves language from the `NEXT_LOCALE` cookie (with request and browser `accept-language` fallback), keeping canonical routes unprefixed (for example `/about`, `/library`) while still preserving translated UI strings.
 
 ### Fixed
 
 - **Language preference now persists across translated UI flows**: Changing the app language now carries through page navigation and guest onboarding instead of falling back to the default locale.
+- **Home-only routing regression after translation enablement**: Fixed 404s on non-home routes caused by locale path rewrites (`/de`, `/ja`, etc.) by removing Next.js route rewriting from middleware and resolving locale without changing URL structure.
+- **Electron Linux packaging now uses the correct standalone runtime structure**: Hardened `prepare-package`/`afterPack` handling for pnpm-produced node layouts so packaged AppImage/`.deb` bundles retain required `node_modules` dependencies and launch cleanly.
+- **Linux installer icon updated**: AppImage and `.deb` artifacts now use `apps/web/public/emily-the-strange.png` as the configured app symbol and build now points to a square `512x512` variant for consistent launcher rendering.
 
 ## [1.4.0] - 2026-03-09
 
