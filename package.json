@@ -263,7 +263,7 @@
     "portable": {
       "artifactName": "${productName}.${ext}",
       "requestExecutionLevel": "user",
-      "unpackDirName": false
+      "unpackDirName": "starchild"
     }
   },
   "ct3aMetadata": {

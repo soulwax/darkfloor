@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Windows Electron packaging without Visual Studio Build Tools**: `electron:build:win` now defaults to no-native-rebuild packaging, avoiding `@parcel/watcher`/`node-gyp` Visual Studio failures; native rebuild can still be forced via `STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true`.
-- **Windows portable startup path-depth failures**: Portable packaging now sets `portable.unpackDirName=false`, forcing shorter NSIS temp extraction paths so `.next/standalone` server and module files resolve reliably at startup.
+- **Windows portable startup path-depth failures**: Portable packaging now sets `portable.unpackDirName` to a short fixed temp folder name (`starchild`), reducing extraction path depth so `.next/standalone` server and module files resolve reliably at startup.
 
 ## [1.5.2] - 2026-03-11
 
