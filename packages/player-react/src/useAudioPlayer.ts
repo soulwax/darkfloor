@@ -757,6 +757,38 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       const isUpstreamError =
         errorMessage.includes("upstream error") ||
         errorMessage.includes("ServiceUnavailableException");
+      const isUnsupportedFormat =
+        error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ||
+        /format error|unsupported|not supported/i.test(errorMessage);
+
+      if (isUnsupportedFormat && currentTrack) {
+        failedTracksRef.current.add(currentTrack.id);
+        setFailedTrackIds((prev) => new Set(prev).add(currentTrack.id));
+        logger.warn(
+          `[useAudioPlayer] Unsupported audio format for track ${currentTrack.id}, skipping`,
+          {
+            errorCode: error?.code ?? null,
+            errorMessage: errorMessage || "Unknown media format error",
+          },
+        );
+        setIsLoading(false);
+        setIsPlaying(false);
+
+        onError?.("Unsupported audio format", currentTrack.id);
+
+        setHistory((prev) => [...prev, currentTrack]);
+        setQueuedTracks((prev) => prev.slice(1));
+        if (queueRef.current.length > 1) {
+          requestAutoPlayNext(true);
+        }
+        retryCountRef.current = 0;
+        streamErrorRetryCountRef.current = 0;
+        if (streamErrorRetryTimeoutRef.current) {
+          clearTimeout(streamErrorRetryTimeoutRef.current);
+          streamErrorRetryTimeoutRef.current = null;
+        }
+        return;
+      }
 
       if (
         currentTrack &&
@@ -867,7 +899,11 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         return;
       }
 
-      logger.error("Audio error:", errorMessage || "Unknown error");
+      if (isUnsupportedFormat) {
+        logger.warn("Audio warning:", errorMessage || "Unsupported audio format");
+      } else {
+        logger.error("Audio error:", errorMessage || "Unknown error");
+      }
       setIsLoading(false);
       setIsPlaying(false);
     };
@@ -1329,7 +1365,15 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             clearTimeout(timeout);
             audioRef.current?.removeEventListener("canplay", handleCanPlay);
             audioRef.current?.removeEventListener("error", handleError);
-            reject(new Error("Audio load error"));
+            const mediaError = audioRef.current?.error;
+            const mediaErrorMessage = mediaError?.message?.trim();
+            reject(
+              new Error(
+                mediaErrorMessage
+                  ? `Audio load error: ${mediaErrorMessage}`
+                  : "Audio load error",
+              ),
+            );
           };
 
           audioRef.current?.addEventListener("canplay", handleCanPlay, {
@@ -1373,19 +1417,37 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
       setIsPlaying(true);
     } catch (err) {
-      logger.error("[useAudioPlayer] Playback failed:", err);
-      logger.error("[useAudioPlayer] Error details:", {
-        name: err instanceof Error ? err.name : "Unknown",
-        message: err instanceof Error ? err.message : String(err),
-        audioState: audioRef.current
-          ? {
-              src: audioRef.current.src,
-              paused: audioRef.current.paused,
-              readyState: audioRef.current.readyState,
-              currentTime: audioRef.current.currentTime,
-            }
-          : "no audio element",
-      });
+      const errorName = err instanceof Error ? err.name : "Unknown";
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const mediaErrorCode = audioRef.current?.error?.code;
+      const isUnsupportedFormat =
+        mediaErrorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ||
+        /format error|unsupported|not supported/i.test(errorMessage);
+
+      if (isUnsupportedFormat) {
+        logger.warn(
+          "[useAudioPlayer] Playback skipped due to unsupported format:",
+          {
+            name: errorName,
+            message: errorMessage,
+            mediaErrorCode: mediaErrorCode ?? null,
+          },
+        );
+      } else {
+        logger.error("[useAudioPlayer] Playback failed:", err);
+        logger.error("[useAudioPlayer] Error details:", {
+          name: errorName,
+          message: errorMessage,
+          audioState: audioRef.current
+            ? {
+                src: audioRef.current.src,
+                paused: audioRef.current.paused,
+                readyState: audioRef.current.readyState,
+                currentTime: audioRef.current.currentTime,
+              }
+            : "no audio element",
+        });
+      }
       setIsPlaying(false);
     } finally {
       isPlayPauseOperationRef.current = false;
