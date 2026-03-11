@@ -1,8 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "@/i18n/navigation";
 import { locales, type AppLocale } from "@/i18n/routing";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useTransition } from "react";
 
@@ -33,11 +32,14 @@ export function useLocaleSwitcher() {
       return;
     }
 
+    document.cookie = `NEXT_LOCALE=${nextLocale}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+
     const query = searchParams.toString();
     const href = query ? `${pathname}?${query}` : pathname;
 
     startTransition(() => {
-      router.replace(href, { locale: nextLocale });
+      router.replace(href);
+      router.refresh();
     });
   };
 

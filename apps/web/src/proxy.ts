@@ -1,14 +1,10 @@
 // File: apps/web/src/proxy.ts
 
 import { env } from "@/env";
-import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { routing } from "./i18n/routing";
 
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
-const handleI18nRouting = createMiddleware(routing);
-
 const RATE_LIMIT_WINDOW = 60 * 1000;
 const MAX_REQUESTS = 100;
 
@@ -70,7 +66,7 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  const response = handleI18nRouting(request);
+  const response = NextResponse.next();
 
   if (
     !request.nextUrl.pathname.startsWith("/api/") &&
