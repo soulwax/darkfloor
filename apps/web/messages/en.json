@@ -83,6 +83,7 @@
     "tagline": "Find tracks instantly, then keep playback going with queue and smart mix.",
     "poweredBy": "Powered by {host}.",
     "whatsNew": "What's New",
+    "languagesAddedFeature": "Translations for German, Japanese and Swedish were added.",
     "spotifyRetiredNotice": "Spotify OAuth sign-in was retired due to current Spotify API limitations.",
     "spotifySettingsNotice": "Spotify features now live in Settings instead, using your own Spotify app values.",
     "spotifySavePrompt": "Save your Spotify client ID, client secret, and username to activate the profile for your account.",

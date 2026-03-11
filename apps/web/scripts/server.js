@@ -278,6 +278,7 @@ function startServer() {
   console.log("");
 
   const serverProcess = spawn("node", args, {
+    cwd: appRoot,
     env: {
       ...process.env,
       NODE_ENV: nodeEnv,

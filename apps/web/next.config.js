@@ -3,7 +3,7 @@
 import createNextIntlPlugin from "next-intl/plugin";
 import { config as dotenvConfig } from "dotenv";
 import { readFileSync } from "fs";
-import { dirname, join, resolve } from "path";
+import { dirname, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -257,6 +257,15 @@ const config = {
   },
 };
 
-const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const rawNextIntlRequestConfigPath = relative(
+  process.cwd(),
+  join(__dirname, "src/i18n/request.ts"),
+);
+const nextIntlRequestConfigPath = (
+  rawNextIntlRequestConfigPath.startsWith(".")
+    ? rawNextIntlRequestConfigPath
+    : `./${rawNextIntlRequestConfigPath}`
+).replaceAll("\\", "/");
+const withNextIntl = createNextIntlPlugin(nextIntlRequestConfigPath);
 
 export default withNextIntl(config);

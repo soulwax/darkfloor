@@ -165,6 +165,38 @@ function isUniqueConstraintError(
   return candidate.constraint === constraint;
 }
 
+const userPreferencesUiColumns = {
+  id: true,
+  userId: true,
+  volume: true,
+  repeatMode: true,
+  shuffleEnabled: true,
+  keepPlaybackAlive: true,
+  equalizerEnabled: true,
+  equalizerPreset: true,
+  equalizerBands: true,
+  equalizerPanelOpen: true,
+  queuePanelOpen: true,
+  visualizerType: true,
+  visualizerEnabled: true,
+  visualizerMode: true,
+  compactMode: true,
+  theme: true,
+  language: true,
+  spotifyFeaturesEnabled: true,
+  spotifyClientId: true,
+  spotifyClientSecret: true,
+  spotifyUsername: true,
+  spotifySettingsUpdatedAt: true,
+  autoQueueEnabled: true,
+  autoQueueThreshold: true,
+  autoQueueCount: true,
+  smartMixEnabled: true,
+  similarityPreference: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 async function syncPlaylistTrackIdSequence(database: typeof db): Promise<void> {
   await database.execute(sql`
     SELECT setval(
@@ -1841,14 +1873,15 @@ export const musicRouter = createTRPCRouter({
   getUserPreferences: protectedProcedure.query(async ({ ctx }) => {
     let prefs = await ctx.db.query.userPreferences.findFirst({
       where: eq(userPreferences.userId, ctx.session.user.id),
+      columns: userPreferencesUiColumns,
     });
 
     if (!prefs) {
-      const [newPrefs] = await ctx.db
-        .insert(userPreferences)
-        .values({ userId: ctx.session.user.id })
-        .returning();
-      prefs = newPrefs;
+      await ctx.db.insert(userPreferences).values({ userId: ctx.session.user.id });
+      prefs = await ctx.db.query.userPreferences.findFirst({
+        where: eq(userPreferences.userId, ctx.session.user.id),
+        columns: userPreferencesUiColumns,
+      });
     }
 
     if (!prefs) {
@@ -1856,18 +1889,14 @@ export const musicRouter = createTRPCRouter({
     }
 
     if (prefs.theme === "light") {
-      const [migratedPrefs] = await ctx.db
+      await ctx.db
         .update(userPreferences)
         .set({ theme: "dark" })
-        .where(eq(userPreferences.userId, ctx.session.user.id))
-        .returning();
-
-      if (migratedPrefs) {
-        return migratedPrefs;
-      }
+        .where(eq(userPreferences.userId, ctx.session.user.id));
 
       const refreshedPrefs = await ctx.db.query.userPreferences.findFirst({
         where: eq(userPreferences.userId, ctx.session.user.id),
+        columns: userPreferencesUiColumns,
       });
       if (refreshedPrefs) {
         return refreshedPrefs;

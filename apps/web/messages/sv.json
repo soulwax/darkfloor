@@ -83,6 +83,7 @@
     "tagline": "Hitta spår direkt och låt uppspelningen fortsätta med kö och smart mix.",
     "poweredBy": "Drivs av {host}.",
     "whatsNew": "Nyheter",
+    "languagesAddedFeature": "Översättningar till tyska, japanska och svenska har lagts till.",
     "spotifyRetiredNotice": "Spotify OAuth-inloggning har tagits bort på grund av nuvarande begränsningar i Spotify API.",
     "spotifySettingsNotice": "Spotify-funktioner finns nu under Inställningar och använder dina egna Spotify-appvärden.",
     "spotifySavePrompt": "Spara ditt Spotify client ID, client secret och användarnamn för att aktivera profilen för ditt konto.",
