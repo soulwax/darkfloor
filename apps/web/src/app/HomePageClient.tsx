@@ -971,6 +971,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       </p>
                     </div>
                     <ul className="mt-3 space-y-1.5 text-sm text-[var(--color-subtext)]">
+                      <li>{t("languagesAddedFeature")}</li>
                       <li>{t("spotifyRetiredNotice")}</li>
                       <li>{t("spotifySettingsNotice")}</li>
                       <li>{t("spotifySavePrompt")}</li>

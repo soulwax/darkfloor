@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { localStorage as appStorage } from "@/services/storage";
@@ -136,6 +137,12 @@ export function GuestModal({
   callbackUrl = "/library",
 }: GuestModalProps) {
   const t = useTranslations("guest");
+  const {
+    isPending: isLocaleSwitchPending,
+    locale,
+    options: localeOptions,
+    setLocale,
+  } = useLocaleSwitcher();
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [isOpen, setIsOpen] = useState(true);
   const [genres, setGenres] = useState<GenreListItem[]>([]);
@@ -574,6 +581,36 @@ export function GuestModal({
               <p className="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">
                 {t("tuneStartPage")}
               </p>
+
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-white/80">
+                  {t("language")}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {localeOptions.map((option) => {
+                    const selected = locale === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        disabled={isLocaleSwitchPending}
+                        onClick={() => setLocale(option.value)}
+                        className={cn(
+                          "h-11 rounded-xl border px-3 text-left text-[13px] font-medium transition-all duration-200 ease-out sm:text-sm",
+                          selected
+                            ? "border-[#1DB954]/70 bg-[#1DB954]/18 text-white"
+                            : "border-white/15 bg-white/[0.03] text-white/82 hover:border-white/30 hover:bg-white/[0.08]",
+                          isLocaleSwitchPending && "cursor-wait opacity-70",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <div className="space-y-1">
                 <p

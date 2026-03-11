@@ -5,6 +5,20 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-03-11
+
+### Added
+
+- **App-wide language switching for guests and signed-in users**: Added language selectors to Settings and the guest onboarding modal so users can choose the app language before or after signing in.
+
+### Changed
+
+- **Expanded supported locales in the web app**: The Next.js i18n routing now recognizes English, German, Swedish, and Japanese and applies locale-aware navigation consistently across the app.
+
+### Fixed
+
+- **Language preference now persists across translated UI flows**: Changing the app language now carries through page navigation and guest onboarding instead of falling back to the default locale.
+
 ## [1.4.0] - 2026-03-09
 
 ### Changed

@@ -1,10 +1,13 @@
 // File: apps/web/src/proxy.ts
 
 import { env } from "@/env";
+import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { routing } from "./i18n/routing";
 
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
+const handleI18nRouting = createMiddleware(routing);
 
 const RATE_LIMIT_WINDOW = 60 * 1000;
 const MAX_REQUESTS = 100;
@@ -47,8 +50,6 @@ setInterval(() => {
 }, RATE_LIMIT_WINDOW);
 
 export function proxy(request: NextRequest) {
-  const response = NextResponse.next();
-
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const isAuthRoute = request.nextUrl.pathname.startsWith("/api/auth/");
     const rateLimitKey = getRateLimitKey(request);
@@ -62,10 +63,14 @@ export function proxy(request: NextRequest) {
       });
     }
 
+    const response = NextResponse.next();
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("X-XSS-Protection", "1; mode=block");
+    return response;
   }
+
+  const response = handleI18nRouting(request);
 
   if (
     !request.nextUrl.pathname.startsWith("/api/") &&
@@ -112,6 +117,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|manifest\\.json|sw\\.js|icon\\.ico|icon\\.png|icon\\.icns|icon-192\\.png|icon-512\\.png|emily-the-strange\\.png).*)",
+    "/api/:path*",
+    "/((?!_next|.*\\..*).*)",
   ],
 };

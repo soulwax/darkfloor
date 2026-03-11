@@ -3,9 +3,11 @@
 "use client";
 
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import type { AppLocale } from "@/i18n/routing";
 import { appSignOut } from "@/services/authSignOut";
 import {
   buildSpotifyFeaturePreferenceInput,
@@ -78,6 +80,7 @@ export default function SettingsPage() {
   const { showToast } = useToast();
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
+  const { locale, options: languageOptions, setLocale } = useLocaleSwitcher();
   useTheme();
 
   const [localSettings, setLocalSettings] = useState(() =>
@@ -486,6 +489,15 @@ export default function SettingsPage() {
         value: "dark",
         options: [{ label: t("themeDark"), value: "dark" }],
         onChange: (value) => handleSelect("theme", value as string),
+      },
+      {
+        id: "language",
+        label: tc("language"),
+        description: t("languageDescription"),
+        type: "select",
+        value: locale,
+        options: languageOptions,
+        onChange: (value) => setLocale(value as AppLocale),
       },
       {
         id: "visualizerMode",
