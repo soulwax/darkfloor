@@ -296,7 +296,7 @@
     "loadingSignInPage": "Anmeldeseite wird geladen"
   },
   "songbird": {
-    "authMeTitle": "Songbird Auth-Me",
+    "authMeTitle": "Songbird-Authentifizierung",
     "cacheStatsTitle": "Songbird Cache-Statistiken",
     "dataSource": "Datenquelle",
     "refresh": "Aktualisieren",
