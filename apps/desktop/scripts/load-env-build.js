@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../../..");
 
-dotenv.config({ path: path.resolve(repoRoot, ".env.local") });
+dotenv.config({ path: path.resolve(repoRoot, ".env.local"), quiet: true });
 
 const command = process.argv.slice(2).join(" ");
 const localBinPath = path.resolve(repoRoot, "node_modules/.bin");

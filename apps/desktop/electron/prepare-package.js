@@ -82,45 +82,72 @@ function copyDir(src, dest) {
 }
 
 /**
- * Replace symlinked module aliases with real directories/files.
- * Next.js Turbopack can emit hashed aliases under `.next/node_modules`
- * (for example `pg-<hash>`), and electron-builder may preserve them as
- * absolute symlinks that break inside AppImage mounts.
+ * Replace symlinked modules with real directories/files.
+ * This covers both pnpm-linked packages under `node_modules` and optional
+ * Turbopack alias entries under `.next/node_modules`.
  *
  * @param {string} modulesDir
+ * @param {string} label
  * @returns {number}
  */
-function materializeSymlinkModules(modulesDir) {
+function materializeSymlinkModules(modulesDir, label) {
   if (!fs.existsSync(modulesDir)) return 0;
 
-  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
   let replaced = 0;
 
-  for (const entry of entries) {
-    const entryPath = path.join(modulesDir, entry.name);
-    if (!entry.isSymbolicLink()) continue;
+  /**
+   * @param {string} currentDir
+   * @returns {void}
+   */
+  function walk(currentDir) {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
-    const targetPath = fs.realpathSync(entryPath);
-    const targetStat = fs.statSync(targetPath);
+    for (const entry of entries) {
+      const entryPath = path.join(currentDir, entry.name);
 
-    fs.rmSync(entryPath, { recursive: true, force: true });
+      if (entry.isSymbolicLink()) {
+        const targetPath = fs.realpathSync(entryPath);
+        const targetStat = fs.statSync(targetPath);
 
-    if (targetStat.isDirectory()) {
-      fs.cpSync(targetPath, entryPath, { recursive: true, dereference: true });
-    } else {
-      fs.copyFileSync(targetPath, entryPath);
+        fs.rmSync(entryPath, { recursive: true, force: true });
+
+        if (targetStat.isDirectory()) {
+          fs.cpSync(targetPath, entryPath, { recursive: true, dereference: true });
+          walk(entryPath);
+        } else {
+          fs.copyFileSync(targetPath, entryPath);
+        }
+
+        replaced += 1;
+        console.log(
+          `[Prepare] Materialized symlink in ${label}: ${path.relative(modulesDir, entryPath)} -> ${targetPath}`,
+        );
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        walk(entryPath);
+      }
     }
-
-    replaced += 1;
-    console.log(
-      `[Prepare] Materialized symlink module alias: ${entry.name} -> ${targetPath}`,
-    );
   }
 
+  walk(modulesDir);
   return replaced;
 }
 
 try {
+  const materializedStandaloneNodeModules = materializeSymlinkModules(
+    standaloneNodeModules,
+    "node_modules",
+  );
+  if (materializedStandaloneNodeModules > 0) {
+    console.log(
+      `[Prepare] ✓ Materialized ${materializedStandaloneNodeModules} symlink(s) in standalone node_modules`,
+    );
+  } else {
+    console.log("[Prepare] No symlinked packages detected in standalone node_modules");
+  }
+
   const standaloneAliasedNodeModules = path.join(
     standaloneDir,
     ".next",
@@ -128,10 +155,11 @@ try {
   );
   const materializedAliases = materializeSymlinkModules(
     standaloneAliasedNodeModules,
+    ".next/node_modules",
   );
   if (materializedAliases > 0) {
     console.log(
-      `[Prepare] ✓ Materialized ${materializedAliases} aliased module symlink(s) in standalone output`,
+      `[Prepare] ✓ Materialized ${materializedAliases} symlink(s) in standalone .next/node_modules`,
     );
   } else {
     console.log("[Prepare] No aliased module symlinks detected in standalone output");

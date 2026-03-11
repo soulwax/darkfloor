@@ -6,9 +6,9 @@ const path = require("path");
 /**
  * electron-builder afterPack hook.
  *
- * Ensures Next.js standalone output is shipped exactly as emitted by Next,
- * including `.next/standalone/node_modules`, which electron-builder may
- * otherwise exclude when copying `extraResources`.
+ * Ensures Next.js standalone output is shipped exactly as emitted by Next.
+ * Some builds also include `.next/node_modules` alias entries; when present,
+ * materialize them so packaged runtimes don't keep broken absolute symlinks.
  *
  * @param {import("electron-builder").AfterPackContext} context
  */
@@ -37,53 +37,92 @@ module.exports = async function afterPack(context) {
     dereference: true,
   });
 
+  const destNodeModules = path.join(destStandalone, "node_modules");
   /**
-   * Materialize symlinked module aliases that can otherwise become absolute
-   * links to build-machine paths inside linux-unpacked/AppImage.
+   * Materialize symlinked modules so packaged runtimes don't keep absolute
+   * links back to the build machine's pnpm store or workspace.
    *
    * @param {string} modulesDir
+   * @param {string} label
    * @returns {number}
    */
-  const materializeSymlinkModules = (modulesDir) => {
+  const materializeSymlinkModules = (modulesDir, label) => {
     if (!fs.existsSync(modulesDir)) return 0;
 
-    const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
     let replaced = 0;
 
-    for (const entry of entries) {
-      if (!entry.isSymbolicLink()) continue;
+    /**
+     * @param {string} currentDir
+     * @returns {void}
+     */
+    const walk = (currentDir) => {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
-      const entryPath = path.join(modulesDir, entry.name);
-      const targetPath = fs.realpathSync(entryPath);
-      const targetStat = fs.statSync(targetPath);
+      for (const entry of entries) {
+        const entryPath = path.join(currentDir, entry.name);
 
-      fs.rmSync(entryPath, { recursive: true, force: true });
+        if (entry.isSymbolicLink()) {
+          const targetPath = fs.realpathSync(entryPath);
+          const targetStat = fs.statSync(targetPath);
 
-      if (targetStat.isDirectory()) {
-        fs.cpSync(targetPath, entryPath, { recursive: true, dereference: true });
-      } else {
-        fs.copyFileSync(targetPath, entryPath);
+          fs.rmSync(entryPath, { recursive: true, force: true });
+
+          if (targetStat.isDirectory()) {
+            fs.cpSync(targetPath, entryPath, {
+              recursive: true,
+              dereference: true,
+            });
+            walk(entryPath);
+          } else {
+            fs.copyFileSync(targetPath, entryPath);
+          }
+
+          replaced += 1;
+          console.log(
+            `[afterPack] Materialized symlink in ${label}: ${path.relative(modulesDir, entryPath)} -> ${targetPath}`,
+          );
+          continue;
+        }
+
+        if (entry.isDirectory()) {
+          walk(entryPath);
+        }
       }
+    };
 
-      replaced += 1;
-      console.log(
-        `[afterPack] Materialized symlink module alias: ${entry.name} -> ${targetPath}`,
-      );
-    }
-
+    walk(modulesDir);
     return replaced;
   };
 
-  const aliasedNodeModules = path.join(destStandalone, ".next", "node_modules");
-  const materializedAliases = materializeSymlinkModules(aliasedNodeModules);
-  if (materializedAliases > 0) {
+  const materializedStandaloneNodeModules = materializeSymlinkModules(
+    destNodeModules,
+    "node_modules",
+  );
+  if (materializedStandaloneNodeModules > 0) {
     console.log(
-      `[afterPack] Materialized ${materializedAliases} aliased module symlink(s) in packaged standalone output.`,
+      `[afterPack] Materialized ${materializedStandaloneNodeModules} symlink(s) in packaged standalone node_modules.`,
+    );
+  }
+
+  const aliasedNodeModules = path.join(destStandalone, ".next", "node_modules");
+  const hasAliasedNodeModules = fs.existsSync(aliasedNodeModules);
+  if (hasAliasedNodeModules) {
+    const materializedAliases = materializeSymlinkModules(
+      aliasedNodeModules,
+      ".next/node_modules",
+    );
+    if (materializedAliases > 0) {
+      console.log(
+        `[afterPack] Materialized ${materializedAliases} symlink(s) in packaged standalone .next/node_modules.`,
+      );
+    }
+  } else {
+    console.log(
+      "[afterPack] No .next/node_modules alias directory found in standalone output; skipping alias materialization.",
     );
   }
 
   // Ensure installed packages, server, and static assets are delivered in the built app
-  const destNodeModules = path.join(destStandalone, "node_modules");
   const destServerCandidates = [
     path.join(destStandalone, "server.js"),
     path.join(destStandalone, "apps", "web", "server.js"),
@@ -96,7 +135,6 @@ module.exports = async function afterPack(context) {
   if (!fs.existsSync(destNodeModules)) missing.push("node_modules");
   if (!destServerJs) missing.push("server.js");
   if (!fs.existsSync(destStaticDir)) missing.push(".next/static");
-  if (!fs.existsSync(aliasedNodeModules)) missing.push(".next/node_modules");
 
   const turbopackRuntimePath = path.join(
     destStandalone,
@@ -105,14 +143,19 @@ module.exports = async function afterPack(context) {
     "chunks",
     "[turbopack]_runtime.js",
   );
-  if (fs.existsSync(turbopackRuntimePath) && fs.existsSync(aliasedNodeModules)) {
+  if (fs.existsSync(turbopackRuntimePath)) {
     const runtimeSource = fs.readFileSync(turbopackRuntimePath, "utf8");
     const matches = runtimeSource.match(/\bpg-[a-f0-9]{8,}\b/g) ?? [];
     const requiredPgAliases = Array.from(new Set(matches));
-    for (const alias of requiredPgAliases) {
-      const aliasPath = path.join(aliasedNodeModules, alias);
-      if (!fs.existsSync(aliasPath)) {
-        missing.push(`.next/node_modules/${alias}`);
+
+    if (requiredPgAliases.length > 0 && !hasAliasedNodeModules) {
+      missing.push(".next/node_modules");
+    } else {
+      for (const alias of requiredPgAliases) {
+        const aliasPath = path.join(aliasedNodeModules, alias);
+        if (!fs.existsSync(aliasPath)) {
+          missing.push(`.next/node_modules/${alias}`);
+        }
       }
     }
   }

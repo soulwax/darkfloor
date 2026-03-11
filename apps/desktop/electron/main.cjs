@@ -975,7 +975,7 @@ const startServer = async () => {
     const bundledNodePath = path.join(
       process.resourcesPath,
       "node",
-      "node.exe",
+      process.platform === "win32" ? "node.exe" : path.join("bin", "node"),
     );
 
     if (fs.existsSync(bundledNodePath)) {
