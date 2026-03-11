@@ -30,6 +30,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    API_BASE_URL: z.string().url().optional(),
     SONGBIRD_API_URL: z.string().url().optional(),
     SONGBIRD_API_HEALTH_URI: z.string().optional(),
     UNIVERSAL_KEY: z.string().optional(),
@@ -68,8 +69,15 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    API_BASE_URL:
+      process.env.API_BASE_URL ??
+      process.env.API_V2_URL ??
+      process.env.SONGBIRD_API_URL ??
+      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
+      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
     SONGBIRD_API_URL:
       process.env.SONGBIRD_API_URL ??
+      process.env.API_BASE_URL ??
       process.env.API_V2_URL ??
       process.env.V2_API_URL ??
       process.env.NEXT_PUBLIC_V2_API_URL,
@@ -84,11 +92,22 @@ export const env = createEnv({
       process.env.SONGBIRD_API_KEY,
     API_V2_URL:
       process.env.API_V2_URL ??
+      process.env.API_BASE_URL ??
       process.env.SONGBIRD_API_URL ??
       process.env.V2_API_URL ??
       process.env.NEXT_PUBLIC_V2_API_URL,
-    NEXT_PUBLIC_AUTH_API_BASE: process.env.NEXT_PUBLIC_AUTH_API_BASE,
-    NEXT_PUBLIC_AUTH_API_ORIGIN: process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
+    NEXT_PUBLIC_AUTH_API_BASE:
+      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
+      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN ??
+      process.env.API_BASE_URL ??
+      process.env.API_V2_URL ??
+      process.env.SONGBIRD_API_URL,
+    NEXT_PUBLIC_AUTH_API_ORIGIN:
+      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN ??
+      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
+      process.env.API_BASE_URL ??
+      process.env.API_V2_URL ??
+      process.env.SONGBIRD_API_URL,
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED:
       process.env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,
     NEXT_PUBLIC_AUTH_DEBUG: process.env.NEXT_PUBLIC_AUTH_DEBUG,

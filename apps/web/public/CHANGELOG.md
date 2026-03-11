@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-03-11
+
+### Changed
+
+- **Canonical API base env support**: Added `API_BASE_URL` as the preferred single-source API/auth base and expanded runtime fallback resolution across `API_V2_URL`, `SONGBIRD_API_URL`, `NEXT_PUBLIC_AUTH_API_BASE`, and `NEXT_PUBLIC_AUTH_API_ORIGIN`.
+- **Environment template simplification**: `.env.example` now documents one primary API URL entry with optional compatibility overrides.
+
+### Fixed
+
+- **Electron/API base URL alignment**: Runtime env mapping now remains stable when only one API base URL is configured, reducing packaged/runtime connection mismatches.
+
 ## [1.5.1] - 2026-03-11
 
 ### Added
