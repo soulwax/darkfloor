@@ -1,6 +1,6 @@
-# File: pnpm-workspace.yaml
-
 onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
   - electron
   - electron-winstaller
   - esbuild

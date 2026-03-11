@@ -84,7 +84,10 @@ export function AuthModal({
         clearTimeout(timeoutId);
         logAuthClientDebug("AuthModal getProviders failed; using fallback", {
           fallbackProviders: Object.keys(OAUTH_PROVIDERS_FALLBACK),
-          error: providerError,
+          error:
+            providerError instanceof Error
+              ? providerError.message
+              : String(providerError),
         });
         setProviders(OAUTH_PROVIDERS_FALLBACK);
       });
