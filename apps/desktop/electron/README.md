@@ -34,6 +34,8 @@ npm run electron:build:win
 
 The Windows build wrapper now defaults to packaging with native rebuild disabled (to avoid `node-gyp`/Visual Studio C++ Build Tools failures from transitive modules like `@parcel/watcher`). If you explicitly need native rebuild, set `STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true` before running the build. Linux and macOS build flows are unchanged.
 
+Portable builds now also use `portable.unpackDirName=false` so extracted runtime paths in `%TEMP%` stay short, which avoids `Cannot find module ...server.js` / `Cannot find module 'next'` startup failures on deep standalone paths.
+
 For macOS:
 
 ```bash

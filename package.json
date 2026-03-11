@@ -262,7 +262,8 @@
     },
     "portable": {
       "artifactName": "${productName}.${ext}",
-      "requestExecutionLevel": "user"
+      "requestExecutionLevel": "user",
+      "unpackDirName": false
     }
   },
   "ct3aMetadata": {
