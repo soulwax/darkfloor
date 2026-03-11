@@ -94,6 +94,90 @@ module.exports = async function afterPack(context) {
     return replaced;
   };
 
+  /**
+   * Hoist traced pnpm packages into the packaged top-level node_modules so
+   * isolated runtimes can resolve bare imports used by Next internals.
+   *
+   * @param {string} modulesDir
+   * @returns {number}
+   */
+  const hoistPnpmPackages = (modulesDir) => {
+    const pnpmDir = path.join(modulesDir, ".pnpm");
+    if (!fs.existsSync(pnpmDir)) return 0;
+
+    let hoisted = 0;
+
+    /**
+     * @param {string} packageName
+     * @param {string} sourcePath
+     * @returns {void}
+     */
+    const hoistPackage = (packageName, sourcePath) => {
+      const repoPackagePath = path.join(
+        projectDir,
+        "node_modules",
+        ...packageName.split("/"),
+      );
+      const targetPath = path.join(modulesDir, ...packageName.split("/"));
+      if (fs.existsSync(targetPath)) return;
+
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      const preferredSourcePath = fs.existsSync(repoPackagePath)
+        ? repoPackagePath
+        : sourcePath;
+      fs.cpSync(preferredSourcePath, targetPath, {
+        recursive: true,
+        dereference: true,
+      });
+      hoisted += 1;
+      console.log(
+        `[afterPack] Hoisted package into packaged standalone node_modules: ${packageName}`,
+      );
+    };
+
+    /**
+     * @param {string} packageNodeModulesDir
+     * @returns {void}
+     */
+    const scanPackageNodeModules = (packageNodeModulesDir) => {
+      if (!fs.existsSync(packageNodeModulesDir)) return;
+
+      const entries = fs.readdirSync(packageNodeModulesDir, {
+        withFileTypes: true,
+      });
+      for (const entry of entries) {
+        if (entry.name === ".bin") continue;
+
+        const entryPath = path.join(packageNodeModulesDir, entry.name);
+        if (entry.name.startsWith("@")) {
+          if (!entry.isDirectory()) continue;
+          const scopedEntries = fs.readdirSync(entryPath, {
+            withFileTypes: true,
+          });
+          for (const scopedEntry of scopedEntries) {
+            const scopedPath = path.join(entryPath, scopedEntry.name);
+            if (!scopedEntry.isDirectory() && !scopedEntry.isSymbolicLink()) {
+              continue;
+            }
+            hoistPackage(`${entry.name}/${scopedEntry.name}`, scopedPath);
+          }
+          continue;
+        }
+
+        if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+        hoistPackage(entry.name, entryPath);
+      }
+    };
+
+    const pnpmEntries = fs.readdirSync(pnpmDir, { withFileTypes: true });
+    for (const entry of pnpmEntries) {
+      if (!entry.isDirectory()) continue;
+      scanPackageNodeModules(path.join(pnpmDir, entry.name, "node_modules"));
+    }
+
+    return hoisted;
+  };
+
   const materializedStandaloneNodeModules = materializeSymlinkModules(
     destNodeModules,
     "node_modules",
@@ -101,6 +185,13 @@ module.exports = async function afterPack(context) {
   if (materializedStandaloneNodeModules > 0) {
     console.log(
       `[afterPack] Materialized ${materializedStandaloneNodeModules} symlink(s) in packaged standalone node_modules.`,
+    );
+  }
+
+  const hoistedStandalonePackages = hoistPnpmPackages(destNodeModules);
+  if (hoistedStandalonePackages > 0) {
+    console.log(
+      `[afterPack] Hoisted ${hoistedStandalonePackages} traced package(s) into packaged standalone node_modules.`,
     );
   }
 
