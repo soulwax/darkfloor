@@ -31,6 +31,7 @@ import {
   Disc3,
   Eye,
   Music,
+  RefreshCcw,
   Settings,
   Sparkles,
   User,
@@ -94,9 +95,14 @@ export default function SettingsPage() {
   const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(
     () => legacySpotifySettingsRef.current,
   );
+  const [isSpotifyProfileRefreshing, setIsSpotifyProfileRefreshing] =
+    useState(false);
 
-  const { data: preferences, isLoading } =
-    api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
+  const {
+    data: preferences,
+    isLoading,
+    refetch: refetchPreferences,
+  } = api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
 
   const { data: userHash } = api.music.getCurrentUserHash.useQuery(undefined, {
     enabled: !!session,
@@ -354,6 +360,34 @@ export default function SettingsPage() {
         : prev,
     );
     await utils.music.getUserPreferences.invalidate();
+  };
+
+  const handleSpotifySettingsRefresh = async () => {
+    hapticLight();
+    setIsSpotifyProfileRefreshing(true);
+
+    try {
+      const result = await refetchPreferences();
+      const refreshedSettings = extractSpotifyFeatureSettingsFromPreferences(
+        result.data,
+      );
+
+      if (hasConfiguredSpotifyFeatureSettings(refreshedSettings)) {
+        spotifyFeatureSettingsStorage.save(refreshedSettings, {
+          preserveUpdatedAt: true,
+        });
+      } else {
+        spotifyFeatureSettingsStorage.clear();
+      }
+
+      setSpotifySettings(refreshedSettings);
+      setSpotifyDraft(refreshedSettings);
+      showToast(ts("spotifySetupRefreshed"), "success");
+    } catch {
+      showToast(ts("spotifySetupRefreshFailed"), "error");
+    } finally {
+      setIsSpotifyProfileRefreshing(false);
+    }
   };
 
   if (!session) {
@@ -911,6 +945,19 @@ export default function SettingsPage() {
               >
                 {ts("openSpotifyPage")}
               </Link>
+              <button
+                type="button"
+                onClick={() => void handleSpotifySettingsRefresh()}
+                disabled={isSpotifyProfileRefreshing}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCcw
+                  className={`h-4 w-4 ${isSpotifyProfileRefreshing ? "animate-spin" : ""}`}
+                />
+                {isSpotifyProfileRefreshing
+                  ? ts("refreshingSpotifySetup")
+                  : ts("refreshSpotifySetup")}
+              </button>
             </div>
           </div>
         </motion.div>
@@ -978,9 +1025,9 @@ function SettingsItemComponent({
 }) {
   const [localValue, setLocalValue] = useState(item.value);
 
-  // Sync local value with prop - intentional controlled component pattern
-  /* eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync prop to state */
   useEffect(() => {
+    // Sync local value with prop for the controlled settings widgets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync prop to local UI state
     setLocalValue(item.value);
   }, [item.value]);
 

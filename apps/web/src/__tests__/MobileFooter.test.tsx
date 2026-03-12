@@ -36,12 +36,32 @@ vi.mock("@/hooks/useMediaQuery", () => ({
   useIsMobile: () => true,
 }));
 
+vi.mock("@/contexts/AuthModalContext", () => ({
+  useAuthModal: () => ({ openAuthModal: vi.fn() }),
+}));
+
 vi.mock("@/utils/haptics", () => ({
   hapticLight: vi.fn(),
 }));
 
 vi.mock("@/utils/spring-animations", () => ({
   springPresets: { gentle: {}, snappy: {} },
+}));
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    const labels: Record<string, string> = {
+      home: "Home",
+      search: "Search",
+      library: "Library",
+      spotify: "Spotify",
+      profile: "Profile",
+      signIn: "Sign In",
+      create: "Create",
+    };
+
+    return labels[key] ?? key;
+  },
 }));
 
 vi.mock("framer-motion", async () => {
@@ -80,8 +100,8 @@ describe("MobileFooter", () => {
     const homeButton = screen.getByRole("button", { name: "Home" });
     const searchButton = screen.getByRole("button", { name: "Search" });
 
-    expect(homeButton.className).toContain("text-[var(--color-accent)]");
-    expect(searchButton.className).not.toContain("text-[var(--color-accent)]");
+    expect(homeButton.className).toContain("text-[var(--color-text)]");
+    expect(searchButton.className).toContain("text-[var(--color-subtext)]");
   });
 
   it("marks Search active when a query is present", () => {
@@ -90,7 +110,7 @@ describe("MobileFooter", () => {
     render(<MobileFooter />);
 
     const searchButton = screen.getByRole("button", { name: "Search" });
-    expect(searchButton.className).toContain("text-[var(--color-accent)]");
+    expect(searchButton.className).toContain("text-[var(--color-text)]");
   });
 
   it("activates Search when tapped without a query", () => {
@@ -101,9 +121,19 @@ describe("MobileFooter", () => {
 
     expect(navigationState.push).toHaveBeenCalledWith("/", { scroll: false });
     return waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Search" }).className,
-      ).toContain("text-[var(--color-accent)]");
+      expect(screen.getByRole("button", { name: "Search" }).className).toContain(
+        "text-[var(--color-text)]",
+      );
+    });
+  });
+
+  it("navigates to Spotify from the footer", () => {
+    render(<MobileFooter />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Spotify" }));
+
+    expect(navigationState.push).toHaveBeenCalledWith("/spotify", {
+      scroll: false,
     });
   });
 });

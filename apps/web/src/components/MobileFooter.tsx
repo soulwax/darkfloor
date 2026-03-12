@@ -8,7 +8,7 @@ import { hapticLight } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { motion } from "framer-motion";
-import { Home, Library, Plus, Search, User } from "lucide-react";
+import { Disc3, Home, Library, Plus, Search, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -118,6 +118,13 @@ export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
       requiresAuth: true,
     },
     {
+      name: "spotify",
+      label: tc("spotify"),
+      icon: Disc3,
+      path: "/spotify",
+      requiresAuth: true,
+    },
+    {
       name: "profile",
       label: tc("profile"),
       icon: User,
@@ -142,7 +149,12 @@ export default function MobileFooter({ onCreatePlaylist }: MobileFooterProps) {
       transition={springPresets.gentle}
       className="theme-chrome-bar safe-bottom fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-2xl"
     >
-      <div className="grid grid-cols-5 gap-0.5 px-1.5 py-1.5">
+      <div
+        className="grid gap-0.5 px-1.5 py-1.5"
+        style={{
+          gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+        }}
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active =

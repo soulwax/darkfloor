@@ -62,6 +62,7 @@
       "ja": "日本語"
     },
     "playlists": "Playlists",
+    "spotify": "Spotify",
     "profile": "Profile",
     "settings": "Settings",
     "about": "About",
@@ -650,7 +651,11 @@
     "checkClientSecret": "Client secret saved",
     "checkUsername": "Username saved",
     "saveSpotifySetup": "Save Spotify setup",
-    "openSpotifyPage": "Open Spotify page"
+    "openSpotifyPage": "Browse Spotify playlists",
+    "refreshSpotifySetup": "Refresh from account",
+    "refreshingSpotifySetup": "Refreshing...",
+    "spotifySetupRefreshed": "Reloaded the saved Spotify profile",
+    "spotifySetupRefreshFailed": "Failed to reload the saved Spotify profile"
   },
   "spotify": {
     "signInRequired": "Sign in required",

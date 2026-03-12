@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2026-03-12
+
+### Changed
+
+- **Spotify features are now easier to reach from app navigation**: Added Spotify as a first-class destination in the desktop sidebar, mobile footer, and hamburger menu so saved Spotify profiles lead somewhere obvious.
+
+### Fixed
+
+- **Settings-driven Spotify workflow no longer dead-ends after save**: The Spotify settings card now points users directly to playlist browsing and includes an explicit refresh action to reload the saved account profile when values feel stale.
+
 ## [1.5.3] - 2026-03-11
 
 ### Fixed
@@ -72,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-03-08
 
 ### tl;dr
+
 FIXED SPOTIFY OAUTH
 
 ### Added

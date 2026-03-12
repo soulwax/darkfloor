@@ -62,6 +62,7 @@
       "ja": "日本語"
     },
     "playlists": "Spellistor",
+    "spotify": "Spotify",
     "profile": "Profil",
     "settings": "Inställningar",
     "about": "Om",
@@ -650,7 +651,11 @@
     "checkClientSecret": "Client secret sparat",
     "checkUsername": "Användarnamn sparat",
     "saveSpotifySetup": "Spara Spotify‑inställning",
-    "openSpotifyPage": "Öppna Spotify‑sida"
+    "openSpotifyPage": "Visa Spotify‑spellistor",
+    "refreshSpotifySetup": "Ladda om från kontot",
+    "refreshingSpotifySetup": "Uppdaterar...",
+    "spotifySetupRefreshed": "Den sparade Spotify‑profilen laddades om",
+    "spotifySetupRefreshFailed": "Det gick inte att ladda om den sparade Spotify‑profilen"
   },
   "spotify": {
     "signInRequired": "Inloggning krävs",

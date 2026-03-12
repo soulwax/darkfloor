@@ -62,6 +62,7 @@
       "ja": "日本語"
     },
     "playlists": "プレイリスト",
+    "spotify": "Spotify",
     "profile": "プロフィール",
     "settings": "設定",
     "about": "このアプリについて",
@@ -650,7 +651,11 @@
     "checkClientSecret": "クライアントシークレット保存済み",
     "checkUsername": "ユーザー名保存済み",
     "saveSpotifySetup": "Spotify 設定を保存",
-    "openSpotifyPage": "Spotify ページを開く"
+    "openSpotifyPage": "Spotify プレイリストを見る",
+    "refreshSpotifySetup": "アカウントから再読み込み",
+    "refreshingSpotifySetup": "更新中...",
+    "spotifySetupRefreshed": "保存済みの Spotify プロフィールを再読み込みしました",
+    "spotifySetupRefreshFailed": "保存済みの Spotify プロフィールを再読み込みできませんでした"
   },
   "spotify": {
     "signInRequired": "ログインが必要です",
