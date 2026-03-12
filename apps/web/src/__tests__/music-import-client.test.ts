@@ -54,22 +54,25 @@ describe("importSpotifyPlaylist client", () => {
       isPublic: true,
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/music/playlists/import/spotify", {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/music/playlists/import/spotify",
+      {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        spotifyPlaylistId:
-          "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
-        nameOverride: "Imported playlist",
-        descriptionOverride: undefined,
-        isPublic: true,
-      }),
-    });
+        body: JSON.stringify({
+          spotifyPlaylistId:
+            "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
+          nameOverride: "Imported playlist",
+          descriptionOverride: undefined,
+          isPublic: true,
+        }),
+      },
+    );
     expect(result.playlist.id).toBe("3fa85f64-5717-4562-b3fc-2c963f66afa6");
     expect(typeof result.playlist.id).toBe("string");
     expect(result.importReport.unmatched[0]?.index).toBe(2);

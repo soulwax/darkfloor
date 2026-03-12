@@ -141,7 +141,7 @@ export async function importSpotifyPlaylist(
   input: ImportSpotifyPlaylistInput,
 ): Promise<ImportSpotifyPlaylistResponse> {
   const normalizedInput = normalizeImportSpotifyPlaylistInput(input);
-  const response = await fetch("/music/playlists/import/spotify", {
+  const response = await fetch("/api/music/playlists/import/spotify", {
     method: "POST",
     credentials: "include",
     cache: "no-store",
