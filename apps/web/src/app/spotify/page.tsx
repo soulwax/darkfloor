@@ -274,22 +274,23 @@ function PlaylistCover(props: {
 }) {
   const { alt, className, iconClassName = "h-5 w-5", imageUrl } = props;
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const canRenderImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
+  const resolvedImageUrl =
+    imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center overflow-hidden bg-[var(--color-muted)]/20 ${className}`}
+      className={`flex shrink-0 items-center justify-center overflow-hidden bg-(--color-muted)/20 ${className}`}
     >
-      {canRenderImage ? (
+      {resolvedImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={alt}
           className="h-full w-full object-cover"
-          onError={() => setFailedImageUrl(imageUrl)}
+          onError={() => setFailedImageUrl(resolvedImageUrl)}
         />
       ) : (
-        <ListMusic className={`${iconClassName} text-[var(--color-subtext)]`} />
+        <ListMusic className={`${iconClassName} text-(--color-subtext)`} />
       )}
     </div>
   );

@@ -73,17 +73,18 @@ function SpotifyImportCover(props: {
 }) {
   const { alt, imageUrl } = props;
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const canRenderImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
+  const resolvedImageUrl =
+    imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
 
   return (
     <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/10 bg-[var(--color-muted)]/20 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-      {canRenderImage ? (
+      {resolvedImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={alt}
           className="h-full w-full object-cover"
-          onError={() => setFailedImageUrl(imageUrl)}
+          onError={() => setFailedImageUrl(resolvedImageUrl)}
         />
       ) : (
         <ListMusic className="h-7 w-7 text-[var(--color-subtext)]" />
@@ -161,10 +162,10 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
         }
       }}
     >
-      <DialogContent className="w-[calc(100%-1.5rem)] max-w-3xl rounded-[1.75rem] p-0">
+      <DialogContent className="flex w-[calc(100%-1.5rem)] max-w-3xl flex-col rounded-[1.75rem] p-0">
         {playlist ? (
-          <div className="overflow-hidden rounded-[1.75rem]">
-            <DialogHeader className="border-b border-[var(--color-border)] px-6 py-5">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.75rem]">
+            <DialogHeader className="shrink-0 border-b border-[var(--color-border)] px-6 py-5">
               <DialogTitle className="text-xl text-[var(--color-text)]">
                 {importResult ? t("importSuccessTitle") : t("importToStarchild")}
               </DialogTitle>
