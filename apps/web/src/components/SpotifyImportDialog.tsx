@@ -435,7 +435,8 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
               </>
             ) : (
               <>
-                <div className="space-y-6 px-6 py-6">
+                <div className="min-h-0 overflow-y-auto">
+                  <div className="space-y-6 px-6 py-6">
                   <div className="relative overflow-hidden rounded-[1.75rem] border border-[rgba(29,185,84,0.3)] bg-[linear-gradient(155deg,rgba(29,185,84,0.18),rgba(15,23,42,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                     <div className="pointer-events-none absolute right-0 bottom-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(29,185,84,0.2),transparent_70%)]" />
                     <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -631,9 +632,10 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                       </div>
                     )}
                   </div>
+                  </div>
                 </div>
 
-                <DialogFooter className="border-t border-[var(--color-border)] px-6 py-5">
+                <DialogFooter className="shrink-0 border-t border-[var(--color-border)] px-6 py-5">
                   <button
                     type="button"
                     onClick={onClose}
