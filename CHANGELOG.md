@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.9] - 2026-03-12
+
+### Changed
+
+- **Spotify import flow now feels more premium end to end**: The `/spotify` experience now uses richer overview cards, stronger playlist selection states, and a more intentional track-preview layout so browsing and importing playlists reads like a complete migration flow instead of a utility screen.
+- **Import dialog now has clearer visual progress and result states**: The Spotify import modal now highlights source, matching, and result stages with a more atmospheric layout, stronger success reporting, and better partial-import messaging when tracks are skipped or unmatched.
+
+### Fixed
+
+- **Missing Spotify playlists now map to the correct import error**: A `404` from the backend import endpoint once again points users to a missing Spotify playlist instead of the generic "import unavailable" fallback.
+
 ## [1.5.8] - 2026-03-12
 
 ### Changed
