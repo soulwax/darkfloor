@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] - 2026-03-12
+
+### Changed
+
+- **Spotify import now uses the real backend contract**: The frontend import flow no longer posts to a local placeholder route. It now calls `POST /music/playlists/import/spotify` through a typed frontend mutation wrapper and respects the backend's string UUID playlist IDs.
+- **Spotify import success/error handling is aligned with backend status codes**: The `/spotify` page now treats partial imports as successful, surfaces deterministic unmatched rows directly from the backend report, and maps `412`, `404`, `429`, and `502` responses into clearer user guidance.
+
+### Added
+
+- **Frontend API-client wrapper for Spotify playlist import**: Added `api.music.importSpotifyPlaylist.useMutation()` as a REST-backed frontend mutation so the Spotify import UX can stay on the existing `api.music.*` pattern without requiring a new backend tRPC procedure.
+
 ## [1.5.7] - 2026-03-12
 
 ### Added

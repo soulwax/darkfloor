@@ -9,6 +9,13 @@ import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
+import {
+  ImportSpotifyPlaylistError,
+  type ImportSpotifyPlaylistInput,
+  type ImportSpotifyPlaylistResponse,
+  type ImportSpotifyPlaylistUnmatchedReason,
+  useImportSpotifyPlaylistMutation,
+} from "./music-import";
 import { type AppRouter } from "./router";
 import { createQueryClient } from "./query-client";
 
@@ -24,17 +31,55 @@ const getQueryClient = () => {
   return clientQueryClientSingleton;
 };
 
-export const api = createTRPCReact<AppRouter>();
+const trpcApi = createTRPCReact<AppRouter>();
+
+type ApiWithSpotifyImportMutation = typeof trpcApi & {
+  music: typeof trpcApi.music & {
+    importSpotifyPlaylist: {
+      useMutation: typeof useImportSpotifyPlaylistMutation;
+    };
+  };
+};
+
+const spotifyImportMutationApi = {
+  useMutation: useImportSpotifyPlaylistMutation,
+} as const;
+
+const musicApi = new Proxy(trpcApi.music as object, {
+  get(target, prop, receiver): unknown {
+    if (prop === "importSpotifyPlaylist") {
+      return spotifyImportMutationApi;
+    }
+
+    return Reflect.get(target, prop, receiver) as unknown;
+  },
+}) as ApiWithSpotifyImportMutation["music"];
+
+export const api = new Proxy(trpcApi as object, {
+  get(target, prop, receiver): unknown {
+    if (prop === "music") {
+      return musicApi;
+    }
+
+    return Reflect.get(target, prop, receiver) as unknown;
+  },
+}) as ApiWithSpotifyImportMutation;
 
 export type RouterInputs = inferRouterInputs<AppRouter>;
 
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
+export type {
+  ImportSpotifyPlaylistInput,
+  ImportSpotifyPlaylistResponse,
+  ImportSpotifyPlaylistUnmatchedReason,
+};
+export { ImportSpotifyPlaylistError };
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
 
   const [trpcClient] = useState(() =>
-    api.createClient({
+    trpcApi.createClient({
       links: [
         loggerLink({
           enabled: (op) =>
@@ -56,9 +101,9 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
+      <trpcApi.Provider client={trpcClient} queryClient={queryClient}>
         {props.children}
-      </api.Provider>
+      </trpcApi.Provider>
     </QueryClientProvider>
   );
 }

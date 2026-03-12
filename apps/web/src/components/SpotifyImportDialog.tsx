@@ -8,6 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type {
+  ImportSpotifyPlaylistInput,
+  ImportSpotifyPlaylistResponse,
+} from "@starchild/api-client/trpc/react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -28,40 +32,8 @@ export type SpotifyImportPlaylistTarget = {
   imageUrl: string | null;
 };
 
-export type SpotifyImportRequest = {
-  spotifyPlaylistId: string;
-  nameOverride?: string;
-  isPublic?: boolean;
-};
-
-export type SpotifyImportUnmatchedReason =
-  | "not_found"
-  | "ambiguous"
-  | "invalid"
-  | "unsupported";
-
-export type SpotifyImportResult = {
-  ok: true;
-  playlist: {
-    id: number;
-    name: string;
-  };
-  importReport: {
-    sourcePlaylistId: string;
-    sourcePlaylistName: string;
-    totalTracks: number;
-    matchedCount: number;
-    unmatchedCount: number;
-    skippedCount: number;
-    unmatched: Array<{
-      index: number;
-      spotifyTrackId: string | null;
-      name: string;
-      artist: string | null;
-      reason: SpotifyImportUnmatchedReason;
-    }>;
-  };
-};
+export type SpotifyImportRequest = ImportSpotifyPlaylistInput;
+export type SpotifyImportResult = ImportSpotifyPlaylistResponse;
 
 interface SpotifyImportDialogProps {
   isOpen: boolean;
