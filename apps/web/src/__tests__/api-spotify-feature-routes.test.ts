@@ -199,3 +199,110 @@ describe("Spotify public playlist routes", () => {
     );
   });
 });
+
+describe("Spotify credential test route", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("blocks the credential test route when no session is present", async () => {
+    vi.resetModules();
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => null),
+    }));
+    vi.doMock("@/lib/server/userSpotifyFeatureApi", () => ({
+      testUserSpotifyFeatureCredentials: vi.fn(),
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
+    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(401);
+    expect(body.error).toMatch(/sign in required/i);
+  });
+
+  it("returns safe diagnostics when the saved Spotify profile is incomplete", async () => {
+    vi.resetModules();
+    const testUserSpotifyFeatureCredentials = vi.fn(async () => ({
+      ok: false as const,
+      status: 412,
+      message:
+        "Spotify settings are incomplete. Save Client ID, Client Secret, and Username in Settings first.",
+      code: "settings_incomplete",
+      diagnostics: {
+        enabled: false,
+        username: "",
+        clientIdPreview: "",
+        clientSecretLength: 0,
+      },
+    }));
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    }));
+    vi.doMock("@/lib/server/userSpotifyFeatureApi", () => ({
+      testUserSpotifyFeatureCredentials,
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
+    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const body = (await response.json()) as {
+      error?: string;
+      code?: string;
+      diagnostics?: {
+        clientSecretLength?: number;
+      };
+    };
+
+    expect(response.status).toBe(412);
+    expect(body.error).toMatch(/settings are incomplete/i);
+    expect(body.code).toBe("settings_incomplete");
+    expect(body.diagnostics?.clientSecretLength).toBe(0);
+    expect(testUserSpotifyFeatureCredentials).toHaveBeenCalledWith("user-1");
+  });
+
+  it("confirms the saved Spotify credentials when app token validation succeeds", async () => {
+    vi.resetModules();
+    const testUserSpotifyFeatureCredentials = vi.fn(async () => ({
+      ok: true as const,
+      status: 200,
+      message:
+        "Spotify app credentials were accepted. Public playlist access should be ready.",
+      code: null,
+      diagnostics: {
+        enabled: true,
+        username: "soulwax",
+        clientIdPreview: "abcd...wxyz",
+        clientSecretLength: 32,
+      },
+    }));
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    }));
+    vi.doMock("@/lib/server/userSpotifyFeatureApi", () => ({
+      testUserSpotifyFeatureCredentials,
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
+    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const body = (await response.json()) as {
+      ok?: boolean;
+      message?: string;
+      checkedAt?: string;
+      diagnostics?: {
+        username?: string;
+        clientIdPreview?: string;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.message).toMatch(/accepted/i);
+    expect(body.checkedAt).toBeTruthy();
+    expect(body.diagnostics?.username).toBe("soulwax");
+    expect(body.diagnostics?.clientIdPreview).toBe("abcd...wxyz");
+    expect(testUserSpotifyFeatureCredentials).toHaveBeenCalledWith("user-1");
+  });
+});

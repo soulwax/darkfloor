@@ -19,6 +19,29 @@ type SpotifyUserFeatureConfig = {
   username: string;
 };
 
+export type SpotifyUserFeatureCredentialDiagnostics = {
+  enabled: boolean;
+  username: string;
+  clientIdPreview: string;
+  clientSecretLength: number;
+};
+
+export type UserSpotifyFeatureCredentialTestResult =
+  | {
+      ok: true;
+      status: 200;
+      message: string;
+      code: null;
+      diagnostics: SpotifyUserFeatureCredentialDiagnostics;
+    }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+      code: string | null;
+      diagnostics: SpotifyUserFeatureCredentialDiagnostics;
+    };
+
 type FetchUserSpotifyPublicApiJsonOptions = {
   userId: string;
   pathname: string;
@@ -100,6 +123,19 @@ function isSpotifyUserFeatureConfigComplete(
 
 function getSpotifyTokenCacheKey(config: SpotifyUserFeatureConfig): string {
   return `${config.clientId}:${config.clientSecret}`;
+}
+
+function createSpotifyClientIdPreview(clientId: string): string {
+  const trimmed = clientId.trim();
+  if (trimmed.length === 0) {
+    return "";
+  }
+
+  if (trimmed.length <= 8) {
+    return `${trimmed.slice(0, 2)}...${trimmed.slice(-2)}`;
+  }
+
+  return `${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }
 
 function clearSpotifyTokenCache(config: SpotifyUserFeatureConfig): void {
@@ -187,6 +223,17 @@ export async function getUserSpotifyFeatureConfig(
   });
 }
 
+function buildSpotifyUserFeatureCredentialDiagnostics(
+  config: SpotifyUserFeatureConfig,
+): SpotifyUserFeatureCredentialDiagnostics {
+  return {
+    enabled: config.enabled,
+    username: config.username,
+    clientIdPreview: createSpotifyClientIdPreview(config.clientId),
+    clientSecretLength: config.clientSecret.length,
+  };
+}
+
 async function requestSpotifyAppAccessToken(
   config: SpotifyUserFeatureConfig,
 ): Promise<string> {
@@ -246,6 +293,49 @@ async function requestSpotifyAppAccessToken(
   });
 
   return accessToken;
+}
+
+export async function testUserSpotifyFeatureCredentials(
+  userId: string,
+): Promise<UserSpotifyFeatureCredentialTestResult> {
+  const config = await getUserSpotifyFeatureConfig(userId);
+  const diagnostics = buildSpotifyUserFeatureCredentialDiagnostics(config);
+
+  if (!isSpotifyUserFeatureConfigComplete(config)) {
+    return {
+      ok: false,
+      status: 412,
+      message:
+        "Spotify settings are incomplete. Save Client ID, Client Secret, and Username in Settings first.",
+      code: "settings_incomplete",
+      diagnostics,
+    };
+  }
+
+  try {
+    await requestSpotifyAppAccessToken(config);
+
+    return {
+      ok: true,
+      status: 200,
+      message:
+        "Spotify app credentials were accepted. Public playlist access should be ready.",
+      code: null,
+      diagnostics,
+    };
+  } catch (error) {
+    if (error instanceof UserSpotifyFeatureApiError) {
+      return {
+        ok: false,
+        status: error.status,
+        message: error.message,
+        code: error.code,
+        diagnostics,
+      };
+    }
+
+    throw error;
+  }
 }
 
 async function fetchSpotifyPublicApiJsonWithConfig<T>(

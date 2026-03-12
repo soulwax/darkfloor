@@ -27,9 +27,12 @@ import { settingsStorage } from "@/utils/settingsStorage";
 import { springPresets } from "@/utils/spring-animations";
 import { motion } from "framer-motion";
 import {
+  CircleAlert,
+  CircleCheck,
   ChevronRight,
   Disc3,
   Eye,
+  Loader2,
   Music,
   RefreshCcw,
   Settings,
@@ -65,6 +68,28 @@ interface SettingsItem {
   action?: () => void;
 }
 
+type SpotifyCredentialTestDiagnostics = {
+  enabled: boolean;
+  username: string;
+  clientIdPreview: string;
+  clientSecretLength: number;
+};
+
+type SpotifyCredentialTestResponse =
+  | {
+      ok: true;
+      message: string;
+      checkedAt: string;
+      diagnostics: SpotifyCredentialTestDiagnostics;
+    }
+  | {
+      ok: false;
+      error: string;
+      code?: string | null;
+      checkedAt: string;
+      diagnostics?: SpotifyCredentialTestDiagnostics;
+    };
+
 function getOptionLabel(
   options: { label: string; value: string }[],
   value: string | undefined,
@@ -97,6 +122,10 @@ export default function SettingsPage() {
   );
   const [isSpotifyProfileRefreshing, setIsSpotifyProfileRefreshing] =
     useState(false);
+  const [isSpotifyCredentialTesting, setIsSpotifyCredentialTesting] =
+    useState(false);
+  const [spotifyCredentialTest, setSpotifyCredentialTest] =
+    useState<SpotifyCredentialTestResponse | null>(null);
 
   const {
     data: preferences,
@@ -348,6 +377,7 @@ export default function SettingsPage() {
     const saved = spotifyFeatureSettingsStorage.save(normalizedDraft);
     setSpotifySettings(saved);
     setSpotifyDraft(saved);
+    setSpotifyCredentialTest(null);
     utils.music.getUserPreferences.setData(undefined, (prev) =>
       prev
         ? {
@@ -382,11 +412,38 @@ export default function SettingsPage() {
 
       setSpotifySettings(refreshedSettings);
       setSpotifyDraft(refreshedSettings);
+      setSpotifyCredentialTest(null);
       showToast(ts("spotifySetupRefreshed"), "success");
     } catch {
       showToast(ts("spotifySetupRefreshFailed"), "error");
     } finally {
       setIsSpotifyProfileRefreshing(false);
+    }
+  };
+
+  const handleSpotifyCredentialTest = async () => {
+    hapticLight();
+    setIsSpotifyCredentialTesting(true);
+
+    try {
+      const response = await fetch("/api/spotify/credentials/test", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      const result = (await response.json()) as SpotifyCredentialTestResponse;
+
+      setSpotifyCredentialTest(result);
+      showToast(
+        result.ok ? ts("spotifyCredentialTestPassedToast") : result.error,
+        result.ok ? "success" : "error",
+      );
+    } catch {
+      showToast(ts("spotifyCredentialTestRequestFailed"), "error");
+    } finally {
+      setIsSpotifyCredentialTesting(false);
     }
   };
 
@@ -947,6 +1004,21 @@ export default function SettingsPage() {
               </Link>
               <button
                 type="button"
+                onClick={() => void handleSpotifyCredentialTest()}
+                disabled={isSpotifyCredentialTesting}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#1DB954] hover:text-[#1DB954] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSpotifyCredentialTesting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CircleCheck className="h-4 w-4" />
+                )}
+                {isSpotifyCredentialTesting
+                  ? ts("testingSavedSpotifySetup")
+                  : ts("testSavedSpotifySetup")}
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleSpotifySettingsRefresh()}
                 disabled={isSpotifyProfileRefreshing}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
@@ -959,6 +1031,106 @@ export default function SettingsPage() {
                   : ts("refreshSpotifySetup")}
               </button>
             </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-[var(--color-subtext)]">
+              {spotifyDraftDirty
+                ? ts("savedProfileTestDirtyHint")
+                : ts("savedProfileTestHint")}
+            </p>
+
+            {spotifyCredentialTest ? (
+              <div
+                className={`mt-5 rounded-2xl border p-4 ${
+                  spotifyCredentialTest.ok
+                    ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.1)]"
+                    : "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)]"
+                }`}
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                      {ts("savedProfileTest")}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {spotifyCredentialTest.ok ? (
+                        <CircleCheck className="h-4 w-4 text-[#1DB954]" />
+                      ) : (
+                        <CircleAlert className="h-4 w-4 text-amber-300" />
+                      )}
+                      <p className="text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.ok
+                          ? ts("savedProfileTestPassed")
+                          : ts("savedProfileTestFailed")}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-subtext)]">
+                      {spotifyCredentialTest.ok
+                        ? spotifyCredentialTest.message
+                        : spotifyCredentialTest.error}
+                    </p>
+                  </div>
+                  <p className="text-xs text-[var(--color-subtext)]">
+                    {ts("savedProfileTestCheckedAt", {
+                      date: new Date(
+                        spotifyCredentialTest.checkedAt,
+                      ).toLocaleString(),
+                    })}
+                  </p>
+                </div>
+
+                {spotifyCredentialTest.diagnostics ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("accountActivation")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.enabled
+                          ? ts("activeForAccount")
+                          : ts("waitingForProfile")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("username")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.username ||
+                          ts("notSavedYet")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("clientIdPreview")}
+                      </p>
+                      <p className="mt-2 font-mono text-sm text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.clientIdPreview ||
+                          ts("notSavedYet")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("savedSecretLength")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.clientSecretLength}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!spotifyCredentialTest.ok && spotifyCredentialTest.code ? (
+                  <p className="mt-4 font-mono text-xs text-[var(--color-subtext)]">
+                    {ts("savedProfileTestCode", {
+                      code: spotifyCredentialTest.code,
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </motion.div>
 
