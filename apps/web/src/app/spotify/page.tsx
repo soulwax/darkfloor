@@ -1254,7 +1254,7 @@ export default function SpotifyPage() {
                     )}
                   </>
                 ) : (
-                  <div className="flex min-h-[320px] items-center justify-center text-center text-sm leading-6 text-[var(--color-subtext)]">
+                  <div className="flex min-h-80 items-center justify-center text-center text-sm leading-6 text-[var(--color-subtext)]">
                     {t("selectPlaylistPrompt")}
                   </div>
                 )}
