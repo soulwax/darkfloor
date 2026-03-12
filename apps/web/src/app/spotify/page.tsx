@@ -2,6 +2,7 @@
 
 import {
   SpotifyImportDialog,
+  type SpotifyImportDiagnostics,
   type SpotifyImportPlaylistTarget,
   type SpotifyImportRequest,
   type SpotifyImportResult,
@@ -346,6 +347,8 @@ export default function SpotifyPage() {
     useState<SpotifyImportPlaylistTarget | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importDiagnostics, setImportDiagnostics] =
+    useState<SpotifyImportDiagnostics | null>(null);
   const [importResult, setImportResult] = useState<SpotifyImportResult | null>(
     null,
   );
@@ -492,6 +495,36 @@ export default function SpotifyPage() {
     },
     [normalizeSpotifyError, t],
   );
+  const extractSpotifyImportDiagnostics = useCallback(
+    (
+      error: unknown,
+      playlistId: string | null,
+    ): SpotifyImportDiagnostics | null => {
+      const status =
+        error instanceof ImportSpotifyPlaylistError ? error.status : null;
+      const payloadRecord =
+        error instanceof ImportSpotifyPlaylistError
+          ? asRecord(error.payload)
+          : null;
+      const nestedErrorRecord = asRecord(payloadRecord?.error);
+      const errorCode =
+        readFirstString(payloadRecord ?? {}, ["code", "errorCode"]) ??
+        readFirstString(nestedErrorRecord ?? {}, ["code", "errorCode"]);
+      const backendMessage = error instanceof Error ? error.message : null;
+
+      if (!status && !errorCode && !backendMessage && !playlistId) {
+        return null;
+      }
+
+      return {
+        status,
+        errorCode,
+        backendMessage,
+        playlistId,
+      };
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!session || !hasServerSettings) {
@@ -577,6 +610,7 @@ export default function SpotifyPage() {
     api.music.importSpotifyPlaylist.useMutation({
       onSuccess: async (result) => {
         setImportResult(result);
+        setImportDiagnostics(null);
         await utils.music.getPlaylists.invalidate();
         showToast(
           t("importCompletedToast", {
@@ -588,9 +622,15 @@ export default function SpotifyPage() {
         );
         hapticSuccess();
       },
-      onError: (error) => {
+      onError: (error, variables) => {
         const message = normalizeSpotifyImportError(error);
+        const diagnostics = extractSpotifyImportDiagnostics(
+          error,
+          variables?.spotifyPlaylistId ?? null,
+        );
+        setImportDiagnostics(diagnostics);
         setImportError(message);
+        console.error("Spotify import failed", diagnostics ?? { message });
         showToast(message, "error");
       },
     });
@@ -599,6 +639,7 @@ export default function SpotifyPage() {
       hapticLight();
       setImportPlaylist(playlist);
       setImportError(null);
+      setImportDiagnostics(null);
       setImportResult(null);
       importSpotifyPlaylistMutation.reset();
       setIsImportDialogOpen(true);
@@ -609,12 +650,14 @@ export default function SpotifyPage() {
     setIsImportDialogOpen(false);
     setImportPlaylist(null);
     setImportError(null);
+    setImportDiagnostics(null);
     setImportResult(null);
     importSpotifyPlaylistMutation.reset();
   }, [importSpotifyPlaylistMutation]);
   const handleSpotifyPlaylistImport = useCallback(
     (input: SpotifyImportRequest) => {
       setImportError(null);
+      setImportDiagnostics(null);
       importSpotifyPlaylistMutation.mutate(input);
     },
     [importSpotifyPlaylistMutation],
@@ -692,12 +735,12 @@ export default function SpotifyPage() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-screen w-full max-w-[1680px] flex-col gap-4 px-3 py-5 md:px-6 md:py-8">
+    <div className="container mx-auto flex min-h-screen w-full max-w-420 flex-col gap-4 px-3 py-5 md:px-6 md:py-8">
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={springPresets.gentle}
-        className="relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+        className="relative overflow-hidden rounded-3xl border border-(--color-border) bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.22),transparent_58%)]" />
         <div className="pointer-events-none absolute right-0 bottom-0 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(29,185,84,0.14),transparent_72%)]" />
@@ -707,17 +750,17 @@ export default function SpotifyPage() {
               <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-xs font-semibold tracking-[0.2em] text-[#1DB954] uppercase">
                 {t("migrationReady")}
               </span>
-              <h1 className="text-3xl font-bold text-[var(--color-text)] md:text-4xl">
+              <h1 className="text-3xl font-bold text-(--color-text) md:text-4xl">
                 {t("browseForTranslation")}
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-subtext)] md:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-(--color-subtext) md:text-base">
                 {t("browseDescription")}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/settings"
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/85 px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]"
+                className="inline-flex items-center gap-2 rounded-xl border border-(--color-border) bg-[var(--color-surface)]/85 px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]"
               >
                 <KeyRound className="h-4 w-4" />
                 {t("openSettingsLink")}
@@ -736,24 +779,24 @@ export default function SpotifyPage() {
 
           <div className="mt-4 grid gap-2.5 md:grid-cols-3">
             <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-subtext)] uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
                 {tc("playlists")}
               </p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--color-text)]">
+              <p className="mt-2 text-2xl font-semibold text-(--color-text)">
                 {spotifyPlaylists.length}
               </p>
-              <p className="mt-1 text-xs text-[var(--color-subtext)]">
+              <p className="mt-1 text-xs text-(--color-subtext)">
                 {t("playlistMigration")}
               </p>
             </div>
             <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-subtext)] uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
                 {t("playlistDetail")}
               </p>
-              <p className="mt-2 truncate text-base font-semibold text-[var(--color-text)]">
+              <p className="mt-2 truncate text-base font-semibold text-(--color-text)">
                 {selectedImportTarget?.name ?? t("spotifyPlaylist")}
               </p>
-              <p className="mt-1 text-xs text-[var(--color-subtext)]">
+              <p className="mt-1 text-xs text-(--color-subtext)">
                 {typeof selectedPlaylistTrackCount === "number"
                   ? tc("tracks", { count: selectedPlaylistTrackCount })
                   : t("trackCountUnknown")}
@@ -785,14 +828,14 @@ export default function SpotifyPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springPresets.gentle, delay: 0.04 }}
-          className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4"
+          className="rounded-3xl border border-(--color-border) bg-(--color-surface)/80 p-4"
         >
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-medium text-[var(--color-subtext)]">
+              <p className="text-xs font-medium text-(--color-subtext)">
                 {t("savedAppProfile")}
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-[var(--color-text)]">
+              <h2 className="mt-1 text-lg font-semibold text-(--color-text)">
                 {t("featureProfileLabel")}
               </h2>
             </div>
@@ -807,7 +850,7 @@ export default function SpotifyPage() {
             </span>
           </div>
 
-          <p className="text-xs leading-5 text-[var(--color-subtext)]">
+          <p className="text-xs leading-5 text-(--color-subtext)">
             {t("savedProfileSummary")}
           </p>
 
@@ -818,7 +861,7 @@ export default function SpotifyPage() {
                 className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
                   check.ready
                     ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.12)] text-[#1DB954]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 text-[var(--color-subtext)]"
+                    : "border-(--color-border) bg-(--color-surface-hover)/70 text-(--color-subtext)"
                 }`}
               >
                 {check.ready ? (
@@ -1226,6 +1269,7 @@ export default function SpotifyPage() {
         playlist={importPlaylist}
         isSubmitting={importSpotifyPlaylistMutation.isPending}
         importError={importError}
+        importDiagnostics={importDiagnostics}
         importResult={importResult}
         onClose={closeImportDialog}
         onSubmit={(input) => void handleSpotifyPlaylistImport(input)}

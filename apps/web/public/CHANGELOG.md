@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.11] - 2026-03-12
+
+### Added
+
+- **Spotify import now exposes backend diagnostics in the dialog**: The `/spotify` import flow now shows the submitted playlist ID, HTTP status, backend code, and backend message when an import fails so playlist import issues can be traced without guessing from the friendly error copy alone.
+
 ## [1.5.10] - 2026-03-12
 
 ### Changed

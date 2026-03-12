@@ -36,12 +36,19 @@ export type SpotifyImportPlaylistTarget = {
 
 export type SpotifyImportRequest = ImportSpotifyPlaylistInput;
 export type SpotifyImportResult = ImportSpotifyPlaylistResponse;
+export type SpotifyImportDiagnostics = {
+  status: number | null;
+  errorCode: string | null;
+  backendMessage: string | null;
+  playlistId: string | null;
+};
 
 interface SpotifyImportDialogProps {
   isOpen: boolean;
   isSubmitting: boolean;
   playlist: SpotifyImportPlaylistTarget | null;
   importError: string | null;
+  importDiagnostics: SpotifyImportDiagnostics | null;
   importResult: SpotifyImportResult | null;
   onClose: () => void;
   onSubmit: (input: SpotifyImportRequest) => void;
@@ -87,6 +94,7 @@ function SpotifyImportCover(props: {
 
 export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const {
+    importDiagnostics,
     importError,
     importResult,
     isOpen,
@@ -294,6 +302,56 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                         <div className="flex items-start gap-3 rounded-2xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] p-4 text-sm leading-6 text-red-200">
                           <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                           <p>{importError}</p>
+                        </div>
+                      ) : null}
+
+                      {importDiagnostics ? (
+                        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
+                          <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                            {t("importDiagnosticsTitle")}
+                          </p>
+                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            {importDiagnostics.status ? (
+                              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                                <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                  {t("importDiagnosticsStatus")}
+                                </p>
+                                <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
+                                  {importDiagnostics.status}
+                                </p>
+                              </div>
+                            ) : null}
+                            {importDiagnostics.errorCode ? (
+                              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                                <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                  {t("importDiagnosticsCode")}
+                                </p>
+                                <p className="mt-1 truncate text-sm font-medium text-[var(--color-text)]">
+                                  {importDiagnostics.errorCode}
+                                </p>
+                              </div>
+                            ) : null}
+                            {importDiagnostics.playlistId ? (
+                              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2 sm:col-span-2">
+                                <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                  {t("importDiagnosticsPlaylistId")}
+                                </p>
+                                <p className="mt-1 truncate font-mono text-sm text-[var(--color-text)]">
+                                  {importDiagnostics.playlistId}
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
+                          {importDiagnostics.backendMessage ? (
+                            <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                              <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                {t("importDiagnosticsBackendMessage")}
+                              </p>
+                              <p className="mt-1 text-sm leading-6 text-[var(--color-text)]">
+                                {importDiagnostics.backendMessage}
+                              </p>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
 
