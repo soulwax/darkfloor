@@ -93,7 +93,7 @@ export function proxy(request: NextRequest) {
       default-src 'self';
       script-src 'self' 'unsafe-eval' 'unsafe-inline';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' blob: data: https://cdn-images.dzcdn.net https://api.deezer.com https://cdn.discordapp.com https://media.discordapp.net https://discord.com https://discordapp.com;
+      img-src 'self' blob: data: https://cdn-images.dzcdn.net https://api.deezer.com https://cdn.discordapp.com https://media.discordapp.net https://discord.com https://discordapp.com https://*.scdn.co https://*.spotifycdn.com;
       font-src 'self' data:;
       connect-src ${connectSrcAllowlist};
       media-src 'self' ${apiDomain} blob:;

@@ -65,12 +65,19 @@ function SpotifyImportCover(props: {
   alt: string;
 }) {
   const { alt, imageUrl } = props;
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const canRenderImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
 
   return (
     <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/10 bg-[var(--color-muted)]/20 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-      {imageUrl ? (
+      {canRenderImage ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={imageUrl} alt={alt} className="h-full w-full object-cover" />
+        <img
+          src={imageUrl}
+          alt={alt}
+          className="h-full w-full object-cover"
+          onError={() => setFailedImageUrl(imageUrl)}
+        />
       ) : (
         <ListMusic className="h-7 w-7 text-[var(--color-subtext)]" />
       )}

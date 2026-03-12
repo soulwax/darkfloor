@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.10] - 2026-03-12
+
+### Changed
+
+- **Spotify layout now uses desktop space more efficiently**: The `/spotify` page now uses a tighter desktop container, a narrower saved-profile rail, denser playlist cards, and a more compact track-preview panel so the playlist migration area has more usable width.
+- **Saved app profile is now much more compact**: The left-side Spotify profile summary now presents the same information in smaller stacked rows and tighter status chips instead of large cards that dominated the page.
+
+### Fixed
+
+- **Spotify covers now render from Spotify CDN again**: The app Content Security Policy now allows Spotify artwork hosts on the `/spotify` page, and the page/import dialog still fall back cleanly to the built-in placeholder if an individual cover URL fails.
+
 ## [1.5.9] - 2026-03-12
 
 ### Changed
