@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.7] - 2026-03-12
+
+### Added
+
+- **Spotify playlist import flow on `/spotify`**: Added first-class `Import to Starchild` actions on playlist cards and the selected playlist detail so public Spotify playlists can move straight into the native playlist system once the backend import contract is available.
+
+### Changed
+
+- **Spotify import confirmation and result UX**: Added a dedicated import dialog with playlist naming, visibility choice, matched/unmatched reporting, and a direct link into the created Starchild playlist.
+- **Graceful frontend fallback while backend rolls out**: The import flow now surfaces a clear "backend not available yet" state instead of failing with a generic request error if the import route has not landed yet.
+
 ## [1.5.6] - 2026-03-12
 
 ### Changed

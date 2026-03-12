@@ -1,6 +1,15 @@
 "use client";
 
 import {
+  SpotifyImportDialog,
+  type SpotifyImportPlaylistTarget,
+  type SpotifyImportRequest,
+  type SpotifyImportResult,
+  type SpotifyImportUnmatchedReason,
+} from "@/components/SpotifyImportDialog";
+import { useToast } from "@/contexts/ToastContext";
+import { hapticLight, hapticSuccess } from "@/utils/haptics";
+import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
   hasConfiguredSpotifyFeatureSettings,
@@ -11,6 +20,7 @@ import {
 import { api } from "@starchild/api-client/trpc/react";
 import { springPresets } from "@/utils/spring-animations";
 import {
+  ArrowRightLeft,
   CircleAlert,
   CircleCheck,
   Disc3,
@@ -51,6 +61,10 @@ type SpotifyTrackSummary = {
   durationMs: number | null;
   externalUrl: string | null;
 };
+
+const SPOTIFY_IMPORT_UNMATCHED_REASONS = new Set<
+  SpotifyImportUnmatchedReason
+>(["not_found", "ambiguous", "invalid", "unsupported"]);
 
 function getStatusClasses(
   state: ReturnType<typeof getSpotifyFeatureConnectionSummary>["state"],
@@ -98,6 +112,17 @@ function readFirstNumber(
   }
 
   return null;
+}
+
+async function readJsonSafely(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function extractFirstImageUrl(value: unknown): string | null {
@@ -230,6 +255,116 @@ function extractSpotifyPlaylistTracks(payload: unknown): SpotifyTrackSummary[] {
     .filter((value): value is SpotifyTrackSummary => value !== null);
 }
 
+function toSpotifyImportPlaylistTarget(
+  playlist: SpotifyPlaylistSummary,
+): SpotifyImportPlaylistTarget {
+  return {
+    id: playlist.id,
+    name: playlist.name,
+    description: playlist.description,
+    ownerName: playlist.ownerName,
+    trackCount: playlist.trackCount,
+    imageUrl: playlist.imageUrl,
+  };
+}
+
+function extractRouteErrorMessage(payload: unknown): string | null {
+  const record = asRecord(payload);
+  if (!record) return null;
+
+  const directMessage = readFirstString(record, ["error", "message"]);
+  if (directMessage) {
+    return directMessage;
+  }
+
+  const errorRecord = asRecord(record.error);
+  return errorRecord ? readFirstString(errorRecord, ["message", "error"]) : null;
+}
+
+function isSpotifyImportUnmatchedReason(
+  value: string | null,
+): value is SpotifyImportUnmatchedReason {
+  return value
+    ? SPOTIFY_IMPORT_UNMATCHED_REASONS.has(value as SpotifyImportUnmatchedReason)
+    : false;
+}
+
+function extractSpotifyImportResult(
+  payload: unknown,
+): SpotifyImportResult | null {
+  const record = asRecord(payload);
+  if (record?.ok !== true) {
+    return null;
+  }
+
+  const playlistRecord = asRecord(record.playlist);
+  const reportRecord = asRecord(record.importReport);
+  if (!playlistRecord || !reportRecord) {
+    return null;
+  }
+
+  const playlistId = readFirstNumber(playlistRecord, ["id"]);
+  const playlistName = readFirstString(playlistRecord, ["name"]);
+  if (playlistId === null || !playlistName) {
+    return null;
+  }
+
+  const unmatched = Array.isArray(reportRecord.unmatched)
+    ? reportRecord.unmatched
+        .map((entry) => {
+          const entryRecord = asRecord(entry);
+          if (!entryRecord) return null;
+
+          const index = readFirstNumber(entryRecord, ["index"]);
+          const name = readFirstString(entryRecord, ["name", "title"]);
+          if (index === null || !name) {
+            return null;
+          }
+
+          const reason = readFirstString(entryRecord, ["reason"]);
+
+          return {
+            index,
+            spotifyTrackId: readFirstString(entryRecord, [
+              "spotifyTrackId",
+              "trackId",
+            ]),
+            name,
+            artist: readFirstString(entryRecord, ["artist", "artistName"]),
+            reason: isSpotifyImportUnmatchedReason(reason)
+              ? reason
+              : "not_found",
+          };
+        })
+        .filter(
+          (
+            value,
+          ): value is SpotifyImportResult["importReport"]["unmatched"][number] =>
+            value !== null,
+        )
+    : [];
+
+  return {
+    ok: true,
+    playlist: {
+      id: playlistId,
+      name: playlistName,
+    },
+    importReport: {
+      sourcePlaylistId:
+        readFirstString(reportRecord, ["sourcePlaylistId"]) ?? "",
+      sourcePlaylistName:
+        readFirstString(reportRecord, ["sourcePlaylistName"]) ?? playlistName,
+      totalTracks: readFirstNumber(reportRecord, ["totalTracks"]) ?? 0,
+      matchedCount: readFirstNumber(reportRecord, ["matchedCount"]) ?? 0,
+      unmatchedCount:
+        readFirstNumber(reportRecord, ["unmatchedCount"]) ?? unmatched.length,
+      skippedCount: readFirstNumber(reportRecord, ["skippedCount"]) ?? 0,
+      unmatched,
+    },
+  };
+}
+
 function formatDuration(durationMs: number | null): string {
   if (!durationMs || durationMs <= 0) return "";
 
@@ -268,6 +403,8 @@ export default function SpotifyPage() {
   const tc = useTranslations("common");
   const th = useTranslations("home");
   const { data: session, status } = useSession();
+  const { showToast } = useToast();
+  const utils = api.useUtils();
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
 
@@ -308,6 +445,14 @@ export default function SpotifyPage() {
   >(null);
   const [isSelectedPlaylistLoading, setIsSelectedPlaylistLoading] =
     useState(false);
+  const [importPlaylist, setImportPlaylist] =
+    useState<SpotifyImportPlaylistTarget | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImportSubmitting, setIsImportSubmitting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<SpotifyImportResult | null>(
+    null,
+  );
 
   const canLoadPublicPlaylists = summary.state === "ready";
   const spotifyPlaylists = useMemo(
@@ -328,10 +473,19 @@ export default function SpotifyPage() {
     [selectedPlaylistPayload],
   );
   const selectedPlaylistImageUrl =
-    selectedPlaylistDetail?.imageUrl ?? selectedPlaylistFromList?.imageUrl ?? null;
+    selectedPlaylistDetail?.imageUrl ??
+    selectedPlaylistFromList?.imageUrl ??
+    null;
   const selectedPlaylistTracks = useMemo(
     () => extractSpotifyPlaylistTracks(selectedPlaylistPayload),
     [selectedPlaylistPayload],
+  );
+  const selectedImportTarget = useMemo<SpotifyImportPlaylistTarget | null>(
+    () => {
+      const source = selectedPlaylistDetail ?? selectedPlaylistFromList;
+      return source ? toSpotifyImportPlaylistTarget(source) : null;
+    },
+    [selectedPlaylistDetail, selectedPlaylistFromList],
   );
   const normalizeSpotifyError = useCallback(
     (message: string | null): string | null => {
@@ -361,6 +515,53 @@ export default function SpotifyPage() {
       return message;
     },
     [t],
+  );
+  const normalizeSpotifyImportError = useCallback(
+    (message: string | null, status?: number): string => {
+      if (message) {
+        const normalized = message.toLowerCase();
+
+        if (
+          normalized.includes("invalid playlist") ||
+          normalized.includes("playlist id") ||
+          normalized.includes("playlist url")
+        ) {
+          return t("importInvalidPlaylist");
+        }
+
+        if (
+          normalized.includes("no matched tracks") ||
+          normalized.includes("no tracks matched") ||
+          normalized.includes("could not match")
+        ) {
+          return t("importNoMatches");
+        }
+      }
+
+      const sharedSpotifyMessage = normalizeSpotifyError(message);
+      if (sharedSpotifyMessage && sharedSpotifyMessage !== message) {
+        return sharedSpotifyMessage;
+      }
+
+      if (status === 404 || status === 405 || status === 501) {
+        return t("importUnavailable");
+      }
+
+      if (status === 400) {
+        return t("importInvalidPlaylist");
+      }
+
+      if (status === 403) {
+        return t("playlistUnavailable");
+      }
+
+      if (status === 429) {
+        return t("rateLimited");
+      }
+
+      return sharedSpotifyMessage ?? t("importFailedGeneric");
+    },
+    [normalizeSpotifyError, t],
   );
 
   useEffect(() => {
@@ -429,6 +630,74 @@ export default function SpotifyPage() {
       }
     },
     [normalizeSpotifyError],
+  );
+  const openImportDialog = useCallback(
+    (playlist: SpotifyImportPlaylistTarget) => {
+      hapticLight();
+      setImportPlaylist(playlist);
+      setImportError(null);
+      setImportResult(null);
+      setIsImportDialogOpen(true);
+    },
+    [],
+  );
+  const closeImportDialog = useCallback(() => {
+    setIsImportDialogOpen(false);
+    setImportPlaylist(null);
+    setImportError(null);
+    setImportResult(null);
+  }, []);
+  const handleSpotifyPlaylistImport = useCallback(
+    async (input: SpotifyImportRequest) => {
+      setIsImportSubmitting(true);
+      setImportError(null);
+
+      try {
+        const response = await fetch("/api/spotify/playlists/import", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+          body: JSON.stringify(input),
+        });
+        const payload = await readJsonSafely(response);
+        const payloadRecord = asRecord(payload);
+        const routeErrorMessage = extractRouteErrorMessage(payload);
+
+        if (!response.ok || payloadRecord?.ok === false) {
+          throw new Error(
+            normalizeSpotifyImportError(routeErrorMessage, response.status),
+          );
+        }
+
+        const result = extractSpotifyImportResult(payload);
+        if (!result) {
+          throw new Error(
+            normalizeSpotifyImportError(routeErrorMessage, response.status),
+          );
+        }
+
+        setImportResult(result);
+        await utils.music.getPlaylists.invalidate();
+        showToast(
+          t("importCompletedToast", {
+            name: result.playlist.name,
+          }),
+          "success",
+        );
+        hapticSuccess();
+      } catch (error) {
+        const message = normalizeSpotifyImportError(
+          error instanceof Error ? error.message : null,
+        );
+        setImportError(message);
+        showToast(message, "error");
+      } finally {
+        setIsImportSubmitting(false);
+      }
+    },
+    [normalizeSpotifyImportError, showToast, t, utils.music.getPlaylists],
   );
 
   useEffect(() => {
@@ -719,44 +988,66 @@ export default function SpotifyPage() {
                 {spotifyPlaylists.map((playlist) => {
                   const isSelected = playlist.id === selectedPlaylistId;
                   return (
-                    <button
+                    <div
                       key={playlist.id}
-                      type="button"
-                      onClick={() => setSelectedPlaylistId(playlist.id)}
                       className={`w-full rounded-2xl border p-4 text-left transition ${
                         isSelected
                           ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.12)]"
                           : "border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 hover:bg-[var(--color-surface-hover)]"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <PlaylistCover
-                          imageUrl={playlist.imageUrl}
-                          alt={playlist.name}
-                          className="h-16 w-16 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.2)]"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[var(--color-text)]">
-                            {playlist.name}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--color-subtext)]">
-                            {t("byOwner", {
-                              owner: playlist.ownerName ?? "Spotify",
-                            })}
-                          </p>
-                          <p className="mt-2 text-xs text-[var(--color-subtext)]">
-                            {typeof playlist.trackCount === "number"
-                              ? tc("tracks", { count: playlist.trackCount })
-                              : t("trackCountUnknown")}
-                          </p>
-                          {playlist.description ? (
-                            <p className="mt-2 truncate text-xs text-[var(--color-subtext)]/90">
-                              {playlist.description}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlaylistId(playlist.id)}
+                        className="w-full text-left"
+                      >
+                        <div className="flex items-start gap-3">
+                          <PlaylistCover
+                            imageUrl={playlist.imageUrl}
+                            alt={playlist.name}
+                            className="h-16 w-16 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.2)]"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                              {playlist.name}
                             </p>
-                          ) : null}
+                            <p className="mt-1 text-xs text-[var(--color-subtext)]">
+                              {t("byOwner", {
+                                owner: playlist.ownerName ?? "Spotify",
+                              })}
+                            </p>
+                            <p className="mt-2 text-xs text-[var(--color-subtext)]">
+                              {typeof playlist.trackCount === "number"
+                                ? tc("tracks", { count: playlist.trackCount })
+                                : t("trackCountUnknown")}
+                            </p>
+                            {playlist.description ? (
+                              <p className="mt-2 truncate text-xs text-[var(--color-subtext)]/90">
+                                {playlist.description}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
+                      </button>
+                      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-border)]/80 pt-3">
+                        <span className="text-[11px] font-medium tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                          {t("playlistMigration")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPlaylistId(playlist.id);
+                            openImportDialog(
+                              toSpotifyImportPlaylistTarget(playlist),
+                            );
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-3 py-1.5 text-xs font-semibold text-[#1DB954] transition hover:bg-[rgba(29,185,84,0.2)]"
+                        >
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                          {t("importToStarchild")}
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -791,6 +1082,20 @@ export default function SpotifyPage() {
                               {selectedPlaylistDetail?.name ??
                                 selectedPlaylistFromList.name}
                             </h3>
+                          </div>
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            {selectedImportTarget ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openImportDialog(selectedImportTarget)
+                                }
+                                className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(29,185,84,0.22)] transition hover:brightness-110"
+                              >
+                                <ArrowRightLeft className="h-4 w-4" />
+                                {t("importToStarchild")}
+                              </button>
+                            ) : null}
                             {(selectedPlaylistDetail?.externalUrl ??
                             selectedPlaylistFromList.externalUrl) ? (
                               <a
@@ -917,6 +1222,16 @@ export default function SpotifyPage() {
           )}
         </motion.section>
       </div>
+      <SpotifyImportDialog
+        key={importPlaylist?.id ?? "spotify-import-dialog"}
+        isOpen={isImportDialogOpen}
+        playlist={importPlaylist}
+        isSubmitting={isImportSubmitting}
+        importError={importError}
+        importResult={importResult}
+        onClose={closeImportDialog}
+        onSubmit={(input) => void handleSpotifyPlaylistImport(input)}
+      />
     </div>
   );
 }
