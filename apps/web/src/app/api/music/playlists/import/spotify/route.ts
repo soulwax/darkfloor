@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
     payload = spotifyImportRequestSchema.parse(await request.json());
   } catch {
     return NextResponse.json(
-      { ok: false, error: "A valid Spotify playlist import payload is required." },
+      {
+        ok: false,
+        error: "A valid Spotify playlist import payload is required.",
+      },
       { status: 400 },
     );
   }

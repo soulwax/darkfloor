@@ -1,6 +1,4 @@
-import {
-  importSpotifyPlaylist,
-} from "@starchild/api-client/trpc/music-import";
+import { importSpotifyPlaylist } from "@starchild/api-client/trpc/music-import";
 import type { ImportSpotifyPlaylistError } from "@starchild/api-client/trpc/music-import";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,42 +8,40 @@ describe("importSpotifyPlaylist client", () => {
   });
 
   it("submits to the Spotify import backend endpoint and preserves string playlist ids", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            ok: true,
-            playlist: {
-              id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-              name: "Imported playlist",
-            },
-            importReport: {
-              sourcePlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
-              sourcePlaylistName: "Today’s Top Hits",
-              totalTracks: 4,
-              matchedCount: 3,
-              unmatchedCount: 1,
-              skippedCount: 0,
-              unmatched: [
-                {
-                  index: 2,
-                  spotifyTrackId: "spotify-track-2",
-                  name: "Missing track",
-                  artist: "Unknown Artist",
-                  reason: "not_found",
-                },
-              ],
-            },
-          }),
-          {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json",
-            },
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          playlist: {
+            id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            name: "Imported playlist",
           },
-        ),
-      );
+          importReport: {
+            sourcePlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+            sourcePlaylistName: "Today’s Top Hits",
+            totalTracks: 4,
+            matchedCount: 3,
+            unmatchedCount: 1,
+            skippedCount: 0,
+            unmatched: [
+              {
+                index: 2,
+                spotifyTrackId: "spotify-track-2",
+                name: "Missing track",
+                artist: "Unknown Artist",
+                reason: "not_found",
+              },
+            ],
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
 
     const result = await importSpotifyPlaylist({
       spotifyPlaylistId:
@@ -60,10 +56,10 @@ describe("importSpotifyPlaylist client", () => {
         method: "POST",
         credentials: "include",
         cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           spotifyPlaylistId:
             "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
