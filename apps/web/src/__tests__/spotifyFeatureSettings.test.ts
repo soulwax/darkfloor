@@ -5,6 +5,7 @@ import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
   hasCompleteSpotifyFeatureSettings,
+  maskSpotifyClientId,
   maskSpotifyClientSecret,
   normalizeSpotifyFeatureSettings,
 } from "@/utils/spotifyFeatureSettings";
@@ -114,5 +115,11 @@ describe("spotifyFeatureSettings", () => {
   it("masks spotify client secrets for display", () => {
     expect(maskSpotifyClientSecret("")).toBe("Not saved");
     expect(maskSpotifyClientSecret("abcdef1234")).toBe("ab••••34");
+  });
+
+  it("masks spotify client ids for compact display", () => {
+    expect(maskSpotifyClientId("")).toBe("Not saved");
+    expect(maskSpotifyClientId("abcdef12")).toBe("ab...12");
+    expect(maskSpotifyClientId("abcdef1234567890")).toBe("abcd...7890");
   });
 });

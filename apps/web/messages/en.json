@@ -692,6 +692,7 @@
     "connectPlaylistsButton": "Connect playlists",
     "loadingFeatureConnection": "Loading Spotify feature connection…",
     "savedAppProfile": "Saved app profile",
+    "savedProfileSummary": "A compact view of the saved Spotify app profile powering public playlist access.",
     "playlistAuth": "Playlist auth",
     "connectedAccount": "Connected account",
     "playlistMigration": "Playlist migration",

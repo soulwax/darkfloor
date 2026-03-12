@@ -692,6 +692,7 @@
     "connectPlaylistsButton": "Anslut spellistor",
     "loadingFeatureConnection": "Laddar Spotify‑funktionsanslutning…",
     "savedAppProfile": "Sparad app‑profil",
+    "savedProfileSummary": "En kompakt vy av den sparade Spotify-appprofilen som driver offentlig spellistatkomst.",
     "playlistAuth": "Spellist‑auth",
     "connectedAccount": "Anslutet konto",
     "playlistMigration": "Spellist‑migrering",

@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-03-12
+
+### Changed
+
+- **Spotify page profile rail is now more compact**: Replaced the verbose saved-profile checklist stack with a tighter summary that keeps the important account signals visible without reading like a second Settings page.
+- **Spotify playlist art is more prominent in browsing**: Playlist covers are now surfaced more clearly in the playlist picker and detail header, with detail view falling back to the full playlist payload image when available.
+
 ## [1.5.5] - 2026-03-12
 
 ### Added

@@ -692,6 +692,7 @@
     "connectPlaylistsButton": "プレイリストを接続",
     "loadingFeatureConnection": "Spotify 機能接続を読み込み中…",
     "savedAppProfile": "保存されたアプリプロファイル",
+    "savedProfileSummary": "公開プレイリスト表示に使われる、保存済み Spotify アプリプロファイルのコンパクト表示です。",
     "playlistAuth": "プレイリスト認可",
     "connectedAccount": "接続されたアカウント",
     "playlistMigration": "プレイリスト移行",

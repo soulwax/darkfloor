@@ -273,3 +273,10 @@ export function maskSpotifyClientSecret(secret: string): string {
   if (trimmed.length <= 4) return "••••";
   return `${trimmed.slice(0, 2)}••••${trimmed.slice(-2)}`;
 }
+
+export function maskSpotifyClientId(clientId: string): string {
+  const trimmed = normalizeText(clientId);
+  if (trimmed.length === 0) return "Not saved";
+  if (trimmed.length <= 8) return `${trimmed.slice(0, 2)}...${trimmed.slice(-2)}`;
+  return `${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+}
