@@ -208,9 +208,10 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
 
             {!importResult ? (
               <>
-                <div className="relative overflow-hidden px-6 py-6">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_55%)]" />
-                  <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
+                <div className="min-h-0 overflow-y-auto">
+                  <div className="relative overflow-hidden px-6 py-6">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_55%)]" />
+                    <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
                     <div className="space-y-4">
                       <div className="rounded-[1.75rem] border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.16),rgba(15,23,42,0.84))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)]">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -348,9 +349,11 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                               <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                                 {t("importDiagnosticsBackendMessage")}
                               </p>
-                              <p className="mt-1 text-sm leading-6 text-[var(--color-text)]">
-                                {importDiagnostics.backendMessage}
-                              </p>
+                              <div className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/10 p-3">
+                                <p className="font-mono text-xs leading-5 break-all whitespace-pre-wrap text-[var(--color-text)]/90">
+                                  {importDiagnostics.backendMessage}
+                                </p>
+                              </div>
                             </div>
                           ) : null}
                         </div>
@@ -400,10 +403,11 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                         </div>
                       </div>
                     </div>
+                    </div>
                   </div>
                 </div>
 
-                <DialogFooter className="border-t border-[var(--color-border)] px-6 py-5">
+                <DialogFooter className="shrink-0 border-t border-[var(--color-border)] px-6 py-5">
                   <button
                     type="button"
                     onClick={onClose}
