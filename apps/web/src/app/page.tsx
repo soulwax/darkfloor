@@ -27,7 +27,11 @@ async function getFirstTrackFromSearch(
   }
 }
 
-function buildOgImageUrl(track: Track | null, baseUrl: string, query?: string | null): string {
+function buildOgImageUrl(
+  track: Track | null,
+  baseUrl: string,
+  query?: string | null,
+): string {
   if (!track) {
     if (query) {
       const params = new URLSearchParams();
@@ -158,11 +162,7 @@ function getApiHostname(): string | undefined {
   }
 }
 
-export default function HomePage({
-  _searchParams,
-}: {
-  _searchParams: Promise<{ q?: string }>;
-}) {
+export default function HomePage() {
   const apiHostname = getApiHostname();
   return (
     <Suspense fallback={null}>

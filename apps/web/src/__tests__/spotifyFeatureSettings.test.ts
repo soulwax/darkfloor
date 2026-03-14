@@ -60,6 +60,7 @@ describe("spotifyFeatureSettings", () => {
         enabled: false,
         clientId: "client-id",
         clientSecret: "client-secret",
+        clientSecretConfigured: true,
         username: "spotify-user",
         updatedAt: null,
       }),
