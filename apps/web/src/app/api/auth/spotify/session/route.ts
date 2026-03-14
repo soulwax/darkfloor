@@ -20,6 +20,7 @@ const AUTH_ME_TIMEOUT_MS = 10_000;
 type BootstrapUserProfile = {
   backendUserId: string | null;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   image: string | null;
 };
@@ -39,6 +40,31 @@ function readFirstNonEmptyString(
     const value = record[key];
     if (typeof value === "string" && value.trim().length > 0) {
       return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function readFirstBoolean(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): boolean | null {
+  if (!record) return null;
+
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === "true") return true;
+      if (normalized === "false") return false;
+    }
+    if (typeof value === "number") {
+      if (value === 1) return true;
+      if (value === 0) return false;
     }
   }
 
@@ -115,6 +141,15 @@ function normalizeBootstrapProfile(
     readFirstNonEmptyString(nestedUser, ["email"]) ??
     readFirstNonEmptyString(claims, ["email"]) ??
     (backendUserId ? `${backendUserId}@songbird.local` : null);
+  const emailVerified =
+    readFirstBoolean(root, ["emailVerified", "email_verified", "verified"]) ??
+    readFirstBoolean(nestedUser, [
+      "emailVerified",
+      "email_verified",
+      "verified",
+    ]) ??
+    readFirstBoolean(claims, ["emailVerified", "email_verified", "verified"]) ??
+    false;
 
   const name =
     readFirstNonEmptyString(root, ["name", "displayName", "username"]) ??
@@ -144,6 +179,7 @@ function normalizeBootstrapProfile(
   return {
     backendUserId,
     email,
+    emailVerified,
     name,
     image,
   };
@@ -187,19 +223,25 @@ async function resolveOrCreateLocalUser(
   }
   const email = profile.email ?? `${backendUserId}@songbird.local`;
 
-  const byEmail = await db.query.users.findFirst({
-    where: eq(users.email, email),
+  const byBackendId = await db.query.users.findFirst({
+    where: eq(users.id, backendUserId),
   });
-  const byBackendId =
-    !byEmail && backendUserId
+  const byEmail =
+    !byBackendId && profile.emailVerified
       ? await db.query.users.findFirst({
-          where: eq(users.id, backendUserId),
+          where: eq(users.email, email),
         })
       : null;
 
-  const existingUser = byEmail ?? byBackendId;
+  const existingUser = byBackendId ?? byEmail;
   if (existingUser) {
     const updates: Partial<typeof users.$inferInsert> = {};
+    if (profile.emailVerified && email !== existingUser.email) {
+      updates.email = email;
+    }
+    if (profile.emailVerified && !existingUser.emailVerified) {
+      updates.emailVerified = new Date();
+    }
     if (profile.name && profile.name !== existingUser.name) {
       updates.name = profile.name;
     }
@@ -217,6 +259,7 @@ async function resolveOrCreateLocalUser(
     .values({
       id: backendUserId,
       email,
+      emailVerified: profile.emailVerified ? new Date() : null,
       name: profile.name,
       image: profile.image,
     })
