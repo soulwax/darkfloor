@@ -8,14 +8,12 @@ import {
   type SpotifyImportResult,
 } from "@/components/SpotifyImportDialog";
 import { useToast } from "@/contexts/ToastContext";
+import { authFetch } from "@/services/spotifyAuthClient";
 import { hapticLight, hapticSuccess } from "@/utils/haptics";
 import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
-  hasConfiguredSpotifyFeatureSettings,
   maskSpotifyClientId,
-  maskSpotifyClientSecret,
-  spotifyFeatureSettingsStorage,
 } from "@/utils/spotifyFeatureSettings";
 import {
   api,
@@ -307,10 +305,6 @@ export default function SpotifyPage() {
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
 
-  const legacySettings = useMemo(
-    () => spotifyFeatureSettingsStorage.getAll(),
-    [],
-  );
   const serverSettings = useMemo(
     () => extractSpotifyFeatureSettingsFromPreferences(preferences),
     [preferences],
@@ -321,15 +315,6 @@ export default function SpotifyPage() {
         settings: serverSettings,
       }),
     [serverSettings],
-  );
-  const hasServerSettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(serverSettings),
-    [serverSettings],
-  );
-  const hasLegacyLocalOnly = useMemo(
-    () =>
-      !hasServerSettings && hasConfiguredSpotifyFeatureSettings(legacySettings),
-    [hasServerSettings, legacySettings],
   );
   const [playlistsPayload, setPlaylistsPayload] = useState<unknown>(null);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
@@ -527,16 +512,6 @@ export default function SpotifyPage() {
     [],
   );
 
-  useEffect(() => {
-    if (!session || !hasServerSettings) {
-      return;
-    }
-
-    spotifyFeatureSettingsStorage.save(serverSettings, {
-      preserveUpdatedAt: true,
-    });
-  }, [hasServerSettings, serverSettings, session]);
-
   const loadSpotifyPlaylists = useCallback(async () => {
     setIsPlaylistsLoading(true);
     setPlaylistsError(null);
@@ -609,6 +584,7 @@ export default function SpotifyPage() {
   );
   const importSpotifyPlaylistMutation =
     api.music.importSpotifyPlaylist.useMutation({
+      fetchImpl: authFetch,
       onSuccess: async (result) => {
         setImportResult(result);
         setImportDiagnostics(null);
@@ -818,12 +794,6 @@ export default function SpotifyPage() {
         </div>
       </motion.section>
 
-      {hasLegacyLocalOnly ? (
-        <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 text-sm text-amber-200">
-          {t("localFallbackNotice")}
-        </div>
-      ) : null}
-
       <div className="grid gap-4 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr)]">
         <motion.aside
           initial={{ opacity: 0, y: 20 }}
@@ -920,8 +890,8 @@ export default function SpotifyPage() {
                     {ts("clientSecret")}
                   </p>
                   <p className="mt-1 truncate text-sm font-medium text-(--color-text)">
-                    {serverSettings.clientSecret.trim().length > 0
-                      ? maskSpotifyClientSecret(serverSettings.clientSecret)
+                    {serverSettings.clientSecretConfigured
+                      ? ts("checkClientSecret")
                       : t("notSaved")}
                   </p>
                 </div>

@@ -197,6 +197,20 @@ const userPreferencesUiColumns = {
   updatedAt: true,
 } as const;
 
+function sanitizeUserPreferencesForUi<
+  T extends {
+    spotifyClientSecret: string;
+  },
+>(preferences: T) {
+  const { spotifyClientSecret, ...rest } = preferences;
+
+  return {
+    ...rest,
+    spotifyClientSecret: "",
+    spotifyClientSecretConfigured: spotifyClientSecret.trim().length > 0,
+  };
+}
+
 async function syncPlaylistTrackIdSequence(database: typeof db): Promise<void> {
   await database.execute(sql`
     SELECT setval(
@@ -1899,11 +1913,11 @@ export const musicRouter = createTRPCRouter({
         columns: userPreferencesUiColumns,
       });
       if (refreshedPrefs) {
-        return refreshedPrefs;
+        return sanitizeUserPreferencesForUi(refreshedPrefs);
       }
     }
 
-    return prefs;
+    return sanitizeUserPreferencesForUi(prefs);
   }),
 
   updatePreferences: protectedProcedure

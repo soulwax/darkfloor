@@ -1,4 +1,5 @@
 import { proxyApiV2 } from "@/app/api/v2/_lib";
+import { auth } from "@/server/auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,6 +14,14 @@ const spotifyImportRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { ok: false, error: "Sign in required" },
+      { status: 401 },
+    );
+  }
+
   let payload: z.infer<typeof spotifyImportRequestSchema>;
 
   try {
@@ -27,12 +36,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const headers = new Headers({
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  });
+  const authorization = request.headers.get("authorization");
+  if (authorization) {
+    headers.set("authorization", authorization);
+  }
+
   const upstreamRequest = new Request(request.url, {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({
       playlistId: payload.spotifyPlaylistId,
       createPlaylist: true,

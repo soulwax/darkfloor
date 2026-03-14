@@ -99,4 +99,49 @@ describe("importSpotifyPlaylist client", () => {
       message: "Spotify profile incomplete",
     } satisfies Partial<ImportSpotifyPlaylistError>);
   });
+
+  it("uses a caller-provided fetch implementation when one is supplied", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          playlist: {
+            id: "playlist-1",
+            name: "Imported playlist",
+          },
+          importReport: {
+            sourcePlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+            sourcePlaylistName: "Today’s Top Hits",
+            totalTracks: 1,
+            matchedCount: 1,
+            unmatchedCount: 0,
+            skippedCount: 0,
+            unmatched: [],
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    await importSpotifyPlaylist(
+      {
+        spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+      },
+      {
+        fetchImpl,
+      },
+    );
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/music/playlists/import/spotify",
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
+  });
 });

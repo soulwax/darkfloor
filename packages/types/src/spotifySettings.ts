@@ -4,6 +4,7 @@ export interface SpotifyFeatureSettings {
   enabled: boolean;
   clientId: string;
   clientSecret: string;
+  clientSecretConfigured: boolean;
   username: string;
   updatedAt: string | null;
 }
@@ -18,6 +19,7 @@ export const DEFAULT_SPOTIFY_FEATURE_SETTINGS: SpotifyFeatureSettings = {
   enabled: false,
   clientId: "",
   clientSecret: "",
+  clientSecretConfigured: false,
   username: "",
   updatedAt: null,
 };

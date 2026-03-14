@@ -77,7 +77,13 @@ type ImportSpotifyPlaylistMutationOptions = Omit<
     ImportSpotifyPlaylistInput
   >,
   "mutationFn"
->;
+> & {
+  fetchImpl?: typeof fetch;
+};
+
+type ImportSpotifyPlaylistRequestOptions = {
+  fetchImpl?: typeof fetch;
+};
 
 async function parseJsonSafely(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -139,9 +145,11 @@ function normalizeImportSpotifyPlaylistInput(
 
 export async function importSpotifyPlaylist(
   input: ImportSpotifyPlaylistInput,
+  options: ImportSpotifyPlaylistRequestOptions = {},
 ): Promise<ImportSpotifyPlaylistResponse> {
   const normalizedInput = normalizeImportSpotifyPlaylistInput(input);
-  const response = await fetch("/api/music/playlists/import/spotify", {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const response = await fetchImpl("/api/music/playlists/import/spotify", {
     method: "POST",
     credentials: "include",
     cache: "no-store",
@@ -181,8 +189,10 @@ export function useImportSpotifyPlaylistMutation(
   ImportSpotifyPlaylistError,
   ImportSpotifyPlaylistInput
 > {
+  const { fetchImpl, ...mutationOptions } = options ?? {};
+
   return useMutation({
-    mutationFn: importSpotifyPlaylist,
-    ...options,
+    mutationFn: (input) => importSpotifyPlaylist(input, { fetchImpl }),
+    ...mutationOptions,
   });
 }

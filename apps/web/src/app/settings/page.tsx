@@ -14,10 +14,7 @@ import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
   hasCompleteSpotifyFeatureSettings,
-  hasConfiguredSpotifyFeatureSettings,
-  maskSpotifyClientSecret,
   normalizeSpotifyFeatureSettings,
-  spotifyFeatureSettingsStorage,
 } from "@/utils/spotifyFeatureSettings";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SettingsKey } from "@starchild/types/settings";
@@ -112,14 +109,13 @@ export default function SettingsPage() {
   const [localSettings, setLocalSettings] = useState(() =>
     settingsStorage.getAll(),
   );
-  const legacySpotifySettingsRef = useRef<SpotifyFeatureSettings>(
-    spotifyFeatureSettingsStorage.getAll(),
-  );
   const [spotifySettings, setSpotifySettings] =
-    useState<SpotifyFeatureSettings>(() => legacySpotifySettingsRef.current);
+    useState<SpotifyFeatureSettings>(() => normalizeSpotifyFeatureSettings());
   const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(
-    () => legacySpotifySettingsRef.current,
+    () => normalizeSpotifyFeatureSettings(),
   );
+  const [spotifyClientSecretTouched, setSpotifyClientSecretTouched] =
+    useState(false);
   const [isSpotifyProfileRefreshing, setIsSpotifyProfileRefreshing] =
     useState(false);
   const [isSpotifyCredentialTesting, setIsSpotifyCredentialTesting] =
@@ -273,14 +269,6 @@ export default function SettingsPage() {
   );
   const spotifyDraftDirtyRef = useRef(false);
   const hasSyncedLanguageFromPreferencesRef = useRef(false);
-  const hasServerSpotifySettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(serverSpotifySettings),
-    [serverSpotifySettings],
-  );
-  const hasLegacySpotifySettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(legacySpotifySettingsRef.current),
-    [],
-  );
 
   useEffect(() => {
     spotifyDraftDirtyRef.current = spotifyDraftDirty;
@@ -291,28 +279,13 @@ export default function SettingsPage() {
       return;
     }
 
-    const nextSpotifySettings = hasServerSpotifySettings
-      ? serverSpotifySettings
-      : extractSpotifyFeatureSettingsFromPreferences(preferences);
-    const nextSpotifyDraft = hasServerSpotifySettings
-      ? serverSpotifySettings
-      : hasLegacySpotifySettings
-        ? legacySpotifySettingsRef.current
-        : nextSpotifySettings;
+    setSpotifySettings(serverSpotifySettings);
 
-    setSpotifySettings(nextSpotifySettings);
-    setSpotifyDraft((prev) =>
-      spotifyDraftDirtyRef.current ? prev : nextSpotifyDraft,
-    );
-
-    if (hasServerSpotifySettings) {
-      spotifyFeatureSettingsStorage.save(nextSpotifySettings, {
-        preserveUpdatedAt: true,
-      });
+    if (!spotifyDraftDirtyRef.current) {
+      setSpotifyDraft(serverSpotifySettings);
+      setSpotifyClientSecretTouched(false);
     }
   }, [
-    hasLegacySpotifySettings,
-    hasServerSpotifySettings,
     preferences,
     serverSpotifySettings,
     session,
@@ -350,11 +323,23 @@ export default function SettingsPage() {
     >,
     value: string,
   ) => {
+    if (key === "clientSecret") {
+      setSpotifyClientSecretTouched(true);
+    }
+
     setSpotifyDraft((prev) => {
-      const nextDraft = normalizeSpotifyFeatureSettings({
-        ...prev,
-        [key]: value,
-      });
+      const nextDraft = normalizeSpotifyFeatureSettings(
+        key === "clientSecret"
+          ? {
+              ...prev,
+              clientSecret: value,
+              clientSecretConfigured: value.trim().length > 0,
+            }
+          : {
+              ...prev,
+              [key]: value,
+            },
+      );
 
       return {
         ...nextDraft,
@@ -369,22 +354,50 @@ export default function SettingsPage() {
       ...spotifyDraft,
       enabled: hasCompleteSpotifyFeatureSettings(spotifyDraft),
     });
+    const includeClientSecret =
+      spotifyClientSecretTouched || normalizedDraft.clientSecret.length > 0;
+    const savedClientSecretConfigured = includeClientSecret
+      ? normalizedDraft.clientSecret.trim().length > 0
+      : spotifySettings.clientSecretConfigured;
+    const savedAt = new Date().toISOString();
+    const savedSettings = normalizeSpotifyFeatureSettings({
+      ...normalizedDraft,
+      enabled: hasCompleteSpotifyFeatureSettings({
+        ...normalizedDraft,
+        clientSecretConfigured: savedClientSecretConfigured,
+      }),
+      clientSecret: "",
+      clientSecretConfigured: savedClientSecretConfigured,
+      updatedAt: savedAt,
+    });
 
     await updatePreferences.mutateAsync(
-      buildSpotifyFeaturePreferenceInput(normalizedDraft),
+      buildSpotifyFeaturePreferenceInput(
+        {
+          ...normalizedDraft,
+          clientSecretConfigured: savedClientSecretConfigured,
+        },
+        {
+          includeClientSecret,
+        },
+      ),
     );
 
-    const saved = spotifyFeatureSettingsStorage.save(normalizedDraft);
-    setSpotifySettings(saved);
-    setSpotifyDraft(saved);
+    setSpotifySettings(savedSettings);
+    setSpotifyDraft(savedSettings);
+    setSpotifyClientSecretTouched(false);
     setSpotifyCredentialTest(null);
     utils.music.getUserPreferences.setData(undefined, (prev) =>
       prev
         ? {
             ...prev,
-            ...buildSpotifyFeaturePreferenceInput(saved),
-            spotifySettingsUpdatedAt: saved.updatedAt
-              ? new Date(saved.updatedAt)
+            ...buildSpotifyFeaturePreferenceInput(savedSettings, {
+              includeClientSecret: false,
+            }),
+            spotifyClientSecret: "",
+            spotifyClientSecretConfigured: savedClientSecretConfigured,
+            spotifySettingsUpdatedAt: savedSettings.updatedAt
+              ? new Date(savedSettings.updatedAt)
               : null,
           }
         : prev,
@@ -402,16 +415,9 @@ export default function SettingsPage() {
         result.data,
       );
 
-      if (hasConfiguredSpotifyFeatureSettings(refreshedSettings)) {
-        spotifyFeatureSettingsStorage.save(refreshedSettings, {
-          preserveUpdatedAt: true,
-        });
-      } else {
-        spotifyFeatureSettingsStorage.clear();
-      }
-
       setSpotifySettings(refreshedSettings);
       setSpotifyDraft(refreshedSettings);
+      setSpotifyClientSecretTouched(false);
       setSpotifyCredentialTest(null);
       showToast(ts("spotifySetupRefreshed"), "success");
     } catch {
@@ -860,17 +866,6 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {!hasServerSpotifySettings && hasLegacySpotifySettings ? (
-                <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 md:col-span-2">
-                  <p className="text-sm font-semibold text-amber-200">
-                    {ts("localValuesDetected")}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-amber-100/90">
-                    {ts("localValuesHint")}
-                  </p>
-                </div>
-              ) : null}
-
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
                 <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                   {ts("accountActivation")}
@@ -890,8 +885,8 @@ export default function SettingsPage() {
                   {ts("savedSecret")}
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {spotifySettings.clientSecret.trim().length > 0
-                    ? maskSpotifyClientSecret(spotifySettings.clientSecret)
+                  {spotifySettings.clientSecretConfigured
+                    ? ts("checkClientSecret")
                     : ts("notSavedYet")}
                 </p>
                 <p className="mt-2 text-xs text-[var(--color-subtext)]">

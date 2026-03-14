@@ -156,4 +156,46 @@ describe("musicRouter tRPC operations", () => {
       }),
     );
   });
+
+  it("sanitizes spotify secrets in user preferences responses", async () => {
+    const db = createMockDb({
+      id: 1,
+      userId: "user-1",
+      volume: 0.5,
+      repeatMode: "none",
+      shuffleEnabled: false,
+      keepPlaybackAlive: false,
+      equalizerEnabled: false,
+      equalizerPreset: "Flat",
+      equalizerBands: [],
+      equalizerPanelOpen: false,
+      queuePanelOpen: false,
+      visualizerType: "flowfield",
+      visualizerEnabled: true,
+      visualizerMode: "random",
+      compactMode: false,
+      theme: "dark",
+      language: "en",
+      spotifyFeaturesEnabled: true,
+      spotifyClientId: "client-id",
+      spotifyClientSecret: "client-secret",
+      spotifyUsername: "spotify-user",
+      spotifySettingsUpdatedAt: new Date("2026-03-14T00:00:00.000Z"),
+      autoQueueEnabled: false,
+      autoQueueThreshold: 3,
+      autoQueueCount: 5,
+      smartMixEnabled: true,
+      similarityPreference: "balanced",
+      createdAt: new Date("2026-03-14T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-14T00:00:00.000Z"),
+    });
+
+    const context = createCallerContext(db);
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.getUserPreferences();
+
+    expect(result.spotifyClientSecret).toBe("");
+    expect(result.spotifyClientSecretConfigured).toBe(true);
+  });
 });

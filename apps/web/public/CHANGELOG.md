@@ -5,6 +5,14 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.12] - 2026-03-14
+
+### Fixed
+
+- **Spotify feature settings no longer expose saved client secrets in browser-facing state**: `getUserPreferences` now returns only a server-side "secret saved" flag, legacy browser storage is scrubbed of stored secrets, and app sign-out clears the old local Spotify settings cache.
+- **Spotify playlist imports now preserve authenticated bearer auth through the app route**: the local import proxy now requires a signed-in app session and forwards any caller bearer token instead of dropping it before the upstream import request.
+- **Legacy Spotify session bootstrap now blocks banned users again**: backend-managed bearer session bootstrap now checks the local banned flag before writing an Auth.js session cookie.
+
 ## [1.5.11] - 2026-03-12
 
 ### Added

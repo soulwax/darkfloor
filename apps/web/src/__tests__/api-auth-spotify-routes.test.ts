@@ -124,12 +124,17 @@ describe("Spotify auth proxy routes", () => {
       },
     }));
 
-    const findFirst = vi.fn().mockResolvedValue({
-      id: "local-user-1",
-      email: "user@example.com",
-      name: "Existing User",
-      image: null,
-    });
+    const findFirst = vi
+      .fn()
+      .mockResolvedValueOnce({
+        id: "local-user-1",
+        email: "user@example.com",
+        name: "Existing User",
+        image: null,
+      })
+      .mockResolvedValueOnce({
+        banned: false,
+      });
     const insertSessionValues = vi.fn().mockResolvedValue(undefined);
     const insert = vi.fn().mockReturnValue({
       values: insertSessionValues,
@@ -183,7 +188,7 @@ describe("Spotify auth proxy routes", () => {
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(body.userId).toBe("local-user-1");
-    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(findFirst).toHaveBeenCalledTimes(2);
 
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("__Secure-authjs.session-token=");
@@ -194,6 +199,83 @@ describe("Spotify auth proxy routes", () => {
       | { userId?: string }
       | undefined;
     expect(sessionInsertCall?.userId).toBe("local-user-1");
+  });
+
+  it("rejects banned users before creating a local Auth.js session", async () => {
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URL: "https://api.example.com/",
+      },
+    }));
+
+    const findFirst = vi
+      .fn()
+      .mockResolvedValueOnce({
+        id: "local-user-1",
+        email: "user@example.com",
+        name: "Existing User",
+        image: null,
+        banned: true,
+      })
+      .mockResolvedValueOnce({
+        banned: true,
+      });
+    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
+    const insert = vi.fn().mockReturnValue({
+      values: insertSessionValues,
+    });
+
+    vi.doMock("@/server/db", () => ({
+      db: {
+        query: {
+          users: {
+            findFirst,
+          },
+        },
+        insert,
+        update: vi.fn(() => ({
+          set: vi.fn(() => ({
+            where: vi.fn().mockResolvedValue(undefined),
+          })),
+        })),
+      },
+    }));
+
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "backend-user-1",
+          email: "user@example.com",
+          name: "Existing User",
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const route = await loadPostRoute("@/app/api/auth/spotify/session/route");
+    const response = await route.POST(
+      makeRequest("/api/auth/spotify/session", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer app-token-1",
+          "x-forwarded-proto": "https",
+        },
+      }),
+    );
+    const body = (await response.json()) as {
+      ok?: boolean;
+      error?: string;
+    };
+
+    expect(response.status).toBe(403);
+    expect(body.ok).toBe(false);
+    expect(body.error).toMatch(/banned/i);
+    expect(insertSessionValues).not.toHaveBeenCalled();
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("returns 503 when AUTH_DEBUG_TOKEN is missing for debug proxy route", async () => {

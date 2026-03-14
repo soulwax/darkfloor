@@ -4,7 +4,12 @@ import { sessions, users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { logAuthDebug, logAuthError, logAuthInfo } from "@starchild/auth";
+import {
+  logAuthDebug,
+  logAuthError,
+  logAuthInfo,
+  logAuthWarn,
+} from "@starchild/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -260,6 +265,36 @@ export async function POST(request: NextRequest) {
   try {
     const profile = await fetchBootstrapProfile(accessToken);
     const localUserId = await resolveOrCreateLocalUser(profile);
+    const localUser = await db.query.users.findFirst({
+      where: eq(users.id, localUserId),
+      columns: {
+        banned: true,
+      },
+    });
+
+    if (localUser?.banned) {
+      logAuthWarn(
+        "Backend-managed auth session bootstrap denied because user is banned",
+        {
+          backendUserId: profile.backendUserId,
+          localUserId,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Your account has been banned. If you believe this is an error, please contact support.",
+        },
+        {
+          status: 403,
+          headers: {
+            "cache-control": "no-store",
+          },
+        },
+      );
+    }
+
     const sessionToken = randomUUID();
     const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
 
