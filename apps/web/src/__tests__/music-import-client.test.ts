@@ -48,6 +48,25 @@ describe("importSpotifyPlaylist client", () => {
         "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
       nameOverride: "Imported playlist",
       isPublic: true,
+      sourcePlaylist: {
+        id: "37i9dQZF1DXcBWIGoYBM5M",
+        name: "Today’s Top Hits",
+        description: "Frontend snapshot",
+        ownerName: "spotify",
+        trackCount: 1,
+        tracks: [
+          {
+            index: 0,
+            spotifyTrackId: "spotify-track-1",
+            name: "Track One",
+            artist: "Artist One",
+            artists: ["Artist One"],
+            albumName: "Album One",
+            durationMs: 180000,
+            externalUrl: "https://open.spotify.com/track/spotify-track-1",
+          },
+        ],
+      },
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -66,6 +85,25 @@ describe("importSpotifyPlaylist client", () => {
           nameOverride: "Imported playlist",
           descriptionOverride: undefined,
           isPublic: true,
+          sourcePlaylist: {
+            id: "37i9dQZF1DXcBWIGoYBM5M",
+            name: "Today’s Top Hits",
+            description: "Frontend snapshot",
+            ownerName: "spotify",
+            trackCount: 1,
+            tracks: [
+              {
+                index: 0,
+                spotifyTrackId: "spotify-track-1",
+                name: "Track One",
+                artist: "Artist One",
+                artists: ["Artist One"],
+                albumName: "Album One",
+                durationMs: 180000,
+                externalUrl: "https://open.spotify.com/track/spotify-track-1",
+              },
+            ],
+          },
         }),
       },
     );
@@ -98,6 +136,89 @@ describe("importSpotifyPlaylist client", () => {
       status: 412,
       message: "Spotify profile incomplete",
     } satisfies Partial<ImportSpotifyPlaylistError>);
+  });
+
+  it("normalizes nested source playlist fields before sending them", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          playlist: {
+            id: "playlist-1",
+            name: "Imported playlist",
+          },
+          importReport: {
+            sourcePlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+            sourcePlaylistName: "Today’s Top Hits",
+            totalTracks: 1,
+            matchedCount: 1,
+            unmatchedCount: 0,
+            skippedCount: 0,
+            unmatched: [],
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    await importSpotifyPlaylist({
+      spotifyPlaylistId: " 37i9dQZF1DXcBWIGoYBM5M ",
+      sourcePlaylist: {
+        id: " 37i9dQZF1DXcBWIGoYBM5M ",
+        name: " Today’s Top Hits ",
+        description: " Frontend snapshot ",
+        ownerName: " spotify ",
+        trackCount: 1,
+        tracks: [
+          {
+            index: 0,
+            spotifyTrackId: " spotify-track-1 ",
+            name: " Track One ",
+            artist: " Artist One ",
+            artists: [" Artist One ", " Artist Two "],
+            albumName: " Album One ",
+            durationMs: 180000,
+            externalUrl: " https://open.spotify.com/track/spotify-track-1 ",
+          },
+        ],
+      },
+    });
+
+    const fetchCall = fetchMock.mock.calls[0];
+    const options = fetchCall?.[1];
+    expect(options).toBeDefined();
+    const body =
+      options && typeof options === "object" && "body" in options
+        ? JSON.parse(String(options.body))
+        : null;
+
+    expect(body).toEqual({
+      spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+      sourcePlaylist: {
+        id: "37i9dQZF1DXcBWIGoYBM5M",
+        name: "Today’s Top Hits",
+        description: "Frontend snapshot",
+        ownerName: "spotify",
+        trackCount: 1,
+        tracks: [
+          {
+            index: 0,
+            spotifyTrackId: "spotify-track-1",
+            name: "Track One",
+            artist: "Artist One",
+            artists: ["Artist One", "Artist Two"],
+            albumName: "Album One",
+            durationMs: 180000,
+            externalUrl: "https://open.spotify.com/track/spotify-track-1",
+          },
+        ],
+      },
+    });
   });
 
   it("uses a caller-provided fetch implementation when one is supplied", async () => {

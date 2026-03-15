@@ -50,9 +50,29 @@ describe("Spotify music import route", () => {
     expect(proxyApiV2).not.toHaveBeenCalled();
   });
 
-  it("blocks import requests that do not include backend bearer auth", async () => {
+  it("allows signed-in users to proxy imports without backend bearer auth", async () => {
     vi.resetModules();
-    const proxyApiV2 = vi.fn();
+    const proxyApiV2 = vi.fn(
+      async (options: {
+        request?: Request;
+        pathname: string;
+        method?: string;
+        timeoutMs?: number;
+      }) => {
+        const forwardedBody = options.request
+          ? ((await options.request.json()) as Record<string, unknown>)
+          : null;
+
+        return NextResponse.json({
+          ok: true,
+          pathname: options.pathname,
+          authorization: options.request?.headers.get("authorization"),
+          method: options.method,
+          timeoutMs: options.timeoutMs,
+          body: forwardedBody,
+        });
+      },
+    );
 
     vi.doMock("@/server/auth", () => ({
       auth: vi.fn(async () => ({ user: { id: "user-1" } })),
@@ -72,14 +92,83 @@ describe("Spotify music import route", () => {
         },
         body: JSON.stringify({
           spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+          sourcePlaylist: {
+            id: "37i9dQZF1DXcBWIGoYBM5M",
+            name: "Today’s Top Hits",
+            description: "Frontend snapshot",
+            ownerName: "spotify",
+            trackCount: 1,
+            tracks: [
+              {
+                index: 0,
+                spotifyTrackId: "spotify-track-1",
+                name: "Track One",
+                artist: "Artist One",
+                artists: ["Artist One"],
+                albumName: "Album One",
+                durationMs: 180000,
+                externalUrl: "https://open.spotify.com/track/spotify-track-1",
+              },
+            ],
+          },
         }),
       }),
     );
-    const body = (await response.json()) as { error?: string };
+    const body = (await response.json()) as {
+      ok?: boolean;
+      pathname?: string;
+      authorization?: string | null;
+      body?: Record<string, unknown> | null;
+    };
 
-    expect(response.status).toBe(412);
-    expect(body.error).toMatch(/connect spotify playlist auth/i);
-    expect(proxyApiV2).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.pathname).toBe("/spotify/playlists/import");
+    expect(body.authorization).toBeNull();
+    expect(body.body).toEqual({
+      source: "spotify",
+      playlistId: "37i9dQZF1DXcBWIGoYBM5M",
+      createPlaylist: true,
+      playlist: {
+        id: "37i9dQZF1DXcBWIGoYBM5M",
+        name: "Today’s Top Hits",
+        description: "Frontend snapshot",
+        ownerName: "spotify",
+        trackCount: 1,
+        tracks: [
+          {
+            index: 0,
+            spotifyTrackId: "spotify-track-1",
+            name: "Track One",
+            artist: "Artist One",
+            artists: ["Artist One"],
+            albumName: "Album One",
+            durationMs: 180000,
+            externalUrl: "https://open.spotify.com/track/spotify-track-1",
+          },
+        ],
+      },
+      sourcePlaylist: {
+        id: "37i9dQZF1DXcBWIGoYBM5M",
+        name: "Today’s Top Hits",
+        description: "Frontend snapshot",
+        ownerName: "spotify",
+        trackCount: 1,
+        tracks: [
+          {
+            index: 0,
+            spotifyTrackId: "spotify-track-1",
+            name: "Track One",
+            artist: "Artist One",
+            artists: ["Artist One"],
+            albumName: "Album One",
+            durationMs: 180000,
+            externalUrl: "https://open.spotify.com/track/spotify-track-1",
+          },
+        ],
+      },
+    });
+    expect(proxyApiV2).toHaveBeenCalledTimes(1);
   });
 
   it("preserves caller authorization when proxying upstream imports", async () => {
@@ -142,6 +231,7 @@ describe("Spotify music import route", () => {
     expect(body.pathname).toBe("/spotify/playlists/import");
     expect(body.authorization).toBe("Bearer app-token-1");
     expect(body.body).toEqual({
+      source: "spotify",
       playlistId: "37i9dQZF1DXcBWIGoYBM5M",
       createPlaylist: true,
       playlistName: "Imported playlist",

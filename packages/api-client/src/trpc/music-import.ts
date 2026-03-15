@@ -14,11 +14,32 @@ const spotifyImportUnmatchedReasonSchema = z.enum([
   "unsupported",
 ]);
 
+const spotifyImportSourceTrackSchema = z.object({
+  index: z.number().int().nonnegative(),
+  spotifyTrackId: z.string().trim().min(1).nullable().optional(),
+  name: z.string().trim().min(1),
+  artist: z.string().trim().min(1).nullable().optional(),
+  artists: z.array(z.string().trim().min(1)).optional(),
+  albumName: z.string().trim().min(1).nullable().optional(),
+  durationMs: z.number().int().nonnegative().nullable().optional(),
+  externalUrl: z.string().trim().min(1).nullable().optional(),
+});
+
+const spotifyImportSourcePlaylistSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  description: z.string().trim().min(1).nullable().optional(),
+  ownerName: z.string().trim().min(1).nullable().optional(),
+  trackCount: z.number().int().nonnegative().nullable().optional(),
+  tracks: z.array(spotifyImportSourceTrackSchema),
+});
+
 const importSpotifyPlaylistInputSchema = z.object({
   spotifyPlaylistId: z.string().trim().min(1),
   nameOverride: z.string().trim().min(1).optional(),
   descriptionOverride: z.string().trim().min(1).optional(),
   isPublic: z.boolean().optional(),
+  sourcePlaylist: spotifyImportSourcePlaylistSchema.optional(),
 });
 
 const importSpotifyPlaylistResponseSchema = z.object({
@@ -140,6 +161,28 @@ function normalizeImportSpotifyPlaylistInput(
     nameOverride: parsedInput.nameOverride?.trim() ?? undefined,
     descriptionOverride: parsedInput.descriptionOverride?.trim() ?? undefined,
     isPublic: parsedInput.isPublic,
+    sourcePlaylist: parsedInput.sourcePlaylist
+      ? {
+          id: parsedInput.sourcePlaylist.id.trim(),
+          name: parsedInput.sourcePlaylist.name.trim(),
+          description:
+            parsedInput.sourcePlaylist.description?.trim() ?? undefined,
+          ownerName: parsedInput.sourcePlaylist.ownerName?.trim() ?? undefined,
+          trackCount: parsedInput.sourcePlaylist.trackCount,
+          tracks: parsedInput.sourcePlaylist.tracks.map((track) => ({
+            index: track.index,
+            spotifyTrackId: track.spotifyTrackId?.trim() ?? null,
+            name: track.name.trim(),
+            artist: track.artist?.trim() ?? null,
+            artists:
+              track.artists?.map((artist) => artist.trim()).filter(Boolean) ??
+              undefined,
+            albumName: track.albumName?.trim() ?? null,
+            durationMs: track.durationMs,
+            externalUrl: track.externalUrl?.trim() ?? null,
+          })),
+        }
+      : undefined,
   };
 }
 
