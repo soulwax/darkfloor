@@ -6,14 +6,13 @@ import {
   buildSpotifyFrontendRedirectUri,
   resolveSpotifyPostAuthPath,
 } from "@/utils/spotifyAuthRedirect";
-import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { resolveAuthApiBase } from "@/utils/authApiBase";
 import {
   isClientAuthDebugEnabled,
   logAuthClientDebug,
 } from "@/utils/authDebugClient";
 
-const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/signin/spotify";
+const SPOTIFY_BROWSER_SIGNIN_PATH = "/api/auth/spotify";
 const CSRF_COOKIE_NAME = "sb_csrf_token";
 const APP_REFRESH_COOKIE_NAME = "sb_app_refresh_token";
 const OAUTH_SESSION_COOKIE_NAME = "sb_spotify_oauth_sid";
@@ -278,7 +277,7 @@ function hasSpotifyRefreshArtifacts(): boolean {
 
   return Boolean(
     (typeof csrfToken === "string" && csrfToken.length > 0) ||
-      (typeof storedRefreshToken === "string" && storedRefreshToken.length > 0),
+    (typeof storedRefreshToken === "string" && storedRefreshToken.length > 0),
   );
 }
 
@@ -308,9 +307,9 @@ function hasSpotifySessionArtifacts(): boolean {
 
   return Boolean(
     readStoredRefreshToken() ||
-      getCsrfTokenFromCookies() ||
-      readCookieValue(document.cookie, APP_REFRESH_COOKIE_NAME) ||
-      readCookieValue(document.cookie, OAUTH_SESSION_COOKIE_NAME),
+    getCsrfTokenFromCookies() ||
+    readCookieValue(document.cookie, APP_REFRESH_COOKIE_NAME) ||
+    readCookieValue(document.cookie, OAUTH_SESSION_COOKIE_NAME),
   );
 }
 
@@ -772,21 +771,25 @@ export function buildSpotifyBrowserSignInUrl(
 
   const effectiveTraceId = traceId ?? generateTraceId();
   const safeNext = resolveSpotifyPostAuthPath(nextPath, window.location.origin);
-  const callbackUrl = buildAuthCallbackUrl(safeNext, "spotify");
+  const callbackUrl = buildSpotifyFrontendRedirectUri({
+    next: safeNext,
+    origin: window.location.origin,
+    traceId: effectiveTraceId,
+  });
   const signInUrl = new URL(
     SPOTIFY_BROWSER_SIGNIN_PATH,
     window.location.origin,
   );
-  signInUrl.searchParams.set("callbackUrl", callbackUrl);
+  signInUrl.searchParams.set("frontend_redirect_uri", callbackUrl);
   signInUrl.searchParams.set(
     SPOTIFY_CALLBACK_TRACE_QUERY_PARAM,
     effectiveTraceId,
   );
 
-  logSpotifyBrowserDebug("Built browser Spotify Auth.js sign-in URL", {
+  logSpotifyBrowserDebug("Built browser Spotify playlist auth URL", {
     requestedNextPath: nextPath,
     safeNextPath: safeNext,
-    callbackUrl,
+    frontendRedirectUri: callbackUrl,
     traceId: effectiveTraceId,
     signInUrl: signInUrl.toString(),
   });
@@ -815,7 +818,7 @@ export function startSpotifyLogin(
     currentUrl: window.location.href,
   });
 
-  logSpotifyBrowserDebug("Navigating browser to Spotify Auth.js sign-in", {
+  logSpotifyBrowserDebug("Navigating browser to Spotify playlist auth", {
     traceId,
     from: window.location.href,
     to: signInUrl,

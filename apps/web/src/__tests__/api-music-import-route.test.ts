@@ -50,6 +50,38 @@ describe("Spotify music import route", () => {
     expect(proxyApiV2).not.toHaveBeenCalled();
   });
 
+  it("blocks import requests that do not include backend bearer auth", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn();
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadPostRoute(
+      "@/app/api/music/playlists/import/spotify/route",
+    );
+    const response = await route.POST(
+      makeRequest("/api/music/playlists/import/spotify", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+        }),
+      }),
+    );
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(412);
+    expect(body.error).toMatch(/connect spotify playlist auth/i);
+    expect(proxyApiV2).not.toHaveBeenCalled();
+  });
+
   it("preserves caller authorization when proxying upstream imports", async () => {
     vi.resetModules();
     const proxyApiV2 = vi.fn(

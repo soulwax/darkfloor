@@ -200,6 +200,104 @@ describe("Spotify public playlist routes", () => {
   });
 });
 
+describe("Spotify playlist auth status route", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("blocks playlist auth status checks when no session is present", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn();
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => null),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/auth/status/route");
+    const response = await route.GET(makeRequest("/api/spotify/auth/status"));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(401);
+    expect(body.error).toMatch(/sign in required/i);
+    expect(proxyApiV2).not.toHaveBeenCalled();
+  });
+
+  it("reports missing playlist auth before proxying upstream", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn();
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/auth/status/route");
+    const response = await route.GET(makeRequest("/api/spotify/auth/status"));
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(401);
+    expect(body.error).toMatch(/playlist auth is not connected/i);
+    expect(proxyApiV2).not.toHaveBeenCalled();
+  });
+
+  it("forwards backend bearer auth when checking playlist auth status", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn(
+      async (options: {
+        request?: Request;
+        pathname: string;
+        method?: string;
+        timeoutMs?: number;
+      }) =>
+        new Response(
+          JSON.stringify({
+            ok: true,
+            pathname: options.pathname,
+            authorization: options.request?.headers.get("authorization"),
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        ),
+    );
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadGetRoute("@/app/api/spotify/auth/status/route");
+    const response = await route.GET(
+      makeRequest("/api/spotify/auth/status", {
+        headers: {
+          authorization: "Bearer app-token-1",
+        },
+      }),
+    );
+    const body = (await response.json()) as {
+      ok?: boolean;
+      pathname?: string;
+      authorization?: string | null;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.pathname).toBe("/spotify/auth/status");
+    expect(body.authorization).toBe("Bearer app-token-1");
+    expect(proxyApiV2).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("Spotify credential test route", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -214,8 +312,12 @@ describe("Spotify credential test route", () => {
       testUserSpotifyFeatureCredentials: vi.fn(),
     }));
 
-    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
-    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const route = await loadGetRoute(
+      "@/app/api/spotify/credentials/test/route",
+    );
+    const response = await route.GET(
+      makeRequest("/api/spotify/credentials/test"),
+    );
     const body = (await response.json()) as { error?: string };
 
     expect(response.status).toBe(401);
@@ -245,8 +347,12 @@ describe("Spotify credential test route", () => {
       testUserSpotifyFeatureCredentials,
     }));
 
-    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
-    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const route = await loadGetRoute(
+      "@/app/api/spotify/credentials/test/route",
+    );
+    const response = await route.GET(
+      makeRequest("/api/spotify/credentials/test"),
+    );
     const body = (await response.json()) as {
       error?: string;
       code?: string;
@@ -285,8 +391,12 @@ describe("Spotify credential test route", () => {
       testUserSpotifyFeatureCredentials,
     }));
 
-    const route = await loadGetRoute("@/app/api/spotify/credentials/test/route");
-    const response = await route.GET(makeRequest("/api/spotify/credentials/test"));
+    const route = await loadGetRoute(
+      "@/app/api/spotify/credentials/test/route",
+    );
+    const response = await route.GET(
+      makeRequest("/api/spotify/credentials/test"),
+    );
     const body = (await response.json()) as {
       ok?: boolean;
       message?: string;

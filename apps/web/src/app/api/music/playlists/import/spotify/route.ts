@@ -41,6 +41,16 @@ export async function POST(request: NextRequest) {
     "Content-Type": "application/json",
   });
   const authorization = request.headers.get("authorization");
+  if (!authorization) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Connect Spotify playlist auth before importing playlists.",
+      },
+      { status: 412 },
+    );
+  }
+
   if (authorization) {
     headers.set("authorization", authorization);
   }

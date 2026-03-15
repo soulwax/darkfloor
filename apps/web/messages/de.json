@@ -714,7 +714,8 @@
     "noTrackRows": "No track rows were returned for this playlist yet.",
     "selectPlaylistPrompt": "Select a playlist to inspect its tracks and prepare it for migration.",
     "settingsIncomplete": "Finish saving your Spotify app profile in Settings before connecting playlist features.",
-    "authMissing": "Connect Spotify playlist features first to load playlists for migration.",
+    "authMissing": "Connect Spotify playlist auth before importing playlists into Starchild.",
+    "profileOnlyConnection": "This Spotify session only has basic profile access. Reconnect with playlist consent before importing playlists.",
     "credentialsRejected": "Spotify rejected the saved Client ID or Client Secret. Update the app credentials in Settings.",
     "usernameNotFound": "Spotify could not find that username. Check the username in Settings.",
     "playlistUnavailable": "That playlist is private or unavailable to app-based public playlist access.",
@@ -779,7 +780,8 @@
     "spotifyCallbackLoading": "Loading Spotify authentication callback",
     "spotifyCallbackPreparing": "Preparing Spotify authentication callback...",
     "spotifyDenied": "Spotify authorization was denied. Discord is now the only supported sign-in method.",
-    "spotifyOAuthRemoved": "Spotify OAuth sign-in has been removed. Use Discord to sign in, and configure Spotify features from Settings instead."
+    "spotifyOAuthRemoved": "Spotify OAuth sign-in has been removed. Use Discord to sign in, and configure Spotify features from Settings instead.",
+    "spotifyConnectionFailed": "Spotify playlist connection could not be completed. Try again."
   },
   "mobileNav": {
     "nowPlaying": "Jetzt läuft",

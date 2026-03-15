@@ -714,7 +714,8 @@
     "noTrackRows": "Inga spårposter har ännu returnerats för den här spellistan.",
     "selectPlaylistPrompt": "Välj en spellista för att inspektera dess spår och förbereda den för migrering.",
     "settingsIncomplete": "Slutför sparandet av din Spotify‑appprofil i Inställningar innan du ansluter spellistfunktioner.",
-    "authMissing": "Anslut Spotify‑spellistfunktioner först för att ladda spellistor för migrering.",
+    "authMissing": "Anslut Spotify-spellistautentisering innan du importerar spellistor till Starchild.",
+    "profileOnlyConnection": "Den här Spotify-sessionen har bara grundläggande profilåtkomst. Anslut igen med spellistbehörighet innan du importerar spellistor.",
     "credentialsRejected": "Spotify avvisade det sparade Client ID eller Client Secret. Uppdatera appuppgifterna i Inställningar.",
     "usernameNotFound": "Spotify kunde inte hitta det användarnamnet. Kontrollera användarnamnet i Inställningar.",
     "playlistUnavailable": "Den spellistan är privat eller inte tillgänglig via appbaserad åtkomst till offentliga spellistor.",
@@ -779,7 +780,8 @@
     "spotifyCallbackLoading": "Laddar Spotify‑autentiseringscallback",
     "spotifyCallbackPreparing": "Förbereder Spotify‑autentiseringscallback...",
     "spotifyDenied": "Spotify‑auktorisering nekades. Discord är nu den enda stödja inloggningsmetoden.",
-    "spotifyOAuthRemoved": "Spotify OAuth‑inloggning har tagits bort. Använd Discord för att logga in och konfigurera Spotify‑funktioner via Inställningar istället."
+    "spotifyOAuthRemoved": "Spotify OAuth‑inloggning har tagits bort. Använd Discord för att logga in och konfigurera Spotify‑funktioner via Inställningar istället.",
+    "spotifyConnectionFailed": "Spotify-spellistanslutningen kunde inte slutföras. Försök igen."
   },
   "mobileNav": {
     "nowPlaying": "Spelas nu",

@@ -8,8 +8,18 @@ import {
   type SpotifyImportResult,
 } from "@/components/SpotifyImportDialog";
 import { useToast } from "@/contexts/ToastContext";
-import { authFetch } from "@/services/spotifyAuthClient";
+import {
+  authFetch,
+  getInMemoryAccessToken,
+  restoreSpotifySession,
+  startSpotifyLogin,
+} from "@/services/spotifyAuthClient";
 import { hapticLight, hapticSuccess } from "@/utils/haptics";
+import {
+  getSpotifyConnectedAccountLabel,
+  resolveSpotifyPlaylistAuthCapability,
+  SPOTIFY_PLAYLIST_READ_SCOPES,
+} from "@/utils/spotifyPlaylistAuth";
 import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
@@ -338,6 +348,14 @@ export default function SpotifyPage() {
   const [importResult, setImportResult] = useState<SpotifyImportResult | null>(
     null,
   );
+  const [playlistAuthPayload, setPlaylistAuthPayload] = useState<unknown>(null);
+  const [playlistAuthError, setPlaylistAuthError] = useState<string | null>(
+    null,
+  );
+  const [playlistAuthStatus, setPlaylistAuthStatus] = useState<number | null>(
+    null,
+  );
+  const [isPlaylistAuthLoading, setIsPlaylistAuthLoading] = useState(false);
 
   const canLoadPublicPlaylists = summary.state === "ready";
   const spotifyPlaylists = useMemo(
@@ -384,6 +402,19 @@ export default function SpotifyPage() {
       const source = selectedPlaylistDetail ?? selectedPlaylistFromList;
       return source ? toSpotifyImportPlaylistTarget(source) : null;
     }, [selectedPlaylistDetail, selectedPlaylistFromList]);
+  const playlistAuthCapability = useMemo(
+    () =>
+      resolveSpotifyPlaylistAuthCapability({
+        payload: playlistAuthPayload,
+        status: playlistAuthStatus,
+        errorMessage: playlistAuthError,
+      }),
+    [playlistAuthError, playlistAuthPayload, playlistAuthStatus],
+  );
+  const connectedPlaylistAccount = useMemo(
+    () => getSpotifyConnectedAccountLabel(playlistAuthCapability.summary),
+    [playlistAuthCapability.summary],
+  );
   const normalizeSpotifyError = useCallback(
     (message: string | null): string | null => {
       if (!message) return null;
@@ -454,7 +485,7 @@ export default function SpotifyPage() {
       }
 
       if (status === 401) {
-        return t("signInRequired");
+        return t("authMissing");
       }
 
       if (status === 404) {
@@ -511,6 +542,126 @@ export default function SpotifyPage() {
     },
     [],
   );
+  const loadSpotifyPlaylistAuthStatus = useCallback(async () => {
+    setIsPlaylistAuthLoading(true);
+    setPlaylistAuthError(null);
+
+    try {
+      const restoredSession = await restoreSpotifySession();
+      if (!restoredSession) {
+        setPlaylistAuthPayload(null);
+        setPlaylistAuthStatus(401);
+        return;
+      }
+
+      const accessToken = getInMemoryAccessToken();
+      if (!accessToken) {
+        setPlaylistAuthPayload(null);
+        setPlaylistAuthStatus(401);
+        return;
+      }
+
+      const response = await fetch("/api/spotify/auth/status", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as unknown;
+
+      if (!response.ok) {
+        const record = asRecord(payload);
+        throw Object.assign(
+          new Error(
+            readFirstString(record ?? {}, ["message", "error"]) ??
+              "Spotify playlist auth status failed",
+          ),
+          { status: response.status },
+        );
+      }
+
+      setPlaylistAuthPayload(payload);
+      setPlaylistAuthStatus(response.status);
+    } catch (error) {
+      setPlaylistAuthPayload(null);
+      setPlaylistAuthStatus(
+        typeof error === "object" &&
+          error !== null &&
+          typeof (error as { status?: unknown }).status === "number"
+          ? ((error as { status: number }).status ?? null)
+          : 502,
+      );
+      setPlaylistAuthError(
+        normalizeSpotifyError(
+          error instanceof Error
+            ? error.message
+            : "Spotify playlist auth status failed",
+        ) ?? t("authMissing"),
+      );
+    } finally {
+      setIsPlaylistAuthLoading(false);
+    }
+  }, [normalizeSpotifyError, t]);
+  const handleSpotifyPlaylistAuthConnect = useCallback(() => {
+    if (!canLoadPublicPlaylists) {
+      showToast(t("settingsIncomplete"), "error");
+      return;
+    }
+
+    startSpotifyLogin("/spotify");
+  }, [canLoadPublicPlaylists, showToast, t]);
+  const playlistAuthCalloutMessage = useMemo(() => {
+    if (!canLoadPublicPlaylists) {
+      return t("settingsIncomplete");
+    }
+
+    if (isPlaylistAuthLoading) {
+      return t("loadingFeatureConnection");
+    }
+
+    if (playlistAuthCapability.state === "connected") {
+      return t("connectedNotice");
+    }
+
+    if (playlistAuthCapability.state === "profile_only") {
+      return t("profileOnlyConnection");
+    }
+
+    if (playlistAuthCapability.state === "error" && playlistAuthError) {
+      return playlistAuthError;
+    }
+
+    return t("authMissing");
+  }, [
+    canLoadPublicPlaylists,
+    isPlaylistAuthLoading,
+    playlistAuthCapability.state,
+    playlistAuthError,
+    t,
+  ]);
+  const playlistPrimaryActionLabel = useMemo(() => {
+    if (playlistAuthCapability.state === "connected") {
+      return t("importToStarchild");
+    }
+
+    if (playlistAuthCapability.state === "profile_only") {
+      return t("reconnectPlaylists");
+    }
+
+    return t("connectPlaylistsButton");
+  }, [playlistAuthCapability.state, t]);
+  const playlistAuthCtaLabel = useMemo(() => {
+    if (playlistAuthCapability.state === "missing") {
+      return t("connectPlaylistsButton");
+    }
+
+    return t("reconnectPlaylists");
+  }, [playlistAuthCapability.state, t]);
+  const canImportSpotifyPlaylists =
+    canLoadPublicPlaylists && playlistAuthCapability.state === "connected";
 
   const loadSpotifyPlaylists = useCallback(async () => {
     setIsPlaylistsLoading(true);
@@ -613,6 +764,12 @@ export default function SpotifyPage() {
     });
   const openImportDialog = useCallback(
     (playlist: SpotifyImportPlaylistTarget) => {
+      if (!canImportSpotifyPlaylists) {
+        showToast(playlistAuthCalloutMessage, "error");
+        handleSpotifyPlaylistAuthConnect();
+        return;
+      }
+
       hapticLight();
       setImportPlaylist(playlist);
       setImportError(null);
@@ -621,7 +778,13 @@ export default function SpotifyPage() {
       importSpotifyPlaylistMutation.reset();
       setIsImportDialogOpen(true);
     },
-    [importSpotifyPlaylistMutation],
+    [
+      canImportSpotifyPlaylists,
+      handleSpotifyPlaylistAuthConnect,
+      importSpotifyPlaylistMutation,
+      playlistAuthCalloutMessage,
+      showToast,
+    ],
   );
   const closeImportDialog = useCallback(() => {
     setIsImportDialogOpen(false);
@@ -633,15 +796,30 @@ export default function SpotifyPage() {
   }, [importSpotifyPlaylistMutation]);
   const handleSpotifyPlaylistImport = useCallback(
     (input: SpotifyImportRequest) => {
+      if (!canImportSpotifyPlaylists) {
+        showToast(playlistAuthCalloutMessage, "error");
+        handleSpotifyPlaylistAuthConnect();
+        return;
+      }
+
       setImportError(null);
       setImportDiagnostics(null);
       importSpotifyPlaylistMutation.mutate(input);
     },
-    [importSpotifyPlaylistMutation],
+    [
+      canImportSpotifyPlaylists,
+      handleSpotifyPlaylistAuthConnect,
+      importSpotifyPlaylistMutation,
+      playlistAuthCalloutMessage,
+      showToast,
+    ],
   );
 
   useEffect(() => {
     if (!canLoadPublicPlaylists) {
+      setPlaylistAuthPayload(null);
+      setPlaylistAuthError(null);
+      setPlaylistAuthStatus(null);
       setPlaylistsPayload(null);
       setPlaylistsError(null);
       setSelectedPlaylistId(null);
@@ -650,8 +828,14 @@ export default function SpotifyPage() {
       return;
     }
 
+    void loadSpotifyPlaylistAuthStatus();
     void loadSpotifyPlaylists();
-  }, [canLoadPublicPlaylists, loadSpotifyPlaylists, serverSettings.updatedAt]);
+  }, [
+    canLoadPublicPlaylists,
+    loadSpotifyPlaylistAuthStatus,
+    loadSpotifyPlaylists,
+    serverSettings.updatedAt,
+  ]);
 
   useEffect(() => {
     if (!spotifyPlaylists.length) return;
@@ -937,6 +1121,61 @@ export default function SpotifyPage() {
             </button>
           </div>
 
+          {canLoadPublicPlaylists ? (
+            <div className="mt-5 rounded-[1.5rem] border border-[rgba(29,185,84,0.2)] bg-[linear-gradient(155deg,rgba(29,185,84,0.12),rgba(15,23,42,0.78))] p-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                    {t("playlistAuth")}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-(--color-text)">
+                    {playlistAuthCalloutMessage}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-(--color-subtext)">
+                    {t("playlistAuthDescription")}
+                  </p>
+                  {connectedPlaylistAccount ? (
+                    <p className="mt-3 text-xs text-(--color-subtext)">
+                      {t("connectedAccount")}:{" "}
+                      <span className="font-medium text-(--color-text)">
+                        {connectedPlaylistAccount}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSpotifyPlaylistAuthConnect}
+                  disabled={isPlaylistAuthLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPlaylistAuthLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRightLeft className="h-4 w-4" />
+                  )}
+                  {playlistAuthCtaLabel}
+                </button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-(--color-subtext) uppercase">
+                  {t("requiredScopes")}
+                </span>
+                {SPOTIFY_PLAYLIST_READ_SCOPES.map((scope) => (
+                  <span
+                    key={scope}
+                    className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs text-(--color-text)"
+                  >
+                    {scope}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-(--color-subtext)">
+                {t("publicAccessNotice")}
+              </p>
+            </div>
+          ) : null}
+
           {!canLoadPublicPlaylists ? (
             <div className="mt-6 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-5 text-sm leading-6 text-amber-200">
               {t("settingsIncomplete")}
@@ -1024,14 +1263,19 @@ export default function SpotifyPage() {
                           type="button"
                           onClick={() => {
                             setSelectedPlaylistId(playlist.id);
-                            openImportDialog(
-                              toSpotifyImportPlaylistTarget(playlist),
-                            );
+                            if (canImportSpotifyPlaylists) {
+                              openImportDialog(
+                                toSpotifyImportPlaylistTarget(playlist),
+                              );
+                              return;
+                            }
+
+                            handleSpotifyPlaylistAuthConnect();
                           }}
                           className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1DB954] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_12px_30px_rgba(29,185,84,0.22)] transition hover:brightness-110"
                         >
                           <ArrowRightLeft className="h-3.5 w-3.5" />
-                          {t("importToStarchild")}
+                          {playlistPrimaryActionLabel}
                         </button>
                       </div>
                     </div>
@@ -1077,13 +1321,18 @@ export default function SpotifyPage() {
                             {selectedImportTarget ? (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  openImportDialog(selectedImportTarget)
-                                }
+                                onClick={() => {
+                                  if (canImportSpotifyPlaylists) {
+                                    openImportDialog(selectedImportTarget);
+                                    return;
+                                  }
+
+                                  handleSpotifyPlaylistAuthConnect();
+                                }}
                                 className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(29,185,84,0.22)] transition hover:brightness-110"
                               >
                                 <ArrowRightLeft className="h-4 w-4" />
-                                {t("importToStarchild")}
+                                {playlistPrimaryActionLabel}
                               </button>
                             ) : null}
                             {(selectedPlaylistDetail?.externalUrl ??

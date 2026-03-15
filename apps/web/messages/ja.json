@@ -714,7 +714,8 @@
     "noTrackRows": "このプレイリストには、まだトラック行が返されていません。",
     "selectPlaylistPrompt": "トラックを確認し、移行準備をするプレイリストを選択してください。",
     "settingsIncomplete": "プレイリスト機能を接続する前に、設定で Spotify アプリプロファイルの保存を完了してください。",
-    "authMissing": "移行用のプレイリストを読み込むには、先に Spotify プレイリスト機能を接続してください。",
+    "authMissing": "Starchild にプレイリストを取り込む前に、Spotify プレイリスト認証を接続してください。",
+    "profileOnlyConnection": "この Spotify セッションは基本的なプロフィール権限しか持っていません。プレイリストを取り込む前に、プレイリスト同意つきで再接続してください。",
     "credentialsRejected": "保存されている Client ID または Client Secret が Spotify に拒否されました。設定でアプリ認証情報を更新してください。",
     "usernameNotFound": "そのユーザー名は Spotify で見つかりませんでした。設定のユーザー名を確認してください。",
     "playlistUnavailable": "このプレイリストは非公開か、アプリ経由の公開プレイリストアクセスでは利用できません。",
@@ -779,7 +780,8 @@
     "spotifyCallbackLoading": "Spotify 認証コールバックを読み込み中",
     "spotifyCallbackPreparing": "Spotify 認証コールバックを準備中...",
     "spotifyDenied": "Spotify 認可が拒否されました。現在、サインイン方法としてサポートされているのは Discord のみです。",
-    "spotifyOAuthRemoved": "Spotify OAuth サインインは廃止されました。サインインには Discord を使用し、Spotify 機能の設定は「設定」から行ってください。"
+    "spotifyOAuthRemoved": "Spotify OAuth サインインは廃止されました。サインインには Discord を使用し、Spotify 機能の設定は「設定」から行ってください。",
+    "spotifyConnectionFailed": "Spotify プレイリスト接続を完了できませんでした。もう一度お試しください。"
   },
   "mobileNav": {
     "nowPlaying": "再生中",
