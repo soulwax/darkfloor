@@ -2,9 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Package Manager
+## Prerequisites
 
-**This project uses pnpm** (version 10.30.0). Do NOT use npm commands - they will fail or create conflicts.
+- Node.js 20+
+- pnpm 10+ (this project uses pnpm 10.30.0 — do NOT use npm)
+- PostgreSQL (local or hosted; `DATABASE_URL` required at runtime)
 
 ## Commands
 
@@ -181,6 +183,8 @@ Import via `@starchild/*` alias — never import from `apps/web` inside packages
 **Playback changes:** Edit `packages/player-react/` and/or `packages/player-core/`.
 
 **Linting:** ESLint 9 flat config. `drizzle/enforce-delete-with-where` and `drizzle/enforce-update-with-where` are errors — always include `.where()` on destructive Drizzle queries.
+
+**TypeScript:** `strict: true`. Avoid `any`; use `unknown` for untyped data. Use Server Components by default; only add `"use client"` when interactivity is needed.
 
 **Spotify OAuth cross-origin:** When `NEXT_PUBLIC_AUTH_API_ORIGIN` differs from the frontend origin, initiate browser login on the canonical auth API origin (`${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...`) so PKCE/session cookies are issued on the callback origin.
 
