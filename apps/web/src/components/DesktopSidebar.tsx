@@ -13,6 +13,7 @@ import emilyLogo from "../../public/emily-the-strange.png";
 import {
   ChevronLeft,
   ChevronRight,
+  Disc3,
   Home,
   Library,
   ListMusic,
@@ -221,6 +222,13 @@ export function DesktopSidebar() {
         icon: <ListMusic className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/playlists",
+      },
+      {
+        href: "/spotify",
+        label: tc("spotify"),
+        icon: <Disc3 className="h-5 w-5" />,
+        requiresAuth: true,
+        callbackUrl: "/spotify",
       },
     );
 

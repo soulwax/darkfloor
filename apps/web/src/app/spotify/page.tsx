@@ -1,15 +1,27 @@
 "use client";
 
 import {
+  SpotifyImportDialog,
+  type SpotifyImportDiagnostics,
+  type SpotifyImportPlaylistTarget,
+  type SpotifyImportRequest,
+  type SpotifyImportResult,
+} from "@/components/SpotifyImportDialog";
+import { useToast } from "@/contexts/ToastContext";
+import { authFetch } from "@/services/spotifyAuthClient";
+import { hapticLight, hapticSuccess } from "@/utils/haptics";
+import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
-  hasConfiguredSpotifyFeatureSettings,
-  maskSpotifyClientSecret,
-  spotifyFeatureSettingsStorage,
+  maskSpotifyClientId,
 } from "@/utils/spotifyFeatureSettings";
-import { api } from "@starchild/api-client/trpc/react";
+import {
+  api,
+  ImportSpotifyPlaylistError,
+} from "@starchild/api-client/trpc/react";
 import { springPresets } from "@/utils/spring-animations";
 import {
+  ArrowRightLeft,
   CircleAlert,
   CircleCheck,
   Disc3,
@@ -62,7 +74,7 @@ function getStatusClasses(
     case "incomplete":
       return "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] text-amber-300";
     default:
-      return "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]";
+      return "border-(--color-border) bg-(--color-surface-hover) text-(--color-subtext)";
   }
 }
 
@@ -118,7 +130,7 @@ function extractArrayCandidates(
   keys: string[],
 ): unknown[] | null {
   if (Array.isArray(payload)) {
-    return payload;
+    return payload as unknown[];
   }
 
   const record = asRecord(payload);
@@ -127,7 +139,7 @@ function extractArrayCandidates(
   for (const key of keys) {
     const directValue = record[key];
     if (Array.isArray(directValue)) {
-      return directValue;
+      return directValue as unknown[];
     }
 
     const nestedRecord = asRecord(directValue);
@@ -136,7 +148,7 @@ function extractArrayCandidates(
     for (const nestedKey of ["items", "data", "playlists", "tracks"]) {
       const nestedValue = nestedRecord[nestedKey];
       if (Array.isArray(nestedValue)) {
-        return nestedValue;
+        return nestedValue as unknown[];
       }
     }
   }
@@ -229,6 +241,19 @@ function extractSpotifyPlaylistTracks(payload: unknown): SpotifyTrackSummary[] {
     .filter((value): value is SpotifyTrackSummary => value !== null);
 }
 
+function toSpotifyImportPlaylistTarget(
+  playlist: SpotifyPlaylistSummary,
+): SpotifyImportPlaylistTarget {
+  return {
+    id: playlist.id,
+    name: playlist.name,
+    description: playlist.description,
+    ownerName: playlist.ownerName,
+    trackCount: playlist.trackCount,
+    imageUrl: playlist.imageUrl,
+  };
+}
+
 function formatDuration(durationMs: number | null): string {
   if (!durationMs || durationMs <= 0) return "";
 
@@ -239,19 +264,47 @@ function formatDuration(durationMs: number | null): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function PlaylistCover(props: {
+  imageUrl: string | null;
+  alt: string;
+  className: string;
+  iconClassName?: string;
+}) {
+  const { alt, className, iconClassName = "h-5 w-5", imageUrl } = props;
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const resolvedImageUrl =
+    imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
+
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center overflow-hidden bg-(--color-muted)/20 ${className}`}
+    >
+      {resolvedImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolvedImageUrl}
+          alt={alt}
+          className="h-full w-full object-cover"
+          onError={() => setFailedImageUrl(resolvedImageUrl)}
+        />
+      ) : (
+        <ListMusic className={`${iconClassName} text-(--color-subtext)`} />
+      )}
+    </div>
+  );
+}
+
 export default function SpotifyPage() {
   const t = useTranslations("spotify");
   const ts = useTranslations("settingsSpotify");
   const tc = useTranslations("common");
   const th = useTranslations("home");
   const { data: session, status } = useSession();
+  const { showToast } = useToast();
+  const utils = api.useUtils();
   const { data: preferences, isLoading } =
     api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
 
-  const legacySettings = useMemo(
-    () => spotifyFeatureSettingsStorage.getAll(),
-    [],
-  );
   const serverSettings = useMemo(
     () => extractSpotifyFeatureSettingsFromPreferences(preferences),
     [preferences],
@@ -262,15 +315,6 @@ export default function SpotifyPage() {
         settings: serverSettings,
       }),
     [serverSettings],
-  );
-  const hasServerSettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(serverSettings),
-    [serverSettings],
-  );
-  const hasLegacyLocalOnly = useMemo(
-    () =>
-      !hasServerSettings && hasConfiguredSpotifyFeatureSettings(legacySettings),
-    [hasServerSettings, legacySettings],
   );
   const [playlistsPayload, setPlaylistsPayload] = useState<unknown>(null);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
@@ -285,6 +329,15 @@ export default function SpotifyPage() {
   >(null);
   const [isSelectedPlaylistLoading, setIsSelectedPlaylistLoading] =
     useState(false);
+  const [importPlaylist, setImportPlaylist] =
+    useState<SpotifyImportPlaylistTarget | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importDiagnostics, setImportDiagnostics] =
+    useState<SpotifyImportDiagnostics | null>(null);
+  const [importResult, setImportResult] = useState<SpotifyImportResult | null>(
+    null,
+  );
 
   const canLoadPublicPlaylists = summary.state === "ready";
   const spotifyPlaylists = useMemo(
@@ -304,10 +357,33 @@ export default function SpotifyPage() {
     () => extractSpotifyPlaylistSummary(selectedPlaylistPayload),
     [selectedPlaylistPayload],
   );
+  const selectedPlaylistImageUrl =
+    selectedPlaylistDetail?.imageUrl ??
+    selectedPlaylistFromList?.imageUrl ??
+    null;
   const selectedPlaylistTracks = useMemo(
     () => extractSpotifyPlaylistTracks(selectedPlaylistPayload),
     [selectedPlaylistPayload],
   );
+  const selectedPlaylistTrackCount =
+    selectedPlaylistDetail?.trackCount ??
+    selectedPlaylistFromList?.trackCount ??
+    (selectedPlaylistTracks.length > 0 ? selectedPlaylistTracks.length : null);
+  const selectedPlaylistOwner =
+    selectedPlaylistDetail?.ownerName ??
+    selectedPlaylistFromList?.ownerName ??
+    "Spotify";
+  const connectionStateLabel =
+    summary.state === "ready"
+      ? tc("ready")
+      : summary.state === "incomplete"
+        ? tc("incomplete")
+        : tc("inactive");
+  const selectedImportTarget =
+    useMemo<SpotifyImportPlaylistTarget | null>(() => {
+      const source = selectedPlaylistDetail ?? selectedPlaylistFromList;
+      return source ? toSpotifyImportPlaylistTarget(source) : null;
+    }, [selectedPlaylistDetail, selectedPlaylistFromList]);
   const normalizeSpotifyError = useCallback(
     (message: string | null): string | null => {
       if (!message) return null;
@@ -337,16 +413,104 @@ export default function SpotifyPage() {
     },
     [t],
   );
+  const normalizeSpotifyImportError = useCallback(
+    (error: unknown): string => {
+      const message = error instanceof Error ? error.message : null;
+      const status =
+        error instanceof ImportSpotifyPlaylistError ? error.status : undefined;
 
-  useEffect(() => {
-    if (!session || !hasServerSettings) {
-      return;
-    }
+      if (message) {
+        const normalized = message.toLowerCase();
 
-    spotifyFeatureSettingsStorage.save(serverSettings, {
-      preserveUpdatedAt: true,
-    });
-  }, [hasServerSettings, serverSettings, session]);
+        if (
+          normalized.includes("invalid playlist") ||
+          normalized.includes("playlist id") ||
+          normalized.includes("playlist url") ||
+          normalized.includes("200 tracks")
+        ) {
+          return t("importInvalidPlaylist");
+        }
+
+        if (
+          normalized.includes("no matched tracks") ||
+          normalized.includes("no tracks matched") ||
+          normalized.includes("could not match")
+        ) {
+          return t("importNoMatches");
+        }
+      }
+
+      const sharedSpotifyMessage = normalizeSpotifyError(message);
+      if (sharedSpotifyMessage && sharedSpotifyMessage !== message) {
+        return sharedSpotifyMessage;
+      }
+
+      if (status === 405 || status === 501) {
+        return t("importUnavailable");
+      }
+
+      if (status === 400) {
+        return t("importInvalidPlaylist");
+      }
+
+      if (status === 401) {
+        return t("signInRequired");
+      }
+
+      if (status === 404) {
+        return t("importPlaylistNotFound");
+      }
+
+      if (status === 412) {
+        return t("importReconnectSpotify");
+      }
+
+      if (status === 403) {
+        return t("playlistUnavailable");
+      }
+
+      if (status === 429) {
+        return t("rateLimited");
+      }
+
+      if (status === 502) {
+        return t("importUpstreamFailure");
+      }
+
+      return sharedSpotifyMessage ?? t("importFailedGeneric");
+    },
+    [normalizeSpotifyError, t],
+  );
+  const extractSpotifyImportDiagnostics = useCallback(
+    (
+      error: unknown,
+      playlistId: string | null,
+    ): SpotifyImportDiagnostics | null => {
+      const status =
+        error instanceof ImportSpotifyPlaylistError ? error.status : null;
+      const payloadRecord =
+        error instanceof ImportSpotifyPlaylistError
+          ? asRecord(error.payload)
+          : null;
+      const nestedErrorRecord = asRecord(payloadRecord?.error);
+      const errorCode =
+        readFirstString(payloadRecord ?? {}, ["code", "errorCode"]) ??
+        readFirstString(nestedErrorRecord ?? {}, ["code", "errorCode"]);
+      const backendMessage = error instanceof Error ? error.message : null;
+
+      if (!status && !errorCode && !backendMessage && !playlistId) {
+        return null;
+      }
+
+      return {
+        status,
+        errorCode,
+        backendMessage,
+        playlistId,
+      };
+    },
+    [],
+  );
 
   const loadSpotifyPlaylists = useCallback(async () => {
     setIsPlaylistsLoading(true);
@@ -386,6 +550,19 @@ export default function SpotifyPage() {
             cache: "no-store",
           },
         );
+
+        if (response.status === 404) {
+          setSelectedPlaylistPayload(null);
+          let message: string;
+          try {
+            message = t("importPlaylistNotFound");
+          } catch {
+            message = "Playlist could not be found.";
+          }
+          setSelectedPlaylistError(message);
+          return;
+        }
+
         const payload = (await response.json()) as SpotifyPlaylistRouteResponse;
         if (!response.ok || !payload.ok) {
           throw new Error(payload.error ?? "Spotify playlist failed");
@@ -403,7 +580,64 @@ export default function SpotifyPage() {
         setIsSelectedPlaylistLoading(false);
       }
     },
-    [normalizeSpotifyError],
+    [normalizeSpotifyError, t],
+  );
+  const importSpotifyPlaylistMutation =
+    api.music.importSpotifyPlaylist.useMutation({
+      fetchImpl: authFetch,
+      onSuccess: async (result) => {
+        setImportResult(result);
+        setImportDiagnostics(null);
+        await utils.music.getPlaylists.invalidate();
+        showToast(
+          t("importCompletedToast", {
+            importedCount: result.importReport.matchedCount,
+            totalCount: result.importReport.totalTracks,
+            name: result.playlist.name,
+          }),
+          "success",
+        );
+        hapticSuccess();
+      },
+      onError: (error, variables) => {
+        const message = normalizeSpotifyImportError(error);
+        const diagnostics = extractSpotifyImportDiagnostics(
+          error,
+          variables?.spotifyPlaylistId ?? null,
+        );
+        setImportDiagnostics(diagnostics);
+        setImportError(message);
+        console.error("Spotify import failed", diagnostics ?? { message });
+        showToast(message, "error");
+      },
+    });
+  const openImportDialog = useCallback(
+    (playlist: SpotifyImportPlaylistTarget) => {
+      hapticLight();
+      setImportPlaylist(playlist);
+      setImportError(null);
+      setImportDiagnostics(null);
+      setImportResult(null);
+      importSpotifyPlaylistMutation.reset();
+      setIsImportDialogOpen(true);
+    },
+    [importSpotifyPlaylistMutation],
+  );
+  const closeImportDialog = useCallback(() => {
+    setIsImportDialogOpen(false);
+    setImportPlaylist(null);
+    setImportError(null);
+    setImportDiagnostics(null);
+    setImportResult(null);
+    importSpotifyPlaylistMutation.reset();
+  }, [importSpotifyPlaylistMutation]);
+  const handleSpotifyPlaylistImport = useCallback(
+    (input: SpotifyImportRequest) => {
+      setImportError(null);
+      setImportDiagnostics(null);
+      importSpotifyPlaylistMutation.mutate(input);
+    },
+    [importSpotifyPlaylistMutation],
   );
 
   useEffect(() => {
@@ -444,8 +678,8 @@ export default function SpotifyPage() {
   if (status === "loading" || (session && isLoading)) {
     return (
       <div className="container mx-auto flex min-h-screen flex-col px-4 py-8 md:px-6 md:py-10">
-        <div className="mb-8 h-12 w-48 animate-pulse rounded bg-[var(--color-muted)]/20" />
-        <div className="h-80 animate-pulse rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/60" />
+        <div className="mb-8 h-12 w-48 animate-pulse rounded bg-(--color-muted)/20" />
+        <div className="h-80 animate-pulse rounded-3xl border border-(--color-border) bg-(--color-surface)/60" />
       </div>
     );
   }
@@ -460,15 +694,15 @@ export default function SpotifyPage() {
           className="text-center"
         >
           <Disc3 className="mx-auto mb-4 h-16 w-16 text-[#1DB954]" />
-          <h1 className="mb-2 text-2xl font-bold text-[var(--color-text)]">
+          <h1 className="mb-2 text-2xl font-bold text-(--color-text)">
             {t("signInRequired")}
           </h1>
-          <p className="mb-6 max-w-md text-[var(--color-subtext)]">
+          <p className="mb-6 max-w-md text-(--color-subtext)">
             {t("signInPrompt")}
           </p>
           <Link
             href="/signin?callbackUrl=%2Fspotify"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-6 py-3 font-semibold text-[var(--color-on-accent)] transition hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl bg-(--color-accent) px-6 py-3 font-semibold text-(--color-on-accent) transition hover:opacity-90"
           >
             {tc("signIn")}
           </Link>
@@ -478,70 +712,106 @@ export default function SpotifyPage() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-screen flex-col gap-6 px-4 py-8 md:px-6 md:py-10">
+    <div className="container mx-auto flex min-h-screen w-full max-w-420 flex-col gap-4 px-3 py-5 md:px-6 md:py-8">
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={springPresets.gentle}
-        className="rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+        className="relative overflow-hidden rounded-3xl border border-(--color-border) bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
       >
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-2xl">
-            <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-xs font-semibold tracking-[0.2em] text-[#1DB954] uppercase">
-              {t("migrationReady")}
-            </span>
-            <h1 className="text-3xl font-bold text-[var(--color-text)] md:text-4xl">
-              {t("browseForTranslation")}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-subtext)] md:text-base">
-              {t("browseDescription")}
-            </p>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.22),transparent_58%)]" />
+        <div className="pointer-events-none absolute right-0 bottom-0 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(29,185,84,0.14),transparent_72%)]" />
+        <div className="relative">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-xs font-semibold tracking-[0.2em] text-[#1DB954] uppercase">
+                {t("migrationReady")}
+              </span>
+              <h1 className="text-3xl font-bold text-(--color-text) md:text-4xl">
+                {t("browseForTranslation")}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-(--color-subtext) md:text-base">
+                {t("browseDescription")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-2 rounded-xl border border-(--color-border) bg-(--color-surface)/85 px-4 py-2 text-sm font-medium text-(--color-text) transition hover:bg-(--color-surface-hover)"
+              >
+                <KeyRound className="h-4 w-4" />
+                {t("openSettingsLink")}
+              </Link>
+              <a
+                href="https://developer.spotify.com/documentation/web-api/concepts/apps"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-4 py-2 text-sm font-medium text-[#1DB954] transition hover:bg-[rgba(29,185,84,0.2)]"
+              >
+                {th("howTo")}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/settings"
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/85 px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]"
-            >
-              <KeyRound className="h-4 w-4" />
-              {t("openSettingsLink")}
-            </Link>
-            <a
-              href="https://developer.spotify.com/documentation/web-api/concepts/apps"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-4 py-2 text-sm font-medium text-[#1DB954] transition hover:bg-[rgba(29,185,84,0.2)]"
-            >
-              {th("howTo")}
-              <ExternalLink className="h-4 w-4" />
-            </a>
+
+          <div className="mt-4 grid gap-2.5 md:grid-cols-3">
+            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
+                {tc("playlists")}
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-(--color-text)">
+                {spotifyPlaylists.length}
+              </p>
+              <p className="mt-1 text-xs text-(--color-subtext)">
+                {t("playlistMigration")}
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
+                {t("playlistDetail")}
+              </p>
+              <p className="mt-2 truncate text-base font-semibold text-(--color-text)">
+                {selectedImportTarget?.name ?? t("spotifyPlaylist")}
+              </p>
+              <p className="mt-1 text-xs text-(--color-subtext)">
+                {typeof selectedPlaylistTrackCount === "number"
+                  ? tc("tracks", { count: selectedPlaylistTrackCount })
+                  : t("trackCountUnknown")}
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
+                {t("savedAppProfile")}
+              </p>
+              <p className="mt-2 text-base font-semibold text-(--color-text)">
+                {connectionStateLabel}
+              </p>
+              <p className="mt-1 text-xs text-(--color-subtext)">
+                {summary.description}
+              </p>
+            </div>
           </div>
         </div>
       </motion.section>
 
-      {hasLegacyLocalOnly ? (
-        <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 text-sm text-amber-200">
-          {t("localFallbackNotice")}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[360px,minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr)]">
         <motion.aside
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springPresets.gentle, delay: 0.04 }}
-          className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-6"
+          className="rounded-3xl border border-(--color-border) bg-(--color-surface)/80 p-4"
         >
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-[var(--color-subtext)]">
+              <p className="text-xs font-medium text-(--color-subtext)">
                 {t("savedAppProfile")}
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-[var(--color-text)]">
+              <h2 className="mt-1 text-lg font-semibold text-(--color-text)">
                 {t("featureProfileLabel")}
               </h2>
             </div>
             <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.16em] uppercase ${getStatusClasses(summary.state)}`}
+              className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase ${getStatusClasses(summary.state)}`}
             >
               {summary.state === "ready"
                 ? tc("ready")
@@ -551,21 +821,26 @@ export default function SpotifyPage() {
             </span>
           </div>
 
-          <p className="text-sm leading-6 text-[var(--color-subtext)]">
-            {ts("profileDescription")}
+          <p className="text-xs leading-5 text-(--color-subtext)">
+            {t("savedProfileSummary")}
           </p>
 
-          <p className="mt-5 text-xs font-semibold tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-            {t("readinessChecklist")}
-          </p>
-
-          <div className="mt-3 space-y-3">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {summary.checks.map((check) => (
               <div
                 key={check.id}
-                className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-4 py-3"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                  check.ready
+                    ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.12)] text-[#1DB954]"
+                    : "border-(--color-border) bg-(--color-surface-hover)/70 text-(--color-subtext)"
+                }`}
               >
-                <span className="text-sm text-[var(--color-text)]">
+                {check.ready ? (
+                  <CircleCheck className="h-3.5 w-3.5" />
+                ) : (
+                  <CircleAlert className="h-3.5 w-3.5" />
+                )}
+                <span>
                   {check.id === "enabled"
                     ? ts("checkEnabled")
                     : check.id === "clientId"
@@ -574,55 +849,54 @@ export default function SpotifyPage() {
                         ? ts("checkClientSecret")
                         : ts("checkUsername")}
                 </span>
-                {check.ready ? (
-                  <CircleCheck className="h-4 w-4 text-[#1DB954]" />
-                ) : (
-                  <CircleAlert className="h-4 w-4 text-amber-300" />
-                )}
               </div>
             ))}
           </div>
 
-          <div className="mt-6 space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/60 p-4">
-            <div className="flex items-start gap-3">
-              <User2 className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
-              <div>
-                <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  {ts("username")}
-                </p>
-                <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                  {serverSettings.username || t("notSaved")}
-                </p>
+          <div className="mt-3 grid gap-2">
+            <div className="rounded-2xl border border-(--color-border) bg-(--color-surface-hover)/60 px-3 py-2.5">
+              <div className="flex items-start gap-2.5">
+                <User2 className="mt-0.5 h-4 w-4 text-(--color-subtext)" />
+                <div className="min-w-0">
+                  <p className="text-[11px] tracking-[0.16em] text-(--color-subtext) uppercase">
+                    {ts("username")}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-medium text-(--color-text)">
+                    {serverSettings.username || t("notSaved")}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex items-start gap-3">
-              <KeyRound className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
-              <div>
-                <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  {ts("clientId")}
-                </p>
-                <p className="mt-1 text-sm font-medium break-all text-[var(--color-text)]">
-                  {serverSettings.clientId || t("notSaved")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <KeyRound className="mt-0.5 h-4 w-4 text-[var(--color-subtext)]" />
-              <div>
-                <p className="text-xs tracking-[0.16em] text-[var(--color-subtext)] uppercase">
-                  {ts("clientSecret")}
-                </p>
-                <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                  {serverSettings.clientSecret.trim().length > 0
-                    ? maskSpotifyClientSecret(serverSettings.clientSecret)
-                    : t("notSaved")}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="mt-6 rounded-2xl border border-[rgba(29,185,84,0.24)] bg-[rgba(29,185,84,0.1)] p-4 text-sm leading-6 text-[var(--color-subtext)]">
-            {t("publicAccessNotice")}
+            <div className="rounded-2xl border border-(--color-border) bg-(--color-surface-hover)/60 px-3 py-2.5">
+              <div className="flex items-start gap-2.5">
+                <KeyRound className="mt-0.5 h-4 w-4 text-(--color-subtext)" />
+                <div className="min-w-0">
+                  <p className="text-[11px] tracking-[0.16em] text-(--color-subtext) uppercase">
+                    {ts("clientIdPreview")}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-sm text-(--color-text)">
+                    {maskSpotifyClientId(serverSettings.clientId)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-(--color-border) bg-(--color-surface-hover)/60 px-3 py-2.5">
+              <div className="flex items-start gap-2.5">
+                <KeyRound className="mt-0.5 h-4 w-4 text-(--color-subtext)" />
+                <div className="min-w-0">
+                  <p className="text-[11px] tracking-[0.16em] text-(--color-subtext) uppercase">
+                    {ts("clientSecret")}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-medium text-(--color-text)">
+                    {serverSettings.clientSecretConfigured
+                      ? ts("checkClientSecret")
+                      : t("notSaved")}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.aside>
 
@@ -630,21 +904,21 @@ export default function SpotifyPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springPresets.gentle, delay: 0.08 }}
-          className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-6"
+          className="min-w-0 rounded-3xl border border-(--color-border) bg-(--color-surface)/80 p-5"
         >
-          <div className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 border-b border-(--color-border) pb-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-medium text-[var(--color-subtext)]">
+              <p className="text-sm font-medium text-(--color-subtext)">
                 {t("playlistMigration")}
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-[var(--color-text)]">
+              <h2 className="mt-1 text-xl font-semibold text-(--color-text)">
                 {serverSettings.username
                   ? t("playlistsForUsername", {
                       username: serverSettings.username,
                     })
                   : t("browseForTranslation")}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-subtext)]">
+              <p className="mt-2 text-sm leading-6 text-(--color-subtext)">
                 {t("browseDescription")}
               </p>
             </div>
@@ -652,7 +926,7 @@ export default function SpotifyPage() {
               type="button"
               onClick={() => void loadSpotifyPlaylists()}
               disabled={!canLoadPublicPlaylists || isPlaylistsLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]/80 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-(--color-border) bg-(--color-surface-hover) px-3.5 py-2 text-sm font-medium text-(--color-text) transition hover:bg-(--color-surface-hover)/80 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPlaylistsLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -672,136 +946,198 @@ export default function SpotifyPage() {
               {playlistsError}
             </div>
           ) : isPlaylistsLoading && spotifyPlaylists.length === 0 ? (
-            <div className="mt-6 flex min-h-[240px] items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/50">
-              <div className="flex items-center gap-3 text-[var(--color-subtext)]">
+            <div className="mt-6 flex min-h-[240px] items-center justify-center rounded-2xl border border-(--color-border) bg-(--color-surface-hover)/50">
+              <div className="flex items-center gap-3 text-(--color-subtext)">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 {t("loadingPlaylists")}
               </div>
             </div>
           ) : spotifyPlaylists.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/50 p-5 text-sm leading-6 text-[var(--color-subtext)]">
+            <div className="mt-6 rounded-2xl border border-(--color-border) bg-(--color-surface-hover)/50 p-5 text-sm leading-6 text-(--color-subtext)">
               {t("noPlaylistsReturned")}
             </div>
           ) : (
-            <div className="mt-6 grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
-              <div className="space-y-3">
+            <div className="mt-5 grid gap-4 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr)]">
+              <div className="space-y-2.5">
                 {spotifyPlaylists.map((playlist) => {
                   const isSelected = playlist.id === selectedPlaylistId;
                   return (
-                    <button
+                    <div
                       key={playlist.id}
-                      type="button"
-                      onClick={() => setSelectedPlaylistId(playlist.id)}
-                      className={`w-full rounded-2xl border p-4 text-left transition ${
+                      className={`group relative w-full overflow-hidden rounded-[1.35rem] border p-3.5 text-left transition duration-300 ${
                         isSelected
-                          ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.12)]"
-                          : "border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 hover:bg-[var(--color-surface-hover)]"
+                          ? "translate-y-[-2px] border-[rgba(29,185,84,0.35)] bg-[linear-gradient(145deg,rgba(29,185,84,0.18),rgba(15,23,42,0.84))] shadow-[0_24px_64px_rgba(0,0,0,0.24)]"
+                          : "border-(--color-border) bg-(--color-surface-hover)/55 hover:-translate-y-0.5 hover:border-white/10 hover:bg-(--color-surface-hover)/90 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)]"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]/20">
-                          {playlist.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={playlist.imageUrl}
-                              alt={playlist.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <ListMusic className="h-5 w-5 text-[var(--color-subtext)]" />
-                          )}
+                      {playlist.imageUrl ? (
+                        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-20">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={playlist.imageUrl}
+                            alt=""
+                            className="h-full w-full scale-125 object-cover blur-3xl"
+                          />
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[var(--color-text)]">
-                            {playlist.name}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--color-subtext)]">
-                            {t("byOwner", {
-                              owner: playlist.ownerName ?? "Spotify",
-                            })}
-                          </p>
-                          <p className="mt-2 text-xs text-[var(--color-subtext)]">
-                            {typeof playlist.trackCount === "number"
-                              ? tc("tracks", { count: playlist.trackCount })
-                              : t("trackCountUnknown")}
-                          </p>
+                      ) : null}
+                      <div
+                        className={`absolute top-4 right-4 h-2.5 w-2.5 rounded-full ${
+                          isSelected
+                            ? "bg-[#1DB954] shadow-[0_0_0_6px_rgba(29,185,84,0.16)]"
+                            : "bg-white/15"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlaylistId(playlist.id)}
+                        className="relative w-full text-left"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <PlaylistCover
+                            imageUrl={playlist.imageUrl}
+                            alt={playlist.name}
+                            className="h-14 w-14 rounded-[1.1rem] shadow-[0_10px_28px_rgba(0,0,0,0.2)]"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-(--color-text)">
+                              {playlist.name}
+                            </p>
+                            <p className="mt-1 truncate text-[11px] text-(--color-subtext)">
+                              {t("byOwner", {
+                                owner: playlist.ownerName ?? "Spotify",
+                              })}
+                              {" • "}
+                              {typeof playlist.trackCount === "number"
+                                ? tc("tracks", { count: playlist.trackCount })
+                                : t("trackCountUnknown")}
+                            </p>
+                            {playlist.description ? (
+                              <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-(--color-subtext)/90">
+                                {playlist.description}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
+                      </button>
+                      <div className="relative mt-3 border-t border-(--color-border)/80 pt-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPlaylistId(playlist.id);
+                            openImportDialog(
+                              toSpotifyImportPlaylistTarget(playlist),
+                            );
+                          }}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1DB954] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_12px_30px_rgba(29,185,84,0.22)] transition hover:brightness-110"
+                        >
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                          {t("importToStarchild")}
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
 
-              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/45 p-5">
+              <div className="min-w-0 rounded-[1.5rem] border border-(--color-border) bg-(--color-surface-hover)/45 p-4">
                 {selectedPlaylistFromList ? (
                   <>
-                    <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-5 md:flex-row">
-                      <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-muted)]/20">
-                        {selectedPlaylistFromList.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
+                    <div className="relative overflow-hidden rounded-3xl border border-(--color-border) bg-(--color-surface)/75">
+                      {selectedPlaylistImageUrl ? (
+                        <div className="pointer-events-none absolute inset-0 opacity-20">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={selectedPlaylistFromList.imageUrl}
-                            alt={selectedPlaylistFromList.name}
-                            className="h-full w-full object-cover"
+                            src={selectedPlaylistImageUrl}
+                            alt=""
+                            className="h-full w-full scale-125 object-cover blur-3xl"
                           />
-                        ) : (
-                          <ListMusic className="h-7 w-7 text-[var(--color-subtext)]" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h3 className="text-2xl font-semibold text-[var(--color-text)]">
-                            {selectedPlaylistDetail?.name ??
-                              selectedPlaylistFromList.name}
-                          </h3>
-                          {(selectedPlaylistDetail?.externalUrl ??
-                          selectedPlaylistFromList.externalUrl) ? (
-                            <a
-                              href={
-                                selectedPlaylistDetail?.externalUrl ??
-                                selectedPlaylistFromList.externalUrl ??
-                                "#"
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-medium text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-                            >
-                              {t("openOnSpotify")}
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                          ) : null}
                         </div>
-                        <p className="mt-2 text-sm text-[var(--color-subtext)]">
-                          {t("ownedBy", {
-                            owner:
-                              selectedPlaylistDetail?.ownerName ??
-                              selectedPlaylistFromList.ownerName ??
-                              "Spotify",
-                          })}
-                          {" • "}
-                          {typeof (
-                            selectedPlaylistDetail?.trackCount ??
-                            selectedPlaylistFromList.trackCount
-                          ) === "number"
-                            ? tc("tracks", {
-                                count:
-                                  selectedPlaylistDetail?.trackCount ??
-                                  selectedPlaylistFromList.trackCount ??
-                                  0,
-                              })
-                            : t("trackCountUnknown")}
-                        </p>
-                        {(selectedPlaylistDetail?.description ??
-                        selectedPlaylistFromList.description) ? (
-                          <p className="mt-3 text-sm leading-6 text-[var(--color-subtext)]">
-                            {selectedPlaylistDetail?.description ??
-                              selectedPlaylistFromList.description}
+                      ) : null}
+                      <div className="relative flex flex-col gap-3 border-b border-(--color-border) p-4 md:flex-row">
+                        <PlaylistCover
+                          imageUrl={selectedPlaylistImageUrl}
+                          alt={
+                            selectedPlaylistDetail?.name ??
+                            selectedPlaylistFromList.name
+                          }
+                          className="h-24 w-24 rounded-[1.4rem] border border-white/10 shadow-[0_18px_48px_rgba(0,0,0,0.28)]"
+                          iconClassName="h-6 w-6"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="inline-flex rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                              {t("spotifyPlaylist")}
+                            </span>
+                            <h3 className="text-xl font-semibold text-(--color-text) lg:text-2xl">
+                              {selectedPlaylistDetail?.name ??
+                                selectedPlaylistFromList.name}
+                            </h3>
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                            {selectedImportTarget ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openImportDialog(selectedImportTarget)
+                                }
+                                className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(29,185,84,0.22)] transition hover:brightness-110"
+                              >
+                                <ArrowRightLeft className="h-4 w-4" />
+                                {t("importToStarchild")}
+                              </button>
+                            ) : null}
+                            {(selectedPlaylistDetail?.externalUrl ??
+                            selectedPlaylistFromList.externalUrl) ? (
+                              <a
+                                href={
+                                  selectedPlaylistDetail?.externalUrl ??
+                                  selectedPlaylistFromList.externalUrl ??
+                                  "#"
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full border border-(--color-border) bg-(--color-surface)/70 px-3 py-1.5 text-xs font-medium text-(--color-subtext) transition hover:text-(--color-text)"
+                              >
+                                {t("openOnSpotify")}
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 text-sm text-(--color-subtext)">
+                            {t("ownedBy", {
+                              owner: selectedPlaylistOwner,
+                            })}
+                            {" • "}
+                            {typeof selectedPlaylistTrackCount === "number"
+                              ? tc("tracks", {
+                                  count: selectedPlaylistTrackCount,
+                                })
+                              : t("trackCountUnknown")}
                           </p>
-                        ) : (
-                          <p className="mt-3 text-sm leading-6 text-[var(--color-subtext)]">
-                            {t("playlistMetadataFallback")}
-                          </p>
-                        )}
+                          {(selectedPlaylistDetail?.description ??
+                          selectedPlaylistFromList.description) ? (
+                            <p className="mt-2.5 line-clamp-3 text-sm leading-6 text-(--color-subtext)">
+                              {selectedPlaylistDetail?.description ??
+                                selectedPlaylistFromList.description}
+                            </p>
+                          ) : (
+                            <p className="mt-2.5 text-sm leading-6 text-(--color-subtext)">
+                              {t("playlistMetadataFallback")}
+                            </p>
+                          )}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs text-(--color-text)">
+                              {typeof selectedPlaylistTrackCount === "number"
+                                ? tc("tracks", {
+                                    count: selectedPlaylistTrackCount,
+                                  })
+                                : t("trackCountUnknown")}
+                            </span>
+                            <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs text-(--color-text)">
+                              {t("playlistMigration")}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -812,65 +1148,84 @@ export default function SpotifyPage() {
                     ) : isSelectedPlaylistLoading &&
                       selectedPlaylistTracks.length === 0 ? (
                       <div className="mt-5 flex min-h-[200px] items-center justify-center">
-                        <div className="flex items-center gap-3 text-[var(--color-subtext)]">
+                        <div className="flex items-center gap-3 text-(--color-subtext)">
                           <Loader2 className="h-5 w-5 animate-spin" />
                           {t("loadingTracks")}
                         </div>
                       </div>
                     ) : selectedPlaylistTracks.length === 0 ? (
-                      <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/65 p-4 text-sm leading-6 text-[var(--color-subtext)]">
+                      <div className="mt-5 rounded-2xl border border-(--color-border) bg-(--color-surface)/65 p-4 text-sm leading-6 text-(--color-subtext)">
                         {t("noTrackRows")}
                       </div>
                     ) : (
-                      <div className="mt-5 space-y-3">
-                        {selectedPlaylistTracks
-                          .slice(0, 25)
-                          .map((track, index) => (
-                            <div
-                              key={track.id ?? `${track.name}-${index}`}
-                              className="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/65 px-4 py-3"
-                            >
-                              <div className="w-7 text-xs font-semibold text-[var(--color-subtext)]">
-                                {index + 1}
+                      <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-(--color-border) bg-(--color-surface)/50">
+                        <div className="flex items-center justify-between gap-3 border-b border-(--color-border) px-4 py-3">
+                          <div>
+                            <p className="text-sm font-semibold text-(--color-text)">
+                              {t("playlistDetail")}
+                            </p>
+                            <p className="mt-1 text-xs text-(--color-subtext)">
+                              {typeof selectedPlaylistTrackCount === "number"
+                                ? tc("tracks", {
+                                    count: selectedPlaylistTrackCount,
+                                  })
+                                : t("trackCountUnknown")}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                            {t("playlistMigration")}
+                          </span>
+                        </div>
+                        <div className="space-y-2 p-3 lg:max-h-[560px] lg:overflow-y-auto">
+                          {selectedPlaylistTracks
+                            .slice(0, 25)
+                            .map((track, index) => (
+                              <div
+                                key={track.id ?? `${track.name}-${index}`}
+                                className="group flex items-center gap-3 rounded-[1.1rem] border border-(--color-border) bg-(--color-surface)/65 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-white/10 hover:bg-(--color-surface)/80"
+                              >
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-(--color-border) bg-(--color-surface-hover) text-[11px] font-semibold text-(--color-subtext)">
+                                  {index + 1}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-(--color-text)">
+                                    {track.name}
+                                  </p>
+                                  <p className="truncate text-xs text-(--color-subtext)">
+                                    {track.artists.join(", ") ||
+                                      tc("unknownArtist")}
+                                    {track.albumName
+                                      ? ` • ${track.albumName}`
+                                      : ""}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="rounded-full border border-(--color-border) bg-(--color-surface-hover) px-2.5 py-1 text-[11px] text-(--color-subtext)">
+                                    {formatDuration(track.durationMs) ||
+                                      tc("notAvailable")}
+                                  </span>
+                                  {track.externalUrl ? (
+                                    <a
+                                      href={track.externalUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-(--color-subtext) transition group-hover:text-(--color-text) hover:text-(--color-text)"
+                                      aria-label={t("openTrackOnSpotify", {
+                                        title: track.name,
+                                      })}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  ) : null}
+                                </div>
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-[var(--color-text)]">
-                                  {track.name}
-                                </p>
-                                <p className="truncate text-xs text-[var(--color-subtext)]">
-                                  {track.artists.join(", ") ||
-                                    tc("unknownArtist")}
-                                  {track.albumName
-                                    ? ` • ${track.albumName}`
-                                    : ""}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-[var(--color-subtext)]">
-                                  {formatDuration(track.durationMs) ||
-                                    tc("notAvailable")}
-                                </span>
-                                {track.externalUrl ? (
-                                  <a
-                                    href={track.externalUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
-                                    aria-label={t("openTrackOnSpotify", {
-                                      title: track.name,
-                                    })}
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                ) : null}
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                        </div>
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="flex min-h-[320px] items-center justify-center text-center text-sm leading-6 text-[var(--color-subtext)]">
+                  <div className="flex min-h-80 items-center justify-center text-center text-sm leading-6 text-(--color-subtext)">
                     {t("selectPlaylistPrompt")}
                   </div>
                 )}
@@ -879,6 +1234,17 @@ export default function SpotifyPage() {
           )}
         </motion.section>
       </div>
+      <SpotifyImportDialog
+        key={importPlaylist?.id ?? "spotify-import-dialog"}
+        isOpen={isImportDialogOpen}
+        playlist={importPlaylist}
+        isSubmitting={importSpotifyPlaylistMutation.isPending}
+        importError={importError}
+        importDiagnostics={importDiagnostics}
+        importResult={importResult}
+        onClose={closeImportDialog}
+        onSubmit={(input) => void handleSpotifyPlaylistImport(input)}
+      />
     </div>
   );
 }

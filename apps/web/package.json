@@ -8,7 +8,7 @@
     "dev": "cross-env NODE_ENV=development node scripts/server.js",
     "dev:next": "next dev --port 3222",
     "dev:next:turbo": "next dev --turbo --port 3222",
-    "build": "npm --prefix ../.. run copy:changelog && next build --webpack",
+    "build": "pnpm --dir ../.. run copy:changelog && next build --webpack",
     "start": "cross-env NODE_ENV=production node scripts/server.js",
     "start:next": "next start --port 3222",
     "check": "eslint . && tsc --noEmit",

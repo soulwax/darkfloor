@@ -12,16 +12,17 @@ import { springPresets } from "@/utils/spring-animations";
 import emilyLogo from "../../public/emily-the-strange.png";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    ChevronRight,
-    FileText,
-    Home,
-    Info,
-    Library,
-    ListMusic,
-    LogOut,
-    Settings,
-    Shield,
-    User,
+  ChevronRight,
+  Disc3,
+  FileText,
+  Home,
+  Info,
+  Library,
+  ListMusic,
+  LogOut,
+  Settings,
+  Shield,
+  User,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
@@ -43,10 +44,9 @@ export default function HamburgerMenu() {
   const { isMenuOpen, closeMenu } = useMenu();
   const { openAuthModal } = useAuthModal();
   const { data: session } = useSession();
-  const { data: userHash } = api.music.getCurrentUserHash.useQuery(
-    undefined,
-    { enabled: !!session },
-  );
+  const { data: userHash } = api.music.getCurrentUserHash.useQuery(undefined, {
+    enabled: !!session,
+  });
 
   const handleSignOut = () => {
     hapticMedium();
@@ -73,6 +73,13 @@ export default function HamburgerMenu() {
       label: t("playlists"),
       icon: <ListMusic className="h-5 w-5" />,
       path: "/playlists",
+      requiresAuth: true,
+    },
+    {
+      id: "spotify",
+      label: t("spotify"),
+      icon: <Disc3 className="h-5 w-5" />,
+      path: "/spotify",
       requiresAuth: true,
       dividerAfter: true,
     },
@@ -155,13 +162,7 @@ export default function HamburgerMenu() {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={springPresets.gentle}
-            className="theme-chrome-drawer safe-left safe-top safe-bottom
-                       fixed bottom-0 left-0 top-0 z-[61]
-                       w-[280px] max-w-[80vw]
-                       overflow-y-auto
-                       border-r
-                       shadow-2xl
-                       backdrop-blur-xl"
+            className="theme-chrome-drawer safe-left safe-top safe-bottom fixed top-0 bottom-0 left-0 z-[61] w-[280px] max-w-[80vw] overflow-y-auto border-r shadow-2xl backdrop-blur-xl"
           >
             {}
             <div className="border-b border-[var(--color-border)] p-6">
@@ -217,7 +218,11 @@ export default function HamburgerMenu() {
                         hapticLight();
                         closeMenu();
                       }}
-                      className={item.id === "profile" && session && !userHash ? "pointer-events-none opacity-50" : ""}
+                      className={
+                        item.id === "profile" && session && !userHash
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }
                     >
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -227,11 +232,7 @@ export default function HamburgerMenu() {
                           delay: index * 0.05,
                         }}
                         whileTap={{ scale: 0.98 }}
-                        className="mb-1 flex items-center justify-between
-                                   rounded-xl px-4 py-3
-                                   text-[var(--color-text)]
-                                   transition-colors
-                                   hover:bg-[var(--color-surface-hover)]"
+                        className="mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)]"
                       >
                         <div className="flex items-center gap-3">
                           {item.icon}
@@ -250,11 +251,7 @@ export default function HamburgerMenu() {
                         delay: index * 0.05,
                       }}
                       whileTap={{ scale: 0.98 }}
-                      className="mb-1 flex w-full items-center justify-between
-                                 rounded-xl px-4 py-3
-                                 text-[var(--color-text)]
-                                 transition-colors
-                                 hover:bg-[var(--color-danger)]/10"
+                      className="mb-1 flex w-full items-center justify-between rounded-xl px-4 py-3 text-[var(--color-text)] transition-colors hover:bg-[var(--color-danger)]/10"
                     >
                       <div className="flex items-center gap-3">
                         {item.icon}

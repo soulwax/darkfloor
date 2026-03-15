@@ -7,8 +7,7 @@ const dotenv = require("dotenv");
 
 const repoRoot = path.resolve(__dirname, "../..");
 const schemaPath = path.resolve(__dirname, "src/server/db/schema.ts");
-// Use relative path so drizzle-kit does not mangle absolute paths (e.g. .//home/...)
-const migrationsOutPath = "drizzle";
+const migrationsOutPath = "apps/web/drizzle";
 
 dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false });

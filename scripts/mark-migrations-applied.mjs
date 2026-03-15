@@ -1,5 +1,5 @@
-#!/usr/bin/env tsx
-// File: scripts/mark-migrations-applied.ts
+#!/usr/bin/env node
+// File: scripts/mark-migrations-applied.mjs
 
 /**
  * Script to mark all existing migrations as applied in drizzle.__drizzle_migrations (PostgreSQL).
@@ -7,7 +7,7 @@
  * drizzle-kit migrate still tries to run them.
  *
  * For PostgreSQL, drizzle-orm uses schema "drizzle" and stores hash = SHA-256(migration .sql content).
- * Usage: npx tsx scripts/mark-migrations-applied.ts
+ * Usage: node scripts/mark-migrations-applied.mjs
  */
 
 import dotenv from "dotenv";
@@ -22,14 +22,15 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
 const DRIZZLE_FOLDER = "apps/web/drizzle";
 
 dotenv.config({ path: ".env.local" });
-dotenv.config(); 
-function getSslConfig(connectionString: string) {
-    if (connectionString.includes("neon.tech")) {
+dotenv.config();
+
+function getSslConfig(connectionString) {
+  if (connectionString.includes("neon.tech")) {
     return undefined;
   }
 
-    const isCloudDb = 
-    connectionString.includes("aivencloud.com") || 
+  const isCloudDb =
+    connectionString.includes("aivencloud.com") ||
     connectionString.includes("rds.amazonaws.com") ||
     connectionString.includes("sslmode=");
 
@@ -37,8 +38,8 @@ function getSslConfig(connectionString: string) {
     return undefined;
   }
 
-    const certPath = join(process.cwd(), "certs/ca.pem");
-  
+  const certPath = join(process.cwd(), "certs/ca.pem");
+
   if (existsSync(certPath)) {
     return {
       rejectUnauthorized: process.env.NODE_ENV === "production",
@@ -46,14 +47,14 @@ function getSslConfig(connectionString: string) {
     };
   }
 
-    if (process.env.DB_SSL_CA) {
+  if (process.env.DB_SSL_CA) {
     return {
       rejectUnauthorized: process.env.NODE_ENV === "production",
       ca: process.env.DB_SSL_CA,
     };
   }
 
-    return {
+  return {
     rejectUnauthorized: false,
   };
 }
@@ -66,7 +67,7 @@ const colors = {
   cyan: "\x1b[36m",
 };
 
-function log(message: string, color: keyof typeof colors = "reset") {
+function log(message, color = "reset") {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
@@ -98,13 +99,19 @@ async function main() {
         created_at bigint
       );
     `);
-    log("✓ Migration tracking table ready (drizzle.__drizzle_migrations)\n", "green");
+    log(
+      "✓ Migration tracking table ready (drizzle.__drizzle_migrations)\n",
+      "green",
+    );
 
-    const journalPath = join(process.cwd(), DRIZZLE_FOLDER, "meta", "_journal.json");
+    const journalPath = join(
+      process.cwd(),
+      DRIZZLE_FOLDER,
+      "meta",
+      "_journal.json",
+    );
     const journalContent = await readFile(journalPath, "utf-8");
-    const journal = JSON.parse(journalContent) as {
-      entries: Array<{ tag: string; when: number }>;
-    };
+    const journal = JSON.parse(journalContent);
 
     const migrations = journal.entries ?? [];
     log(`Found ${migrations.length} migrations in journal\n`, "cyan");
@@ -113,7 +120,7 @@ async function main() {
       `SELECT hash FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`,
     );
     const appliedHashes = new Set(
-      (appliedResult.rows as { hash: string }[]).map((row) => row.hash),
+      appliedResult.rows.map((row) => row.hash),
     );
 
     let marked = 0;
@@ -142,16 +149,16 @@ async function main() {
       marked++;
     }
 
-    log(`\n✅ Complete!`, "green");
+    log("\n✅ Complete!", "green");
     log(`   Marked: ${marked} migrations`, "green");
     log(`   Skipped: ${skipped} migrations (already applied)\n`, "green");
 
     const verifyResult = await pool.query(
       `SELECT COUNT(*) as count FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`,
     );
-    const count = (verifyResult.rows[0] as { count: string } | undefined)?.count ?? "0";
+    const count = verifyResult.rows[0]?.count ?? "0";
     log(`📊 Total migrations in tracking table: ${count}\n`, "cyan");
-  } catch (error: unknown) {
+  } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log(`\n❌ Error: ${message}`, "red");
     console.error(error);
@@ -161,7 +168,7 @@ async function main() {
   }
 }
 
-main().catch((err: unknown) => {
+main().catch((err) => {
   const message = err instanceof Error ? err.message : String(err);
   log(`Fatal error: ${message}`, "red");
   console.error(err);

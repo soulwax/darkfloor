@@ -14,10 +14,7 @@ import {
   extractSpotifyFeatureSettingsFromPreferences,
   getSpotifyFeatureConnectionSummary,
   hasCompleteSpotifyFeatureSettings,
-  hasConfiguredSpotifyFeatureSettings,
-  maskSpotifyClientSecret,
   normalizeSpotifyFeatureSettings,
-  spotifyFeatureSettingsStorage,
 } from "@/utils/spotifyFeatureSettings";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SettingsKey } from "@starchild/types/settings";
@@ -27,10 +24,14 @@ import { settingsStorage } from "@/utils/settingsStorage";
 import { springPresets } from "@/utils/spring-animations";
 import { motion } from "framer-motion";
 import {
+  CircleAlert,
+  CircleCheck,
   ChevronRight,
   Disc3,
   Eye,
+  Loader2,
   Music,
+  RefreshCcw,
   Settings,
   Sparkles,
   User,
@@ -64,6 +65,28 @@ interface SettingsItem {
   action?: () => void;
 }
 
+type SpotifyCredentialTestDiagnostics = {
+  enabled: boolean;
+  username: string;
+  clientIdPreview: string;
+  clientSecretLength: number;
+};
+
+type SpotifyCredentialTestResponse =
+  | {
+      ok: true;
+      message: string;
+      checkedAt: string;
+      diagnostics: SpotifyCredentialTestDiagnostics;
+    }
+  | {
+      ok: false;
+      error: string;
+      code?: string | null;
+      checkedAt: string;
+      diagnostics?: SpotifyCredentialTestDiagnostics;
+    };
+
 function getOptionLabel(
   options: { label: string; value: string }[],
   value: string | undefined,
@@ -86,17 +109,25 @@ export default function SettingsPage() {
   const [localSettings, setLocalSettings] = useState(() =>
     settingsStorage.getAll(),
   );
-  const legacySpotifySettingsRef = useRef<SpotifyFeatureSettings>(
-    spotifyFeatureSettingsStorage.getAll(),
-  );
   const [spotifySettings, setSpotifySettings] =
-    useState<SpotifyFeatureSettings>(() => legacySpotifySettingsRef.current);
+    useState<SpotifyFeatureSettings>(() => normalizeSpotifyFeatureSettings());
   const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(
-    () => legacySpotifySettingsRef.current,
+    () => normalizeSpotifyFeatureSettings(),
   );
+  const [spotifyClientSecretTouched, setSpotifyClientSecretTouched] =
+    useState(false);
+  const [isSpotifyProfileRefreshing, setIsSpotifyProfileRefreshing] =
+    useState(false);
+  const [isSpotifyCredentialTesting, setIsSpotifyCredentialTesting] =
+    useState(false);
+  const [spotifyCredentialTest, setSpotifyCredentialTest] =
+    useState<SpotifyCredentialTestResponse | null>(null);
 
-  const { data: preferences, isLoading } =
-    api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
+  const {
+    data: preferences,
+    isLoading,
+    refetch: refetchPreferences,
+  } = api.music.getUserPreferences.useQuery(undefined, { enabled: !!session });
 
   const { data: userHash } = api.music.getCurrentUserHash.useQuery(undefined, {
     enabled: !!session,
@@ -237,14 +268,7 @@ export default function SettingsPage() {
     [spotifyDraft, spotifySettings],
   );
   const spotifyDraftDirtyRef = useRef(false);
-  const hasServerSpotifySettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(serverSpotifySettings),
-    [serverSpotifySettings],
-  );
-  const hasLegacySpotifySettings = useMemo(
-    () => hasConfiguredSpotifyFeatureSettings(legacySpotifySettingsRef.current),
-    [],
-  );
+  const hasSyncedLanguageFromPreferencesRef = useRef(false);
 
   useEffect(() => {
     spotifyDraftDirtyRef.current = spotifyDraftDirty;
@@ -255,32 +279,42 @@ export default function SettingsPage() {
       return;
     }
 
-    const nextSpotifySettings = hasServerSpotifySettings
-      ? serverSpotifySettings
-      : extractSpotifyFeatureSettingsFromPreferences(preferences);
-    const nextSpotifyDraft = hasServerSpotifySettings
-      ? serverSpotifySettings
-      : hasLegacySpotifySettings
-        ? legacySpotifySettingsRef.current
-        : nextSpotifySettings;
+    setSpotifySettings(serverSpotifySettings);
 
-    setSpotifySettings(nextSpotifySettings);
-    setSpotifyDraft((prev) =>
-      spotifyDraftDirtyRef.current ? prev : nextSpotifyDraft,
-    );
-
-    if (hasServerSpotifySettings) {
-      spotifyFeatureSettingsStorage.save(nextSpotifySettings, {
-        preserveUpdatedAt: true,
-      });
+    if (!spotifyDraftDirtyRef.current) {
+      setSpotifyDraft(serverSpotifySettings);
+      setSpotifyClientSecretTouched(false);
     }
   }, [
-    hasLegacySpotifySettings,
-    hasServerSpotifySettings,
     preferences,
     serverSpotifySettings,
     session,
   ]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    if (hasSyncedLanguageFromPreferencesRef.current) {
+      return;
+    }
+
+    const preferredLanguage = preferences?.language;
+    if (
+      !preferredLanguage ||
+      !["en", "de", "sv", "ja"].includes(preferredLanguage) ||
+      preferredLanguage === locale
+    ) {
+      if (preferences !== undefined) {
+        hasSyncedLanguageFromPreferencesRef.current = true;
+      }
+      return;
+    }
+
+    hasSyncedLanguageFromPreferencesRef.current = true;
+    setLocale(preferredLanguage as AppLocale);
+  }, [locale, preferences, session, setLocale]);
 
   const handleSpotifyDraftChange = (
     key: keyof Pick<
@@ -289,11 +323,23 @@ export default function SettingsPage() {
     >,
     value: string,
   ) => {
+    if (key === "clientSecret") {
+      setSpotifyClientSecretTouched(true);
+    }
+
     setSpotifyDraft((prev) => {
-      const nextDraft = normalizeSpotifyFeatureSettings({
-        ...prev,
-        [key]: value,
-      });
+      const nextDraft = normalizeSpotifyFeatureSettings(
+        key === "clientSecret"
+          ? {
+              ...prev,
+              clientSecret: value,
+              clientSecretConfigured: value.trim().length > 0,
+            }
+          : {
+              ...prev,
+              [key]: value,
+            },
+      );
 
       return {
         ...nextDraft,
@@ -308,26 +354,103 @@ export default function SettingsPage() {
       ...spotifyDraft,
       enabled: hasCompleteSpotifyFeatureSettings(spotifyDraft),
     });
+    const includeClientSecret =
+      spotifyClientSecretTouched || normalizedDraft.clientSecret.length > 0;
+    const savedClientSecretConfigured = includeClientSecret
+      ? normalizedDraft.clientSecret.trim().length > 0
+      : spotifySettings.clientSecretConfigured;
+    const savedAt = new Date().toISOString();
+    const savedSettings = normalizeSpotifyFeatureSettings({
+      ...normalizedDraft,
+      enabled: hasCompleteSpotifyFeatureSettings({
+        ...normalizedDraft,
+        clientSecretConfigured: savedClientSecretConfigured,
+      }),
+      clientSecret: "",
+      clientSecretConfigured: savedClientSecretConfigured,
+      updatedAt: savedAt,
+    });
 
     await updatePreferences.mutateAsync(
-      buildSpotifyFeaturePreferenceInput(normalizedDraft),
+      buildSpotifyFeaturePreferenceInput(
+        {
+          ...normalizedDraft,
+          clientSecretConfigured: savedClientSecretConfigured,
+        },
+        {
+          includeClientSecret,
+        },
+      ),
     );
 
-    const saved = spotifyFeatureSettingsStorage.save(normalizedDraft);
-    setSpotifySettings(saved);
-    setSpotifyDraft(saved);
+    setSpotifySettings(savedSettings);
+    setSpotifyDraft(savedSettings);
+    setSpotifyClientSecretTouched(false);
+    setSpotifyCredentialTest(null);
     utils.music.getUserPreferences.setData(undefined, (prev) =>
       prev
         ? {
             ...prev,
-            ...buildSpotifyFeaturePreferenceInput(saved),
-            spotifySettingsUpdatedAt: saved.updatedAt
-              ? new Date(saved.updatedAt)
+            ...buildSpotifyFeaturePreferenceInput(savedSettings, {
+              includeClientSecret: false,
+            }),
+            spotifyClientSecret: "",
+            spotifyClientSecretConfigured: savedClientSecretConfigured,
+            spotifySettingsUpdatedAt: savedSettings.updatedAt
+              ? new Date(savedSettings.updatedAt)
               : null,
           }
         : prev,
     );
     await utils.music.getUserPreferences.invalidate();
+  };
+
+  const handleSpotifySettingsRefresh = async () => {
+    hapticLight();
+    setIsSpotifyProfileRefreshing(true);
+
+    try {
+      const result = await refetchPreferences();
+      const refreshedSettings = extractSpotifyFeatureSettingsFromPreferences(
+        result.data,
+      );
+
+      setSpotifySettings(refreshedSettings);
+      setSpotifyDraft(refreshedSettings);
+      setSpotifyClientSecretTouched(false);
+      setSpotifyCredentialTest(null);
+      showToast(ts("spotifySetupRefreshed"), "success");
+    } catch {
+      showToast(ts("spotifySetupRefreshFailed"), "error");
+    } finally {
+      setIsSpotifyProfileRefreshing(false);
+    }
+  };
+
+  const handleSpotifyCredentialTest = async () => {
+    hapticLight();
+    setIsSpotifyCredentialTesting(true);
+
+    try {
+      const response = await fetch("/api/spotify/credentials/test", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      const result = (await response.json()) as SpotifyCredentialTestResponse;
+
+      setSpotifyCredentialTest(result);
+      showToast(
+        result.ok ? ts("spotifyCredentialTestPassedToast") : result.error,
+        result.ok ? "success" : "error",
+      );
+    } catch {
+      showToast(ts("spotifyCredentialTestRequestFailed"), "error");
+    } finally {
+      setIsSpotifyCredentialTesting(false);
+    }
   };
 
   if (!session) {
@@ -497,7 +620,16 @@ export default function SettingsPage() {
         type: "select",
         value: locale,
         options: languageOptions,
-        onChange: (value) => setLocale(value as AppLocale),
+        onChange: (value) => {
+          const nextLocale = value as AppLocale;
+          setLocale(nextLocale);
+          if (session) {
+            utils.music.getUserPreferences.setData(undefined, (prev) =>
+              prev ? { ...prev, language: nextLocale } : prev,
+            );
+            updatePreferences.mutate({ language: nextLocale });
+          }
+        },
       },
       {
         id: "visualizerMode",
@@ -734,17 +866,6 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {!hasServerSpotifySettings && hasLegacySpotifySettings ? (
-                <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4 md:col-span-2">
-                  <p className="text-sm font-semibold text-amber-200">
-                    {ts("localValuesDetected")}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-amber-100/90">
-                    {ts("localValuesHint")}
-                  </p>
-                </div>
-              ) : null}
-
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/40 p-4">
                 <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                   {ts("accountActivation")}
@@ -764,8 +885,8 @@ export default function SettingsPage() {
                   {ts("savedSecret")}
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {spotifySettings.clientSecret.trim().length > 0
-                    ? maskSpotifyClientSecret(spotifySettings.clientSecret)
+                  {spotifySettings.clientSecretConfigured
+                    ? ts("checkClientSecret")
                     : ts("notSavedYet")}
                 </p>
                 <p className="mt-2 text-xs text-[var(--color-subtext)]">
@@ -876,7 +997,135 @@ export default function SettingsPage() {
               >
                 {ts("openSpotifyPage")}
               </Link>
+              <button
+                type="button"
+                onClick={() => void handleSpotifyCredentialTest()}
+                disabled={isSpotifyCredentialTesting}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#1DB954] hover:text-[#1DB954] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSpotifyCredentialTesting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CircleCheck className="h-4 w-4" />
+                )}
+                {isSpotifyCredentialTesting
+                  ? ts("testingSavedSpotifySetup")
+                  : ts("testSavedSpotifySetup")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSpotifySettingsRefresh()}
+                disabled={isSpotifyProfileRefreshing}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCcw
+                  className={`h-4 w-4 ${isSpotifyProfileRefreshing ? "animate-spin" : ""}`}
+                />
+                {isSpotifyProfileRefreshing
+                  ? ts("refreshingSpotifySetup")
+                  : ts("refreshSpotifySetup")}
+              </button>
             </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-[var(--color-subtext)]">
+              {spotifyDraftDirty
+                ? ts("savedProfileTestDirtyHint")
+                : ts("savedProfileTestHint")}
+            </p>
+
+            {spotifyCredentialTest ? (
+              <div
+                className={`mt-5 rounded-2xl border p-4 ${
+                  spotifyCredentialTest.ok
+                    ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.1)]"
+                    : "border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)]"
+                }`}
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                      {ts("savedProfileTest")}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {spotifyCredentialTest.ok ? (
+                        <CircleCheck className="h-4 w-4 text-[#1DB954]" />
+                      ) : (
+                        <CircleAlert className="h-4 w-4 text-amber-300" />
+                      )}
+                      <p className="text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.ok
+                          ? ts("savedProfileTestPassed")
+                          : ts("savedProfileTestFailed")}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--color-subtext)]">
+                      {spotifyCredentialTest.ok
+                        ? spotifyCredentialTest.message
+                        : spotifyCredentialTest.error}
+                    </p>
+                  </div>
+                  <p className="text-xs text-[var(--color-subtext)]">
+                    {ts("savedProfileTestCheckedAt", {
+                      date: new Date(
+                        spotifyCredentialTest.checkedAt,
+                      ).toLocaleString(),
+                    })}
+                  </p>
+                </div>
+
+                {spotifyCredentialTest.diagnostics ? (
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("accountActivation")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.enabled
+                          ? ts("activeForAccount")
+                          : ts("waitingForProfile")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("username")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.username ||
+                          ts("notSavedYet")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("clientIdPreview")}
+                      </p>
+                      <p className="mt-2 font-mono text-sm text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.clientIdPreview ||
+                          ts("notSavedYet")}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                      <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                        {ts("savedSecretLength")}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                        {spotifyCredentialTest.diagnostics.clientSecretLength}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!spotifyCredentialTest.ok && spotifyCredentialTest.code ? (
+                  <p className="mt-4 font-mono text-xs text-[var(--color-subtext)]">
+                    {ts("savedProfileTestCode", {
+                      code: spotifyCredentialTest.code,
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </motion.div>
 
@@ -943,9 +1192,9 @@ function SettingsItemComponent({
 }) {
   const [localValue, setLocalValue] = useState(item.value);
 
-  // Sync local value with prop - intentional controlled component pattern
-  /* eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync prop to state */
   useEffect(() => {
+    // Sync local value with prop for the controlled settings widgets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync prop to local UI state
     setLocalValue(item.value);
   }, [item.value]);
 

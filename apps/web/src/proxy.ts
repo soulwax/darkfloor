@@ -1,14 +1,10 @@
 // File: apps/web/src/proxy.ts
 
 import { env } from "@/env";
-import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { routing } from "./i18n/routing";
 
 const rateLimit = new Map<string, { count: number; resetTime: number }>();
-const handleI18nRouting = createMiddleware(routing);
-
 const RATE_LIMIT_WINDOW = 60 * 1000;
 const MAX_REQUESTS = 100;
 
@@ -70,7 +66,7 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  const response = handleI18nRouting(request);
+  const response = NextResponse.next();
 
   if (
     !request.nextUrl.pathname.startsWith("/api/") &&
@@ -97,7 +93,7 @@ export function proxy(request: NextRequest) {
       default-src 'self';
       script-src 'self' 'unsafe-eval' 'unsafe-inline';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' blob: data: https://cdn-images.dzcdn.net https://api.deezer.com https://cdn.discordapp.com https://media.discordapp.net https://discord.com https://discordapp.com;
+      img-src 'self' blob: data: https://cdn-images.dzcdn.net https://api.deezer.com https://cdn.discordapp.com https://media.discordapp.net https://discord.com https://discordapp.com https://*.scdn.co https://*.spotifycdn.com;
       font-src 'self' data:;
       connect-src ${connectSrcAllowlist};
       media-src 'self' ${apiDomain} blob:;

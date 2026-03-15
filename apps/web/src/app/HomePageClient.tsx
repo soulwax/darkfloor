@@ -954,10 +954,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
                     {t("discover")}
                   </p>
-                  <h1 className="mt-1 text-2xl font-extrabold text-[var(--color-text)] md:text-3xl">
+                  <h1 className="text-(--color-text)] mt-1 text-2xl font-extrabold md:text-3xl">
                     {greeting}
                   </h1>
-                  <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                  <p className="mt-1 text-sm text-(--color-subtext)">
                     {t("tagline")}
                     {apiHostname
                       ? ` ${t("poweredBy", { host: apiHostname })}`
@@ -965,14 +965,14 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   </p>
                   <div className="mt-4 max-w-2xl rounded-2xl border border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-[var(--color-accent)]" />
+                      <BookOpen className="h-4 w-4 text-(--color-accent)" />
                       <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
                         {t("whatsNew")}
                       </p>
                     </div>
-                    <ul className="mt-3 space-y-1.5 text-sm text-[var(--color-subtext)]">
+                    <ul className="mt-3 space-y-1.5 text-sm text-(--color-subtext)">
+                      <li>{t("spotifyToPlaylistNews")}</li>
                       <li>{t("languagesAddedFeature")}</li>
-                      <li>{t("spotifyRetiredNotice")}</li>
                       <li>{t("spotifySettingsNotice")}</li>
                       <li>{t("spotifySavePrompt")}</li>
                     </ul>
@@ -990,7 +990,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         href="https://developer.spotify.com/documentation/web-api/concepts/apps"
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold tracking-wide text-[var(--color-text)] uppercase transition hover:border-[var(--color-accent)]/40 hover:bg-white/10"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold tracking-wide text-(--color-text) uppercase transition hover:border-(--color-accent)/40 hover:bg-white/10"
                       >
                         {t("howTo")}
                       </a>
@@ -1030,14 +1030,14 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
               >
                 <div className="mb-4 flex items-center justify-between gap-4 md:mb-3">
                   <div>
-                    <h2 className="text-lg font-bold text-[var(--color-text)] md:text-xl">
+                    <h2 className="text-lg font-bold text-(--color-text) md:text-xl">
                       {isArtistSearch
                         ? t("artistRadio", { query: currentQuery })
                         : currentQuery
                           ? t("resultsFor", { query: currentQuery })
                           : t("searchResults")}
                     </h2>
-                    <p className="mt-0.5 text-xs text-[var(--color-subtext)] md:mt-0.5 md:text-xs">
+                    <p className="mt-0.5 text-xs text-(--color-subtext) md:mt-0.5 md:text-xs">
                       {total > visibleResults.length
                         ? t("resultsCountWithTotal", {
                             visible: visibleResults.length,
@@ -1164,13 +1164,13 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                     <section className="card p-4 text-left md:p-5">
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <ListMusic className="h-4 w-4 text-[var(--color-secondary-accent)]" />
-                          <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
+                          <ListMusic className="h-4 w-4 text-(--color-secondary-accent)" />
+                          <h4 className="text-sm font-bold tracking-wide text-(--color-text) uppercase">
                             {t("playlistsForYourTaste")}
                           </h4>
                         </div>
                         {preferredGenreName && (
-                          <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-[11px] text-[var(--color-subtext)]">
+                          <span className="rounded-full border border-(--color-border) bg-(--color-surface) px-2 py-0.5 text-[11px] text-(--color-subtext)">
                             {preferredGenreName}
                           </span>
                         )}
@@ -1256,7 +1256,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                     },
                                   );
                                 }}
-                                className="group rounded-xl border border-white/10 bg-[var(--color-surface)]/70 p-2 text-left transition-all hover:scale-[1.01] hover:border-white/20"
+                                className="group rounded-xl border border-white/10 bg-(--color-surface)/70 p-2 text-left transition-all hover:scale-[1.01] hover:border-white/20"
                               >
                                 <div className="aspect-square w-full overflow-hidden rounded-lg bg-[rgba(255,255,255,0.05)]">
                                   {artwork ? (
@@ -1267,15 +1267,15 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                       className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                                     />
                                   ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-xs text-[var(--color-subtext)]">
+                                    <div className="flex h-full w-full items-center justify-center text-xs text-(--color-subtext)">
                                       {t("playlistCoverFallback")}
                                     </div>
                                   )}
                                 </div>
-                                <p className="mt-2 line-clamp-2 text-xs font-semibold text-[var(--color-text)]">
+                                <p className="mt-2 line-clamp-2 text-xs font-semibold text-(--color-text)">
                                   {playlist.title}
                                 </p>
-                                <p className="line-clamp-1 text-[11px] text-[var(--color-subtext)]">
+                                <p className="line-clamp-1 text-[11px] text-(--color-subtext)">
                                   {tc("tracks", {
                                     count: playlist.nb_tracks ?? 0,
                                   })}
@@ -1285,7 +1285,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                           })}
                         </div>
                       ) : (
-                        <p className="text-xs text-[var(--color-subtext)]">
+                        <p className="text-xs text-(--color-subtext)">
                           {t("playlistsForYourTasteEmpty")}
                         </p>
                       )}
@@ -1309,8 +1309,8 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <section className="card p-4 text-left md:p-5">
                       <div className="mb-3 flex items-center gap-2">
-                        <Disc3 className="h-4 w-4 text-[var(--color-accent)]" />
-                        <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
+                        <Disc3 className="h-4 w-4 text-(--color-accent)" />
+                        <h4 className="text-sm font-bold tracking-wide text-(--color-text) uppercase">
                           {t("albumPicks")}
                         </h4>
                       </div>
@@ -1323,12 +1323,12 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                               setQuery(album.query);
                               void handleSearch(album.query);
                             }}
-                            className={`group rounded-xl border border-white/10 bg-gradient-to-br p-3 text-left transition-all hover:scale-[1.02] hover:border-white/20 ${album.tint}`}
+                            className={`group rounded-xl border border-white/10 bg-linear-to-br p-3 text-left transition-all hover:scale-[1.02] hover:border-white/20 ${album.tint}`}
                           >
-                            <p className="line-clamp-1 text-sm font-semibold text-[var(--color-text)]">
+                            <p className="line-clamp-1 text-sm font-semibold text-(--color-text)">
                               {album.title}
                             </p>
-                            <p className="mt-1 line-clamp-1 text-xs text-[var(--color-subtext)]">
+                            <p className="mt-1 line-clamp-1 text-xs text-(--color-subtext)">
                               {album.artist}
                             </p>
                           </button>
@@ -1338,8 +1338,8 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
 
                     <section className="card p-4 text-left md:p-5">
                       <div className="mb-3 flex items-center gap-2">
-                        <ListMusic className="h-4 w-4 text-[var(--color-secondary-accent)]" />
-                        <h4 className="text-sm font-bold tracking-wide text-[var(--color-text)] uppercase">
+                        <ListMusic className="h-4 w-4 text-(--color-secondary-accent)" />
+                        <h4 className="text-sm font-bold tracking-wide text-(--color-text) uppercase">
                           {t("playlistGrid")}
                         </h4>
                       </div>
@@ -1354,10 +1354,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                               }}
                               className="group rounded-xl border border-white/10 bg-[linear-gradient(160deg,rgba(88,198,177,0.24),rgba(14,14,14,0.94))] p-3 text-left transition-all hover:scale-[1.02] hover:border-white/20"
                             >
-                              <p className="line-clamp-1 text-sm font-semibold text-[var(--color-text)]">
+                              <p className="line-clamp-1 text-sm font-semibold text-(--color-text)">
                                 {playlist.name}
                               </p>
-                              <p className="mt-1 line-clamp-1 text-xs text-[var(--color-subtext)]">
+                              <p className="mt-1 line-clamp-1 text-xs text-(--color-subtext)">
                                 {tc("tracks", {
                                   count: playlist.trackCount ?? 0,
                                 })}
@@ -1374,10 +1374,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                             }}
                             className="w-full rounded-xl border border-white/10 bg-[linear-gradient(160deg,rgba(88,198,177,0.24),rgba(14,14,14,0.94))] px-3 py-3 text-left transition-all hover:border-white/20"
                           >
-                            <p className="text-sm font-semibold text-[var(--color-text)]">
+                            <p className="text-sm font-semibold text-(--color-text)">
                               {t("examplePlaylist")}
                             </p>
-                            <p className="text-xs text-[var(--color-subtext)]">
+                            <p className="text-xs text-(--color-subtext)">
                               {t("curatedStarterSelection")}
                             </p>
                           </button>
@@ -1392,10 +1392,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                             }}
                             className="w-full rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-3 text-left transition-all hover:border-white/20"
                           >
-                            <p className="text-sm font-semibold text-[var(--color-text)]">
+                            <p className="text-sm font-semibold text-(--color-text)">
                               {t("yourPlaylists")}
                             </p>
-                            <p className="text-xs text-[var(--color-subtext)]">
+                            <p className="text-xs text-(--color-subtext)">
                               {t("openLibraryDescription")}
                             </p>
                           </button>
@@ -1416,11 +1416,11 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
-                    className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(244,178,102,0.18)] to-[rgba(244,178,102,0.08)] ring-2 ring-[var(--color-accent)]/20 md:mb-3 md:h-16 md:w-16"
+                    className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-[rgba(244,178,102,0.18)] to-[rgba(244,178,102,0.08)] ring-2 ring-(--color-accent)/20 md:mb-3 md:h-16 md:w-16"
                   >
-                    <Music2 className="h-10 w-10 text-[var(--color-accent)] md:h-8 md:w-8" />
+                    <Music2 className="h-10 w-10 text-(--color-accent) md:h-8 md:w-8" />
                   </motion.div>
-                  <h3 className="mb-2 text-lg font-bold text-[var(--color-text)] md:mb-1.5 md:text-base">
+                  <h3 className="mb-2 text-lg font-bold text-(--color-text) md:mb-1.5 md:text-base">
                     {isMobile
                       ? t("mobileStartPrompt")
                       : t("desktopStartPrompt")}
@@ -1433,7 +1433,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       transition={{ ...springPresets.gentle, delay: 0.1 }}
                       className="mt-4 w-full max-w-5xl"
                     >
-                      <div className="mb-1.5 text-left text-[11px] font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
+                      <div className="mb-1.5 text-left text-[11px] font-semibold tracking-wide text-(--color-subtext) uppercase">
                         {t("pastSearches")}
                       </div>
                       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
@@ -1443,7 +1443,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                             <motion.div
                               key={`${search}-${index}`}
                               whileTap={{ scale: 0.98 }}
-                              className="theme-panel flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
+                              className="theme-panel flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors hover:bg-(--color-surface-hover)"
                             >
                               <button
                                 onClick={() => {
@@ -1453,8 +1453,8 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                 }}
                                 className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                               >
-                                <Search className="h-3.5 w-3.5 shrink-0 text-[var(--color-muted)]" />
-                                <span className="truncate text-xs text-[var(--color-text)]">
+                                <Search className="h-3.5 w-3.5 shrink-0 text-(--color-muted)" />
+                                <span className="truncate text-xs text-(--color-text)">
                                   {search}
                                 </span>
                               </button>
@@ -1465,7 +1465,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                   hapticLight();
                                   void handleShareSearch(search);
                                 }}
-                                className="electron-no-drag inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-1 text-[11px] font-medium text-[var(--color-subtext)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+                                className="electron-no-drag inline-flex items-center gap-1 rounded-md border border-(--color-border) bg-(--color-surface) px-1.5 py-1 text-[11px] font-medium text-(--color-subtext) transition-colors hover:bg-(--color-surface-hover) hover:text-(--color-text)"
                                 title={t("shareSearch")}
                                 aria-label={t("shareSearchFor", {
                                   query: search,
@@ -1485,7 +1485,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       onClick={handleShufflePlay}
                       disabled={loading}
                       whileTap={{ scale: 0.95 }}
-                      className="mt-6 flex w-full max-w-xs items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-strong)] px-8 py-4 text-lg font-bold text-[var(--color-on-accent)] shadow-[var(--color-accent)]/25 shadow-lg transition-all hover:shadow-[var(--color-accent)]/40 hover:shadow-xl disabled:opacity-50"
+                      className="mt-6 flex w-full max-w-xs items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-(--color-accent) to-(--color-accent-strong) px-8 py-4 text-lg font-bold text-(--color-on-accent) shadow-(--color-accent)/25 shadow-lg transition-all hover:shadow-(--color-accent)/40 hover:shadow-xl disabled:opacity-50"
                     >
                       {loading ? (
                         <>
@@ -1519,7 +1519,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                           void handleSearch(suggestion);
                         }}
                         whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 rounded-full bg-[rgba(244,178,102,0.1)] px-4 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[rgba(244,178,102,0.2)] md:px-3 md:py-1.5 md:text-xs"
+                        className="flex items-center gap-2 rounded-full bg-[rgba(244,178,102,0.1)] px-4 py-2 text-sm text-(--color-accent) transition-colors hover:bg-[rgba(244,178,102,0.2)] md:px-3 md:py-1.5 md:text-xs"
                       >
                         <Sparkles className="h-3 w-3 md:h-2.5 md:w-2.5" />
                         {suggestion}
@@ -1533,7 +1533,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       whileTap={{ scale: 0.95 }}
-                      className="btn-github flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.05)] px-5 py-3 text-sm font-medium text-[var(--color-text)] ring-1 ring-white/10 transition-all hover:bg-[rgba(255,255,255,0.1)] hover:ring-[var(--color-accent)]/30 md:px-3 md:py-2 md:text-xs"
+                      className="btn-github flex items-center gap-2 rounded-xl bg-[rgba(255,255,255,0.05)] px-5 py-3 text-sm font-medium text-(--color-text) ring-1 ring-white/10 transition-all hover:bg-[rgba(255,255,255,0.1)] hover:ring-(--color-accent)/30 md:px-3 md:py-2 md:text-xs"
                     >
                       <svg
                         width="24"
@@ -1541,7 +1541,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         viewBox="0 0 24 24"
                         fill="currentColor"
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 flex-shrink-0 md:h-4 md:w-4"
+                        className="h-5 w-5 shrink-0 md:h-4 md:w-4"
                       >
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                       </svg>
@@ -1554,7 +1554,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         setIsChangelogOpen(true);
                       }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 rounded-xl bg-[rgba(244,178,102,0.1)] px-5 py-3 text-sm font-medium text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/20 transition-all hover:bg-[rgba(244,178,102,0.2)] hover:ring-[var(--color-accent)]/40 md:px-3 md:py-2 md:text-xs"
+                      className="flex items-center gap-2 rounded-xl bg-[rgba(244,178,102,0.1)] px-5 py-3 text-sm font-medium text-(--color-accent) ring-1 ring-(--color-accent)/20 transition-all hover:bg-[rgba(244,178,102,0.2)] hover:ring-(--color-accent)/40 md:px-3 md:py-2 md:text-xs"
                     >
                       <BookOpen className="h-4 w-4 md:h-3.5 md:w-3.5" />
                       <span>{t("changelog")}</span>
@@ -1566,14 +1566,14 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         router.push("/playlists/12");
                       }}
                       whileTap={{ scale: 0.95 }}
-                      className="ml-6 flex items-center gap-2 rounded-xl bg-[rgba(88,198,177,0.15)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] ring-1 ring-[var(--color-secondary-accent)]/20 transition-all hover:bg-[rgba(88,198,177,0.25)] hover:ring-[var(--color-secondary-accent)]/40 md:ml-4 md:px-3 md:py-2 md:text-xs"
+                      className="ml-6 flex items-center gap-2 rounded-xl bg-[rgba(88,198,177,0.15)] px-4 py-2.5 text-sm font-medium text-(--color-text) ring-1 ring-(--color-secondary-accent)/20 transition-all hover:bg-[rgba(88,198,177,0.25)] hover:ring-(--color-secondary-accent)/40 md:ml-4 md:px-3 md:py-2 md:text-xs"
                     >
                       <Music2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
                       <span>{t("examplePlaylist")}</span>
                     </motion.button>
                   </div>
 
-                  <p className="mt-8 text-xs font-medium tracking-wider text-[var(--color-muted)] uppercase md:mt-6">
+                  <p className="mt-8 text-xs font-medium tracking-wider text-(--color-muted) uppercase md:mt-6">
                     {tc("copyright", { year: new Date().getFullYear() })}
                   </p>
                 </div>

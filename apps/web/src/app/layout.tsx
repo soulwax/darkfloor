@@ -66,6 +66,7 @@ export const metadata: Metadata = {
   title: "Starchild Music",
   description:
     "Modern music streaming and discovery platform with advanced audio features and visual patterns",
+  metadataBase: new URL(baseUrl),
   applicationName: "Starchild Music",
   icons: [
     { rel: "icon", url: emilyLogo.src, type: "image/png" },

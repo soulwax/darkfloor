@@ -3,7 +3,7 @@
 import createNextIntlPlugin from "next-intl/plugin";
 import { config as dotenvConfig } from "dotenv";
 import { readFileSync } from "fs";
-import { dirname, join, resolve } from "path";
+import { dirname, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -11,11 +11,11 @@ const repoRoot = resolve(__dirname, "../..");
 const nodeEnv = process.env.NODE_ENV ?? "development";
 
 // When running Next from apps/web, load env vars from the repo root.
-dotenvConfig({ path: join(repoRoot, ".env.local"), override: false });
+dotenvConfig({ path: join(repoRoot, ".env.local"), override: false, quiet: true });
 if (nodeEnv === "production") {
-  dotenvConfig({ path: join(repoRoot, ".env.production"), override: false });
+  dotenvConfig({ path: join(repoRoot, ".env.production"), override: false, quiet: true });
 }
-dotenvConfig({ path: join(repoRoot, ".env"), override: false });
+dotenvConfig({ path: join(repoRoot, ".env"), override: false, quiet: true });
 
 await import("./src/env.js");
 
@@ -257,6 +257,15 @@ const config = {
   },
 };
 
-const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const rawNextIntlRequestConfigPath = relative(
+  process.cwd(),
+  join(__dirname, "src/i18n/request.ts"),
+);
+const nextIntlRequestConfigPath = (
+  rawNextIntlRequestConfigPath.startsWith(".")
+    ? rawNextIntlRequestConfigPath
+    : `./${rawNextIntlRequestConfigPath}`
+).replaceAll("\\", "/");
+const withNextIntl = createNextIntlPlugin(nextIntlRequestConfigPath);
 
 export default withNextIntl(config);

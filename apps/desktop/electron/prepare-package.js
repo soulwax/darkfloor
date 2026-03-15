@@ -82,45 +82,156 @@ function copyDir(src, dest) {
 }
 
 /**
- * Replace symlinked module aliases with real directories/files.
- * Next.js Turbopack can emit hashed aliases under `.next/node_modules`
- * (for example `pg-<hash>`), and electron-builder may preserve them as
- * absolute symlinks that break inside AppImage mounts.
+ * Replace symlinked modules with real directories/files.
+ * This covers both pnpm-linked packages under `node_modules` and optional
+ * Turbopack alias entries under `.next/node_modules`.
+ *
+ * @param {string} modulesDir
+ * @param {string} label
+ * @returns {number}
+ */
+function materializeSymlinkModules(modulesDir, label) {
+  if (!fs.existsSync(modulesDir)) return 0;
+
+  let replaced = 0;
+
+  /**
+   * @param {string} currentDir
+   * @returns {void}
+   */
+  function walk(currentDir) {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryPath = path.join(currentDir, entry.name);
+
+      if (entry.isSymbolicLink()) {
+        const targetPath = fs.realpathSync(entryPath);
+        const targetStat = fs.statSync(targetPath);
+
+        fs.rmSync(entryPath, { recursive: true, force: true });
+
+        if (targetStat.isDirectory()) {
+          fs.cpSync(targetPath, entryPath, { recursive: true, dereference: true });
+          walk(entryPath);
+        } else {
+          fs.copyFileSync(targetPath, entryPath);
+        }
+
+        replaced += 1;
+        console.log(
+          `[Prepare] Materialized symlink in ${label}: ${path.relative(modulesDir, entryPath)} -> ${targetPath}`,
+        );
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        walk(entryPath);
+      }
+    }
+  }
+
+  walk(modulesDir);
+  return replaced;
+}
+
+/**
+ * Hoist traced pnpm packages into the top-level standalone node_modules.
+ * This makes bare-package runtime resolution work in isolated AppImage mounts
+ * where Node cannot fall back to the build machine's workspace node_modules.
  *
  * @param {string} modulesDir
  * @returns {number}
  */
-function materializeSymlinkModules(modulesDir) {
-  if (!fs.existsSync(modulesDir)) return 0;
+function hoistPnpmPackages(modulesDir) {
+  const pnpmDir = path.join(modulesDir, ".pnpm");
+  if (!fs.existsSync(pnpmDir)) return 0;
 
-  const entries = fs.readdirSync(modulesDir, { withFileTypes: true });
-  let replaced = 0;
+  let hoisted = 0;
 
-  for (const entry of entries) {
-    const entryPath = path.join(modulesDir, entry.name);
-    if (!entry.isSymbolicLink()) continue;
+  /**
+   * @param {string} packageName
+   * @param {string} sourcePath
+   * @returns {void}
+   */
+  function hoistPackage(packageName, sourcePath) {
+    const repoPackagePath = path.join(rootDir, "node_modules", ...packageName.split("/"));
+    const targetPath = path.join(modulesDir, ...packageName.split("/"));
+    if (fs.existsSync(targetPath)) return;
 
-    const targetPath = fs.realpathSync(entryPath);
-    const targetStat = fs.statSync(targetPath);
-
-    fs.rmSync(entryPath, { recursive: true, force: true });
-
-    if (targetStat.isDirectory()) {
-      fs.cpSync(targetPath, entryPath, { recursive: true, dereference: true });
-    } else {
-      fs.copyFileSync(targetPath, entryPath);
-    }
-
-    replaced += 1;
-    console.log(
-      `[Prepare] Materialized symlink module alias: ${entry.name} -> ${targetPath}`,
-    );
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    const preferredSourcePath = fs.existsSync(repoPackagePath)
+      ? repoPackagePath
+      : sourcePath;
+    fs.cpSync(preferredSourcePath, targetPath, {
+      recursive: true,
+      dereference: true,
+    });
+    hoisted += 1;
+    console.log(`[Prepare] Hoisted package to standalone node_modules: ${packageName}`);
   }
 
-  return replaced;
+  /**
+   * @param {string} packageNodeModulesDir
+   * @returns {void}
+   */
+  function scanPackageNodeModules(packageNodeModulesDir) {
+    if (!fs.existsSync(packageNodeModulesDir)) return;
+
+    const entries = fs.readdirSync(packageNodeModulesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name === ".bin") continue;
+
+      const entryPath = path.join(packageNodeModulesDir, entry.name);
+      if (entry.name.startsWith("@")) {
+        if (!entry.isDirectory()) continue;
+        const scopedEntries = fs.readdirSync(entryPath, { withFileTypes: true });
+        for (const scopedEntry of scopedEntries) {
+          const scopedPath = path.join(entryPath, scopedEntry.name);
+          if (!scopedEntry.isDirectory() && !scopedEntry.isSymbolicLink()) {
+            continue;
+          }
+          hoistPackage(`${entry.name}/${scopedEntry.name}`, scopedPath);
+        }
+        continue;
+      }
+
+      if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+      hoistPackage(entry.name, entryPath);
+    }
+  }
+
+  const pnpmEntries = fs.readdirSync(pnpmDir, { withFileTypes: true });
+  for (const entry of pnpmEntries) {
+    if (!entry.isDirectory()) continue;
+    scanPackageNodeModules(path.join(pnpmDir, entry.name, "node_modules"));
+  }
+
+  return hoisted;
 }
 
 try {
+  const materializedStandaloneNodeModules = materializeSymlinkModules(
+    standaloneNodeModules,
+    "node_modules",
+  );
+  if (materializedStandaloneNodeModules > 0) {
+    console.log(
+      `[Prepare] ✓ Materialized ${materializedStandaloneNodeModules} symlink(s) in standalone node_modules`,
+    );
+  } else {
+    console.log("[Prepare] No symlinked packages detected in standalone node_modules");
+  }
+
+  const hoistedStandalonePackages = hoistPnpmPackages(standaloneNodeModules);
+  if (hoistedStandalonePackages > 0) {
+    console.log(
+      `[Prepare] ✓ Hoisted ${hoistedStandalonePackages} traced package(s) into standalone node_modules`,
+    );
+  } else {
+    console.log("[Prepare] No traced pnpm packages needed hoisting");
+  }
+
   const standaloneAliasedNodeModules = path.join(
     standaloneDir,
     ".next",
@@ -128,10 +239,11 @@ try {
   );
   const materializedAliases = materializeSymlinkModules(
     standaloneAliasedNodeModules,
+    ".next/node_modules",
   );
   if (materializedAliases > 0) {
     console.log(
-      `[Prepare] ✓ Materialized ${materializedAliases} aliased module symlink(s) in standalone output`,
+      `[Prepare] ✓ Materialized ${materializedAliases} symlink(s) in standalone .next/node_modules`,
     );
   } else {
     console.log("[Prepare] No aliased module symlinks detected in standalone output");

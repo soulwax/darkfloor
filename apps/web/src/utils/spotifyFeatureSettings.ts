@@ -29,6 +29,7 @@ type SpotifyFeaturePreferenceRecord = Partial<
     | "spotifyFeaturesEnabled"
     | "spotifyClientId"
     | "spotifyClientSecret"
+    | "spotifyClientSecretConfigured"
     | "spotifyUsername"
     | "spotifySettingsUpdatedAt",
     unknown
@@ -45,9 +46,25 @@ function normalizeText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export function normalizeSpotifyFeatureSettings(
-  value: SpotifyFeatureSettingsInput | null | undefined,
+function normalizeConfiguredSecretFlag(value: unknown): boolean {
+  return value === true;
+}
+
+function sanitizeSpotifyFeatureSettingsForStorage(
+  settings: SpotifyFeatureSettings,
 ): SpotifyFeatureSettings {
+  return {
+    ...settings,
+    clientSecret: "",
+    clientSecretConfigured:
+      settings.clientSecretConfigured || settings.clientSecret.length > 0,
+  };
+}
+
+export function normalizeSpotifyFeatureSettings(
+  value?: SpotifyFeatureSettingsInput | null,
+): SpotifyFeatureSettings {
+  const clientSecret = normalizeText(value?.clientSecret);
   const updatedAt =
     typeof value?.updatedAt === "string" && value.updatedAt.trim().length > 0
       ? value.updatedAt
@@ -58,7 +75,10 @@ export function normalizeSpotifyFeatureSettings(
   return {
     enabled: value?.enabled === true,
     clientId: normalizeText(value?.clientId),
-    clientSecret: normalizeText(value?.clientSecret),
+    clientSecret,
+    clientSecretConfigured:
+      normalizeConfiguredSecretFlag(value?.clientSecretConfigured) ||
+      clientSecret.length > 0,
     username: normalizeText(value?.username),
     updatedAt,
   };
@@ -70,7 +90,7 @@ export function hasConfiguredSpotifyFeatureSettings(
   return Boolean(
     settings.enabled ||
     settings.clientId.length > 0 ||
-    settings.clientSecret.length > 0 ||
+    settings.clientSecretConfigured ||
     settings.username.length > 0,
   );
 }
@@ -78,12 +98,13 @@ export function hasConfiguredSpotifyFeatureSettings(
 export function hasCompleteSpotifyFeatureSettings(
   settings: Pick<
     SpotifyFeatureSettings,
-    "clientId" | "clientSecret" | "username"
+    "clientId" | "clientSecret" | "clientSecretConfigured" | "username"
   >,
 ): boolean {
   return Boolean(
     settings.clientId.trim().length > 0 &&
-    settings.clientSecret.trim().length > 0 &&
+    (settings.clientSecret.trim().length > 0 ||
+      settings.clientSecretConfigured) &&
     settings.username.trim().length > 0,
   );
 }
@@ -95,6 +116,9 @@ export function extractSpotifyFeatureSettingsFromPreferences(
     enabled: value?.spotifyFeaturesEnabled === true,
     clientId: normalizeText(value?.spotifyClientId),
     clientSecret: normalizeText(value?.spotifyClientSecret),
+    clientSecretConfigured:
+      normalizeConfiguredSecretFlag(value?.spotifyClientSecretConfigured) ||
+      normalizeText(value?.spotifyClientSecret).length > 0,
     username: normalizeText(value?.spotifyUsername),
     updatedAt:
       typeof value?.spotifySettingsUpdatedAt === "string" ||
@@ -106,10 +130,11 @@ export function extractSpotifyFeatureSettingsFromPreferences(
 
 export function buildSpotifyFeaturePreferenceInput(
   settings: SpotifyFeatureSettings,
+  options?: { includeClientSecret?: boolean },
 ): {
   spotifyFeaturesEnabled: boolean;
   spotifyClientId: string;
-  spotifyClientSecret: string;
+  spotifyClientSecret?: string;
   spotifyUsername: string;
 } {
   const spotifyFeaturesEnabled = hasCompleteSpotifyFeatureSettings(settings);
@@ -117,7 +142,9 @@ export function buildSpotifyFeaturePreferenceInput(
   return {
     spotifyFeaturesEnabled,
     spotifyClientId: settings.clientId,
-    spotifyClientSecret: settings.clientSecret,
+    ...(options?.includeClientSecret !== false
+      ? { spotifyClientSecret: settings.clientSecret }
+      : {}),
     spotifyUsername: settings.username,
   };
 }
@@ -132,9 +159,17 @@ export const spotifyFeatureSettingsStorage = {
       );
       if (!stored) return {};
 
-      return normalizeSpotifyFeatureSettings(
-        JSON.parse(stored) as Partial<SpotifyFeatureSettings>,
+      const sanitized = sanitizeSpotifyFeatureSettingsForStorage(
+        normalizeSpotifyFeatureSettings(
+          JSON.parse(stored) as Partial<SpotifyFeatureSettings>,
+        ),
       );
+      window.localStorage.setItem(
+        SPOTIFY_FEATURE_SETTINGS_STORAGE_KEY,
+        JSON.stringify(sanitized),
+      );
+
+      return sanitized;
     } catch (error) {
       console.error(
         "Failed to load Spotify feature settings from localStorage:",
@@ -156,18 +191,23 @@ export const spotifyFeatureSettingsStorage = {
     options?: { preserveUpdatedAt?: boolean },
   ): SpotifyFeatureSettings {
     if (typeof window === "undefined") {
-      return normalizeSpotifyFeatureSettings(value);
+      return sanitizeSpotifyFeatureSettingsForStorage(
+        normalizeSpotifyFeatureSettings(value),
+      );
     }
 
-    const normalized = normalizeSpotifyFeatureSettings({
-      ...this.getAll(),
-      ...value,
-      updatedAt:
-        options?.preserveUpdatedAt === true
-          ? (normalizeSpotifyFeatureSettings(value).updatedAt ??
-            this.getAll().updatedAt)
-          : new Date().toISOString(),
-    });
+    const current = this.getAll();
+    const normalized = sanitizeSpotifyFeatureSettingsForStorage(
+      normalizeSpotifyFeatureSettings({
+        ...current,
+        ...value,
+        updatedAt:
+          options?.preserveUpdatedAt === true
+            ? (normalizeSpotifyFeatureSettings(value).updatedAt ??
+              current.updatedAt)
+            : new Date().toISOString(),
+      }),
+    );
 
     try {
       window.localStorage.setItem(
@@ -227,7 +267,7 @@ export function getSpotifyFeatureConnectionSummary(options: {
     {
       id: "clientSecret",
       label: "Client secret saved",
-      ready: settings.clientSecret.length > 0,
+      ready: settings.clientSecretConfigured,
     },
     {
       id: "username",
@@ -241,7 +281,7 @@ export function getSpotifyFeatureConnectionSummary(options: {
       state: "disabled",
       label: "Spotify features disabled",
       description:
-        "Spotify feature settings are saved locally, but the feature toggle is still off.",
+        "The saved Spotify feature profile is still disabled.",
       checks,
     };
   }
@@ -253,7 +293,7 @@ export function getSpotifyFeatureConnectionSummary(options: {
       state: "incomplete",
       label: "Spotify setup incomplete",
       description:
-        "The local Spotify feature profile is still missing required fields.",
+        "The saved Spotify feature profile is still missing required fields.",
       checks,
     };
   }
@@ -262,7 +302,7 @@ export function getSpotifyFeatureConnectionSummary(options: {
     state: "ready",
     label: "Spotify features ready",
     description:
-      "The local Spotify feature profile is complete for the settings-driven Spotify integration path.",
+      "The saved Spotify feature profile is complete for the settings-driven Spotify integration path.",
     checks,
   };
 }
@@ -272,4 +312,11 @@ export function maskSpotifyClientSecret(secret: string): string {
   if (trimmed.length === 0) return "Not saved";
   if (trimmed.length <= 4) return "••••";
   return `${trimmed.slice(0, 2)}••••${trimmed.slice(-2)}`;
+}
+
+export function maskSpotifyClientId(clientId: string): string {
+  const trimmed = normalizeText(clientId);
+  if (trimmed.length === 0) return "Not saved";
+  if (trimmed.length <= 8) return `${trimmed.slice(0, 2)}...${trimmed.slice(-2)}`;
+  return `${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }

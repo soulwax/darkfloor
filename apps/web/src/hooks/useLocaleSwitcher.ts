@@ -1,14 +1,33 @@
 "use client";
 
-import { usePathname, useRouter } from "@/i18n/navigation";
 import { locales, type AppLocale } from "@/i18n/routing";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useTransition } from "react";
+import { useCallback, useMemo, useTransition } from "react";
 
 interface LocaleOption {
   label: string;
   value: AppLocale;
+}
+
+const LOCALE_STORAGE_KEY = "starchild_locale";
+
+function persistLocaleInBrowser(locale: AppLocale): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch (error) {
+    console.error("Failed to persist locale to localStorage:", error);
+  }
+
+  try {
+    sessionStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch (error) {
+    console.error("Failed to persist locale to sessionStorage:", error);
+  }
 }
 
 export function useLocaleSwitcher() {
@@ -28,18 +47,25 @@ export function useLocaleSwitcher() {
     [t],
   );
 
-  const setLocale = (nextLocale: AppLocale) => {
-    if (nextLocale === locale) {
-      return;
-    }
+  const setLocale = useCallback(
+    (nextLocale: AppLocale) => {
+      if (nextLocale === locale) {
+        return;
+      }
 
-    const query = searchParams.toString();
-    const href = query ? `${pathname}?${query}` : pathname;
+      document.cookie = `NEXT_LOCALE=${nextLocale}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+      persistLocaleInBrowser(nextLocale);
 
-    startTransition(() => {
-      router.replace(href, { locale: nextLocale });
-    });
-  };
+      const query = searchParams.toString();
+      const href = query ? `${pathname}?${query}` : pathname;
+
+      startTransition(() => {
+        router.replace(href);
+        router.refresh();
+      });
+    },
+    [locale, pathname, router, searchParams, startTransition],
+  );
 
   return {
     isPending,

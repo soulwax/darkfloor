@@ -154,7 +154,9 @@ export function AudioPlayerProvider({
   children,
   onToast,
 }: AudioPlayerProviderProps) {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const isAuthenticated =
+    sessionStatus === "authenticated" && Boolean(session?.user?.id);
   const isMobile = useIsMobile();
   const showToast = useCallback(
     (
@@ -193,7 +195,7 @@ export function AudioPlayerProvider({
   const addToPlaylistMutation = api.music.addToPlaylist.useMutation();
   const { data: preferences } = api.music.getUserPreferences.useQuery(
     undefined,
-    { enabled: !!session },
+    { enabled: isAuthenticated },
   );
   const resumeErrorThrottleRef = useRef(0);
   const queuePersistenceErrorThrottleRef = useRef(0);
@@ -239,13 +241,13 @@ export function AudioPlayerProvider({
     },
   });
   const { data: dbQueueState } = api.music.getQueueState.useQuery(undefined, {
-    enabled: !!session,
+    enabled: isAuthenticated,
     refetchOnWindowFocus: false,
   });
 
   const { data: smartQueueSettings } = api.music.getSmartQueueSettings.useQuery(
     undefined,
-    { enabled: !!session },
+    { enabled: isAuthenticated },
   );
   const normalizedSmartQueueSettings = smartQueueSettings
     ? (() => {
@@ -561,7 +563,7 @@ export function AudioPlayerProvider({
     keepPlaybackAlive: preferences?.keepPlaybackAlive ?? true,
     onBackgroundResumeError: handleBackgroundResumeError,
     onTrackChange: (track) => {
-      if (track && session) {
+      if (track && isAuthenticated) {
         if (hasCompleteTrackData(track)) {
           addToHistory.mutate(
             {
@@ -631,7 +633,7 @@ export function AudioPlayerProvider({
   });
 
   useEffect(() => {
-    if (!session) return;
+    if (!isAuthenticated) return;
 
     const persistTimer = setTimeout(() => {
       const queuedTracksForSave: Array<{
@@ -685,7 +687,7 @@ export function AudioPlayerProvider({
 
     return () => clearTimeout(persistTimer);
   }, [
-    session,
+    isAuthenticated,
     player.queuedTracks,
     player.smartQueueState,
     player.history,
@@ -706,7 +708,7 @@ export function AudioPlayerProvider({
       );
       player.clearQueueAndHistory();
 
-      if (currentUserId && session) {
+      if (currentUserId && isAuthenticated) {
         clearQueueStateMutation.mutate();
       }
 
@@ -719,7 +721,7 @@ export function AudioPlayerProvider({
     }
 
     setLastUserId(currentUserId);
-  }, [session?.user?.id, lastUserId]);
+  }, [session?.user?.id, isAuthenticated, lastUserId]);
 
   useEffect(() => {
     const cleanupInterval = setInterval(
@@ -770,12 +772,12 @@ export function AudioPlayerProvider({
 
   const saveQueueAsPlaylist = useCallback(async () => {
     console.log("[AudioPlayerContext] 💾 saveQueueAsPlaylist called", {
-      hasSession: !!session,
+      hasSession: isAuthenticated,
       currentTrack: player.currentTrack ? player.currentTrack.title : null,
       queueSize: player.queue.length,
     });
 
-    if (!session) {
+    if (!isAuthenticated) {
       showToast("Sign in to save playlists", "info");
       return;
     }
@@ -851,7 +853,7 @@ export function AudioPlayerProvider({
       showToast("Failed to save playlist", "error");
     }
   }, [
-    session,
+    isAuthenticated,
     player,
     createPlaylistMutation,
     addToPlaylistMutation,

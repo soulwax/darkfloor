@@ -5,6 +5,122 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.12] - 2026-03-14
+
+### Fixed
+
+- **Spotify feature settings no longer expose saved client secrets in browser-facing state**: `getUserPreferences` now returns only a server-side "secret saved" flag, legacy browser storage is scrubbed of stored secrets, and app sign-out clears the old local Spotify settings cache.
+- **Spotify playlist imports now preserve authenticated bearer auth through the app route**: the local import proxy now requires a signed-in app session and forwards any caller bearer token instead of dropping it before the upstream import request.
+- **Legacy Spotify session bootstrap now enforces stricter local account checks**: backend-managed bearer session bootstrap now checks the local banned flag before writing an Auth.js session cookie and only reuses an existing local user by email when the backend marks that email as verified.
+
+## [1.5.11] - 2026-03-12
+
+### Added
+
+- **Spotify import now exposes backend diagnostics in the dialog**: The `/spotify` import flow now shows the submitted playlist ID, HTTP status, backend code, and backend message when an import fails so playlist import issues can be traced without guessing from the friendly error copy alone.
+
+## [1.5.10] - 2026-03-12
+
+### Changed
+
+- **Spotify layout now uses desktop space more efficiently**: The `/spotify` page now uses a tighter desktop container, a narrower saved-profile rail, denser playlist cards, and a more compact track-preview panel so the playlist migration area has more usable width.
+- **Saved app profile is now much more compact**: The left-side Spotify profile summary now presents the same information in smaller stacked rows and tighter status chips instead of large cards that dominated the page.
+
+### Fixed
+
+- **Spotify covers now render from Spotify CDN again**: The app Content Security Policy now allows Spotify artwork hosts on the `/spotify` page, and the page/import dialog still fall back cleanly to the built-in placeholder if an individual cover URL fails.
+
+## [1.5.9] - 2026-03-12
+
+### Changed
+
+- **Spotify import flow now feels more premium end to end**: The `/spotify` experience now uses richer overview cards, stronger playlist selection states, and a more intentional track-preview layout so browsing and importing playlists reads like a complete migration flow instead of a utility screen.
+- **Import dialog now has clearer visual progress and result states**: The Spotify import modal now highlights source, matching, and result stages with a more atmospheric layout, stronger success reporting, and better partial-import messaging when tracks are skipped or unmatched.
+
+### Fixed
+
+- **Missing Spotify playlists now map to the correct import error**: A `404` from the backend import endpoint once again points users to a missing Spotify playlist instead of the generic "import unavailable" fallback.
+
+## [1.5.8] - 2026-03-12
+
+### Changed
+
+- **Spotify import now uses the real backend contract**: The frontend import flow no longer posts to a local placeholder route. It now calls `POST /music/playlists/import/spotify` through a typed frontend mutation wrapper and respects the backend's string UUID playlist IDs.
+- **Spotify import success/error handling is aligned with backend status codes**: The `/spotify` page now treats partial imports as successful, surfaces deterministic unmatched rows directly from the backend report, and maps `412`, `404`, `429`, and `502` responses into clearer user guidance.
+
+### Added
+
+- **Frontend API-client wrapper for Spotify playlist import**: Added `api.music.importSpotifyPlaylist.useMutation()` as a REST-backed frontend mutation so the Spotify import UX can stay on the existing `api.music.*` pattern without requiring a new backend tRPC procedure.
+
+## [1.5.7] - 2026-03-12
+
+### Added
+
+- **Spotify playlist import flow on `/spotify`**: Added first-class `Import to Starchild` actions on playlist cards and the selected playlist detail so public Spotify playlists can move straight into the native playlist system once the backend import contract is available.
+
+### Changed
+
+- **Spotify import confirmation and result UX**: Added a dedicated import dialog with playlist naming, visibility choice, matched/unmatched reporting, and a direct link into the created Starchild playlist.
+- **Graceful frontend fallback while backend rolls out**: The import flow now surfaces a clear "backend not available yet" state instead of failing with a generic request error if the import route has not landed yet.
+
+## [1.5.6] - 2026-03-12
+
+### Changed
+
+- **Spotify page profile rail is now more compact**: Replaced the verbose saved-profile checklist stack with a tighter summary that keeps the important account signals visible without reading like a second Settings page.
+- **Spotify playlist art is more prominent in browsing**: Playlist covers are now surfaced more clearly in the playlist picker and detail header, with detail view falling back to the full playlist payload image when available.
+
+## [1.5.5] - 2026-03-12
+
+### Added
+
+- **Saved Spotify credential diagnostics in Settings**: Added a first-party "Test saved credentials" action that validates the server-saved Spotify app profile and shows safe diagnostics like username, masked client ID preview, secret length, and the exact Spotify-side failure code.
+
+## [1.5.4] - 2026-03-12
+
+### Changed
+
+- **Spotify features are now easier to reach from app navigation**: Added Spotify as a first-class destination in the desktop sidebar, mobile footer, and hamburger menu so saved Spotify profiles lead somewhere obvious.
+
+### Fixed
+
+- **Settings-driven Spotify workflow no longer dead-ends after save**: The Spotify settings card now points users directly to playlist browsing and includes an explicit refresh action to reload the saved account profile when values feel stale.
+
+## [1.5.3] - 2026-03-11
+
+### Fixed
+
+- **Windows Electron packaging without Visual Studio Build Tools**: `electron:build:win` now defaults to no-native-rebuild packaging, avoiding `@parcel/watcher`/`node-gyp` Visual Studio failures; native rebuild can still be forced via `STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true`.
+- **Windows portable startup path-depth failures**: Portable packaging now sets `portable.unpackDirName` to a short fixed temp folder name (`starchild`), reducing extraction path depth so `.next/standalone` server and module files resolve reliably at startup.
+
+## [1.5.2] - 2026-03-11
+
+### Changed
+
+- **Canonical API base env support**: Added `API_BASE_URL` as the preferred single-source API/auth base and expanded runtime fallback resolution across `API_V2_URL`, `SONGBIRD_API_URL`, `NEXT_PUBLIC_AUTH_API_BASE`, and `NEXT_PUBLIC_AUTH_API_ORIGIN`.
+- **Environment template simplification**: `.env.example` now documents one primary API URL entry with optional compatibility overrides.
+
+### Fixed
+
+- **Electron/API base URL alignment**: Runtime env mapping now remains stable when only one API base URL is configured, reducing packaged/runtime connection mismatches.
+
+## [1.5.1] - 2026-03-11
+
+### Added
+
+- **Per-user language preference persistence in DB**: Added `user_preferences.language` plus migration wiring so signed-in language selection can be stored account-wide.
+
+### Changed
+
+- **Settings language selector persistence behavior**: Language changes now update `NEXT_LOCALE` and are persisted to both `localStorage` and `sessionStorage`, with signed-in selections also persisted through `music.updatePreferences`.
+- **Linux package icon source standardized for installer output**: Linux packaging now points to a square `512x512` Emily icon variant for more consistent launcher rendering.
+
+### Fixed
+
+- **Translation rollout route regressions**: Removed locale path rewrite behavior that caused `/about`, `/library`, and other non-home routes to 404 under translation-enabled builds.
+- **Electron standalone startup errors in AppImage/deb**: Hardened pnpm standalone module handling and Linux runtime node resolution to prevent packaged boot failures (`Cannot find module 'next'`, `styled-jsx/package.json`).
+- **Next.js i18n runtime compatibility in standalone server**: Updated i18n request config to use async-safe `cookies()`/`headers()` access, preventing packaged server boot loops with `.get is not a function`.
+
 ## [1.5.0] - 2026-03-11
 
 ### Added
@@ -37,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-03-08
 
 ### tl;dr
+
 FIXED SPOTIFY OAUTH
 
 ### Added

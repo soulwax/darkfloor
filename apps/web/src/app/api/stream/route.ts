@@ -19,6 +19,15 @@ function redactKeyFromUrl(rawUrl: string): string {
   }
 }
 
+function isSupportedAudioContentType(contentType: string | null): boolean {
+  if (!contentType) return true;
+  const normalized = contentType.toLowerCase();
+  return (
+    normalized.startsWith("audio/") ||
+    normalized.includes("application/octet-stream")
+  );
+}
+
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const query = searchParams.get("q");
@@ -263,6 +272,36 @@ export async function GET(req: NextRequest) {
           },
         },
         { status: statusCode },
+      );
+    }
+
+    const upstreamContentType = response.headers.get("content-type");
+    if (!isSupportedAudioContentType(upstreamContentType)) {
+      let payloadPreview = "";
+      try {
+        payloadPreview = (await response.text()).slice(0, 400);
+      } catch {
+        payloadPreview = "Unable to read upstream payload";
+      }
+
+      console.error("[Stream API] Non-audio upstream payload received", {
+        status: response.status,
+        contentType: upstreamContentType,
+        requestUrl: redactedRequestUrl,
+        payloadPreview,
+      });
+
+      return NextResponse.json(
+        {
+          error: "Upstream returned non-audio payload",
+          message:
+            "The upstream stream endpoint responded with a non-audio content type.",
+          type: "invalid_upstream_payload",
+          status: 502,
+          contentType: upstreamContentType,
+          backendUrl: redactedRequestUrl,
+        },
+        { status: 502 },
       );
     }
 

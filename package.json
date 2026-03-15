@@ -1,6 +1,6 @@
 {
   "name": "starchildmusic",
-  "version": "1.5.0",
+  "version": "1.5.12",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
@@ -42,15 +42,15 @@
     "generate:ssl": "node scripts/generate-ssl-cert.js",
     "clean": "rm -rf .next node_modules .turbo dist",
     "clean:win": "rmdir /s /q .next && rmdir /s /q node_modules && rmdir /s /q .turbo && rmdir /s /q dist",
-    "build:analyzer": "cross-env ANALYZE=true npm --prefix apps/web run build",
-    "build": "npm --prefix apps/web run build",
+    "build:analyzer": "cross-env ANALYZE=true pnpm --dir apps/web run build",
+    "build": "pnpm --dir apps/web run build",
     "check:boundaries": "node scripts/check-package-boundaries.mjs",
     "check": "npm run check:boundaries && npm --prefix apps/web run check",
-    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
-    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:push": "drizzle-kit push --config drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config drizzle.config.ts",
-    "db:mark-applied": "node scripts/mark-migrations-simple.js",
+    "db:generate": "drizzle-kit generate --config apps/web/drizzle.config.cjs",
+    "db:migrate": "drizzle-kit migrate --config apps/web/drizzle.config.cjs",
+    "db:push": "drizzle-kit push --config apps/web/drizzle.config.cjs",
+    "db:studio": "drizzle-kit studio --config apps/web/drizzle.config.cjs",
+    "db:mark-applied": "node scripts/mark-migrations-applied.mjs",
     "copy:changelog": "node scripts/copy-changelog.js",
     "migrate:neon": "npx tsx scripts/migrate-to-neon.ts",
     "predev": "npm run generate:ssl",
@@ -98,21 +98,21 @@
     "test:watch": "npm --prefix apps/web run test:watch",
     "env:keypair": "node scripts/create-keypair.cjs",
     "env:encrypt": "node scripts/encrypt-env-cert.js",
-    "electron:dev": "concurrently \"cross-env HOSTNAME=localhost npm run dev\" \"wait-on http://localhost:3222 && electron .\"",
-    "electron:dev:win": "concurrently \"cross-env HOSTNAME=localhost npm run dev:win\" \"wait-on http://localhost:3222 && electron .\"",
-    "electron:prod": "node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_PROD=true npm run build && npm run electron:prepare && cross-env ELECTRON_PROD=true electron .\"",
-    "electron:prod:win": "npm run electron:build:win && \".\\dist\\Starchild_setup.exe\"",
+    "electron:dev": "concurrently \"cross-env HOSTNAME=localhost pnpm run dev\" \"wait-on http://localhost:3222 && electron .\"",
+    "electron:dev:win": "concurrently \"cross-env HOSTNAME=localhost pnpm run dev:win\" \"wait-on http://localhost:3222 && electron .\"",
+    "electron:prod": "node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_PROD=true pnpm run build && pnpm run electron:prepare && cross-env ELECTRON_PROD=true electron .\"",
+    "electron:prod:win": "pnpm run electron:build:win && \".\\dist\\Starchild_setup.exe\"",
     "electron:sign:setup:win": "pwsh -ExecutionPolicy Bypass -File scripts/windows/setup-codesign.ps1 -Trust",
-    "electron:build:dev:win": "npm run electron:clean:win && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_DEV_TOOLS=true npm run build\" && npm run electron:prepare && electron-builder --win --dir",
+    "electron:build:dev:win": "pnpm run electron:clean:win && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_DEV_TOOLS=true pnpm run build\" && pnpm run electron:prepare && electron-builder --win --dir",
     "electron:prepare": "node apps/desktop/scripts/load-env-build.js \"node apps/desktop/scripts/prepare-electron-env.cjs && node apps/desktop/electron/prepare-package.js\"",
     "electron:clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "electron:clean:win": "node apps/desktop/scripts/electron-clean-win.js",
     "electron:download-node": "node apps/desktop/scripts/download-node.js",
     "electron:builder:win": "node apps/desktop/scripts/run-electron-builder-win.js",
-    "electron:build": "npm run electron:clean && npm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true npm run build\" && npm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder\"",
-    "electron:build:win": "npm run electron:clean:win && cross-env NODE_DOWNLOAD_PLATFORM=win32 NODE_DOWNLOAD_ARCH=x64 npm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true npm run build\" && npm run electron:prepare && npm run electron:builder:win",
-    "electron:build:mac": "npm run electron:clean && npm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true npm run build\" && npm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder --mac\"",
-    "electron:build:linux": "npm run electron:clean && npm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true npm run build\" && npm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder --linux\""
+    "electron:build": "pnpm run electron:clean && pnpm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true pnpm run build\" && pnpm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder\"",
+    "electron:build:win": "pnpm run electron:clean:win && cross-env NODE_DOWNLOAD_PLATFORM=win32 NODE_DOWNLOAD_ARCH=x64 pnpm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true pnpm run build\" && pnpm run electron:prepare && pnpm run electron:builder:win",
+    "electron:build:mac": "pnpm run electron:clean && pnpm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true pnpm run build\" && pnpm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder --mac\"",
+    "electron:build:linux": "pnpm run electron:clean && pnpm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true pnpm run build\" && pnpm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder --linux\""
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -248,7 +248,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "apps/web/public/emily-the-strange.png",
+      "icon": "apps/web/public/emily-the-strange-linux-512.png",
       "artifactName": "${productName}.${ext}",
       "category": "AudioVideo,Audio"
     },
@@ -262,11 +262,12 @@
     },
     "portable": {
       "artifactName": "${productName}.${ext}",
-      "requestExecutionLevel": "user"
+      "requestExecutionLevel": "user",
+      "unpackDirName": "starchild"
     }
   },
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
+  "packageManager": "pnpm@10.32.0+sha512.9b2634bb3fed5601c33633f2d92593f506270a3963b8c51d2b2d6a828da615ce4e9deebef9614ccebbc13ac8d3c0f9c9ccceb583c69c8578436fa477dbb20d70"
 }

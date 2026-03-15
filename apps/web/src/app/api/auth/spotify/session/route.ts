@@ -4,7 +4,12 @@ import { sessions, users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { logAuthDebug, logAuthError, logAuthInfo } from "@starchild/auth";
+import {
+  logAuthDebug,
+  logAuthError,
+  logAuthInfo,
+  logAuthWarn,
+} from "@starchild/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,6 +20,7 @@ const AUTH_ME_TIMEOUT_MS = 10_000;
 type BootstrapUserProfile = {
   backendUserId: string | null;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   image: string | null;
 };
@@ -34,6 +40,31 @@ function readFirstNonEmptyString(
     const value = record[key];
     if (typeof value === "string" && value.trim().length > 0) {
       return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function readFirstBoolean(
+  record: Record<string, unknown> | null,
+  keys: string[],
+): boolean | null {
+  if (!record) return null;
+
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === "true") return true;
+      if (normalized === "false") return false;
+    }
+    if (typeof value === "number") {
+      if (value === 1) return true;
+      if (value === 0) return false;
     }
   }
 
@@ -110,6 +141,15 @@ function normalizeBootstrapProfile(
     readFirstNonEmptyString(nestedUser, ["email"]) ??
     readFirstNonEmptyString(claims, ["email"]) ??
     (backendUserId ? `${backendUserId}@songbird.local` : null);
+  const emailVerified =
+    readFirstBoolean(root, ["emailVerified", "email_verified", "verified"]) ??
+    readFirstBoolean(nestedUser, [
+      "emailVerified",
+      "email_verified",
+      "verified",
+    ]) ??
+    readFirstBoolean(claims, ["emailVerified", "email_verified", "verified"]) ??
+    false;
 
   const name =
     readFirstNonEmptyString(root, ["name", "displayName", "username"]) ??
@@ -139,6 +179,7 @@ function normalizeBootstrapProfile(
   return {
     backendUserId,
     email,
+    emailVerified,
     name,
     image,
   };
@@ -182,19 +223,25 @@ async function resolveOrCreateLocalUser(
   }
   const email = profile.email ?? `${backendUserId}@songbird.local`;
 
-  const byEmail = await db.query.users.findFirst({
-    where: eq(users.email, email),
+  const byBackendId = await db.query.users.findFirst({
+    where: eq(users.id, backendUserId),
   });
-  const byBackendId =
-    !byEmail && backendUserId
+  const byEmail =
+    !byBackendId && profile.emailVerified
       ? await db.query.users.findFirst({
-          where: eq(users.id, backendUserId),
+          where: eq(users.email, email),
         })
       : null;
 
-  const existingUser = byEmail ?? byBackendId;
+  const existingUser = byBackendId ?? byEmail;
   if (existingUser) {
     const updates: Partial<typeof users.$inferInsert> = {};
+    if (profile.emailVerified && email !== existingUser.email) {
+      updates.email = email;
+    }
+    if (profile.emailVerified && !existingUser.emailVerified) {
+      updates.emailVerified = new Date();
+    }
     if (profile.name && profile.name !== existingUser.name) {
       updates.name = profile.name;
     }
@@ -212,6 +259,7 @@ async function resolveOrCreateLocalUser(
     .values({
       id: backendUserId,
       email,
+      emailVerified: profile.emailVerified ? new Date() : null,
       name: profile.name,
       image: profile.image,
     })
@@ -260,6 +308,36 @@ export async function POST(request: NextRequest) {
   try {
     const profile = await fetchBootstrapProfile(accessToken);
     const localUserId = await resolveOrCreateLocalUser(profile);
+    const localUser = await db.query.users.findFirst({
+      where: eq(users.id, localUserId),
+      columns: {
+        banned: true,
+      },
+    });
+
+    if (localUser?.banned) {
+      logAuthWarn(
+        "Backend-managed auth session bootstrap denied because user is banned",
+        {
+          backendUserId: profile.backendUserId,
+          localUserId,
+        },
+      );
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Your account has been banned. If you believe this is an error, please contact support.",
+        },
+        {
+          status: 403,
+          headers: {
+            "cache-control": "no-store",
+          },
+        },
+      );
+    }
+
     const sessionToken = randomUUID();
     const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
 
