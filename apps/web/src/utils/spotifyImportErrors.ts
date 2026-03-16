@@ -2,6 +2,7 @@ export type SpotifyImportErrorMessageKey =
   | "importInvalidPlaylist"
   | "importNoMatches"
   | "importLegacyAuthContract"
+  | "importBackendRouteMissing"
   | "settingsIncomplete"
   | "credentialsRejected"
   | "usernameNotFound"
@@ -47,6 +48,15 @@ export function getSpotifyImportErrorMessageKey(
       normalized.includes("no auth token")
     ) {
       return "importLegacyAuthContract";
+    }
+
+    if (
+      normalized.includes("the page could not be found") ||
+      normalized.includes("page could not be found") ||
+      normalized.includes("cannot post /spotify/playlists/import") ||
+      normalized.includes("cannot post /api/spotify/playlists/import")
+    ) {
+      return "importBackendRouteMissing";
     }
 
     if (normalized.includes("settings are incomplete")) {

@@ -752,6 +752,7 @@
     "importUnavailable": "Spotify 取り込みはまだアプリのバックエンドで利用できません。",
     "importReconnectSpotify": "取り込む前に、設定で保存済みの Spotify 設定を再接続または再読み込みしてください。",
     "importPlaylistNotFound": "Spotify でそのプレイリストが見つかりませんでした。",
+    "importBackendRouteMissing": "現在のバックエンド配備では Spotify 取り込みリクエストを処理できませんでした。プレイリストが見つからないのではなく、取り込みルートが欠けているか古い可能性があります。",
     "importLegacyAuthContract": "取り込みバックエンドはまだ旧来の Spotify 認証を期待しています。アプリがすでに読み込んでいるプレイリスト payload を受け取るべきです。",
     "importUpstreamFailure": "トラックの取得または変換中に Spotify 取り込みが失敗しました。しばらくしてからもう一度お試しください。",
     "importFailedGeneric": "Spotify プレイリストを取り込めませんでした。",

@@ -27,4 +27,13 @@ describe("spotify import error mapping", () => {
       }),
     ).toBe("signInRequired");
   });
+
+  it("maps generic backend 404 pages to a route/deployment error", () => {
+    expect(
+      getSpotifyImportErrorMessageKey({
+        message: "The page could not be found",
+        status: 404,
+      }),
+    ).toBe("importBackendRouteMissing");
+  });
 });
