@@ -28,6 +28,9 @@ describe("Spotify music import route", () => {
     vi.doMock("@/app/api/v2/_lib", () => ({
       proxyApiV2,
     }));
+    vi.doMock("@/lib/server/songbird-token", () => ({
+      getSongbirdAccessToken: vi.fn(),
+    }));
 
     const route = await loadPostRoute(
       "@/app/api/music/playlists/import/spotify/route",
@@ -75,10 +78,21 @@ describe("Spotify music import route", () => {
     );
 
     vi.doMock("@/server/auth", () => ({
-      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+      auth: vi.fn(async () => ({
+        user: { id: "user-1", email: "listener@example.com" },
+      })),
     }));
     vi.doMock("@/app/api/v2/_lib", () => ({
       proxyApiV2,
+    }));
+    vi.doMock("@/lib/server/songbird-token", () => ({
+      getSongbirdAccessToken: vi.fn(async () => ({
+        accessToken: "service-token-1",
+        tokenType: "Bearer",
+        expiresIn: 300,
+        expiresAt: Date.now() + 300_000,
+        scopes: ["spotify.playlists.import:write"],
+      })),
     }));
 
     const route = await loadPostRoute(
@@ -124,10 +138,12 @@ describe("Spotify music import route", () => {
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(body.pathname).toBe("/spotify/playlists/import");
-    expect(body.authorization).toBeNull();
+    expect(body.authorization).toBe("Bearer service-token-1");
     expect(body.body).toEqual({
       source: "spotify",
       playlistId: "37i9dQZF1DXcBWIGoYBM5M",
+      targetUserId: "user-1",
+      targetUserEmail: "listener@example.com",
       createPlaylist: true,
       playlist: {
         id: "37i9dQZF1DXcBWIGoYBM5M",
@@ -196,10 +212,15 @@ describe("Spotify music import route", () => {
     );
 
     vi.doMock("@/server/auth", () => ({
-      auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+      auth: vi.fn(async () => ({
+        user: { id: "user-1", email: "listener@example.com" },
+      })),
     }));
     vi.doMock("@/app/api/v2/_lib", () => ({
       proxyApiV2,
+    }));
+    vi.doMock("@/lib/server/songbird-token", () => ({
+      getSongbirdAccessToken: vi.fn(),
     }));
 
     const route = await loadPostRoute(
@@ -233,6 +254,8 @@ describe("Spotify music import route", () => {
     expect(body.body).toEqual({
       source: "spotify",
       playlistId: "37i9dQZF1DXcBWIGoYBM5M",
+      targetUserId: "user-1",
+      targetUserEmail: "listener@example.com",
       createPlaylist: true,
       playlistName: "Imported playlist",
       isPublic: true,

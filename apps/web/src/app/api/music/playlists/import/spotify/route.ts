@@ -1,4 +1,5 @@
 import { proxyApiV2 } from "@/app/api/v2/_lib";
+import { getSongbirdAccessToken } from "@/lib/server/songbird-token";
 import { auth } from "@/server/auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   if (authorization) {
     headers.set("authorization", authorization);
+  } else {
+    const token = await getSongbirdAccessToken();
+    headers.set("authorization", `${token.tokenType} ${token.accessToken}`);
   }
 
   const sourcePlaylist = payload.sourcePlaylist
@@ -92,6 +96,8 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify({
       source: "spotify",
       playlistId: payload.spotifyPlaylistId,
+      targetUserId: session.user.id,
+      targetUserEmail: session.user.email ?? undefined,
       createPlaylist: true,
       playlistName: payload.nameOverride,
       playlistDescription: payload.descriptionOverride,
