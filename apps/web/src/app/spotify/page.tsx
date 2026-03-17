@@ -15,6 +15,7 @@ import {
   getSpotifyFeatureConnectionSummary,
   maskSpotifyClientId,
 } from "@/utils/spotifyFeatureSettings";
+import { authFetch } from "@/services/spotifyAuthClient";
 import {
   api,
   ImportSpotifyPlaylistError,
@@ -574,6 +575,7 @@ export default function SpotifyPage() {
   );
   const importSpotifyPlaylistMutation =
     api.music.importSpotifyPlaylist.useMutation({
+      fetchImpl: authFetch,
       onSuccess: async (result) => {
         setImportResult(result);
         setImportDiagnostics(null);

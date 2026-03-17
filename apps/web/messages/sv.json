@@ -752,6 +752,7 @@
     "importUnavailable": "Spotify-import är inte tillgänglig från appens backend ännu.",
     "importReconnectSpotify": "Anslut eller uppdatera din sparade Spotify-konfiguration i Inställningar innan du importerar.",
     "importPlaylistNotFound": "Spotify kunde inte hitta den spellistan.",
+    "importBackendProtected": "Den nuvarande backend-distributionen skyddas av Vercel-autentisering, sa appen kan inte na Spotify-importvagen an.",
     "importBackendRouteMissing": "Den nuvarande backend-distributionen kunde inte hantera Spotify-importbegäran. Det ser ut som en saknad eller föråldrad importrutt, inte som en saknad spellista.",
     "importLegacyAuthContract": "Import-backenden förväntar sig fortfarande äldre Spotify-autentisering. Den borde acceptera spellistans payload som redan har laddats i appen.",
     "importUpstreamFailure": "Spotify-importen misslyckades under hämtning eller konvertering av spår. Försök igen om en stund.",

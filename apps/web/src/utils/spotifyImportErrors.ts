@@ -2,6 +2,7 @@ export type SpotifyImportErrorMessageKey =
   | "importInvalidPlaylist"
   | "importNoMatches"
   | "importLegacyAuthContract"
+  | "importBackendProtected"
   | "importBackendRouteMissing"
   | "settingsIncomplete"
   | "credentialsRejected"
@@ -48,6 +49,16 @@ export function getSpotifyImportErrorMessageKey(
       normalized.includes("no auth token")
     ) {
       return "importLegacyAuthContract";
+    }
+
+    if (
+      (normalized.includes("authentication required") &&
+        normalized.includes("vercel")) ||
+      normalized.includes("vercel authentication") ||
+      normalized.includes("vercel.com/sso-api") ||
+      normalized.includes("_vercel_sso_nonce")
+    ) {
+      return "importBackendProtected";
     }
 
     if (

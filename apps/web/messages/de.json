@@ -752,6 +752,7 @@
     "importUnavailable": "Der Spotify-Import ist im App-Backend noch nicht verfuegbar.",
     "importReconnectSpotify": "Aktualisiere oder verbinde dein gespeichertes Spotify-Setup in den Einstellungen erneut, bevor du importierst.",
     "importPlaylistNotFound": "Spotify konnte diese Playlist nicht finden.",
+    "importBackendProtected": "Die aktuelle Backend-Bereitstellung ist durch Vercel-Authentifizierung geschuetzt, daher kann die App die Spotify-Import-Route noch nicht erreichen.",
     "importBackendRouteMissing": "Die aktuelle Backend-Bereitstellung konnte die Spotify-Importanfrage nicht verarbeiten. Das sieht nach einer fehlenden oder veralteten Import-Route aus, nicht nach einer fehlenden Playlist.",
     "importLegacyAuthContract": "Das Import-Backend erwartet noch veraltete Spotify-Auth. Es sollte die bereits in der App geladene Playlist-Nutzlast akzeptieren.",
     "importUpstreamFailure": "Beim Abrufen oder Umwandeln der Tracks ist ein Spotify-Importfehler aufgetreten. Bitte gleich noch einmal versuchen.",

@@ -28,6 +28,24 @@ describe("spotify import error mapping", () => {
     ).toBe("signInRequired");
   });
 
+  it("maps Vercel deployment-protection pages to a backend deployment error", () => {
+    expect(
+      getSpotifyImportErrorMessageKey({
+        message:
+          "<!doctype html><title>Authentication Required</title>Vercel Authentication",
+        status: 401,
+      }),
+    ).toBe("importBackendProtected");
+
+    expect(
+      getSpotifyImportErrorMessageKey({
+        message:
+          "Authentication Required. Continue via https://vercel.com/sso-api",
+        status: 401,
+      }),
+    ).toBe("importBackendProtected");
+  });
+
   it("maps generic backend 404 pages to a route/deployment error", () => {
     expect(
       getSpotifyImportErrorMessageKey({

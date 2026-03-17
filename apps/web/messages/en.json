@@ -752,6 +752,7 @@
     "importUnavailable": "Spotify import isn't available from the app backend yet.",
     "importReconnectSpotify": "Reconnect or refresh your saved Spotify setup in Settings before importing.",
     "importPlaylistNotFound": "Spotify couldn't find that playlist.",
+    "importBackendProtected": "The current backend deployment is protected by Vercel authentication, so the app cannot reach the Spotify import route yet.",
     "importBackendRouteMissing": "The current backend deployment could not handle the Spotify import request. This looks like a missing or outdated import route, not a missing playlist.",
     "importLegacyAuthContract": "The import backend is still expecting legacy Spotify auth. It should accept the playlist payload already loaded in the app.",
     "importUpstreamFailure": "Spotify import failed while fetching or converting tracks. Try again in a moment.",
