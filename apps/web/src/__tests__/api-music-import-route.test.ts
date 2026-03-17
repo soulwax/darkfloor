@@ -213,7 +213,12 @@ describe("Spotify music import route", () => {
 
     vi.doMock("@/server/auth", () => ({
       auth: vi.fn(async () => ({
-        user: { id: "user-1", email: "listener@example.com" },
+        user: {
+          id: "user-1",
+          email: "listener@example.com",
+          name: "Listener",
+          image: "https://cdn.example.com/avatar.png",
+        },
       })),
     }));
     vi.doMock("@/app/api/v2/_lib", () => ({
@@ -256,6 +261,8 @@ describe("Spotify music import route", () => {
       playlistId: "37i9dQZF1DXcBWIGoYBM5M",
       targetUserId: "user-1",
       targetUserEmail: "listener@example.com",
+      targetUserName: "Listener",
+      targetUserProfileImage: "https://cdn.example.com/avatar.png",
       createPlaylist: true,
       playlistName: "Imported playlist",
       isPublic: true,

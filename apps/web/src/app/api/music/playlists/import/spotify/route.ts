@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
       playlistId: payload.spotifyPlaylistId,
       targetUserId: session.user.id,
       targetUserEmail: session.user.email ?? undefined,
+      targetUserName: session.user.name ?? undefined,
+      targetUserProfileImage: session.user.image ?? undefined,
       createPlaylist: true,
       playlistName: payload.nameOverride,
       playlistDescription: payload.descriptionOverride,
