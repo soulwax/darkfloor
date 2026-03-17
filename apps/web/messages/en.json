@@ -746,6 +746,10 @@
     "importPartialDescription": "The playlist was still created successfully. {unmatchedCount, plural, one {# track remains unmatched} other {# tracks remain unmatched}}{skippedCount, plural, =0 {.} one {, and # track was skipped by the backend.} other {, and # tracks were skipped by the backend.}}",
     "unmatchedTracks": "Unmatched tracks",
     "noUnmatchedTracks": "Everything in this import matched cleanly.",
+    "importAmbiguousCandidatesTitle": "Deezer suggestions",
+    "importAmbiguousCandidatesShow": "Show {count, plural, one {# similar Deezer track} other {# similar Deezer tracks}}",
+    "importAmbiguousCandidatesHide": "Hide {count, plural, one {# similar Deezer track} other {# similar Deezer tracks}}",
+    "importCandidateMatchScore": "{score}% match",
     "openImportedPlaylist": "Open imported playlist",
     "importInvalidPlaylist": "That Spotify playlist link or ID looks invalid. Check it and try again.",
     "importNoMatches": "We couldn't match any tracks from that Spotify playlist yet.",
@@ -766,6 +770,7 @@
     "importReasonAmbiguous": "Ambiguous",
     "importReasonInvalid": "Invalid",
     "importReasonUnsupported": "Unsupported",
+    "openTrackOnDeezer": "Open {title} on Deezer",
     "openTrackOnSpotify": "Open {title} in Spotify"
   },
   "auth": {

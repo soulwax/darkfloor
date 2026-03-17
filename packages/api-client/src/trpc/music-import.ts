@@ -14,6 +14,17 @@ const spotifyImportUnmatchedReasonSchema = z.enum([
   "unsupported",
 ]);
 
+const spotifyImportCandidateSchema = z.object({
+  deezerTrackId: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  artist: z.string().trim().min(1).nullable(),
+  album: z.string().trim().min(1).nullable(),
+  durationSeconds: z.number().int().nonnegative().nullable(),
+  score: z.number().nullable(),
+  link: z.string().trim().min(1).nullable(),
+  coverImageUrl: z.string().trim().min(1).nullable(),
+});
+
 const spotifyImportSourceTrackSchema = z.object({
   index: z.number().int().nonnegative(),
   spotifyTrackId: z.string().trim().min(1).nullable().optional(),
@@ -63,6 +74,7 @@ const importSpotifyPlaylistResponseSchema = z.object({
         name: z.string().trim().min(1),
         artist: z.string().trim().min(1).nullable(),
         reason: spotifyImportUnmatchedReasonSchema,
+        candidates: z.array(spotifyImportCandidateSchema).optional(),
       }),
     ),
   }),

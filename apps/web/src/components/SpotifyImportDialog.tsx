@@ -14,9 +14,12 @@ import type {
 } from "@starchild/api-client/trpc/react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
   CircleAlert,
   CircleCheck,
   Disc3,
@@ -90,6 +93,39 @@ function SpotifyImportCover(props: { imageUrl: string | null; alt: string }) {
   );
 }
 
+function DeezerCandidateCover(props: { imageUrl: string | null; alt: string }) {
+  const { alt, imageUrl } = props;
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const resolvedImageUrl =
+    imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
+
+  return (
+    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-muted)]/20">
+      {resolvedImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolvedImageUrl}
+          alt={alt}
+          className="h-full w-full object-cover"
+          onError={() => setFailedImageUrl(resolvedImageUrl)}
+        />
+      ) : (
+        <ListMusic className="h-4 w-4 text-[var(--color-subtext)]" />
+      )}
+    </div>
+  );
+}
+
+function formatTrackDuration(durationSeconds: number | null): string | null {
+  if (durationSeconds == null || durationSeconds < 0) {
+    return null;
+  }
+
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = durationSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const {
     importDiagnostics,
@@ -106,6 +142,9 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const tp = useTranslations("playlists");
   const [playlistName, setPlaylistName] = useState(() => playlist?.name ?? "");
   const [isPublic, setIsPublic] = useState(false);
+  const [expandedAmbiguousTracks, setExpandedAmbiguousTracks] = useState<
+    Record<string, boolean>
+  >({});
 
   const canSubmit = Boolean(
     playlist && playlistName.trim().length > 0 && !isSubmitting,
@@ -137,6 +176,10 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
       : t("trackCountUnknown");
   }, [playlist, t, tc]);
 
+  useEffect(() => {
+    setExpandedAmbiguousTracks({});
+  }, [importResult, isOpen]);
+
   const handleSubmit = () => {
     if (!playlist || !playlistName.trim()) {
       return;
@@ -148,6 +191,13 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
         playlistName.trim() !== playlist.name ? playlistName.trim() : undefined,
       isPublic,
     });
+  };
+
+  const toggleAmbiguousTrack = (trackKey: string) => {
+    setExpandedAmbiguousTracks((current) => ({
+      ...current,
+      [trackKey]: !current[trackKey],
+    }));
   };
 
   return (
@@ -594,44 +644,161 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                         </p>
                       ) : (
                         <div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">
-                          {unmatchedTracks.map((track) => (
-                            <div
-                              key={`${track.index}-${track.spotifyTrackId ?? track.name}`}
-                              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-4 py-3"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-3">
-                                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)] text-xs font-semibold text-[var(--color-text)]">
-                                      {track.index + 1}
-                                    </span>
-                                    <p className="truncate text-sm font-medium text-[var(--color-text)]">
-                                      {track.name}
-                                    </p>
-                                  </div>
-                                  <p className="mt-2 truncate text-xs text-[var(--color-subtext)]">
-                                    {track.artist ?? tc("unknownArtist")}
-                                  </p>
-                                </div>
-                                <span
-                                  className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase ${getReasonBadgeClasses(track.reason)}`}
+                          {unmatchedTracks.map((track) => {
+                              const trackKey = `${track.index}-${track.spotifyTrackId ?? track.name}`;
+                              const hasCandidates =
+                                track.reason === "ambiguous" &&
+                                (track.candidates?.length ?? 0) > 0;
+                              const isExpanded =
+                                expandedAmbiguousTracks[trackKey] ?? false;
+
+                              return (
+                                <div
+                                  key={trackKey}
+                                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-4 py-3"
                                 >
-                                  {track.reason === "ambiguous"
-                                    ? t("importReasonAmbiguous")
-                                    : track.reason === "invalid"
-                                      ? t("importReasonInvalid")
-                                      : track.reason === "unsupported"
-                                        ? t("importReasonUnsupported")
-                                        : t("importReasonNotFound")}
-                                </span>
-                              </div>
-                              {track.spotifyTrackId ? (
-                                <p className="mt-3 font-mono text-[11px] text-[var(--color-subtext)]/90">
-                                  {track.spotifyTrackId}
-                                </p>
-                              ) : null}
-                            </div>
-                          ))}
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-3">
+                                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)] text-xs font-semibold text-[var(--color-text)]">
+                                          {track.index + 1}
+                                        </span>
+                                        <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                                          {track.name}
+                                        </p>
+                                      </div>
+                                      <p className="mt-2 truncate text-xs text-[var(--color-subtext)]">
+                                        {track.artist ?? tc("unknownArtist")}
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase ${getReasonBadgeClasses(track.reason)}`}
+                                    >
+                                      {track.reason === "ambiguous"
+                                        ? t("importReasonAmbiguous")
+                                        : track.reason === "invalid"
+                                          ? t("importReasonInvalid")
+                                          : track.reason === "unsupported"
+                                            ? t("importReasonUnsupported")
+                                            : t("importReasonNotFound")}
+                                    </span>
+                                  </div>
+                                  {track.spotifyTrackId ? (
+                                    <p className="mt-3 font-mono text-[11px] text-[var(--color-subtext)]/90">
+                                      {track.spotifyTrackId}
+                                    </p>
+                                  ) : null}
+
+                                  {hasCandidates ? (
+                                    <div className="mt-4 rounded-2xl border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.05)] p-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleAmbiguousTrack(trackKey)}
+                                        aria-expanded={isExpanded}
+                                        className="flex w-full items-center justify-between gap-3 rounded-xl px-1 py-1 text-left transition hover:text-[var(--color-text)]"
+                                      >
+                                        <div>
+                                          <p className="text-xs font-semibold tracking-[0.14em] text-amber-100 uppercase">
+                                            {t("importAmbiguousCandidatesTitle")}
+                                          </p>
+                                          <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                                            {isExpanded
+                                              ? t("importAmbiguousCandidatesHide", {
+                                                  count:
+                                                    track.candidates?.length ?? 0,
+                                                })
+                                              : t("importAmbiguousCandidatesShow", {
+                                                  count:
+                                                    track.candidates?.length ?? 0,
+                                                })}
+                                          </p>
+                                        </div>
+                                        {isExpanded ? (
+                                          <ChevronUp className="h-4 w-4 shrink-0 text-amber-200" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 shrink-0 text-amber-200" />
+                                        )}
+                                      </button>
+
+                                      {isExpanded ? (
+                                        <div className="mt-3 space-y-3">
+                                          {track.candidates?.map((candidate) => (
+                                            <div
+                                              key={`${trackKey}-${candidate.deezerTrackId}`}
+                                              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/75 p-3"
+                                            >
+                                              <div className="flex items-start gap-3">
+                                                <DeezerCandidateCover
+                                                  imageUrl={candidate.coverImageUrl}
+                                                  alt={candidate.title}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="flex flex-wrap items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                      <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                                                        {candidate.title}
+                                                      </p>
+                                                      <p className="mt-1 truncate text-xs text-[var(--color-subtext)]">
+                                                        {candidate.artist ??
+                                                          tc("unknownArtist")}
+                                                      </p>
+                                                    </div>
+                                                    {typeof candidate.score ===
+                                                    "number" ? (
+                                                      <span className="rounded-full border border-[rgba(29,185,84,0.28)] bg-[rgba(29,185,84,0.12)] px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-[#9ff3bd] uppercase">
+                                                        {t(
+                                                          "importCandidateMatchScore",
+                                                          {
+                                                            score: Math.round(
+                                                              candidate.score,
+                                                            ),
+                                                          },
+                                                        )}
+                                                      </span>
+                                                    ) : null}
+                                                  </div>
+                                                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--color-subtext)]">
+                                                    <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-2.5 py-1">
+                                                      {candidate.album ??
+                                                        tc("unknownAlbum")}
+                                                    </span>
+                                                    {formatTrackDuration(
+                                                      candidate.durationSeconds,
+                                                    ) ? (
+                                                      <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-2.5 py-1">
+                                                        {formatTrackDuration(
+                                                          candidate.durationSeconds,
+                                                        )}
+                                                      </span>
+                                                    ) : null}
+                                                  </div>
+                                                  {candidate.link ? (
+                                                    <a
+                                                      href={candidate.link}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[#9ff3bd] transition hover:text-[#c8f9d9]"
+                                                    >
+                                                      {t(
+                                                        "openTrackOnDeezer",
+                                                        {
+                                                          title: candidate.title,
+                                                        },
+                                                      )}
+                                                      <ArrowUpRight className="h-3.5 w-3.5" />
+                                                    </a>
+                                                  ) : null}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })}
                         </div>
                       )}
                     </div>

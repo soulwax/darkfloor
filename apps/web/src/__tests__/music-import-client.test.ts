@@ -29,7 +29,19 @@ describe("importSpotifyPlaylist client", () => {
                 spotifyTrackId: "spotify-track-2",
                 name: "Missing track",
                 artist: "Unknown Artist",
-                reason: "not_found",
+                reason: "ambiguous",
+                candidates: [
+                  {
+                    deezerTrackId: "601",
+                    title: "Midnight City",
+                    artist: "M83",
+                    album: "Hurry Up, We Are Dreaming",
+                    durationSeconds: 241,
+                    score: 92,
+                    link: "https://www.deezer.com/track/601",
+                    coverImageUrl: "https://cdn.test/601.jpg",
+                  },
+                ],
               },
             ],
           },
@@ -110,6 +122,9 @@ describe("importSpotifyPlaylist client", () => {
     expect(result.playlist.id).toBe("3fa85f64-5717-4562-b3fc-2c963f66afa6");
     expect(typeof result.playlist.id).toBe("string");
     expect(result.importReport.unmatched[0]?.index).toBe(2);
+    expect(result.importReport.unmatched[0]?.candidates?.[0]?.title).toBe(
+      "Midnight City",
+    );
   });
 
   it("throws a status-aware error when Spotify setup is incomplete", async () => {

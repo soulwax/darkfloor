@@ -120,6 +120,20 @@ const backendSpotifyImportResponseSchema = z.object({
         name: z.string().trim().min(1),
         artist: z.string().trim().min(1).nullable(),
         reason: z.enum(["not_found", "ambiguous", "invalid", "unsupported"]),
+        candidates: z
+          .array(
+            z.object({
+              deezerTrackId: z.string().trim().min(1),
+              title: z.string().trim().min(1),
+              artist: z.string().trim().min(1).nullable(),
+              album: z.string().trim().min(1).nullable(),
+              durationSeconds: z.number().int().nonnegative().nullable(),
+              score: z.number().nullable(),
+              link: z.string().trim().min(1).nullable(),
+              coverImageUrl: z.string().trim().min(1).nullable(),
+            }),
+          )
+          .optional(),
       }),
     ),
   }),
