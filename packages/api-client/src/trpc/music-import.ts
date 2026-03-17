@@ -31,6 +31,7 @@ const spotifyImportSourcePlaylistSchema = z.object({
   description: z.string().trim().min(1).nullable().optional(),
   ownerName: z.string().trim().min(1).nullable().optional(),
   trackCount: z.number().int().nonnegative().nullable().optional(),
+  imageUrl: z.string().trim().min(1).nullable().optional(),
   tracks: z.array(spotifyImportSourceTrackSchema),
 });
 
@@ -169,6 +170,7 @@ function normalizeImportSpotifyPlaylistInput(
             parsedInput.sourcePlaylist.description?.trim() ?? undefined,
           ownerName: parsedInput.sourcePlaylist.ownerName?.trim() ?? undefined,
           trackCount: parsedInput.sourcePlaylist.trackCount,
+          imageUrl: parsedInput.sourcePlaylist.imageUrl?.trim() ?? undefined,
           tracks: parsedInput.sourcePlaylist.tracks.map((track) => ({
             index: track.index,
             spotifyTrackId: track.spotifyTrackId?.trim() ?? null,

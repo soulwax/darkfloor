@@ -1,39 +1,338 @@
 import { proxyApiV2 } from "@/app/api/v2/_lib";
 import { getSongbirdAccessToken } from "@/lib/server/songbird-token";
 import { auth } from "@/server/auth";
+import { db } from "@/server/db";
+import { playlistTracks, playlists } from "@/server/db/schema";
+import { type Track } from "@starchild/types";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const spotifyImportSourceTrackSchema = z.object({
+  index: z.number().int().nonnegative(),
+  spotifyTrackId: z.string().trim().min(1).nullable().optional(),
+  name: z.string().trim().min(1),
+  artist: z.string().trim().min(1).nullable().optional(),
+  artists: z.array(z.string().trim().min(1)).optional(),
+  albumName: z.string().trim().min(1).nullable().optional(),
+  durationMs: z.number().int().nonnegative().nullable().optional(),
+  externalUrl: z.string().trim().min(1).nullable().optional(),
+});
+
+const spotifyImportSourcePlaylistSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  description: z.string().trim().min(1).nullable().optional(),
+  ownerName: z.string().trim().min(1).nullable().optional(),
+  trackCount: z.number().int().nonnegative().nullable().optional(),
+  imageUrl: z.string().trim().min(1).nullable().optional(),
+  tracks: z.array(spotifyImportSourceTrackSchema),
+});
+
 const spotifyImportRequestSchema = z.object({
   spotifyPlaylistId: z.string().trim().min(1),
   nameOverride: z.string().trim().min(1).optional(),
   descriptionOverride: z.string().trim().min(1).optional(),
   isPublic: z.boolean().optional(),
-  sourcePlaylist: z
+  sourcePlaylist: spotifyImportSourcePlaylistSchema.optional(),
+});
+
+const backendDeezerTrackSchema = z
+  .object({
+    id: z.union([z.number(), z.string()]),
+    readable: z.boolean().optional(),
+    title: z.string().trim().min(1),
+    title_short: z.string().trim().min(1).optional(),
+    title_version: z.string().trim().min(1).optional(),
+    link: z.string().trim().min(1).optional(),
+    duration: z.number().int().nonnegative().optional(),
+    rank: z.number().int().optional(),
+    explicit_lyrics: z.boolean().optional(),
+    explicit_content_lyrics: z.number().int().optional(),
+    explicit_content_cover: z.number().int().optional(),
+    preview: z.string().optional(),
+    md5_image: z.string().optional(),
+    artist: z
+      .object({
+        id: z.union([z.number(), z.string()]).optional(),
+        name: z.string().trim().min(1).optional(),
+        link: z.string().trim().min(1).optional(),
+        picture: z.string().trim().min(1).optional(),
+        picture_small: z.string().trim().min(1).optional(),
+        picture_medium: z.string().trim().min(1).optional(),
+        picture_big: z.string().trim().min(1).optional(),
+        picture_xl: z.string().trim().min(1).optional(),
+        tracklist: z.string().trim().min(1).optional(),
+      })
+      .passthrough()
+      .optional(),
+    album: z
+      .object({
+        id: z.union([z.number(), z.string()]).optional(),
+        title: z.string().trim().min(1).optional(),
+        cover: z.string().trim().min(1).optional(),
+        cover_small: z.string().trim().min(1).optional(),
+        cover_medium: z.string().trim().min(1).optional(),
+        cover_big: z.string().trim().min(1).optional(),
+        cover_xl: z.string().trim().min(1).optional(),
+        md5_image: z.string().trim().min(1).optional(),
+        release_date: z.string().trim().min(1).optional(),
+        tracklist: z.string().trim().min(1).optional(),
+      })
+      .passthrough()
+      .optional(),
+    bpm: z.number().optional(),
+    gain: z.number().optional(),
+  })
+  .passthrough();
+
+const backendSpotifyImportResponseSchema = z.object({
+  ok: z.literal(true),
+  playlistCreated: z.boolean().optional(),
+  playlist: z
     .object({
       id: z.string().trim().min(1),
       name: z.string().trim().min(1),
-      description: z.string().trim().min(1).nullable().optional(),
-      ownerName: z.string().trim().min(1).nullable().optional(),
-      trackCount: z.number().int().nonnegative().nullable().optional(),
-      tracks: z.array(
-        z.object({
-          index: z.number().int().nonnegative(),
-          spotifyTrackId: z.string().trim().min(1).nullable().optional(),
-          name: z.string().trim().min(1),
-          artist: z.string().trim().min(1).nullable().optional(),
-          artists: z.array(z.string().trim().min(1)).optional(),
-          albumName: z.string().trim().min(1).nullable().optional(),
-          durationMs: z.number().int().nonnegative().nullable().optional(),
-          externalUrl: z.string().trim().min(1).nullable().optional(),
-        }),
-      ),
     })
+    .nullable()
     .optional(),
+  matchedTracks: z.array(
+    z.object({
+      index: z.number().int().nonnegative(),
+      spotifyTrackId: z.string().trim().min(1).nullable().optional(),
+      deezerTrackId: z.string().trim().min(1),
+      deezerTrack: backendDeezerTrackSchema,
+    }),
+  ),
+  importReport: z.object({
+    sourcePlaylistId: z.string().trim().min(1),
+    sourcePlaylistName: z.string().trim().min(1),
+    totalTracks: z.number().int().nonnegative(),
+    matchedCount: z.number().int().nonnegative(),
+    unmatchedCount: z.number().int().nonnegative(),
+    skippedCount: z.number().int().nonnegative(),
+    unmatched: z.array(
+      z.object({
+        index: z.number().int().nonnegative(),
+        spotifyTrackId: z.string().trim().min(1).nullable(),
+        name: z.string().trim().min(1),
+        artist: z.string().trim().min(1).nullable(),
+        reason: z.enum(["not_found", "ambiguous", "invalid", "unsupported"]),
+      }),
+    ),
+  }),
 });
+
+function normalizeNumericId(value: number | string | undefined): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  throw new Error(`Invalid Deezer numeric id: ${String(value)}`);
+}
+
+function coalesceString(
+  ...values: Array<string | null | undefined>
+): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function coalesceCoverImage(
+  track: z.infer<typeof backendDeezerTrackSchema>,
+): string | null {
+  return (
+    coalesceString(
+      track.album?.cover_xl,
+      track.album?.cover_big,
+      track.album?.cover_medium,
+      track.album?.cover_small,
+      track.album?.cover,
+    ) ?? null
+  );
+}
+
+function toLocalTrack(
+  matchedTrack: z.infer<
+    typeof backendSpotifyImportResponseSchema
+  >["matchedTracks"][number],
+): Track {
+  const deezerTrackId = normalizeNumericId(
+    matchedTrack.deezerTrackId ?? matchedTrack.deezerTrack.id,
+  );
+  const albumCover = coalesceCoverImage(matchedTrack.deezerTrack) ?? "";
+  const albumCoverSmall =
+    coalesceString(
+      matchedTrack.deezerTrack.album?.cover_small,
+      matchedTrack.deezerTrack.album?.cover_medium,
+      matchedTrack.deezerTrack.album?.cover,
+      albumCover,
+    ) ?? "";
+  const albumCoverMedium =
+    coalesceString(
+      matchedTrack.deezerTrack.album?.cover_medium,
+      matchedTrack.deezerTrack.album?.cover_big,
+      matchedTrack.deezerTrack.album?.cover,
+      albumCover,
+    ) ?? albumCoverSmall;
+  const albumCoverBig =
+    coalesceString(
+      matchedTrack.deezerTrack.album?.cover_big,
+      matchedTrack.deezerTrack.album?.cover_xl,
+      matchedTrack.deezerTrack.album?.cover,
+      albumCover,
+    ) ?? albumCoverMedium;
+  const albumCoverXl =
+    coalesceString(
+      matchedTrack.deezerTrack.album?.cover_xl,
+      matchedTrack.deezerTrack.album?.cover_big,
+      matchedTrack.deezerTrack.album?.cover,
+      albumCover,
+    ) ?? albumCoverBig;
+
+  return {
+    id: deezerTrackId,
+    readable: matchedTrack.deezerTrack.readable ?? true,
+    title: matchedTrack.deezerTrack.title,
+    title_short:
+      matchedTrack.deezerTrack.title_short ?? matchedTrack.deezerTrack.title,
+    title_version: matchedTrack.deezerTrack.title_version,
+    link:
+      coalesceString(matchedTrack.deezerTrack.link) ??
+      `https://www.deezer.com/track/${deezerTrackId}`,
+    duration: matchedTrack.deezerTrack.duration ?? 0,
+    rank: matchedTrack.deezerTrack.rank ?? 0,
+    explicit_lyrics: matchedTrack.deezerTrack.explicit_lyrics ?? false,
+    explicit_content_lyrics:
+      matchedTrack.deezerTrack.explicit_content_lyrics ??
+      (matchedTrack.deezerTrack.explicit_lyrics ? 1 : 0),
+    explicit_content_cover:
+      matchedTrack.deezerTrack.explicit_content_cover ?? 0,
+    preview: matchedTrack.deezerTrack.preview ?? "",
+    md5_image:
+      coalesceString(
+        matchedTrack.deezerTrack.md5_image,
+        matchedTrack.deezerTrack.album?.md5_image,
+      ) ?? "",
+    artist: {
+      id: normalizeNumericId(matchedTrack.deezerTrack.artist?.id ?? 0),
+      name: coalesceString(matchedTrack.deezerTrack.artist?.name) ?? "Unknown Artist",
+      link: coalesceString(matchedTrack.deezerTrack.artist?.link),
+      picture: coalesceString(matchedTrack.deezerTrack.artist?.picture),
+      picture_small: coalesceString(
+        matchedTrack.deezerTrack.artist?.picture_small,
+      ),
+      picture_medium: coalesceString(
+        matchedTrack.deezerTrack.artist?.picture_medium,
+      ),
+      picture_big: coalesceString(matchedTrack.deezerTrack.artist?.picture_big),
+      picture_xl: coalesceString(matchedTrack.deezerTrack.artist?.picture_xl),
+      tracklist: coalesceString(matchedTrack.deezerTrack.artist?.tracklist),
+      type: "artist",
+    },
+    album: {
+      id: normalizeNumericId(matchedTrack.deezerTrack.album?.id ?? 0),
+      title: coalesceString(matchedTrack.deezerTrack.album?.title) ?? "Unknown Album",
+      cover: albumCover,
+      cover_small: albumCoverSmall,
+      cover_medium: albumCoverMedium,
+      cover_big: albumCoverBig,
+      cover_xl: albumCoverXl,
+      md5_image:
+        coalesceString(
+          matchedTrack.deezerTrack.album?.md5_image,
+          matchedTrack.deezerTrack.md5_image,
+        ) ?? "",
+      tracklist: coalesceString(matchedTrack.deezerTrack.album?.tracklist) ?? "",
+      type: "album",
+      release_date: coalesceString(matchedTrack.deezerTrack.album?.release_date),
+    },
+    type: "track",
+    bpm: matchedTrack.deezerTrack.bpm,
+    gain: matchedTrack.deezerTrack.gain,
+    deezer_id: deezerTrackId,
+    spotify_id: matchedTrack.spotifyTrackId ?? undefined,
+  };
+}
+
+async function createLocalPlaylistFromSpotifyImport(input: {
+  userId: string;
+  payload: z.infer<typeof spotifyImportRequestSchema>;
+  translation: z.infer<typeof backendSpotifyImportResponseSchema>;
+}): Promise<{ id: number; name: string }> {
+  const { payload, translation, userId } = input;
+  const playlistName =
+    payload.nameOverride?.trim() ||
+    payload.sourcePlaylist?.name?.trim() ||
+    translation.playlist?.name?.trim() ||
+    translation.importReport.sourcePlaylistName;
+  const playlistDescription =
+    payload.descriptionOverride?.trim() ||
+    payload.sourcePlaylist?.description?.trim() ||
+    "Imported from Spotify";
+  const coverImage =
+    payload.sourcePlaylist?.imageUrl?.trim() ??
+    translation.matchedTracks[0]?.deezerTrack.album?.cover_medium ??
+    translation.matchedTracks[0]?.deezerTrack.album?.cover ??
+    null;
+  const tracks = translation.matchedTracks.map((matchedTrack) =>
+    toLocalTrack(matchedTrack),
+  );
+
+  return db.transaction(async (tx) => {
+    const [playlist] = await tx
+      .insert(playlists)
+      .values({
+        userId,
+        name: playlistName,
+        description: playlistDescription,
+        isPublic: payload.isPublic ?? false,
+        coverImage,
+      })
+      .returning({
+        id: playlists.id,
+        name: playlists.name,
+      });
+
+    if (!playlist) {
+      throw new Error("Failed to create the imported Starchild playlist.");
+    }
+
+    if (tracks.length > 0) {
+      await tx.insert(playlistTracks).values(
+        tracks.map((track, position) => ({
+          playlistId: playlist.id,
+          trackId: track.id,
+          deezerId:
+            typeof track.deezer_id === "string"
+              ? Number.parseInt(track.deezer_id, 10)
+              : track.deezer_id,
+          trackData: track,
+          position,
+        })),
+      );
+    }
+
+    return playlist;
+  });
+}
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -77,6 +376,7 @@ export async function POST(request: NextRequest) {
         description: payload.sourcePlaylist.description ?? null,
         ownerName: payload.sourcePlaylist.ownerName ?? null,
         trackCount: payload.sourcePlaylist.trackCount ?? null,
+        imageUrl: payload.sourcePlaylist.imageUrl ?? null,
         tracks: payload.sourcePlaylist.tracks.map((track) => ({
           index: track.index,
           spotifyTrackId: track.spotifyTrackId ?? null,
@@ -100,7 +400,7 @@ export async function POST(request: NextRequest) {
       targetUserEmail: session.user.email ?? undefined,
       targetUserName: session.user.name ?? undefined,
       targetUserProfileImage: session.user.image ?? undefined,
-      createPlaylist: true,
+      createPlaylist: false,
       playlistName: payload.nameOverride,
       playlistDescription: payload.descriptionOverride,
       isPublic: payload.isPublic,
@@ -113,10 +413,69 @@ export async function POST(request: NextRequest) {
     }),
   });
 
-  return proxyApiV2({
+  const upstreamResponse = await proxyApiV2({
     pathname: "/spotify/playlists/import",
     request: upstreamRequest,
     method: "POST",
     timeoutMs: 30000,
   });
+
+  if (!upstreamResponse.ok) {
+    return upstreamResponse;
+  }
+
+  let translationPayload: unknown;
+
+  try {
+    translationPayload = await upstreamResponse.json();
+  } catch {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Spotify import backend returned invalid JSON.",
+      },
+      { status: 502 },
+    );
+  }
+
+  const parsedTranslation =
+    backendSpotifyImportResponseSchema.safeParse(translationPayload);
+  if (!parsedTranslation.success) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "The Spotify import backend did not return the matched track payload required to create a Starchild playlist.",
+      },
+      { status: 502 },
+    );
+  }
+
+  try {
+    const playlist = await createLocalPlaylistFromSpotifyImport({
+      userId: session.user.id,
+      payload,
+      translation: parsedTranslation.data,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      playlist: {
+        id: String(playlist.id),
+        name: playlist.name,
+      },
+      importReport: parsedTranslation.data.importReport,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create the imported Starchild playlist.",
+      },
+      { status: 500 },
+    );
+  }
 }

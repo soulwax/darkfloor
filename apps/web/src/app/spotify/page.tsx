@@ -511,6 +511,7 @@ export default function SpotifyPage() {
         ownerName: detail?.ownerName ?? playlist.ownerName,
         trackCount:
           detail?.trackCount ?? playlist.trackCount ?? tracks.length ?? null,
+        imageUrl: playlist.imageUrl,
         tracks: tracks.map((track, index) => ({
           index,
           spotifyTrackId: track.id,
