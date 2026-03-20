@@ -1062,7 +1062,7 @@
     "failedToSharePlaylist": "Misslyckades med att dela spellista"
   },
   "cookie": {
-    "message": "Vi använder funktionella cookies för att ge bästa möjliga upplevelse på vår plattform. Dessa är nödvändiga för att sidan ska fungera korrekt.",
+    "message": "Vi använder funktionella cookies för att ge bästa möjliga upplevelse på vår plattform. Dessa är nödvändiga för att webbplatsen ska fungera korrekt. Vi använder inga spårare, tredjepartscookies, annonsering, invasiv analys eller något liknande. Genom att klicka på \"Acceptera\" samtycker du till användningen av dessa funktionella cookies. Mer information finns i vår integritetspolicy.",
     "accept": "Jag förstår"
   },
   "error": {
