@@ -972,9 +972,6 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       </p>
                     </div>
                     <ul className="mt-3 space-y-1.5 text-sm text-(--color-subtext)">
-                      <li>{t("spotifyToPlaylistNews")}</li>
-                      <li>{t("languagesAddedFeature")}</li>
-                      <li>{t("spotifySettingsNotice")}</li>
                       <li>{t("spotifySavePrompt")}</li>
                     </ul>
                     <div className="mt-4 flex flex-wrap items-center gap-2">

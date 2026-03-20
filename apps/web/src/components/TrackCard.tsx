@@ -3,6 +3,7 @@
 "use client";
 
 import { useToast } from "@/contexts/ToastContext";
+import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 import { api } from "@starchild/api-client/trpc/react";
 import type { Track } from "@starchild/types";
 import { hapticLight, hapticSuccess } from "@/utils/haptics";
@@ -37,6 +38,7 @@ function TrackCardInner({
   const utils = api.useUtils();
   const { data: session } = useSession();
   const isAuthenticated = !!session;
+  const { openMenu } = useTrackContextMenu();
 
   const { data: favoriteData } = api.music.isFavorite.useQuery(
     { trackId: track.id },
@@ -91,6 +93,16 @@ function TrackCardInner({
     }
   }, [onAddToQueue, track, showToast, t]);
 
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hapticLight();
+      openMenu(track, event.clientX, event.clientY);
+    },
+    [openMenu, track],
+  );
+
   const handlePlay = useCallback(() => {
     hapticLight();
     onPlay(track);
@@ -127,7 +139,8 @@ function TrackCardInner({
       whileHover={{ scale: 1.01, y: -2 }}
       whileTap={{ scale: 0.98 }}
       transition={springPresets.snappy}
-      className="card group relative flex cursor-pointer items-center gap-3 !overflow-visible p-3 md:gap-4 md:p-4"
+    className="card group relative flex cursor-pointer items-center gap-3 !overflow-visible p-3 md:gap-4 md:p-4"
+    onContextMenu={handleContextMenu}
     >
       <div className="relative flex-shrink-0">
         <Image

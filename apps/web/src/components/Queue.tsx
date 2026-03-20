@@ -2,10 +2,13 @@
 
 "use client";
 
+import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 import type { QueueItem } from "@starchild/types";
 import { Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useCallback } from "react";
+import type { MouseEvent } from "react";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -22,6 +25,15 @@ interface QueueProps {
 
 export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
   const t = useTranslations("queue");
+  const { openMenu } = useTrackContextMenu();
+  const handleContextMenu = useCallback(
+    (event: MouseEvent<HTMLDivElement>, track: QueueItem["track"]) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openMenu(track, event.clientX, event.clientY);
+    },
+    [openMenu],
+  );
 
   return (
     <div className="theme-chrome-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l">
@@ -61,15 +73,18 @@ export function Queue({ queue, onClose, onRemove, onClear }: QueueProps) {
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
-            {queue.map((item, index) => {
-              const coverImage =
-                item.track.album.cover_small ?? item.track.album.cover;
+                {queue.map((item, index) => {
+                  const coverImage =
+                    item.track.album.cover_small ?? item.track.album.cover;
 
-              return (
-                <div
-                  key={item.id}
-                  className="group flex items-center gap-3 p-3 transition-colors hover:bg-[var(--color-surface-hover)]"
-                >
+                  return (
+                    <div
+                      key={item.id}
+                      className="group flex items-center gap-3 p-3 transition-colors hover:bg-[var(--color-surface-hover)]"
+                      onContextMenu={(event) =>
+                        handleContextMenu(event, item.track)
+                      }
+                    >
                   {}
                   <div className="w-6 flex-shrink-0 text-center text-sm text-[var(--color-muted)]">
                     {index + 1}
