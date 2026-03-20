@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@starchild/ui";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SimilarityPreference, Track } from "@starchild/types";
@@ -155,6 +156,7 @@ function QueueItem({
   const t = useTranslations("queue");
   const tc = useTranslations("common");
   const tm = useTranslations("trackMenu");
+  const { openMenu } = useTrackContextMenu();
   const [dragY, setDragY] = useState(0);
   const itemRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number>(0);
@@ -165,6 +167,28 @@ function QueueItem({
   useEffect(() => {
     currentIndexRef.current = index;
   }, [index]);
+
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hapticLight();
+      openMenu(track, event.clientX, event.clientY, {
+        queueActions: {
+          isQueued: true,
+          onPlayFromQueue: onPlay,
+          onMoveToNext: canPlayNext ? onPlayNext : undefined,
+        },
+        removeFromList: canRemove
+          ? {
+              label: t("removeFromQueueLabel"),
+              onRemove,
+            }
+          : undefined,
+      });
+    },
+    [canPlayNext, canRemove, onPlayNext, onPlay, onRemove, openMenu, t, track],
+  );
 
   const coverImage = getCoverImage(track, "small");
   const altText = track.album?.title?.trim()?.length
@@ -260,6 +284,7 @@ function QueueItem({
         opacity: isDragging ? 0.7 : 1,
       }}
       style={{ touchAction: "pan-y" }}
+      onContextMenu={handleContextMenu}
       className={`group relative flex items-center gap-3 p-3 transition-colors ${
         isSelected
           ? "bg-[rgba(88,198,177,0.18)] ring-2 ring-[rgba(88,198,177,0.4)]"

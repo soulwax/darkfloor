@@ -18,8 +18,9 @@ import {
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState, type MouseEvent } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
+import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 
 interface PlayerProps {
   currentTrack: Track | null;
@@ -84,6 +85,7 @@ export default function MaturePlayer({
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const { hideUI, setHideUI } = useGlobalPlayer();
+  const { openMenu } = useTrackContextMenu();
 
   const utils = api.useUtils();
   const { data: session } = useSession();
@@ -151,6 +153,17 @@ export default function MaturePlayer({
     onCycleRepeat();
   };
 
+  const handlePlayerContextMenu = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (!currentTrack) return;
+      event.preventDefault();
+      event.stopPropagation();
+      hapticLight();
+      openMenu(currentTrack, event.clientX, event.clientY);
+    },
+    [currentTrack, openMenu],
+  );
+
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressRef.current || !duration) return;
     const rect = progressRef.current.getBoundingClientRect();
@@ -172,7 +185,7 @@ export default function MaturePlayer({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="w-full">
+    <div className="w-full" onContextMenu={handlePlayerContextMenu}>
       {}
       <div
         ref={progressRef}
