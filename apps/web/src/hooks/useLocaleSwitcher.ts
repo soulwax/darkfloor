@@ -1,3 +1,5 @@
+// File: apps/web/src/hooks/useLocaleSwitcher.ts
+
 "use client";
 
 import { locales, type AppLocale } from "@/i18n/routing";

@@ -50,6 +50,8 @@ export default function ProfileHeader({
               height={128}
               className="h-32 w-32 rounded-full border-4 border-[var(--color-accent)]/55 shadow-[var(--color-accent)]/28 shadow-lg"
               onError={() => setImageError(true)}
+              loading="lazy"
+              quality={85}
             />
           ) : (
             <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-[var(--color-accent)]/55 bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-5xl font-bold text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)]">

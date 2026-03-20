@@ -13,7 +13,7 @@ import { Heart, ListPlus, MoreVertical, Share2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
 export interface TrackCardProps {
@@ -23,7 +23,7 @@ export interface TrackCardProps {
   showActions?: boolean;
 }
 
-export default function TrackCard({
+function TrackCardInner({
   track,
   onPlay,
   onAddToQueue,
@@ -68,7 +68,7 @@ export default function TrackCard({
     },
   });
 
-  const toggleFavorite = (e: React.MouseEvent) => {
+  const toggleFavorite = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (favoriteData?.isFavorite) {
@@ -80,23 +80,23 @@ export default function TrackCard({
     }
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 600);
-  };
+  }, [favoriteData?.isFavorite, removeFavorite, addFavorite, track]);
 
-  const handleAddToQueue = (e: React.MouseEvent) => {
+  const handleAddToQueue = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onAddToQueue) {
       hapticLight();
       onAddToQueue(track);
       showToast(t("addedToQueue", { title: track.title }), "success");
     }
-  };
+  }, [onAddToQueue, track, showToast, t]);
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     hapticLight();
     onPlay(track);
-  };
+  }, [onPlay, track]);
 
-  const handleShare = async (e: React.MouseEvent) => {
+  const handleShare = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     hapticLight();
     const trackId = track.deezer_id ?? track.id;
@@ -119,7 +119,7 @@ export default function TrackCard({
         showToast(t("failedToShareTrack"), "error");
       }
     }
-  };
+  }, [track, showToast, t]);
 
   return (
     <motion.div
@@ -237,3 +237,6 @@ export default function TrackCard({
     </motion.div>
   );
 }
+
+const TrackCard = memo(TrackCardInner);
+export default TrackCard;

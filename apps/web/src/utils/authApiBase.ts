@@ -1,3 +1,5 @@
+// File: apps/web/src/utils/authApiBase.ts
+
 const DEFAULT_AUTH_API_BASE = "https://www.darkfloor.one";
 const CANONICAL_AUTH_API_HOSTNAME = "www.darkfloor.one";
 const AUTH_API_HOST_ALIASES = new Set([

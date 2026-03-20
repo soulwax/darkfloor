@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/authSignOut.test.ts
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-auth/react", () => ({

@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/oauthProviders.test.ts
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("oauth provider config", () => {

@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/changelog/route.ts
+
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { NextResponse } from "next/server";

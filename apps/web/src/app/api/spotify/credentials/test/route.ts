@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/spotify/credentials/test/route.ts
+
 import { NextResponse } from "next/server";
 
 import { testUserSpotifyFeatureCredentials } from "@/lib/server/userSpotifyFeatureApi";

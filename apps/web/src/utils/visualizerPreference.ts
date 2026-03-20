@@ -57,4 +57,3 @@ export const getInitialVisualizerEnabledPreference = (): boolean => {
 
   return true;
 };
-

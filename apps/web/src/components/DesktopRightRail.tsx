@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 
 type RemovedQueueItem = {
   track: Track;
@@ -38,9 +38,9 @@ export function DesktopRightRail() {
   const { openMenu } = useTrackContextMenu();
   const currentTrack = player.currentTrack;
   const upNext = player.queue.slice(1);
-  const upcomingDuration = upNext.reduce(
-    (total, track) => total + (track.duration ?? 0),
-    0,
+  const upcomingDuration = useMemo(
+    () => upNext.reduce((total, track) => total + (track.duration ?? 0), 0),
+    [upNext],
   );
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -163,6 +163,7 @@ export function DesktopRightRail() {
                 width={64}
                 height={64}
                 className="h-16 w-16 rounded-lg object-cover shadow-md ring-1 ring-white/10"
+                quality={75}
               />
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-2 text-sm font-semibold text-[var(--color-text)]">
@@ -314,6 +315,8 @@ export function DesktopRightRail() {
                           width={36}
                           height={36}
                           className="h-9 w-9 shrink-0 rounded-md object-cover"
+                          loading="lazy"
+                          quality={60}
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs font-semibold text-[var(--color-text)]">

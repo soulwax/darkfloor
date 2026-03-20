@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/spotifyFeatureSettings.test.ts
+
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {

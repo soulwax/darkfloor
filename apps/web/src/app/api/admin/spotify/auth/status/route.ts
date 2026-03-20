@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/admin/spotify/auth/status/route.ts
+
 import { proxyApiV2 } from "@/app/api/v2/_lib";
 import { type NextRequest } from "next/server";
 

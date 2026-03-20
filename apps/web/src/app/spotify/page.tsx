@@ -1,3 +1,5 @@
+// File: apps/web/src/app/spotify/page.tsx
+
 "use client";
 
 import {

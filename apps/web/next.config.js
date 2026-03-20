@@ -174,6 +174,13 @@ const config = {
       "@dnd-kit/core",
       "@dnd-kit/sortable",
       "next-auth",
+      "next-intl",
+      "@starchild/ui",
+      "@starchild/types",
+      "@starchild/config",
+      "@starchild/visualizers",
+      "@starchild/player-react",
+      "@starchild/api-client",
     ],
     webpackBuildWorker: true,
     serverActions: {

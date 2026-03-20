@@ -126,8 +126,9 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   ].some((value) => (value ?? "").trim().length > 0);
   const homeFeedEnabled =
     mounted && !hasActiveRouteQuery && results.length === 0;
-  const visibleResults = results.filter(
-    (track) => !player.failedTrackIds.has(track.id),
+  const visibleResults = useMemo(
+    () => results.filter((track) => !player.failedTrackIds.has(track.id)),
+    [results, player.failedTrackIds],
   );
 
   useEffect(() => {

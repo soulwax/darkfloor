@@ -1,3 +1,5 @@
+// File: apps/web/src/i18n/request.ts
+
 import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { routing } from "./routing";

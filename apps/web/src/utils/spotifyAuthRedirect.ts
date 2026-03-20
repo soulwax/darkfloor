@@ -1,3 +1,5 @@
+// File: apps/web/src/utils/spotifyAuthRedirect.ts
+
 const FRONTEND_SPOTIFY_CALLBACK_PATH = "/auth/spotify/callback";
 const DEFAULT_SPOTIFY_POST_AUTH_PATH = "/library";
 const SPOTIFY_CALLBACK_TRACE_QUERY_PARAM = "trace";

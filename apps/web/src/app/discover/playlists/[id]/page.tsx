@@ -1,20 +1,13 @@
 // File: apps/web/src/app/discover/playlists/[id]/page.tsx
 
-"use client";
-
-import EnhancedTrackCard from "@/components/EnhancedTrackCard";
-import { LoadingState } from "@starchild/ui/LoadingSpinner";
-import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { TrackListSection } from "@/components/TrackListSection";
+import { TrackPlayButtons } from "@/components/TrackPlayButtons";
+import { getRequestBaseUrl } from "@/utils/getBaseUrl";
 import type { Track } from "@starchild/types";
 import { isTrack } from "@starchild/types";
-import { hapticLight } from "@/utils/haptics";
-import { Play, Shuffle } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
-import { use } from "react";
-import { useEffect, useMemo, useState } from "react";
 
 function normalizeTrack(track: Track): Track {
   return {
@@ -42,120 +35,30 @@ function parsePlaylistTracks(payload: unknown): Track[] {
   return rows.filter(isTrack).map(normalizeTrack);
 }
 
-export default function DiscoverPlaylistPage({
+export default async function DiscoverPlaylistPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const t = useTranslations("discover");
-  const tc = useTranslations("common");
-  const tp = useTranslations("player");
-  const { id } = use(params);
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
   const playlistId = Number.parseInt(id, 10);
-  const player = useGlobalPlayer();
-  const searchParams = useSearchParams();
 
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const t = await getTranslations("discover");
+  const tc = await getTranslations("common");
 
-  const titleFromQuery = useMemo(() => {
-    const raw = searchParams.get("title");
-    return raw && raw.trim().length > 0 ? raw.trim() : "";
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (!Number.isFinite(playlistId) || playlistId <= 0) {
-      setError(t("invalidPlaylistId"));
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchPlaylist = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(`/api/playlist/${playlistId}`, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch playlist: ${response.status}`);
-        }
-
-        const payload = (await response.json()) as unknown;
-        const parsedTracks = parsePlaylistTracks(payload);
-
-        if (parsedTracks.length === 0) {
-          throw new Error(t("noPlayableTracks"));
-        }
-
-        setTracks(parsedTracks);
-      } catch (err) {
-        console.error("Failed to fetch discover playlist:", err);
-        setError(err instanceof Error ? err.message : t("failedToLoadTracks"));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchPlaylist();
-  }, [playlistId, t]);
-
-  const coverUrl =
-    tracks[0]?.album.cover_xl ??
-    tracks[0]?.album.cover_big ??
-    tracks[0]?.album.cover_medium ??
-    "/placeholder.png";
-
-  const displayTitle =
-    titleFromQuery ||
-    (Number.isFinite(playlistId) ? `${t("label")} #${playlistId}` : t("label"));
-
-  const handlePlayAll = () => {
-    if (tracks.length === 0) return;
-    hapticLight();
-    const [first, ...rest] = tracks;
-    if (!first) return;
-
-    player.clearQueue();
-    player.playTrack(first);
-    if (rest.length > 0) {
-      player.addToQueue(rest);
-    }
-  };
-
-  const handleShufflePlay = () => {
-    if (tracks.length === 0) return;
-    hapticLight();
-    const shuffled = [...tracks].sort(() => Math.random() - 0.5);
-    const [first, ...rest] = shuffled;
-    if (!first) return;
-
-    player.clearQueue();
-    player.playTrack(first);
-    if (rest.length > 0) {
-      player.addToQueue(rest);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
-        <LoadingState message={t("loadingPlaylist")} />
-      </div>
-    );
-  }
-
-  if (error) {
+  if (!Number.isFinite(playlistId) || playlistId <= 0) {
     return (
       <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
           <h1 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
             {t("playlistNotFound")}
           </h1>
-          <p className="mb-6 text-[var(--color-subtext)]">{error}</p>
+          <p className="mb-6 text-[var(--color-subtext)]">
+            {t("invalidPlaylistId")}
+          </p>
           <Link href="/" className="btn-primary">
             {tc("goHome")}
           </Link>
@@ -163,6 +66,56 @@ export default function DiscoverPlaylistPage({
       </div>
     );
   }
+
+  const baseUrl = await getRequestBaseUrl();
+  let tracks: Track[] = [];
+  let error: string | null = null;
+
+  try {
+    const response = await fetch(
+      new URL(`/api/playlist/${playlistId}`, baseUrl).toString(),
+      { next: { revalidate: 300 } },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch playlist: ${response.status}`);
+    }
+
+    const payload = (await response.json()) as unknown;
+    tracks = parsePlaylistTracks(payload);
+  } catch (err) {
+    console.error("Failed to fetch discover playlist:", err);
+    error = err instanceof Error ? err.message : t("failedToLoadTracks");
+  }
+
+  if (error || tracks.length === 0) {
+    return (
+      <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
+        <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+          <h1 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
+            {t("playlistNotFound")}
+          </h1>
+          <p className="mb-6 text-[var(--color-subtext)]">
+            {error ?? t("noPlayableTracks")}
+          </p>
+          <Link href="/" className="btn-primary">
+            {tc("goHome")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const rawTitle = typeof resolvedSearchParams.title === "string"
+    ? resolvedSearchParams.title.trim()
+    : "";
+  const displayTitle = rawTitle || `${t("label")} #${playlistId}`;
+
+  const coverUrl =
+    tracks[0]?.album.cover_xl ??
+    tracks[0]?.album.cover_big ??
+    tracks[0]?.album.cover_medium ??
+    "/placeholder.png";
 
   return (
     <div className="container mx-auto px-3 py-4 md:px-6 md:py-8">
@@ -188,44 +141,14 @@ export default function DiscoverPlaylistPage({
           <div className="mb-4 flex flex-wrap gap-2 text-sm text-[var(--color-muted)]">
             <span>{tc("tracks", { count: tracks.length })}</span>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handlePlayAll}
-              disabled={tracks.length === 0}
-              className="btn-primary touch-target-lg flex items-center gap-2"
-            >
-              <Play className="h-5 w-5" />
-              <span>{tp("playAll")}</span>
-            </button>
-            <button
-              onClick={handleShufflePlay}
-              disabled={tracks.length === 0}
-              className="btn-secondary touch-target-lg flex items-center gap-2"
-            >
-              <Shuffle className="h-5 w-5" />
-              <span>{tc("shuffle")}</span>
-            </button>
-          </div>
+          <TrackPlayButtons tracks={tracks} />
         </div>
       </div>
 
-      {tracks.length > 0 ? (
-        <div className="space-y-2">
-          {tracks.map((track) => (
-            <EnhancedTrackCard
-              key={`${track.id}-${track.artist.id}-${track.album.id}`}
-              track={track}
-              onPlay={player.play}
-              onAddToQueue={player.addToQueue}
-              showActions={true}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="py-12 text-center text-[var(--color-subtext)]">
-          {t("noTracksAvailable")}
-        </div>
-      )}
+      <TrackListSection
+        tracks={tracks}
+        emptyMessage={t("noTracksAvailable")}
+      />
     </div>
   );
 }

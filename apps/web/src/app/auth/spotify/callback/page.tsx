@@ -1,3 +1,5 @@
+// File: apps/web/src/app/auth/spotify/callback/page.tsx
+
 "use client";
 
 import {

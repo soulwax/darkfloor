@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/spotifyAuthRedirect.test.ts
+
 import {
   buildSpotifyFrontendRedirectUri,
   resolveSpotifyPostAuthPath,

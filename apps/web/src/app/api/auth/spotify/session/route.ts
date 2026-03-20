@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/auth/spotify/session/route.ts
+
 import { env } from "@/env";
 import { db } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";

@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/spotifyImportErrors.test.ts
+
 import { describe, expect, it } from "vitest";
 
 import { getSpotifyImportErrorMessageKey } from "@/utils/spotifyImportErrors";

@@ -1,3 +1,5 @@
+// File: apps/web/src/utils/spotifyImportErrors.ts
+
 export type SpotifyImportErrorMessageKey =
   | "importInvalidPlaylist"
   | "importNoMatches"

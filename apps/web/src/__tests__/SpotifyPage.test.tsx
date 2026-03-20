@@ -1,3 +1,5 @@
+// File: apps/web/src/__tests__/SpotifyPage.test.tsx
+
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";

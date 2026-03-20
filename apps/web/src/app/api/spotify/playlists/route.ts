@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/spotify/playlists/route.ts
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import {

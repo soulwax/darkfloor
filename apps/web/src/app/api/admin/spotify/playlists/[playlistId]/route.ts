@@ -1,3 +1,5 @@
+// File: apps/web/src/app/api/admin/spotify/playlists/[playlistId]/route.ts
+
 import { proxyApiV2 } from "@/app/api/v2/_lib";
 import { NextResponse, type NextRequest } from "next/server";
 

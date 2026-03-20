@@ -1,3 +1,5 @@
+# File: pnpm-workspace.yaml
+
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - '@swc/core'
