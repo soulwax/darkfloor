@@ -87,7 +87,7 @@
     "spotifyToPlaylistNews": "Spotifyの機能が拡張され、完全なプレイリスト移行ツールとなりました",
     "languagesAddedFeature": "ドイツ語、日本語、スウェーデン語の翻訳が追加されました",
     "spotifySettingsNotice": "Spotify 機能は、あなた自身の Spotify アプリの値を使う設定画面に移動しました",
-    "spotifySavePrompt": "Spotify クライアント ID・クライアントシークレット・ユーザー名を保存して、自分のアカウントにプロフィールを有効化してください",
+    "spotifySavePrompt": "Spotify 機能は現在設定に移動しており、あなた自身の Spotify アプリの情報を使います。Spotify 機能（作業中）を利用するには、クライアント ID、クライアントシークレット、ユーザー名を保存してください。",
     "openSettings": "設定を開く",
     "howTo": "使い方",
     "shufflePlay": "シャッフル再生",

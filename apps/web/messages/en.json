@@ -84,7 +84,7 @@
     "tagline": "Find tracks instantly, then keep playback going with queue and smart mix.",
     "poweredBy": "Powered by {host}.",
     "whatsNew": "What's New",
-    "spotifySavePrompt": "Spotify features now live in Settings instead, using your own Spotify app values. Save your Spotify client ID, client secret, and username to activate the profile for your account.",
+    "spotifySavePrompt": "Spotify features now live in Settings instead, using your own Spotify app values. Save your Spotify client ID, secret and username to use the spotify features (WIP).",
     "openSettings": "Open Settings",
     "howTo": "How To",
     "shufflePlay": "Shuffle Play",

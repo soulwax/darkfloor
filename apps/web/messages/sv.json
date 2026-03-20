@@ -87,7 +87,7 @@
     "spotifyToPlaylistNews": "Spotifys funktioner har utökats till ett komplett verktyg för migrering av spellistor.",
     "languagesAddedFeature": "Översättningar till tyska, japanska och svenska har lagts till.",
     "spotifySettingsNotice": "Spotify-funktioner finns nu under Inställningar och använder dina egna Spotify-appvärden.",
-    "spotifySavePrompt": "Spara ditt Spotify client ID, client secret och användarnamn för att aktivera profilen för ditt konto.",
+    "spotifySavePrompt": "Spotify-funktionerna finns nu i Inställningar och använder dina egna Spotify-appvärden. Spara ditt Spotify-klient-ID, klienthemlighet och användarnamn för att använda Spotify-funktionerna (WIP).",
     "openSettings": "Öppna inställningar",
     "howTo": "Guide",
     "shufflePlay": "Blandad uppspelning",
