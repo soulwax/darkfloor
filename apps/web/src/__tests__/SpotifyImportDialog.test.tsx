@@ -1,8 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SpotifyImportDialog } from "@/components/SpotifyImportDialog";
+import type { SearchResponse } from "@starchild/types";
+
+const { searchTracksMock } = vi.hoisted(() => ({
+  searchTracksMock: vi.fn(),
+}));
+
+vi.mock("@starchild/api-client/rest", () => ({
+  searchTracks: searchTracksMock,
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations:
@@ -23,6 +32,42 @@ vi.mock("next-intl", () => ({
         }
         if (key === "openTrackOnDeezer") {
           return `Open ${String(values?.title ?? "")} on Deezer`;
+        }
+        if (key === "importAlternativeSearchTitle") {
+          return "Search alternatives";
+        }
+        if (key === "importAlternativeSearchShow") {
+          return "Search Deezer alternatives for this track";
+        }
+        if (key === "importAlternativeSearchHide") {
+          return "Hide Deezer alternative search";
+        }
+        if (key === "importAlternativeSearchPlaceholder") {
+          return "Search title, artist, or album";
+        }
+        if (key === "importAlternativeSearchAction") {
+          return "Search Deezer";
+        }
+        if (key === "importAlternativeSearchSearching") {
+          return "Searching Deezer...";
+        }
+        if (key === "importAlternativeSearchHint") {
+          return "Try a different title, featured artist, or album version if the first results miss.";
+        }
+        if (key === "importAlternativeSearchResultsTitle") {
+          return `${String(values?.count ?? 0)} alternatives found`;
+        }
+        if (key === "importAlternativeSearchNoResults") {
+          return "No Deezer alternatives matched that search yet.";
+        }
+        if (key === "importAlternativeSearchEmpty") {
+          return "Enter a title or artist before searching for alternatives.";
+        }
+        if (key === "importAlternativeSearchFailed") {
+          return "We couldn't search Deezer right now. Try again in a moment.";
+        }
+        if (key === "openTrackInStarchild") {
+          return `Open ${String(values?.title ?? "")} in Starchild`;
         }
       }
 
@@ -58,6 +103,107 @@ vi.mock("@/components/ui/dialog", () => ({
 }));
 
 describe("SpotifyImportDialog ambiguous candidates", () => {
+  beforeEach(() => {
+    searchTracksMock.mockReset();
+  });
+
+  it("searches deezer alternatives for unresolved tracks", async () => {
+    const searchResponse: SearchResponse = {
+      data: [
+        {
+          id: 991,
+          readable: true,
+          title: "Power of Night",
+          title_short: "Power of Night",
+          link: "https://www.deezer.com/track/991",
+          duration: 248,
+          rank: 999,
+          explicit_lyrics: false,
+          explicit_content_lyrics: 0,
+          explicit_content_cover: 0,
+          preview: "https://cdn.test/preview-991.mp3",
+          md5_image: "cover991",
+          artist: {
+            id: 88,
+            name: "Starchild",
+            type: "artist",
+          },
+          album: {
+            id: 77,
+            title: "Darkfloor Nights",
+            cover: "https://cdn.test/991-cover.jpg",
+            cover_small: "https://cdn.test/991-cover-small.jpg",
+            cover_medium: "https://cdn.test/991-cover-medium.jpg",
+            cover_big: "https://cdn.test/991-cover-big.jpg",
+            cover_xl: "https://cdn.test/991-cover-xl.jpg",
+            md5_image: "album991",
+            tracklist: "https://api.test/albums/77/tracks",
+            type: "album",
+          },
+          type: "track",
+        },
+      ],
+      total: 1,
+    };
+    searchTracksMock.mockResolvedValueOnce(searchResponse);
+
+    render(
+      <SpotifyImportDialog
+        isOpen
+        isSubmitting={false}
+        playlist={{
+          id: "spotify-playlist-2",
+          name: "Spotify Playlist",
+          description: "Playlist description",
+          ownerName: "starchild",
+          trackCount: 1,
+          imageUrl: null,
+        }}
+        importError={null}
+        importDiagnostics={null}
+        importResult={{
+          ok: true,
+          playlist: {
+            id: "322",
+            name: "Imported Playlist",
+          },
+          importReport: {
+            sourcePlaylistId: "spotify-playlist-2",
+            sourcePlaylistName: "Spotify Playlist",
+            totalTracks: 1,
+            matchedCount: 0,
+            unmatchedCount: 1,
+            skippedCount: 0,
+            unmatched: [
+              {
+                index: 0,
+                spotifyTrackId: "spotify-track-3",
+                name: "Power of Night",
+                artist: "Starchild",
+                reason: "not_found",
+              },
+            ],
+          },
+        }}
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Search Deezer alternatives for this track/i,
+      }),
+    );
+
+    expect(searchTracksMock).toHaveBeenCalledWith("Starchild Power of Night", 0);
+    expect(await screen.findByText("Darkfloor Nights")).toBeVisible();
+    expect(screen.getByText("1 alternatives found")).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: /Open Power of Night in Starchild/i }),
+    ).toHaveAttribute("href", "/track/991");
+  });
+
   it("expands ambiguous tracks into deezer suggestion cards", () => {
     render(
       <SpotifyImportDialog

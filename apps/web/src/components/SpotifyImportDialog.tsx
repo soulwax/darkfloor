@@ -8,10 +8,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { searchTracks } from "@starchild/api-client/rest";
 import type {
   ImportSpotifyPlaylistInput,
   ImportSpotifyPlaylistResponse,
 } from "@starchild/api-client/trpc/react";
+import type { Track } from "@starchild/types";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -25,6 +27,7 @@ import {
   Disc3,
   ListMusic,
   Loader2,
+  Search,
   Sparkles,
 } from "lucide-react";
 
@@ -44,6 +47,17 @@ export type SpotifyImportDiagnostics = {
   errorCode: string | null;
   backendMessage: string | null;
   playlistId: string | null;
+};
+
+type SpotifyImportUnmatchedTrack = SpotifyImportResult["importReport"]["unmatched"][number];
+
+type AlternativeSearchState = {
+  query: string;
+  isExpanded: boolean;
+  isLoading: boolean;
+  hasSearched: boolean;
+  error: string | null;
+  results: Track[];
 };
 
 interface SpotifyImportDialogProps {
@@ -126,6 +140,30 @@ function formatTrackDuration(durationSeconds: number | null): string | null {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function getTrackKey(track: SpotifyImportUnmatchedTrack): string {
+  return `${track.index}-${track.spotifyTrackId ?? track.name}`;
+}
+
+function buildAlternativeSearchQuery(track: SpotifyImportUnmatchedTrack): string {
+  return [track.artist, track.name]
+    .map((value) => value?.trim() ?? "")
+    .filter((value, index, values) => value.length > 0 && values.indexOf(value) === index)
+    .join(" ");
+}
+
+function createAlternativeSearchState(
+  track: SpotifyImportUnmatchedTrack,
+): AlternativeSearchState {
+  return {
+    query: buildAlternativeSearchQuery(track),
+    isExpanded: false,
+    isLoading: false,
+    hasSearched: false,
+    error: null,
+    results: [],
+  };
+}
+
 export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const {
     importDiagnostics,
@@ -144,6 +182,9 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const [isPublic, setIsPublic] = useState(false);
   const [expandedAmbiguousTracks, setExpandedAmbiguousTracks] = useState<
     Record<string, boolean>
+  >({});
+  const [alternativeSearchState, setAlternativeSearchState] = useState<
+    Record<string, AlternativeSearchState>
   >({});
 
   const canSubmit = Boolean(
@@ -178,6 +219,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
 
   useEffect(() => {
     setExpandedAmbiguousTracks({});
+    setAlternativeSearchState({});
   }, [importResult, isOpen]);
 
   const handleSubmit = () => {
@@ -198,6 +240,90 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
       ...current,
       [trackKey]: !current[trackKey],
     }));
+  };
+
+  const updateAlternativeSearchState = (
+    track: SpotifyImportUnmatchedTrack,
+    updater: (current: AlternativeSearchState) => AlternativeSearchState,
+  ) => {
+    const trackKey = getTrackKey(track);
+    setAlternativeSearchState((current) => {
+      const previous = current[trackKey] ?? createAlternativeSearchState(track);
+      return {
+        ...current,
+        [trackKey]: updater(previous),
+      };
+    });
+  };
+
+  const runAlternativeSearch = async (
+    track: SpotifyImportUnmatchedTrack,
+    queryOverride?: string,
+  ) => {
+    const trackKey = getTrackKey(track);
+    const rawQuery =
+      queryOverride ??
+      alternativeSearchState[trackKey]?.query ??
+      buildAlternativeSearchQuery(track);
+    const query = rawQuery.trim();
+
+    if (!query) {
+      updateAlternativeSearchState(track, (current) => ({
+        ...current,
+        query,
+        isLoading: false,
+        hasSearched: true,
+        error: t("importAlternativeSearchEmpty"),
+        results: [],
+      }));
+      return;
+    }
+
+    updateAlternativeSearchState(track, (current) => ({
+      ...current,
+      query,
+      isLoading: true,
+      hasSearched: true,
+      error: null,
+    }));
+
+    try {
+      const response = await searchTracks(query, 0);
+      updateAlternativeSearchState(track, (current) => ({
+        ...current,
+        query,
+        isLoading: false,
+        error: null,
+        results: response.data.slice(0, 6),
+      }));
+    } catch (error) {
+      console.error("[SpotifyImportDialog] Failed to search alternatives:", error);
+      updateAlternativeSearchState(track, (current) => ({
+        ...current,
+        query,
+        isLoading: false,
+        error: t("importAlternativeSearchFailed"),
+        results: [],
+      }));
+    }
+  };
+
+  const toggleAlternativeSearch = (track: SpotifyImportUnmatchedTrack) => {
+    const trackKey = getTrackKey(track);
+    const currentState =
+      alternativeSearchState[trackKey] ?? createAlternativeSearchState(track);
+    const nextExpanded = !currentState.isExpanded;
+
+    updateAlternativeSearchState(track, (current) => {
+      return {
+        ...current,
+        isExpanded: nextExpanded,
+      };
+    });
+
+    if (nextExpanded && !currentState.hasSearched) {
+      void runAlternativeSearch(track);
+    }
   };
 
   return (
@@ -645,12 +771,16 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                       ) : (
                         <div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">
                           {unmatchedTracks.map((track) => {
-                              const trackKey = `${track.index}-${track.spotifyTrackId ?? track.name}`;
+                              const trackKey = getTrackKey(track);
                               const hasCandidates =
                                 track.reason === "ambiguous" &&
                                 (track.candidates?.length ?? 0) > 0;
                               const isExpanded =
                                 expandedAmbiguousTracks[trackKey] ?? false;
+                              const manualSearch =
+                                alternativeSearchState[trackKey] ??
+                                createAlternativeSearchState(track);
+                              const searchResults = manualSearch.results;
 
                               return (
                                 <div
@@ -796,6 +926,171 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                                       ) : null}
                                     </div>
                                   ) : null}
+
+                                  <div className="mt-4 rounded-2xl border border-[rgba(96,165,250,0.18)] bg-[rgba(59,130,246,0.06)] p-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAlternativeSearch(track)}
+                                      aria-expanded={manualSearch.isExpanded}
+                                      className="flex w-full items-center justify-between gap-3 rounded-xl px-1 py-1 text-left transition hover:text-[var(--color-text)]"
+                                    >
+                                      <div>
+                                        <p className="text-xs font-semibold tracking-[0.14em] text-sky-100 uppercase">
+                                          {t("importAlternativeSearchTitle")}
+                                        </p>
+                                        <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                                          {manualSearch.isExpanded
+                                            ? t("importAlternativeSearchHide")
+                                            : t("importAlternativeSearchShow")}
+                                        </p>
+                                      </div>
+                                      {manualSearch.isExpanded ? (
+                                        <ChevronUp className="h-4 w-4 shrink-0 text-sky-200" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 shrink-0 text-sky-200" />
+                                      )}
+                                    </button>
+
+                                    {manualSearch.isExpanded ? (
+                                      <div className="mt-3 space-y-3">
+                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                          <input
+                                            type="text"
+                                            value={manualSearch.query}
+                                            onChange={(event) =>
+                                              updateAlternativeSearchState(track, (current) => ({
+                                                ...current,
+                                                query: event.target.value,
+                                                error: null,
+                                              }))
+                                            }
+                                            onKeyDown={(event) => {
+                                              if (event.key === "Enter") {
+                                                event.preventDefault();
+                                                void runAlternativeSearch(track);
+                                              }
+                                            }}
+                                            placeholder={t(
+                                              "importAlternativeSearchPlaceholder",
+                                            )}
+                                            className="theme-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => void runAlternativeSearch(track)}
+                                            disabled={manualSearch.isLoading}
+                                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[rgba(96,165,250,0.28)] bg-[rgba(59,130,246,0.12)] px-4 py-3 text-sm font-medium text-sky-100 transition hover:bg-[rgba(59,130,246,0.18)] disabled:cursor-not-allowed disabled:opacity-70"
+                                          >
+                                            {manualSearch.isLoading ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <Search className="h-4 w-4" />
+                                            )}
+                                            {manualSearch.isLoading
+                                              ? t("importAlternativeSearchSearching")
+                                              : t("importAlternativeSearchAction")}
+                                          </button>
+                                        </div>
+
+                                        <p className="text-xs leading-5 text-[var(--color-subtext)]">
+                                          {t("importAlternativeSearchHint")}
+                                        </p>
+
+                                        {manualSearch.error ? (
+                                          <div className="rounded-xl border border-[rgba(239,68,68,0.28)] bg-[rgba(239,68,68,0.1)] px-3 py-2 text-sm text-red-200">
+                                            {manualSearch.error}
+                                          </div>
+                                        ) : null}
+
+                                        {manualSearch.hasSearched &&
+                                        !manualSearch.isLoading ? (
+                                          searchResults.length > 0 ? (
+                                            <div className="space-y-3">
+                                              <p className="text-xs font-semibold tracking-[0.14em] text-sky-100 uppercase">
+                                                {t("importAlternativeSearchResultsTitle", {
+                                                  count: searchResults.length,
+                                                })}
+                                              </p>
+                                              {searchResults.map((candidate) => (
+                                                <div
+                                                  key={`${trackKey}-search-${candidate.id}`}
+                                                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/75 p-3"
+                                                >
+                                                  <div className="flex items-start gap-3">
+                                                    <DeezerCandidateCover
+                                                      imageUrl={
+                                                        candidate.album
+                                                          .cover_small ??
+                                                        candidate.album
+                                                          .cover_medium
+                                                      }
+                                                      alt={candidate.title}
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                      <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                                                        {candidate.title}
+                                                      </p>
+                                                      <p className="mt-1 truncate text-xs text-[var(--color-subtext)]">
+                                                        {candidate.artist.name}
+                                                      </p>
+                                                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--color-subtext)]">
+                                                        <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-2.5 py-1">
+                                                          {candidate.album.title}
+                                                        </span>
+                                                        {formatTrackDuration(
+                                                          candidate.duration,
+                                                        ) ? (
+                                                          <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-2.5 py-1">
+                                                            {formatTrackDuration(
+                                                              candidate.duration,
+                                                            )}
+                                                          </span>
+                                                        ) : null}
+                                                      </div>
+                                                      <div className="mt-3 flex flex-wrap gap-3">
+                                                        <Link
+                                                          href={`/track/${candidate.id}`}
+                                                          className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-100 transition hover:text-sky-50"
+                                                        >
+                                                          {t(
+                                                            "openTrackInStarchild",
+                                                            {
+                                                              title:
+                                                                candidate.title,
+                                                            },
+                                                          )}
+                                                          <ArrowRight className="h-3.5 w-3.5" />
+                                                        </Link>
+                                                        <a
+                                                          href={candidate.link}
+                                                          target="_blank"
+                                                          rel="noreferrer"
+                                                          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#9ff3bd] transition hover:text-[#c8f9d9]"
+                                                        >
+                                                          {t(
+                                                            "openTrackOnDeezer",
+                                                            {
+                                                              title:
+                                                                candidate.title,
+                                                            },
+                                                          )}
+                                                          <ArrowUpRight className="h-3.5 w-3.5" />
+                                                        </a>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-3 py-2 text-sm text-[var(--color-subtext)]">
+                                              {t("importAlternativeSearchNoResults")}
+                                            </div>
+                                          )
+                                        ) : null}
+                                      </div>
+                                    ) : null}
+                                  </div>
                                 </div>
                               );
                             })}
