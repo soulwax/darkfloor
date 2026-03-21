@@ -223,13 +223,6 @@ export function DesktopSidebar() {
         requiresAuth: true,
         callbackUrl: "/playlists",
       },
-      {
-        href: "/spotify",
-        label: tc("spotify"),
-        icon: <Disc3 className="h-5 w-5" />,
-        requiresAuth: true,
-        callbackUrl: "/spotify",
-      },
     );
 
     if (session) {
@@ -239,6 +232,22 @@ export function DesktopSidebar() {
         icon: <User className="h-5 w-5" />,
         requiresAuth: true,
         callbackUrl: "/",
+      });
+
+      items.push({
+        href: "/spotify",
+        label: tc("spotify"),
+        icon: <Disc3 className="h-5 w-5" />,
+        requiresAuth: true,
+        callbackUrl: "/spotify",
+      });
+    } else {
+      items.push({
+        href: "/spotify",
+        label: tc("spotify"),
+        icon: <Disc3 className="h-5 w-5" />,
+        requiresAuth: true,
+        callbackUrl: "/spotify",
       });
     }
 

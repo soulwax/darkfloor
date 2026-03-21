@@ -10,6 +10,8 @@ import { api } from "@starchild/api-client/trpc/react";
 import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import { ChevronLeft, ChevronRight, ListMusic } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import {
   SETTINGS_UPDATED_EVENT,
@@ -55,6 +57,8 @@ const MiniPlayer = dynamic(() => import("./MiniPlayer"), { ssr: false });
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
+  const tq = useTranslations("queue");
+  const tt = useTranslations("trackMenu");
 
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user;
@@ -238,6 +242,32 @@ export default function PersistentPlayer() {
       {}
       {!isMobile && (
         <>
+          <button
+            type="button"
+            onClick={() => setShowQueue((prev) => !prev)}
+            className="theme-panel fixed top-1/2 right-0 z-[61] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 px-2 py-3 text-[var(--color-subtext)] shadow-xl backdrop-blur-xl transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] xl:flex"
+            style={{
+              right: showQueue ? "min(100vw, 28rem)" : "0px",
+            }}
+            aria-label={showQueue ? tq("closeQueue") : tt("queue")}
+            title={showQueue ? tq("closeQueue") : tt("queue")}
+          >
+            <div className="flex flex-col items-center gap-1">
+              {showQueue ? (
+                <ChevronRight className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronLeft className="h-3.5 w-3.5" />
+              )}
+              <ListMusic className="h-4 w-4" />
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+              >
+                {tt("queue")}
+              </span>
+            </div>
+          </button>
+
           <div
             className="pointer-events-none fixed bottom-0 z-50 px-4 pb-4"
             style={{

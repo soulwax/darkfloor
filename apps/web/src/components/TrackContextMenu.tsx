@@ -379,23 +379,21 @@ export function TrackContextMenu() {
               )}
 
               {}
-              {(session ?? isShareSupported) && (
+              {session && (
                 <div className="h-10 w-px bg-[rgba(244,178,102,0.15)]" />
               )}
 
               {}
-              {isShareSupported && (
-                <button
-                  onClick={handleShare}
-                  className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
-                  title={t("shareTrack")}
-                >
-                  <Share2 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
-                  <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
-                    {tc("share")}
-                  </span>
-                </button>
-              )}
+              <button
+                onClick={handleShare}
+                className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
+                title={t("shareTrack")}
+              >
+                <Share2 className="h-5 w-5 text-[var(--color-subtext)] transition-all group-hover:scale-110 group-hover:text-[var(--color-accent)]" />
+                <span className="text-[10px] font-medium text-[var(--color-subtext)] group-hover:text-[var(--color-text)]">
+                  {tc("share")}
+                </span>
+              </button>
 
               {}
               <div className="h-10 w-px bg-[rgba(244,178,102,0.15)]" />
