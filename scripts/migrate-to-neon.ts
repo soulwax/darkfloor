@@ -2,6 +2,7 @@
 // File: scripts/migrate-to-neon.ts
 
 import dotenv from "dotenv";
+import { spawnSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { Pool } from "pg";
@@ -82,6 +83,7 @@ type MigrationCliOptions = {
 };
 
 const DEFAULT_BATCH_SIZE = 1000;
+const DRIZZLE_CONFIG_PATH = "apps/web/drizzle.config.cjs";
 
 function parseCsvSet(raw: string, flagName: string): Set<string> {
   const values = raw
@@ -303,6 +305,43 @@ function getSslConfig(connectionString: string) {
   return {
     rejectUnauthorized: false,
   };
+}
+
+function getPnpmCommand(): string {
+  return process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+}
+
+function runDrizzlePush(databaseUrl: string): void {
+  log(
+    `Ensuring target schema exists via Drizzle push (${DRIZZLE_CONFIG_PATH})...`,
+    "cyan",
+  );
+
+  const result = spawnSync(
+    getPnpmCommand(),
+    ["drizzle-kit", "push", "--config", DRIZZLE_CONFIG_PATH],
+    {
+      cwd: path.resolve(__dirname, ".."),
+      env: {
+        ...process.env,
+        DRIZZLE_DATABASE_URL: databaseUrl,
+        DATABASE_URL: databaseUrl,
+      },
+      stdio: "inherit",
+    },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Drizzle push failed with exit code ${result.status ?? "unknown"}`,
+    );
+  }
+
+  success("Target schema is ready");
 }
 
 async function getTablesInOrder(sourcePool: Pool): Promise<string[]> {
@@ -659,6 +698,13 @@ async function main() {
   const target = resolveEnvValue(targetCandidates);
   const sourceUrl = source.value;
   const targetUrl = target.value;
+  const targetSchemaPush = resolveEnvValue([
+    "NEW_DATABASE_URL",
+    "NEW_DATABASE_POOLED",
+    "TARGET_DATABASE_URL",
+    "TARGET_DATABASE_POOLED",
+  ] as const);
+  const targetSchemaPushUrl = targetSchemaPush.value ?? targetUrl;
 
   if (!sourceUrl) {
     error(
@@ -682,6 +728,7 @@ async function main() {
 
   info(`Source env key: ${source.key ?? "unknown"}`);
   info(`Target env key: ${target.key ?? "unknown"}`);
+  info(`Target schema push key: ${targetSchemaPush.key ?? target.key ?? "unknown"}`);
   info(`Source: ${sourceUrl.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target: ${targetUrl.replace(/:[^:@]+@/, ":****@")}\n`);
 
@@ -707,6 +754,9 @@ async function main() {
 
     await targetPool.query("SELECT 1");
     success("Target database connection successful\n");
+
+    runDrizzlePush(targetSchemaPushUrl);
+    log("", "reset");
 
     log("Discovering tables...", "cyan");
     const discoveredTables = await getTablesInOrder(sourcePool);

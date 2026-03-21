@@ -13,7 +13,9 @@ dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false });
 
 function getSslConfig() {
-  const rawUrl = process.env.DATABASE_URL?.trim();
+  const rawUrl =
+    process.env.DRIZZLE_DATABASE_URL?.trim() ??
+    process.env.DATABASE_URL?.trim();
   const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
   const connectionString = databaseUrl ?? process.env.DB_HOST ?? "";
   const isLocalDb =
@@ -26,7 +28,9 @@ function getSslConfig() {
   return { rejectUnauthorized: true };
 }
 
-const rawUrl = process.env.DATABASE_URL?.trim();
+const rawUrl =
+  process.env.DRIZZLE_DATABASE_URL?.trim() ??
+  process.env.DATABASE_URL?.trim();
 const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
 
 if (!databaseUrl && !process.env.DB_HOST) {

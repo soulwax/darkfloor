@@ -16,7 +16,9 @@ dotenvConfig({ path: resolve(repoRoot, ".env"), override: false });
 import drizzleEnv from "./drizzle.env";
 
 function getSslConfig() {
-  const rawUrl = process.env.DATABASE_URL?.trim();
+  const rawUrl =
+    process.env.DRIZZLE_DATABASE_URL?.trim() ??
+    process.env.DATABASE_URL?.trim();
   const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
 
   const connectionString = databaseUrl ?? drizzleEnv.DB_HOST ?? "";
@@ -36,7 +38,9 @@ function getSslConfig() {
   };
 }
 
-const rawUrl = process.env.DATABASE_URL?.trim();
+const rawUrl =
+  process.env.DRIZZLE_DATABASE_URL?.trim() ??
+  process.env.DATABASE_URL?.trim();
 const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
 
 if (!databaseUrl && !process.env.DB_HOST) {
