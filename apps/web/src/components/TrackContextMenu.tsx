@@ -272,7 +272,7 @@ export function TrackContextMenu() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -10 }}
               transition={springPresets.snappy}
-              className="theme-panel fixed z-[103] flex items-center gap-1 rounded-xl border p-2 shadow-xl backdrop-blur-xl"
+              className="theme-panel fixed z-[103] flex max-w-[calc(100vw-32px)] items-center gap-1 overflow-x-auto rounded-xl border p-2 shadow-xl backdrop-blur-xl"
               style={{
                 left: position.x,
                 top: position.y,
@@ -379,11 +379,6 @@ export function TrackContextMenu() {
               )}
 
               {}
-              {session && (
-                <div className="h-10 w-px bg-[rgba(244,178,102,0.15)]" />
-              )}
-
-              {}
               <button
                 onClick={handleShare}
                 className="group flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-all hover:bg-[rgba(244,178,102,0.15)] active:scale-95"
@@ -394,6 +389,11 @@ export function TrackContextMenu() {
                   {tc("share")}
                 </span>
               </button>
+
+              {}
+              {session && (
+                <div className="h-10 w-px bg-[rgba(244,178,102,0.15)]" />
+              )}
 
               {}
               <div className="h-10 w-px bg-[rgba(244,178,102,0.15)]" />
