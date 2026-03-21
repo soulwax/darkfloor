@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 import { Suspense, type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/next";
 
 import { DynamicTitle } from "@/components/DynamicTitle";
 import { AuthGate } from "@/components/AuthGate";
@@ -197,6 +198,7 @@ export default async function RootLayout({
           </SessionProvider>
         </ErrorBoundary>
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -130,6 +130,7 @@
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.9.0",
     "@trpc/server": "^11.0.0",
+    "@vercel/analytics": "^2.0.1",
     "autoprefixer": "^10.4.24",
     "chalk": "^5.6.2",
     "dotenv": "^17.2.4",

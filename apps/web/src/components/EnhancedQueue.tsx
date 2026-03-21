@@ -302,6 +302,7 @@ interface EnhancedQueueProps {
   ) => Promise<Track[]>;
   onRefreshSmartTracks?: () => Promise<void>;
   onClearSmartTracks?: () => void;
+  dockBelowDesktopHeader?: boolean;
 }
 
 export function EnhancedQueue({
@@ -318,6 +319,7 @@ export function EnhancedQueue({
   onAddSmartTracks,
   onRefreshSmartTracks,
   onClearSmartTracks: _onClearSmartTracks,
+  dockBelowDesktopHeader = false,
 }: EnhancedQueueProps) {
   const t = useTranslations("queue");
   const [searchQuery, setSearchQuery] = useState("");
@@ -639,7 +641,13 @@ export function EnhancedQueue({
   const totalDuration = queue.reduce((acc, track) => acc + track.duration, 0);
 
   return (
-    <div className="theme-chrome-drawer fixed inset-y-0 right-0 z-[60] flex w-full max-w-md flex-col border-l backdrop-blur-lg">
+    <div
+      className={`theme-chrome-drawer fixed right-0 z-[60] flex w-full max-w-md flex-col border-l backdrop-blur-lg ${
+        dockBelowDesktopHeader
+          ? "top-[var(--electron-header-height,0px)] h-[calc(100vh-var(--electron-header-height,0px))]"
+          : "inset-y-0"
+      }`}
+    >
       {}
       <div className="flex flex-col gap-3 border-b border-[var(--color-border)] p-4">
         <div className="flex items-center justify-between">

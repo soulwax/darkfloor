@@ -245,7 +245,7 @@ export default function PersistentPlayer() {
           <button
             type="button"
             onClick={() => setShowQueue((prev) => !prev)}
-            className="theme-panel fixed top-1/2 right-0 z-[61] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 px-2 py-3 text-[var(--color-subtext)] shadow-xl backdrop-blur-xl transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] xl:flex"
+            className="theme-panel fixed top-1/2 right-0 z-[61] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 px-2 py-3 text-[var(--color-subtext)] shadow-xl backdrop-blur-xl transition-all hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] md:flex"
             style={{
               right: showQueue ? "min(100vw, 28rem)" : "0px",
             }}
@@ -298,6 +298,7 @@ export default function PersistentPlayer() {
               onAddSmartTracks={player.addSmartTracks}
               onRefreshSmartTracks={player.refreshSmartTracks}
               onClearSmartTracks={player.clearSmartTracks}
+              dockBelowDesktopHeader={true}
             />
           )}
         </>

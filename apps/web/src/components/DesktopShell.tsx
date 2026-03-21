@@ -6,13 +6,11 @@ import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
-import { DesktopRightRail } from "./DesktopRightRail";
 import { DesktopSidebar } from "./DesktopSidebar";
 
 export function DesktopShell({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const { compactMode } = useCompactModePreference();
-  const rightRailWidth = 320;
   const isLinuxElectron =
     typeof window !== "undefined" &&
     window.electron?.isElectron === true &&
@@ -32,23 +30,16 @@ export function DesktopShell({ children }: { children: ReactNode }) {
       compactMode,
     );
 
-    const mediaQuery = window.matchMedia("(min-width: 1280px)");
     const applyRightRailWidth = () => {
       document.documentElement.style.setProperty(
         "--desktop-right-rail-width",
-        compactMode
-          ? "0px"
-          : mediaQuery.matches
-            ? `${rightRailWidth}px`
-            : "0px",
+        "0px",
       );
     };
 
     applyRightRailWidth();
-    mediaQuery.addEventListener("change", applyRightRailWidth);
 
     return () => {
-      mediaQuery.removeEventListener("change", applyRightRailWidth);
       document.documentElement.style.removeProperty(
         "--desktop-right-rail-width",
       );
@@ -81,7 +72,6 @@ export function DesktopShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      {!compactMode && <DesktopRightRail />}
     </div>
   );
 }
