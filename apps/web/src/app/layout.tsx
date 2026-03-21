@@ -8,6 +8,7 @@ import { Suspense, type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { DynamicTitle } from "@/components/DynamicTitle";
 import { AuthGate } from "@/components/AuthGate";
@@ -199,6 +200,7 @@ export default async function RootLayout({
         </ErrorBoundary>
         </NextIntlClientProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
