@@ -200,42 +200,6 @@ importers:
         specifier: ^9.0.3
         version: 9.0.4
 
-  apps/desktop: {}
-
-  apps/desktop/electron: {}
-
-  apps/mobile: {}
-
-  apps/web:
-    dependencies:
-      next-intl:
-        specifier: ^4.8.3
-        version: 4.8.3(next@16.1.6(@babel/core@7.29.0)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
-
-  electron: {}
-
-  packages/api-client: {}
-
-  packages/audio-adapters: {}
-
-  packages/auth: {}
-
-  packages/config: {}
-
-  packages/eslint-config: {}
-
-  packages/player-core: {}
-
-  packages/player-react: {}
-
-  packages/tsconfig: {}
-
-  packages/types: {}
-
-  packages/ui: {}
-
-  packages/visualizers: {}
-
 packages:
 
   7zip-bin@5.2.0:
