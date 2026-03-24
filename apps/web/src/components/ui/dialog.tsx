@@ -23,7 +23,7 @@ const DialogOverlay = forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[230] bg-black/70 backdrop-blur-sm transition-opacity duration-200 ease-out data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+      "fixed inset-0 z-[230] bg-black/55 backdrop-blur-[2px] transition-opacity duration-200 ease-out data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
       className,
     )}
     {...props}
@@ -43,7 +43,7 @@ const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed top-1/2 left-1/2 z-[231] max-h-[calc(100dvh-1.5rem)] max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl transition-all duration-200 ease-out focus:outline-none data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+        "fixed top-1/2 left-1/2 z-[231] max-h-[calc(100dvh-1.5rem)] max-h-[calc(100vh-1.5rem)] w-[calc(100%-1.5rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.35rem] border border-[color:var(--shell-border)] bg-[color:var(--shell-popover-bg,var(--color-surface))] shadow-[var(--shell-shadow-soft,0_18px_42px_rgba(5,10,18,0.32))] transition-all duration-200 ease-out focus:outline-none data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
         className,
       )}
       {...props}

@@ -286,8 +286,8 @@ export function DesktopSidebar() {
             collapsed
               ? "pointer-events-none"
               : isResizing
-                ? "bg-[rgba(244,178,102,0.35)]"
-                : "hover:bg-[rgba(244,178,102,0.2)]"
+                ? "bg-[rgba(244,178,102,0.22)]"
+                : "hover:bg-[rgba(244,178,102,0.12)]"
           }`}
           onPointerDown={startResize}
           role="separator"
@@ -298,10 +298,8 @@ export function DesktopSidebar() {
           aria-valuenow={expandedWidth}
         />
 
-        {/* Drawer-style toggle button */}
-        {/* Offset down by 10% */}
         <button
-          className="electron-no-drag absolute top-[9%] -right-3 flex h-11 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.16)] bg-[rgba(30,30,30,0.95)] text-[var(--color-subtext)] opacity-95 shadow-sm transition-all hover:border-[rgba(244,178,102,0.35)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+          className="electron-no-drag absolute top-6 -right-3 flex h-10 w-6 items-center justify-center rounded-full border border-[color:var(--shell-border)] bg-[rgba(14,20,28,0.94)] text-[var(--color-subtext)] shadow-[0_8px_16px_rgba(5,10,18,0.2)] transition-colors hover:border-[rgba(244,178,102,0.2)] hover:bg-[rgba(244,178,102,0.08)] hover:text-[var(--color-text)]"
           onClick={() => {
             const next = !collapsed;
             setCollapsed(next);
@@ -317,8 +315,8 @@ export function DesktopSidebar() {
           )}
         </button>
 
-        <div className="flex h-full min-h-0 w-full flex-col bg-[linear-gradient(180deg,rgba(22,22,22,0.98),rgba(10,10,10,0.98))]">
-          <div className="px-3 pt-4 pb-3">
+        <div className="flex h-full min-h-0 w-full flex-col bg-transparent">
+          <div className="px-3 pt-4 pb-2">
             <div
               className={`flex items-center ${collapsed ? "justify-center" : "justify-start"} rounded-xl px-2 py-1.5`}
             >
@@ -327,13 +325,13 @@ export function DesktopSidebar() {
                 alt="Starchild"
                 width={36}
                 height={36}
-                className="h-9 w-9 rounded-xl shadow-lg ring-2 ring-[rgba(244,178,102,0.35)]"
+                className="h-9 w-9 rounded-xl ring-1 ring-[rgba(244,178,102,0.24)]"
                 priority
                 unoptimized
               />
               {!collapsed && (
                 <div className="ml-4 min-w-0">
-                  <div className="header-logo-title accent-gradient truncate text-base font-bold tracking-wide">
+                  <div className="header-logo-title truncate text-base font-semibold tracking-[0.02em] text-[var(--color-text)]">
                     Starchild
                   </div>
                   <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
@@ -352,9 +350,7 @@ export function DesktopSidebar() {
           </div>
 
           {!collapsed && (
-            <div className="px-4 pb-1 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
-              {ts("menu")}
-            </div>
+            <div className="shell-section-label px-4 pb-1">{ts("menu")}</div>
           )}
 
           <nav className="px-2 pb-2">
@@ -378,8 +374,8 @@ export function DesktopSidebar() {
                     }}
                     className={`electron-no-drag group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
                       active
-                        ? "bg-[rgba(244,178,102,0.16)] text-[var(--color-text)] shadow-[0_6px_18px_rgba(244,178,102,0.16)]"
-                        : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[var(--color-text)]"
+                        ? "bg-[rgba(244,178,102,0.12)] text-[var(--color-text)]"
+                        : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
                     }`}
                     title={collapsed ? item.label : undefined}
                   >
@@ -407,7 +403,7 @@ export function DesktopSidebar() {
               <>
                 <div className="flex items-center justify-between px-2">
                   {!collapsed ? (
-                    <div className="text-[10px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
+                    <div className="shell-section-label">
                       {ts("yourLibrary")}
                     </div>
                   ) : (
@@ -415,7 +411,7 @@ export function DesktopSidebar() {
                   )}
 
                   <button
-                    className="electron-no-drag flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.35)] hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+                    className="electron-no-drag shell-icon-action flex h-8 w-8 items-center justify-center"
                     onClick={() => setCreateModalOpen(true)}
                     aria-label={tp("createPlaylist")}
                     title={collapsed ? tp("createPlaylist") : undefined}
@@ -459,8 +455,8 @@ export function DesktopSidebar() {
                             href={href}
                             className={`electron-no-drag flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all ${
                               active
-                                ? "bg-[rgba(255,255,255,0.14)] text-[var(--color-text)]"
-                                : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[var(--color-text)]"
+                                ? "bg-[rgba(255,255,255,0.08)] text-[var(--color-text)]"
+                                : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
                             }`}
                             title={collapsed ? playlist.name : undefined}
                             aria-label={collapsed ? playlist.name : undefined}
@@ -486,7 +482,7 @@ export function DesktopSidebar() {
                     <div className="px-3 py-2 text-sm text-[var(--color-subtext)]">
                       {!collapsed ? (
                         <button
-                          className="electron-no-drag inline-flex items-center gap-2 rounded-full border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.06)] px-3 py-2 text-sm text-[var(--color-text)] hover:border-[rgba(244,178,102,0.35)] hover:bg-[rgba(244,178,102,0.1)]"
+                          className="electron-no-drag shell-action inline-flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text)]"
                           onClick={() => setCreateModalOpen(true)}
                         >
                           <Plus className="h-4 w-4" />
@@ -514,8 +510,8 @@ export function DesktopSidebar() {
             ) : (
               <div className="px-2">
                 {!collapsed ? (
-                  <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-4 text-sm text-[var(--color-subtext)]">
-                    <div className="text-xs font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
+                  <div className="shell-panel-muted px-4 py-4 text-sm text-[var(--color-subtext)]">
+                    <div className="shell-section-label">
                       {ts("yourLibrary")}
                     </div>
                     <div className="mt-2 text-[var(--color-muted)]">
@@ -532,29 +528,20 @@ export function DesktopSidebar() {
           </div>
 
           {!collapsed && session && (
-            <div className="mt-auto space-y-2 px-3 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
+            <div className="mt-auto px-3 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
               <button
-                className="electron-no-drag flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-3 py-2.5 text-sm font-semibold text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition hover:scale-[1.01] active:scale-[0.99]"
-                onClick={() => setCreateModalOpen(true)}
+                className="electron-no-drag shell-action flex w-full items-center justify-center gap-2 px-3 py-2 text-sm font-medium"
+                onClick={() => void appSignOut({ callbackUrl: "/" })}
               >
-                <Plus className="h-4 w-4" />
-                {ts("newPlaylist")}
+                <LogOut className="h-4 w-4" />
+                {tc("signOut")}
               </button>
-              {session ? (
-                <button
-                  className="electron-no-drag flex w-full items-center justify-center gap-2 rounded-full border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.06)] px-3 py-2 text-sm font-semibold text-[var(--color-subtext)] transition hover:border-[rgba(255,255,255,0.24)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
-                  onClick={() => void appSignOut({ callbackUrl: "/" })}
-                >
-                  <LogOut className="h-4 w-4" />
-                  {tc("signOut")}
-                </button>
-              ) : null}
             </div>
           )}
           {collapsed && session ? (
             <div className="mt-auto px-2 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
               <button
-                className="electron-no-drag flex h-9 w-full items-center justify-center rounded-full border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.06)] text-[var(--color-subtext)] transition hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)]"
+                className="electron-no-drag shell-icon-action flex h-9 w-full items-center justify-center"
                 onClick={() => void appSignOut({ callbackUrl: "/" })}
                 title={tc("signOut")}
                 aria-label={tc("signOut")}

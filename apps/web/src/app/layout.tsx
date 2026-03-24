@@ -155,13 +155,13 @@ export default async function RootLayout({
                                 {}
                                 <UIWrapper>
                                   {}
+                                  <div suppressHydrationWarning>
+                                    <Suspense fallback={null}>
+                                      <Header />
+                                    </Suspense>
+                                  </div>
+                                  {}
                                   <DesktopShell>
-                                    <div suppressHydrationWarning>
-                                      <Suspense fallback={null}>
-                                        <Header />
-                                      </Suspense>
-                                    </div>
-                                    {}
                                     <Suspense fallback={null}>
                                       <MobileHeader />
                                     </Suspense>

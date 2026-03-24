@@ -48,7 +48,7 @@ function HomeFeedRowInner({
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={`skeleton-${index}`}
-              className="w-[152px] shrink-0 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] p-2.5"
+              className="w-[152px] shrink-0 rounded-xl border border-[color:var(--shell-border)] bg-[rgba(255,255,255,0.03)] p-2.5"
             >
               <div className="h-[124px] w-full animate-pulse rounded-lg bg-[rgba(255,255,255,0.08)]" />
               <div className="mt-2 h-3 w-4/5 animate-pulse rounded bg-[rgba(255,255,255,0.08)]" />
@@ -57,7 +57,7 @@ function HomeFeedRowInner({
           ))}
         </div>
       ) : tracks.length === 0 ? (
-        <div className="rounded-xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-xs text-[var(--color-subtext)]">
+        <div className="rounded-xl border border-[color:var(--shell-border)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-xs text-[var(--color-subtext)]">
           {emptyLabel ?? tc("noTracksYet")}
         </div>
       ) : (
@@ -67,7 +67,7 @@ function HomeFeedRowInner({
               key={`${title}-${track.id}-${index}`}
               type="button"
               onClick={() => onTrackSelect(track)}
-              className="group w-[152px] shrink-0 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] p-2.5 text-left transition-all hover:border-[rgba(244,178,102,0.28)] hover:bg-[rgba(244,178,102,0.08)]"
+              className="group w-[152px] shrink-0 rounded-xl border border-[color:var(--shell-border)] bg-[rgba(255,255,255,0.03)] p-2.5 text-left transition-colors hover:border-[rgba(244,178,102,0.18)] hover:bg-[rgba(244,178,102,0.05)]"
             >
               <div className="relative">
                 <Image
@@ -79,7 +79,7 @@ function HomeFeedRowInner({
                   loading="lazy"
                   quality={75}
                 />
-                <span className="absolute right-2 bottom-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-on-accent)] opacity-90 shadow-md transition-opacity group-hover:opacity-100">
+                <span className="absolute right-2 bottom-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(15,20,29,0.82)] text-[var(--color-text)] opacity-90 ring-1 ring-white/10 transition-opacity group-hover:opacity-100">
                   <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />
                 </span>
               </div>

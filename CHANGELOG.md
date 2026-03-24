@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-03-24
+
+### Changed
+
+- **Desktop and PWA shell chrome now feel lighter and more focused**: The shared shell styling was reduced across the desktop header, sidebar, player frame, queue drawer, mobile header, and mobile drawer surfaces so the app keeps its music-player identity with less stacked border, shadow, blur, and gradient weight.
+- **Desktop header now prioritizes search and primary navigation**: Tertiary controls such as compact mode, greeter access, analyse access, and API status were collapsed into a shared overflow menu so the desktop shell no longer feels crowded by default.
+- **Compact desktop mode is now materially lighter**: Compact mode now tightens shell spacing, sidebar rhythm, and player density instead of only making the layout slightly smaller.
+- **Home and library high-traffic surfaces are flatter and cleaner**: The discovery hero, feed cards, library header, and library action clusters now use calmer shared surface treatments and less nested panel styling.
+
+### Fixed
+
+- **Repeated modal flows now use the shared dialog primitive**: Authentication, playlist creation, and queue settings no longer maintain bespoke portal, backdrop, and Escape-handling logic, improving interaction consistency across desktop and web.
+
 ## [1.5.12] - 2026-03-14
 
 ### Fixed

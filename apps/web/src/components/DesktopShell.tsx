@@ -58,13 +58,13 @@ export function DesktopShell({ children }: { children: ReactNode }) {
     >
       <DesktopSidebar />
       <div
-        className={`desktop-main min-w-0 flex-1 ${
-          compactMode ? "p-1.5 md:p-2" : "p-2 md:p-3"
+        className={`desktop-main flex min-h-0 min-w-0 flex-1 flex-col ${
+          compactMode ? "p-1 md:p-1.5" : "p-2 md:p-2.5"
         }`}
       >
         <div
-          className={`desktop-surface flex h-full min-h-0 flex-col overflow-hidden border ${
-            compactMode ? "rounded-[1rem]" : "rounded-[1.25rem]"
+          className={`desktop-surface flex min-h-0 flex-1 flex-col overflow-hidden border ${
+            compactMode ? "rounded-[0.95rem]" : "rounded-[1.2rem]"
           }`}
         >
           <div className="desktop-scroll min-h-0 flex-1 overflow-y-auto">

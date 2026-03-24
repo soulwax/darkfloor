@@ -642,14 +642,14 @@ export function EnhancedQueue({
 
   return (
     <div
-      className={`theme-chrome-drawer fixed right-0 z-[60] flex w-full max-w-md flex-col border-l backdrop-blur-lg ${
+      className={`theme-chrome-drawer fixed right-0 z-[60] flex w-full max-w-md flex-col border-l ${
         dockBelowDesktopHeader
           ? "top-[var(--electron-header-height,0px)] h-[calc(100vh-var(--electron-header-height,0px))]"
           : "inset-y-0"
       }`}
     >
       {}
-      <div className="flex flex-col gap-3 border-b border-[var(--color-border)] p-4">
+      <div className="flex flex-col gap-3 border-b border-[color:var(--shell-divider)] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-[var(--color-text)]">
@@ -666,7 +666,7 @@ export function EnhancedQueue({
                     )
                   }
                   disabled={smartQueueState.isLoading}
-                  className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(88,198,177,0.12)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="shell-icon-action h-9 w-9 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label={
                     smartQueueState.isActive
                       ? t("refreshSmartTracks")
@@ -686,7 +686,7 @@ export function EnhancedQueue({
                 </button>
                 <button
                   onClick={() => setShowSettingsModal(true)}
-                  className="hidden rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)] md:flex"
+                  className="shell-icon-action hidden h-9 w-9 md:flex"
                   aria-label={t("smartTracksSettings")}
                   title={t("smartTracksSettings")}
                 >
@@ -697,7 +697,7 @@ export function EnhancedQueue({
             {onSaveAsPlaylist && (queue.length > 0 || currentTrack) && (
               <button
                 onClick={onSaveAsPlaylist}
-                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+                className="shell-icon-action h-9 w-9"
                 aria-label={t("saveAsPlaylist")}
                 title={t("saveAsPlaylist")}
               >
@@ -707,7 +707,7 @@ export function EnhancedQueue({
             {queue.length > 0 && (
               <button
                 onClick={onClear}
-                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(242,139,130,0.12)] hover:text-[var(--color-text)]"
+                className="shell-icon-action h-9 w-9"
                 aria-label={t("clearQueue")}
                 title={t("clearQueue")}
               >
@@ -716,7 +716,7 @@ export function EnhancedQueue({
             )}
             <button
               onClick={onClose}
-              className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+              className="shell-icon-action h-9 w-9"
               aria-label={t("closeQueue")}
             >
               <X className="h-6 w-6" />
@@ -726,7 +726,7 @@ export function EnhancedQueue({
 
         {}
         {selectedIndices.size > 0 && (
-          <div className="flex items-center gap-2 rounded-lg border border-[rgba(88,198,177,0.25)] bg-[rgba(88,198,177,0.12)] p-3">
+          <div className="flex items-center gap-2 rounded-lg border border-[rgba(88,198,177,0.2)] bg-[rgba(88,198,177,0.08)] p-3">
             <span className="text-sm font-medium text-[var(--color-text)]">
               {t("selectedSummary", { count: selectedIndices.size })}
             </span>
@@ -756,7 +756,7 @@ export function EnhancedQueue({
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="theme-input w-full rounded-lg py-2 pr-4 pl-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
+              className="theme-input w-full rounded-xl py-2 pr-4 pl-10 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)]"
             />
             {searchQuery && (
               <button

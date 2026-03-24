@@ -149,7 +149,7 @@ export default function HamburgerMenu() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="theme-chrome-backdrop fixed inset-0 z-[60] backdrop-blur-sm"
+            className="theme-chrome-backdrop fixed inset-0 z-[60] backdrop-blur-[2px]"
             onClick={() => {
               hapticLight();
               closeMenu();
@@ -162,17 +162,17 @@ export default function HamburgerMenu() {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={springPresets.gentle}
-            className="theme-chrome-drawer safe-left safe-top safe-bottom fixed top-0 bottom-0 left-0 z-[61] w-[280px] max-w-[80vw] overflow-y-auto border-r shadow-2xl backdrop-blur-xl"
+            className="theme-chrome-drawer safe-left safe-top safe-bottom fixed top-0 bottom-0 left-0 z-[61] w-[280px] max-w-[80vw] overflow-y-auto border-r"
           >
             {}
-            <div className="border-b border-[var(--color-border)] p-6">
+            <div className="border-b border-[color:var(--shell-divider)] p-5">
               <div className="flex items-center gap-3">
                 <Image
                   src={emilyLogo}
                   alt="Starchild Music"
                   width={40}
                   height={40}
-                  className="rounded-xl ring-2 ring-[rgba(244,178,102,0.3)]"
+                  className="rounded-xl ring-1 ring-[rgba(244,178,102,0.22)]"
                   priority
                   unoptimized
                 />
@@ -232,7 +232,7 @@ export default function HamburgerMenu() {
                           delay: index * 0.05,
                         }}
                         whileTap={{ scale: 0.98 }}
-                        className="mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                        className="mb-1 flex items-center justify-between rounded-xl px-4 py-3 text-[var(--color-text)] transition-colors hover:bg-[color:var(--shell-muted-bg)]"
                       >
                         <div className="flex items-center gap-3">
                           {item.icon}
@@ -268,7 +268,7 @@ export default function HamburgerMenu() {
             </nav>
 
             {}
-            <div className="border-t border-[var(--color-border)] p-6">
+            <div className="border-t border-[color:var(--shell-divider)] p-5">
               <p className="text-center text-xs text-[var(--color-muted)]">
                 {t("version", { version: APP_VERSION })}
               </p>

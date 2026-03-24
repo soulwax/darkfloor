@@ -1,18 +1,21 @@
-// File: apps/web/src/components/CreatePlaylistModal.tsx
-
 "use client";
 
 import { useToast } from "@/contexts/ToastContext";
 import { useAuthModal } from "@/contexts/AuthModalContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { api } from "@starchild/api-client/trpc/react";
 import { hapticLight } from "@/utils/haptics";
-import { springPresets } from "@/utils/spring-animations";
-import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 
 interface CreatePlaylistModalProps {
   isOpen: boolean;
@@ -29,11 +32,21 @@ export function CreatePlaylistModal({
   const { openAuthModal } = useAuthModal();
   const router = useRouter();
   const { showToast } = useToast();
-  const [mounted, setMounted] = useState(false);
 
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
+
+  const resetForm = () => {
+    setNewPlaylistName("");
+    setNewPlaylistDescription("");
+    setIsPublic(false);
+  };
+
+  const closeModal = () => {
+    onClose();
+    resetForm();
+  };
 
   const utils = api.useUtils();
   const createPlaylist = api.music.createPlaylist.useMutation({
@@ -41,10 +54,7 @@ export function CreatePlaylistModal({
       await utils.music.getPlaylists.invalidate();
       if (playlist) {
         showToast(tp("createdPlaylist", { name: playlist.name }), "success");
-        onClose();
-        setNewPlaylistName("");
-        setNewPlaylistDescription("");
-        setIsPublic(false);
+        closeModal();
         router.push(`/playlists/${playlist.id}`);
       }
     },
@@ -55,7 +65,7 @@ export function CreatePlaylistModal({
 
   const handleCreatePlaylist = () => {
     if (!session) {
-      onClose();
+      closeModal();
       openAuthModal({ callbackUrl: "/playlists" });
       return;
     }
@@ -72,181 +82,114 @@ export function CreatePlaylistModal({
     });
   };
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-
-      if (e.key === "Escape") {
-        hapticLight();
-        onClose();
-      } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        if (!session) {
-          onClose();
-          openAuthModal({ callbackUrl: "/playlists" });
-          return;
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          hapticLight();
+          closeModal();
         }
-        if (newPlaylistName.trim()) {
-          createPlaylist.mutate({
-            name: newPlaylistName.trim(),
-            description: newPlaylistDescription.trim() || undefined,
-            isPublic,
-          });
-        }
-      }
-    };
+      }}
+    >
+      <DialogContent
+        className="w-[calc(100%-1.5rem)] max-w-md p-0"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            event.preventDefault();
+            handleCreatePlaylist();
+          }
+        }}
+      >
+        <div className="p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle>{tp("createPlaylist")}</DialogTitle>
+            <DialogDescription>
+              {session ? tp("descriptionOptional") : tp("signInToCreate")}
+            </DialogDescription>
+          </DialogHeader>
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [
-    isOpen,
-    onClose,
-    newPlaylistName,
-    session,
-    router,
-    newPlaylistDescription,
-    isPublic,
-    createPlaylist,
-    openAuthModal,
-  ]);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={springPresets.gentle}
-            className="theme-chrome-backdrop fixed inset-0 z-[200] backdrop-blur-sm"
-            onClick={() => {
-              hapticLight();
-              onClose();
-              setNewPlaylistName("");
-              setNewPlaylistDescription("");
-              setIsPublic(false);
-            }}
-          />
-
-          {}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={springPresets.gentle}
-            className="fixed inset-x-4 top-1/2 z-[201] -translate-y-1/2 md:right-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="surface-panel overflow-hidden p-6">
-              <h2 className="mb-6 text-2xl font-bold text-[var(--color-text)]">
-                {tp("createPlaylist")}
-              </h2>
-
-              {!session ? (
-                <div className="py-8 text-center">
-                  <p className="mb-4 text-sm text-[var(--color-subtext)]">
-                    {tp("signInToCreate")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      hapticLight();
-                      onClose();
-                      openAuthModal({ callbackUrl: "/playlists" });
-                    }}
-                    className="inline-block rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-6 py-3 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95"
-                  >
-                    {tc("signIn")}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                        {tp("playlistNameRequired")}
-                      </label>
-                      <input
-                        type="text"
-                        value={newPlaylistName}
-                        onChange={(e) => setNewPlaylistName(e.target.value)}
-                        placeholder={tp("playlistNamePlaceholder")}
-                        className="theme-input w-full rounded-lg px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
-                        autoFocus
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                        {tp("descriptionOptional")}
-                      </label>
-                      <textarea
-                        value={newPlaylistDescription}
-                        onChange={(e) =>
-                          setNewPlaylistDescription(e.target.value)
-                        }
-                        placeholder={tp("descriptionPlaceholder")}
-                        rows={3}
-                        className="theme-input w-full resize-none rounded-lg px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] backdrop-blur-sm transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="isPublic"
-                        checked={isPublic}
-                        onChange={(e) => setIsPublic(e.target.checked)}
-                        className="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25"
-                      />
-                      <label
-                        htmlFor="isPublic"
-                        className="text-sm text-[var(--color-subtext)]"
-                      >
-                        {tp("makePublic")}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex gap-3">
-                    <button
-                      onClick={() => {
-                        hapticLight();
-                        onClose();
-                        setNewPlaylistName("");
-                        setNewPlaylistDescription("");
-                        setIsPublic(false);
-                      }}
-                      className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-3 text-sm font-medium text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-hover)] active:scale-[0.98]"
-                    >
-                      {tc("cancel")}
-                    </button>
-                    <button
-                      onClick={handleCreatePlaylist}
-                      disabled={
-                        createPlaylist.isPending || !newPlaylistName.trim()
-                      }
-                      className="flex-1 rounded-lg bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-4 py-3 text-sm font-medium text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow)] transition-all hover:scale-105 hover:shadow-[var(--accent-btn-shadow-hover)] active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-                    >
-                      {createPlaylist.isPending ? tp("creating") : tc("create")}
-                    </button>
-                  </div>
-                </>
-              )}
+          {!session ? (
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  closeModal();
+                  openAuthModal({ callbackUrl: "/playlists" });
+                }}
+                className="btn-primary w-full rounded-xl px-4 py-3 text-sm font-semibold"
+              >
+                {tc("signIn")}
+              </button>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body,
+          ) : (
+            <>
+              <div className="mt-6 space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                    {tp("playlistNameRequired")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(event) => setNewPlaylistName(event.target.value)}
+                    placeholder={tp("playlistNamePlaceholder")}
+                    className="theme-input w-full rounded-xl px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)]"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                    {tp("descriptionOptional")}
+                  </label>
+                  <textarea
+                    value={newPlaylistDescription}
+                    onChange={(event) =>
+                      setNewPlaylistDescription(event.target.value)
+                    }
+                    placeholder={tp("descriptionPlaceholder")}
+                    rows={3}
+                    className="theme-input w-full resize-none rounded-xl px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)]"
+                  />
+                </div>
+
+                <label className="shell-panel-muted flex items-center gap-3 px-3 py-3 text-sm text-[var(--color-subtext)]">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(event) => setIsPublic(event.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)]"
+                  />
+                  <span>{tp("makePublic")}</span>
+                </label>
+              </div>
+
+              <DialogFooter className="mt-6 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    closeModal();
+                  }}
+                  className="btn-secondary flex-1 rounded-xl px-4 py-3 text-sm font-medium"
+                >
+                  {tc("cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreatePlaylist}
+                  disabled={createPlaylist.isPending || !newPlaylistName.trim()}
+                  className="btn-primary flex-1 rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50"
+                >
+                  {createPlaylist.isPending ? tp("creating") : tc("create")}
+                </button>
+              </DialogFooter>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

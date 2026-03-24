@@ -3,6 +3,14 @@
 "use client";
 
 import { SearchSuggestionsList } from "@/components/SearchSuggestionsList";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuDivider,
+  DropdownMenuItem,
+  DropdownMenuLabelText,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useGuestModal } from "@/contexts/GuestModalContext";
 import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -16,6 +24,7 @@ import {
   Library,
   Maximize2,
   Minimize2,
+  MoreHorizontal,
   Music2,
   Search,
 } from "lucide-react";
@@ -299,6 +308,10 @@ export default function Header() {
     return null;
   }
 
+  const primaryActionClass =
+    "shell-action h-9 px-3 text-xs font-semibold aria-[current=page]:border-[rgba(244,178,102,0.24)] aria-[current=page]:bg-[rgba(244,178,102,0.12)] aria-[current=page]:text-[var(--color-text)]";
+  const iconActionClass = "shell-icon-action h-9 w-9";
+
   return (
     <header
       ref={desktopHeaderRef}
@@ -312,40 +325,16 @@ export default function Header() {
       suppressHydrationWarning
     >
       <div
-        className={`theme-chrome-header electron-header-main relative z-10 grid items-center rounded-[1.25rem] border backdrop-blur-xl ${
+        className={`theme-chrome-header electron-header-main relative z-10 grid items-center border ${
           compactMode
-            ? "grid-cols-[minmax(0,1fr)_minmax(168px,auto)] gap-2 py-1.5"
-            : "grid-cols-[minmax(0,1fr)_minmax(210px,auto)] gap-3 py-2"
+            ? "grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-[1rem] py-1.5"
+            : "grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[1.15rem] py-2"
         }`}
       >
         <div className="electron-no-drag relative flex items-center gap-2 px-2 sm:px-3">
-          <button
-            type="button"
-            onClick={toggleCompactMode}
-            aria-label={
-              compactMode ? th("switchExpanded") : th("switchCompact")
-            }
-            aria-pressed={compactMode}
-            title={compactMode ? th("expandedView") : th("compactView")}
-            className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all ${
-              compactMode
-                ? "border-[rgba(88,198,177,0.45)] bg-[rgba(88,198,177,0.2)] text-[var(--color-text)]"
-                : "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[var(--color-subtext)] hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
-            }`}
-          >
-            {compactMode ? (
-              <Maximize2 className="h-3.5 w-3.5" />
-            ) : (
-              <Minimize2 className="h-3.5 w-3.5" />
-            )}
-            <span className="hidden 2xl:inline">
-              {compactMode ? th("expanded") : th("compact")}
-            </span>
-          </button>
-
           <div className="relative min-w-0 flex-1">
             <form
-              className={`electron-header-search flex w-full items-center gap-2.5 rounded-full border px-3 ${
+              className={`electron-header-search flex w-full items-center gap-2 rounded-full border px-3 ${
                 compactMode ? "h-10" : "h-11"
               }`}
               onSubmit={(event) => {
@@ -384,7 +373,7 @@ export default function Header() {
               />
               <button
                 type="submit"
-                className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-3 text-xs leading-none font-bold text-[var(--color-on-accent)] transition-all hover:brightness-110 active:scale-[0.98]"
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[rgba(244,178,102,0.16)] px-2.5 text-xs leading-none font-semibold text-[var(--color-text)] transition-colors hover:bg-[rgba(244,178,102,0.22)]"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className={compactMode ? "hidden" : "hidden lg:inline"}>
@@ -404,14 +393,11 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="electron-no-drag flex min-w-0 items-center justify-end gap-2">
+        <div className="electron-no-drag flex min-w-0 items-center justify-end gap-2 pr-2 sm:pr-3">
           <Link
             href="/"
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-              isHomeActive
-                ? "border-[rgba(244,178,102,0.4)] bg-[rgba(244,178,102,0.18)] text-[var(--color-text)]"
-                : "border-[rgba(255,255,255,0.12)] text-[var(--color-subtext)] hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
-            }`}
+            className={primaryActionClass}
+            aria-current={isHomeActive ? "page" : undefined}
           >
             <Home className="h-3.5 w-3.5" />
             <span className={compactMode ? "hidden" : "hidden xl:inline"}>
@@ -420,71 +406,89 @@ export default function Header() {
           </Link>
           <Link
             href="/library"
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-              isLibraryActive
-                ? "border-[rgba(244,178,102,0.4)] bg-[rgba(244,178,102,0.18)] text-[var(--color-text)]"
-                : "border-[rgba(255,255,255,0.12)] text-[var(--color-subtext)] hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
-            }`}
+            className={primaryActionClass}
+            aria-current={isLibraryActive ? "page" : undefined}
           >
             <Library className="h-3.5 w-3.5" />
             <span className={compactMode ? "hidden" : "hidden xl:inline"}>
               {tc("library")}
             </span>
           </Link>
-          <button
-            type="button"
-            onClick={openGuestModal}
-            aria-label={th("reopenGreeter")}
-            disabled={isGuestModalOpen}
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-              isGuestModalOpen
-                ? "border-[rgba(29,185,84,0.45)] bg-[rgba(29,185,84,0.18)] text-[var(--color-text)]"
-                : "border-[rgba(255,255,255,0.12)] text-[var(--color-subtext)] hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
-            } disabled:cursor-default`}
-          >
-            <Music2 className="h-3.5 w-3.5" />
-            <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
-              {th("greeter")}
-            </span>
-          </button>
-          {!isElectronRuntime && (
-            <a
-              href="https://analyze.darkfloor.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={th("openAnalyse")}
-              className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.12)] px-3 py-1.5 text-xs font-semibold text-[var(--color-subtext)] transition-all hover:border-[rgba(255,255,255,0.2)] hover:text-[var(--color-text)]"
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span className={compactMode ? "hidden" : "hidden 2xl:inline"}>
-                {th("analyse")}
-              </span>
-            </a>
-          )}
-          {!compactMode && apiHealthy !== null && (
-            <div
-              className="api-health-pill hidden items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] px-2 py-0.5 text-xs text-[var(--color-subtext)] 2xl:flex"
-              aria-label={th("apiHealthStatus")}
-              title={th("apiV2HealthStatus")}
-            >
-              <span
-                className={`inline-block h-2 w-2 rounded-full ${
-                  apiHealthy === "healthy"
-                    ? "bg-emerald-400"
-                    : apiHealthy === "degraded"
-                      ? "bg-yellow-400"
-                      : "bg-rose-400"
-                }`}
-              />
-              <span>
-                {apiHealthy === "healthy"
-                  ? th("apiHealthy")
-                  : apiHealthy === "degraded"
-                    ? th("apiDegraded")
-                    : th("apiDown")}
-              </span>
-            </div>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={iconActionClass}
+                aria-label={th("openMenu")}
+                title={th("openMenu")}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabelText>{th("openMenu")}</DropdownMenuLabelText>
+              <DropdownMenuItem onSelect={toggleCompactMode} className="gap-2">
+                {compactMode ? (
+                  <Maximize2 className="h-4 w-4" />
+                ) : (
+                  <Minimize2 className="h-4 w-4" />
+                )}
+                <span>
+                  {compactMode ? th("switchExpanded") : th("switchCompact")}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (!isGuestModalOpen) {
+                    openGuestModal();
+                  }
+                }}
+                disabled={isGuestModalOpen}
+                className="gap-2"
+              >
+                <Music2 className="h-4 w-4" />
+                <span>{th("greeter")}</span>
+              </DropdownMenuItem>
+              {!isElectronRuntime && (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    window.open(
+                      "https://analyze.darkfloor.org",
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                  className="gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>{th("analyse")}</span>
+                </DropdownMenuItem>
+              )}
+              {apiHealthy !== null && (
+                <>
+                  <DropdownMenuDivider />
+                  <DropdownMenuItem disabled className="gap-2 opacity-100">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${
+                        apiHealthy === "healthy"
+                          ? "bg-emerald-400"
+                          : apiHealthy === "degraded"
+                            ? "bg-yellow-400"
+                            : "bg-rose-400"
+                      }`}
+                    />
+                    <span>
+                      {apiHealthy === "healthy"
+                        ? th("apiHealthy")
+                        : apiHealthy === "degraded"
+                          ? th("apiDegraded")
+                          : th("apiDown")}
+                    </span>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

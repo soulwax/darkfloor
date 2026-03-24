@@ -270,18 +270,14 @@ function LibraryHeaderActionMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-subtext)] transition-all duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/35 focus-visible:outline-none"
+          className="shell-icon-action inline-flex h-9 w-9 items-center justify-center"
           aria-label={t("openActions")}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="end"
-        sideOffset={8}
-        className="z-20 w-56 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-xl"
-      >
+      <DropdownMenuContent align="end" sideOffset={8} className="z-20 w-56">
         {actions.map((action) => (
           <DropdownMenuItem
             key={action.key}
@@ -1251,14 +1247,12 @@ export default function LibraryPage() {
 
   return (
     <div className="container mx-auto flex min-h-screen flex-col px-3 py-4 md:px-6 md:py-8">
-      <header className="mb-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 md:mb-7 md:p-4">
+      <header className="mb-5 rounded-[1.3rem] border border-[color:var(--shell-border)] bg-[rgba(17,24,33,0.52)] p-3 md:mb-6 md:p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <div>
-                <p className="text-[11px] font-semibold tracking-[0.18em] text-[var(--color-muted)] uppercase">
-                  {t("yourMusic")}
-                </p>
+                <p className="shell-section-label">{t("yourMusic")}</p>
                 <h1 className="text-2xl font-bold text-[var(--color-text)] md:text-3xl">
                   {tc("library")}
                 </h1>
@@ -1271,10 +1265,10 @@ export default function LibraryPage() {
                 <button
                   type="button"
                   onClick={() => switchTab("favorites")}
-                  className={`touch-target inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-all duration-200 ease-out ${
+                  className={`touch-target inline-flex h-9 items-center rounded-full border px-3 text-sm font-medium transition-colors ${
                     activeTab === "favorites"
-                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-black"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-subtext)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                      ? "border-[rgba(244,178,102,0.24)] bg-[rgba(244,178,102,0.12)] text-[var(--color-text)]"
+                      : "border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] text-[var(--color-subtext)] hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)]"
                   }`}
                   aria-pressed={activeTab === "favorites"}
                 >
@@ -1283,10 +1277,10 @@ export default function LibraryPage() {
                 <button
                   type="button"
                   onClick={() => switchTab("history")}
-                  className={`touch-target inline-flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-all duration-200 ease-out ${
+                  className={`touch-target inline-flex h-9 items-center rounded-full border px-3 text-sm font-medium transition-colors ${
                     activeTab === "history"
-                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-black"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-subtext)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                      ? "border-[rgba(244,178,102,0.24)] bg-[rgba(244,178,102,0.12)] text-[var(--color-text)]"
+                      : "border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] text-[var(--color-subtext)] hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)]"
                   }`}
                   aria-pressed={activeTab === "history"}
                 >
@@ -1294,7 +1288,7 @@ export default function LibraryPage() {
                 </button>
                 <Link
                   href="/playlists"
-                  className="touch-target inline-flex h-9 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-sm font-medium text-[var(--color-subtext)] transition-all duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                  className="touch-target inline-flex h-9 items-center rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-3 text-sm font-medium text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)]"
                 >
                   {tc("playlists")}
                 </Link>
@@ -1310,7 +1304,7 @@ export default function LibraryPage() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={searchPlaceholder}
-                    className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] py-2 pr-3 pl-9 text-sm text-[var(--color-text)] transition-colors duration-200 ease-out outline-none focus:border-[var(--color-accent)]"
+                    className="h-11 w-full rounded-xl border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] py-2 pr-3 pl-9 text-sm text-[var(--color-text)] transition-colors outline-none focus:border-[var(--color-accent)]"
                     aria-label={t("searchPlaceholder")}
                   />
                 </label>
@@ -1336,7 +1330,7 @@ export default function LibraryPage() {
                 onChange={(event) =>
                   setSortOption(event.target.value as SortOption)
                 }
-                className="h-9 w-full appearance-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] py-1 pr-2 pl-8 text-xs text-[var(--color-text)] transition-colors duration-200 ease-out outline-none focus:border-[var(--color-accent)]"
+                className="h-9 w-full appearance-none rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] py-1 pr-2 pl-8 text-xs text-[var(--color-text)] transition-colors outline-none focus:border-[var(--color-accent)]"
                 aria-label={t("sortAriaLabel")}
               >
                 {sortOptions.map((option) => (
@@ -1350,7 +1344,7 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={handleToggleSelectionMode}
-              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)]"
             >
               {isSelectionMode ? (
                 <>
@@ -1368,7 +1362,7 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={handleShuffleAll}
-              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!hasVisibleTracks || isActionDisabled}
             >
               <Shuffle className="h-3.5 w-3.5" />
@@ -1378,7 +1372,7 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={handleQueueAllNext}
-              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors duration-200 ease-out hover:border-[var(--color-accent)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="touch-target inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-2.5 text-xs font-medium text-[var(--color-subtext)] transition-colors hover:border-[rgba(244,178,102,0.18)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!hasVisibleTracks || isActionDisabled}
             >
               <ListPlus className="h-3.5 w-3.5" />
@@ -1399,7 +1393,7 @@ export default function LibraryPage() {
       </header>
 
       {isSelectionMode ? (
-        <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 md:mb-6 md:p-3">
+        <div className="mb-4 rounded-xl border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] p-2 md:mb-6 md:p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-[var(--color-subtext)]">
               {t("selectionSummary", { count: selectedEntries.length })}
@@ -1461,7 +1455,7 @@ export default function LibraryPage() {
       ) : null}
 
       {removalUndo ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(244,178,102,0.22)] bg-[rgba(244,178,102,0.08)] px-3 py-2 text-sm text-[var(--color-text)] md:mb-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[rgba(244,178,102,0.18)] bg-[rgba(244,178,102,0.06)] px-3 py-2 text-sm text-[var(--color-text)] md:mb-6">
           <span>
             {t("removedTracksBanner", { count: removalUndo.entries.length })}
           </span>
@@ -1481,7 +1475,7 @@ export default function LibraryPage() {
 
       <section className="fade-in">
         {!activeTabLoading && activeEntries.length > 0 ? (
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-3 py-2">
             <h2 className="text-sm font-semibold text-[var(--color-text)]">
               {sectionLabel}
             </h2>

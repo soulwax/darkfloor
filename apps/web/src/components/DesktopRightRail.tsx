@@ -23,7 +23,13 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
 
 type RemovedQueueItem = {
   track: Track;
@@ -149,9 +155,9 @@ export function DesktopRightRail() {
   );
 
   return (
-    <aside className="desktop-right-rail block h-full w-[320px] shrink-0 p-2 pr-3 max-xl:hidden">
-      <div className="desktop-surface flex h-full min-h-0 flex-col overflow-hidden rounded-[1.25rem] border px-4 py-4">
-        <section className="border-b border-[rgba(255,255,255,0.08)] pb-4">
+    <aside className="desktop-right-rail block h-full w-[296px] shrink-0 p-2 pr-3 max-xl:hidden">
+      <div className="desktop-surface flex h-full min-h-0 flex-col overflow-hidden rounded-[1.15rem] border px-4 py-4">
+        <section className="border-b border-[color:var(--shell-divider)] pb-4">
           <p className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
             {t("nowPlaying")}
           </p>
@@ -162,7 +168,7 @@ export function DesktopRightRail() {
                 alt={currentTrack.title}
                 width={64}
                 height={64}
-                className="h-16 w-16 rounded-lg object-cover shadow-md ring-1 ring-white/10"
+                className="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10"
                 quality={75}
               />
               <div className="min-w-0 flex-1">
@@ -178,7 +184,7 @@ export function DesktopRightRail() {
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-xs text-[var(--color-subtext)]">
+            <div className="shell-panel-muted px-3 py-3 text-xs text-[var(--color-subtext)]">
               {t("startPlaybackToPopulate")}
             </div>
           )}
@@ -249,7 +255,7 @@ export function DesktopRightRail() {
           </div>
         </section>
 
-        <section className="mt-4 min-h-0 flex-1 overflow-hidden border-t border-[rgba(255,255,255,0.08)] pt-4">
+        <section className="mt-4 min-h-0 flex-1 overflow-hidden border-t border-[color:var(--shell-divider)] pt-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-muted)] uppercase">
               {t("upNext")}
@@ -265,7 +271,7 @@ export function DesktopRightRail() {
           </div>
 
           {upNext.length === 0 ? (
-            <div className="flex h-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)] px-3 text-xs text-[var(--color-subtext)]">
+            <div className="shell-panel-muted flex h-full items-center justify-center px-3 text-xs text-[var(--color-subtext)]">
               {t("queueEmpty")}
             </div>
           ) : (
@@ -297,10 +303,10 @@ export function DesktopRightRail() {
                         event.preventDefault();
                         handleDrop();
                       }}
-                      className={`group flex cursor-grab items-center gap-2.5 rounded-lg border bg-[rgba(255,255,255,0.02)] px-2.5 py-2 transition-colors active:cursor-grabbing ${
+                      className={`group flex cursor-grab items-center gap-2.5 rounded-lg border bg-[rgba(255,255,255,0.025)] px-2.5 py-2 transition-colors active:cursor-grabbing ${
                         dragOverIndex === queueIndex
                           ? "border-[rgba(244,178,102,0.35)] bg-[rgba(244,178,102,0.14)]"
-                          : "border-[rgba(255,255,255,0.06)] hover:border-[rgba(244,178,102,0.22)] hover:bg-[rgba(244,178,102,0.08)]"
+                          : "border-[rgba(255,255,255,0.05)] hover:border-[rgba(244,178,102,0.18)] hover:bg-[rgba(244,178,102,0.06)]"
                       }`}
                     >
                       <button
@@ -362,8 +368,8 @@ export function DesktopRightRail() {
           )}
         </section>
 
-        <div className="mt-3 border-t border-[rgba(255,255,255,0.08)] pt-3">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.04)] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
+        <div className="mt-3 border-t border-[color:var(--shell-divider)] pt-3">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(255,255,255,0.03)] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[var(--color-subtext)] uppercase">
             <ListMusic className="h-3 w-3" />
             {t("queueControls")}
           </div>

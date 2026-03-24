@@ -186,7 +186,7 @@ export default function MobileHeader() {
       transition={springPresets.gentle}
       className="safe-top fixed top-0 right-0 left-0 z-50 px-2 pt-2 pb-1"
     >
-      <div className="theme-chrome-header flex items-center gap-2 rounded-[1.2rem] border px-4 py-2.5 shadow-lg backdrop-blur-xl">
+      <div className="theme-chrome-header flex items-center gap-2 rounded-[1.1rem] border px-3.5 py-2">
         <motion.button
           onClick={() => {
             hapticLight();
@@ -194,7 +194,7 @@ export default function MobileHeader() {
           }}
           whileTap={{ scale: 0.92 }}
           transition={springPresets.snappy}
-          className="flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-2 text-[var(--color-text)] transition-colors active:bg-[var(--color-surface-hover)]"
+          className="shell-icon-action flex h-9 w-9 items-center justify-center"
           aria-label={th("openMenu")}
           type="button"
         >
@@ -226,8 +226,8 @@ export default function MobileHeader() {
             whileTap={{ scale: 0.94 }}
             className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-[var(--color-text)] ${
               isGuestModalOpen
-                ? "border-[#1DB954]/45 bg-[#1DB954]/18"
-                : "border-white/15 bg-white/5"
+                ? "border-[#1DB954]/32 bg-[#1DB954]/12"
+                : "border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)]"
             } disabled:opacity-90`}
             type="button"
             aria-label={th("reopenGreeter")}
@@ -245,7 +245,7 @@ export default function MobileHeader() {
               router.push("/library", { scroll: false });
             }}
             whileTap={{ scale: 0.94 }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[var(--color-text)]"
+            className="shell-icon-action inline-flex h-9 w-9 items-center justify-center"
             type="button"
             aria-label={th("openLibrary")}
           >

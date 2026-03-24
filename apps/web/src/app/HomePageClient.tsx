@@ -948,7 +948,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={springPresets.gentle}
-              className="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(244,178,102,0.36)_0%,rgba(24,24,24,0.94)_52%,rgba(16,16,16,0.98)_100%)] px-5 py-5 md:px-6 md:py-6"
+              className="mb-5 overflow-hidden rounded-[1.35rem] border border-[color:var(--shell-border)] bg-[linear-gradient(180deg,rgba(244,178,102,0.16)_0%,rgba(20,24,30,0.9)_38%,rgba(14,17,22,0.94)_100%)] px-5 py-5 md:px-6 md:py-6"
             >
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -964,7 +964,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       ? ` ${t("poweredBy", { host: apiHostname })}`
                       : ""}
                   </p>
-                  <div className="mt-4 max-w-2xl rounded-2xl border border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
+                  <div className="mt-4 max-w-2xl rounded-[1.1rem] border border-white/8 bg-black/12 px-4 py-4">
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-(--color-accent)" />
                       <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">
@@ -988,7 +988,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         href="https://developer.spotify.com/documentation/web-api/concepts/apps"
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold tracking-wide text-(--color-text) uppercase transition hover:border-(--color-accent)/40 hover:bg-white/10"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-[11px] font-bold tracking-wide text-(--color-text) uppercase transition hover:border-(--color-accent)/22 hover:bg-white/8"
                       >
                         {t("howTo")}
                       </a>
@@ -1403,7 +1403,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                   </div>
                 )}
 
-                <div className="card flex flex-col items-center justify-center py-14 text-center md:py-12">
+                <div className="card flex flex-col items-center justify-center py-12 text-center md:py-10">
                   <motion.div
                     animate={{
                       scale: [1, 1.05, 1],
@@ -1414,7 +1414,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
-                    className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-[rgba(244,178,102,0.18)] to-[rgba(244,178,102,0.08)] ring-2 ring-(--color-accent)/20 md:mb-3 md:h-16 md:w-16"
+                    className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-[rgba(244,178,102,0.12)] to-[rgba(244,178,102,0.04)] ring-1 ring-(--color-accent)/16 md:mb-3 md:h-16 md:w-16"
                   >
                     <Music2 className="h-10 w-10 text-(--color-accent) md:h-8 md:w-8" />
                   </motion.div>
@@ -1463,7 +1463,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                                   hapticLight();
                                   void handleShareSearch(search);
                                 }}
-                                className="electron-no-drag inline-flex items-center gap-1 rounded-md border border-(--color-border) bg-(--color-surface) px-1.5 py-1 text-[11px] font-medium text-(--color-subtext) transition-colors hover:bg-(--color-surface-hover) hover:text-(--color-text)"
+                                className="electron-no-drag inline-flex items-center gap-1 rounded-full border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-2 py-1 text-[11px] font-medium text-(--color-subtext) transition-colors hover:border-(--color-accent)/20 hover:text-(--color-text)"
                                 title={t("shareSearch")}
                                 aria-label={t("shareSearchFor", {
                                   query: search,
