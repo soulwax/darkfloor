@@ -2598,11 +2598,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     <div className="relative flex-1">
                       <div
                         ref={queueScrollRef}
-                        className="h-full overflow-y-auto overscroll-contain scroll-smooth pr-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(88,198,177,0.3)] [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb]:hover:bg-[rgba(88,198,177,0.5)] [&::-webkit-scrollbar-track]:mr-1 [&::-webkit-scrollbar-track]:bg-transparent"
-                        style={{
-                          scrollbarWidth: "thin",
-                          scrollbarColor: "rgba(88, 198, 177, 0.3) transparent",
-                        }}
+                        className="desktop-scroll h-full overflow-y-auto overscroll-contain scroll-smooth pr-3"
                       >
                         {queue.length === 0 ? (
                           <div className="flex h-full flex-col items-center justify-center p-8 text-center">

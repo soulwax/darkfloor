@@ -80,16 +80,29 @@ export default function PersistentPlayer() {
   const [showFpsCounter, setShowFpsCounter] = useState(false);
   const [showPatternControls, setShowPatternControls] = useState(false);
   const [renderer, setRenderer] = useState<FlowFieldRenderer | null>(null);
+  const [queuePreferenceOverride, setQueuePreferenceOverride] = useState<
+    boolean | null
+  >(null);
 
   // Sync panel state from server preferences - intentional initialization
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from server prefs */
   useEffect(() => {
     if (preferences) {
-      setShowQueue(preferences.queuePanelOpen ?? false);
+      const persistedQueueOpen = preferences.queuePanelOpen ?? false;
+      const nextQueueOpen = queuePreferenceOverride ?? persistedQueueOpen;
+
+      setShowQueue(nextQueueOpen);
       setShowEqualizer(preferences.equalizerPanelOpen ?? false);
       setVisualizerEnabled(preferences.visualizerEnabled ?? true);
+
+      if (
+        queuePreferenceOverride !== null &&
+        persistedQueueOpen === queuePreferenceOverride
+      ) {
+        setQueuePreferenceOverride(null);
+      }
     }
-  }, [preferences]);
+  }, [preferences, queuePreferenceOverride]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep guest visualizer preference in sync with local storage when signed out.
@@ -146,6 +159,19 @@ export default function PersistentPlayer() {
       updatePreferences.mutate({ equalizerPanelOpen: showEqualizer });
     }
   }, [showEqualizer, isAuthenticated, preferences, updatePreferences]);
+
+  const setQueueOpen = useCallback((next: boolean) => {
+    setQueuePreferenceOverride(next);
+    setShowQueue(next);
+  }, []);
+
+  const toggleQueue = useCallback(() => {
+    setShowQueue((prev) => {
+      const next = !prev;
+      setQueuePreferenceOverride(next);
+      return next;
+    });
+  }, []);
 
   const persistVisualizerPreference = useCallback(
     (next: boolean) => {
@@ -229,7 +255,7 @@ export default function PersistentPlayer() {
     onCycleRepeat: player.cycleRepeatMode,
     onSkipForward: player.skipForward,
     onSkipBackward: player.skipBackward,
-    onToggleQueue: () => setShowQueue(!showQueue),
+    onToggleQueue: toggleQueue,
     onToggleEqualizer: () => setShowEqualizer(!showEqualizer),
     onToggleVisualizer: !isMobile ? handleVisualizerToggle : undefined,
     visualizerEnabled,
@@ -245,23 +271,26 @@ export default function PersistentPlayer() {
         <>
           <button
             type="button"
-            onClick={() => setShowQueue((prev) => !prev)}
-            className="theme-panel fixed top-1/2 right-0 z-[61] hidden -translate-y-1/2 items-center gap-1 rounded-l-xl border border-r-0 px-2 py-3 text-[var(--color-subtext)] transition-all hover:bg-[rgba(244,178,102,0.08)] hover:text-[var(--color-text)] md:flex"
+            onClick={toggleQueue}
+            className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-l-lg border border-r-0 px-1.5 py-2 text-[var(--color-muted)] shadow-none transition-all hover:bg-[rgba(244,178,102,0.06)] hover:text-[var(--color-text)] md:flex"
             style={{
-              right: showQueue ? "min(100vw, 28rem)" : "0px",
+              right: showQueue
+                ? "calc(min(100vw, 28rem) + 0.35rem)"
+                : "0.35rem",
             }}
             aria-label={showQueue ? tq("closeQueue") : tt("queue")}
             title={showQueue ? tq("closeQueue") : tt("queue")}
+            aria-pressed={showQueue}
           >
             <div className="flex flex-col items-center gap-1">
               {showQueue ? (
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3 text-[var(--color-subtext)]" />
               ) : (
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-3 w-3 text-[var(--color-subtext)]" />
               )}
-              <ListMusic className="h-4 w-4" />
+              <ListMusic className="h-3.5 w-3.5 opacity-85" />
               <span
-                className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+                className="text-[9px] font-semibold uppercase tracking-[0.2em] opacity-85"
                 style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
               >
                 {tt("queue")}
@@ -290,7 +319,7 @@ export default function PersistentPlayer() {
               queuedTracks={player.queuedTracks}
               smartQueueState={player.smartQueueState}
               currentTrack={player.currentTrack}
-              onClose={() => setShowQueue(false)}
+              onClose={() => setQueueOpen(false)}
               onRemove={player.removeFromQueue}
               onClear={player.clearQueue}
               onReorder={player.reorderQueue}
@@ -320,7 +349,7 @@ export default function PersistentPlayer() {
             onNext={player.playNext}
             onSeek={player.seek}
             onTap={() => player.setShowMobilePlayer(true)}
-            onToggleQueue={() => setShowQueue(true)}
+            onToggleQueue={() => setQueueOpen(true)}
           />
 
           {}
@@ -344,7 +373,7 @@ export default function PersistentPlayer() {
               onCycleRepeat={player.cycleRepeatMode}
               onSkipForward={player.skipForward}
               onSkipBackward={player.skipBackward}
-              onToggleQueue={() => setShowQueue(!showQueue)}
+              onToggleQueue={toggleQueue}
               onClose={() => player.setShowMobilePlayer(false)}
               forceExpanded={true}
             />
@@ -357,7 +386,7 @@ export default function PersistentPlayer() {
               queuedTracks={player.queuedTracks}
               smartQueueState={player.smartQueueState}
               currentTrack={player.currentTrack}
-              onClose={() => setShowQueue(false)}
+              onClose={() => setQueueOpen(false)}
               onRemove={player.removeFromQueue}
               onClear={player.clearQueue}
               onReorder={player.reorderQueue}

@@ -781,12 +781,8 @@ export function EnhancedQueue({
       {}
       <div
         ref={queueListRef}
-        className="flex-1 overflow-y-auto overscroll-contain scroll-smooth pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(88,198,177,0.3)] [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb]:hover:bg-[rgba(88,198,177,0.5)] [&::-webkit-scrollbar-track]:mr-1 [&::-webkit-scrollbar-track]:bg-transparent"
+        className="desktop-scroll flex-1 overflow-y-auto overscroll-contain scroll-smooth pr-2"
         id="queue-list"
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "rgba(88, 198, 177, 0.3) transparent",
-        }}
       >
         {queue.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center text-[var(--color-subtext)]">

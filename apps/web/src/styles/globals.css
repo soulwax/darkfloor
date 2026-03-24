@@ -49,6 +49,19 @@
   --shell-popover-bg: rgba(16, 22, 31, 0.94);
   --shell-shadow-soft: 0 18px 40px rgba(5, 10, 18, 0.32);
   --shell-shadow-chrome: 0 12px 32px rgba(5, 10, 18, 0.28);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #f4b266 0%,
+    #4ab8a3 58%,
+    #a6ebd1 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ffc889 0%,
+    #63c8b7 56%,
+    #c5f4e2 100%
+  );
+  --scrollbar-thumb-solid: #4ab8a3;
 
   /* Audio-reactive variables - updated by useAudioReactiveBackground hook */
   --audio-intensity: 0;
@@ -108,6 +121,19 @@ html.theme-light {
   --shell-popover-bg: rgba(255, 255, 255, 0.96);
   --shell-shadow-soft: 0 14px 32px rgba(0, 0, 0, 0.08);
   --shell-shadow-chrome: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #d98a36 0%,
+    #3da88a 58%,
+    #8ad8be 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ecab60 0%,
+    #48b699 56%,
+    #ace7d1 100%
+  );
+  --scrollbar-thumb-solid: #3da88a;
 
   /* Electron chrome sync */
   --color-chrome-solid: #ffffff;
@@ -1272,56 +1298,38 @@ html.theme-light .vertical-slider::-moz-range-thumb {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent) 0%,
-    var(--color-accent-light) 38%,
-    var(--color-accent-strong) 100%
-  );
-  border-radius: 5px;
-  border: 2px solid var(--color-surface);
-  background-clip: content-box;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-thumb-gradient);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-light) 0%,
-    #ffe1b9 34%,
-    #74d7c4 100%
-  );
+  background: var(--scrollbar-thumb-gradient-hover);
   box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
 }
 
 /* Firefox support */
 html {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-accent) var(--color-surface-2);
+  scrollbar-color: var(--scrollbar-thumb-solid) var(--color-surface-2);
 }
 
 html.theme-light ::-webkit-scrollbar-track {
   background: var(--color-surface-2);
 }
 html.theme-light ::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent) 0%,
-    var(--color-accent-light) 38%,
-    var(--color-accent-strong) 100%
-  );
-  border-radius: 5px;
-  border: 2px solid var(--color-surface);
-  background-clip: content-box;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: var(--scrollbar-thumb-gradient);
+  border-radius: 999px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.15);
 }
 html.theme-light ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-light) 0%,
-    #f1bb6a 34%,
-    #65cbb1 100%
-  );
+  background: var(--scrollbar-thumb-gradient-hover);
   box-shadow: 0 3px 8px rgba(212, 147, 61, 0.25);
 }
 
@@ -2204,47 +2212,30 @@ html.theme-light.desktop-compact-mode .desktop-surface {
 }
 
 .desktop-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent) 0%,
-    var(--color-accent-light) 38%,
-    var(--color-accent-strong) 100%
-  );
-  border: 2px solid var(--color-surface);
-  background-clip: content-box;
-  border-radius: 5px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-thumb-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .desktop-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-light) 0%,
-    #ffe1b9 34%,
-    #74d7c4 100%
-  );
+  background: var(--scrollbar-thumb-gradient-hover);
   box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
 }
 
 html.theme-light .desktop-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent) 0%,
-    var(--color-accent-light) 38%,
-    var(--color-accent-strong) 100%
-  );
-  border: 2px solid var(--color-surface);
-  background-clip: content-box;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: var(--scrollbar-thumb-gradient);
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 html.theme-light .desktop-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-light) 0%,
-    #f1bb6a 34%,
-    #65cbb1 100%
-  );
+  background: var(--scrollbar-thumb-gradient-hover);
   box-shadow: 0 3px 8px rgba(212, 147, 61, 0.25);
 }
 
@@ -2258,7 +2249,7 @@ html.theme-light .desktop-scroll::-webkit-scrollbar-thumb:hover {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-accent) transparent;
+  scrollbar-color: var(--scrollbar-thumb-solid) transparent;
   scrollbar-gutter: stable both-edges;
 }
 
@@ -2271,25 +2262,16 @@ html.theme-light .desktop-scroll::-webkit-scrollbar-thumb:hover {
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent) 0%,
-    var(--color-accent-light) 38%,
-    var(--color-accent-strong) 100%
-  );
-  border-radius: 5px;
-  border: 2px solid var(--color-surface);
-  background-clip: content-box;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-thumb-gradient);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-light) 0%,
-    #ffe1b9 34%,
-    #74d7c4 100%
-  );
+  background: var(--scrollbar-thumb-gradient-hover);
   box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
 }
 
