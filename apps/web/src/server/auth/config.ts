@@ -58,13 +58,10 @@ logAuthInfo("NextAuth config bootstrap", {
 });
 
 if (env.AUTH_SPOTIFY_ENABLED || env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
-  logAuthWarn(
-    "Spotify OAuth sign-in is disabled in the web runtime",
-    {
-      impact:
-        "Discord is now the only supported OAuth login method. Spotify features should be configured from Settings instead of Auth.js.",
-    },
-  );
+  logAuthWarn("Spotify OAuth sign-in is disabled in the web runtime", {
+    impact:
+      "Discord is now the only supported OAuth login method. Spotify features should be configured from Settings instead of Auth.js.",
+  });
 }
 
 logAuthInfo("OAuth providers configured", {
@@ -81,6 +78,52 @@ export const authConfig = {
     DiscordProvider({
       clientId: env.AUTH_DISCORD_ID,
       clientSecret: env.AUTH_DISCORD_SECRET,
+      profile(rawProfile) {
+        const profile = rawProfile as {
+          id: string;
+          username?: string;
+          global_name?: string | null;
+          email?: string | null;
+          avatar?: string | null;
+          discriminator?: string;
+        };
+
+        const displayName =
+          profile.global_name ?? profile.username ?? "Discord User";
+        const fallbackEmail = `discord-${profile.id}@users.darkfloor.invalid`;
+
+        let image: string | null = null;
+        if (profile.avatar === null) {
+          const defaultAvatarNumber =
+            profile.discriminator === "0"
+              ? Number(BigInt(profile.id) >> BigInt(22)) % 6
+              : parseInt(profile.discriminator ?? "0", 10) % 5;
+          image = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarNumber}.png`;
+        } else if (
+          typeof profile.avatar === "string" &&
+          profile.avatar.length > 0
+        ) {
+          const format = profile.avatar.startsWith("a_") ? "gif" : "png";
+          image = `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${format}`;
+        }
+
+        if (!profile.email) {
+          logAuthWarn(
+            "Discord OAuth profile missing email; using fallback email",
+            {
+              profileIdHash: hashForLog(profile.id),
+              username: profile.username ?? null,
+            },
+          );
+        }
+
+        return {
+          id: profile.id,
+          name: displayName,
+          email: profile.email ?? fallbackEmail,
+          image,
+        };
+      },
     }),
   ],
   adapter: DrizzleAdapter(db, {
