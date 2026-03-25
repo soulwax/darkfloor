@@ -51,17 +51,27 @@
   --shell-shadow-chrome: 0 12px 32px rgba(5, 10, 18, 0.28);
   --scrollbar-thumb-gradient: linear-gradient(
     180deg,
-    #f4b266 0%,
-    #4ab8a3 58%,
-    #a6ebd1 100%
+    #fbbf5a 0%,
+    #f4a843 22%,
+    #2aaa96 52%,
+    #58c6b1 76%,
+    #a8f0e2 100%
   );
   --scrollbar-thumb-gradient-hover: linear-gradient(
     180deg,
-    #ffc889 0%,
-    #63c8b7 56%,
-    #c5f4e2 100%
+    #ffd17a 0%,
+    #ffb84d 24%,
+    #3ec9b4 52%,
+    #72d9c9 76%,
+    #c2f5ea 100%
   );
   --scrollbar-thumb-solid: #4ab8a3;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #070c13 0%,
+    #0f141d 50%,
+    #070c13 100%
+  );
 
   /* Audio-reactive variables - updated by useAudioReactiveBackground hook */
   --audio-intensity: 0;
@@ -124,16 +134,26 @@ html.theme-light {
   --scrollbar-thumb-gradient: linear-gradient(
     180deg,
     #d98a36 0%,
-    #3da88a 58%,
-    #8ad8be 100%
+    #c97426 24%,
+    #2d9d80 52%,
+    #3da88a 76%,
+    #8adac2 100%
   );
   --scrollbar-thumb-gradient-hover: linear-gradient(
     180deg,
     #ecab60 0%,
-    #48b699 56%,
-    #ace7d1 100%
+    #d98b3c 26%,
+    #38b598 52%,
+    #4dc4a0 76%,
+    #a2e8d2 100%
   );
   --scrollbar-thumb-solid: #3da88a;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #d4d9e2 0%,
+    #e8ecf1 50%,
+    #d4d9e2 100%
+  );
 
   /* Electron chrome sync */
   --color-chrome-solid: #ffffff;
@@ -1284,31 +1304,42 @@ html.theme-light .vertical-slider::-moz-range-thumb {
 }
 
 /* ------------------------------------------------------------
-   Flat Neon Scrollbar (Enhanced)
+   Gradient Scrollbar — Amber × Teal (theme-matched)
 ------------------------------------------------------------- */
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-2);
-  border-radius: 5px;
+  background: var(--scrollbar-track-gradient);
+  border-radius: 999px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-gradient);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(74, 184, 163, 0.18),
+    0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-gradient-hover);
-  box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 14px rgba(244, 178, 102, 0.55),
+    0 0 28px rgba(74, 184, 163, 0.28),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-surface-2);
 }
 
 /* Firefox support */
@@ -1318,19 +1349,29 @@ html {
 }
 
 html.theme-light ::-webkit-scrollbar-track {
-  background: var(--color-surface-2);
+  background: var(--scrollbar-track-gradient);
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.12);
 }
 html.theme-light ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-gradient);
   border-radius: 999px;
-  border: 1px solid rgba(15, 20, 25, 0.08);
+  border: 1px solid rgba(15, 20, 25, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 1px 3px rgba(0, 0, 0, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(61, 168, 138, 0.14),
+    0 2px 6px rgba(0, 0, 0, 0.12);
 }
 html.theme-light ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-gradient-hover);
-  box-shadow: 0 3px 8px rgba(212, 147, 61, 0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 0 10px rgba(212, 147, 61, 0.4),
+    0 0 20px rgba(61, 168, 138, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.1);
+}
+html.theme-light ::-webkit-scrollbar-corner {
+  background: var(--color-surface-2);
 }
 
 /* Respect user's reduced motion preference */
@@ -2204,39 +2245,58 @@ html.theme-light.desktop-compact-mode .desktop-surface {
 }
 
 .desktop-scroll::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .desktop-scroll::-webkit-scrollbar-track {
-  background: var(--color-surface-2);
+  background: var(--scrollbar-track-gradient);
+  border-radius: 999px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45);
 }
 
 .desktop-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-gradient);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(74, 184, 163, 0.18),
+    0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
 .desktop-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-gradient-hover);
-  box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 14px rgba(244, 178, 102, 0.55),
+    0 0 28px rgba(74, 184, 163, 0.28),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+html.theme-light .desktop-scroll::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-gradient);
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.12);
 }
 
 html.theme-light .desktop-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-gradient);
-  border: 1px solid rgba(15, 20, 25, 0.08);
+  border: 1px solid rgba(15, 20, 25, 0.1);
   border-radius: 999px;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 1px 3px rgba(0, 0, 0, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 0 1px rgba(61, 168, 138, 0.14),
+    0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 html.theme-light .desktop-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-gradient-hover);
-  box-shadow: 0 3px 8px rgba(212, 147, 61, 0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 0 10px rgba(212, 147, 61, 0.4),
+    0 0 20px rgba(61, 168, 138, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .guest-modal-content-scroll {
@@ -2254,25 +2314,33 @@ html.theme-light .desktop-scroll::-webkit-scrollbar-thumb:hover {
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar-track {
-  background: var(--color-surface-2);
+  background: var(--scrollbar-track-gradient);
+  border-radius: 999px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45);
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb-gradient);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(74, 184, 163, 0.18),
+    0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
 .guest-modal-dropdown-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-gradient-hover);
-  box-shadow: 0 4px 12px rgba(244, 178, 102, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 14px rgba(244, 178, 102, 0.55),
+    0 0 28px rgba(74, 184, 163, 0.28),
+    0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 html.is-electron .electron-window-controls {
