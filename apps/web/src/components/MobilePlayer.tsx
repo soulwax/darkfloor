@@ -1334,11 +1334,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
               className="fixed inset-0 z-[99] flex flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+20px)]"
             >
               {}
-              <div
-                className="absolute inset-0 transition-all duration-1000"
-                style={{ background: "var(--color-bg)" }}
-              />
-              <div className="absolute inset-0 bg-black/24" />
+              <div className="absolute inset-0 bg-black/12" />
 
               {}
               <div className="mobile-player-expanded relative z-10 flex flex-1 flex-col">

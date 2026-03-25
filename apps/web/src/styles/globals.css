@@ -778,9 +778,9 @@ html.theme-light .chip {
 .player-backdrop {
   width: 100%;
   border-top: 1px solid var(--shell-divider);
-  background: rgba(11, 11, 11, 0.94);
+  background: rgba(11, 11, 11, 0.68);
   box-shadow: none;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
   position: relative;
 }
 .player-backdrop::before {
@@ -799,7 +799,7 @@ html.theme-light .player-backdrop::before {
 }
 
 html.theme-light .player-backdrop {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.82);
   border-top: 1px solid var(--shell-divider);
   box-shadow: none;
 }
@@ -2048,9 +2048,9 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 
 .desktop-surface {
   border-color: var(--shell-border);
-  background: rgba(15, 21, 29, 0.56);
+  background: rgba(11, 11, 11, 0.28);
   box-shadow: var(--shell-shadow-soft);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
 }
 
 html.desktop-compact-mode .electron-header-main {
@@ -2067,7 +2067,7 @@ html.desktop-compact-mode .desktop-main {
 
 html.desktop-compact-mode .desktop-surface {
   border-color: rgba(255, 255, 255, 0.06);
-  background: rgba(13, 19, 28, 0.48);
+  background: rgba(11, 11, 11, 0.22);
 }
 
 html.desktop-compact-mode .shell-action {
@@ -2089,13 +2089,13 @@ html.desktop-compact-mode .electron-sidebar .header-logo-title + div {
 
 html.theme-light .desktop-surface {
   border-color: var(--shell-border);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shell-shadow-soft);
 }
 
 html.theme-light.desktop-compact-mode .desktop-surface {
   border-color: rgba(15, 20, 25, 0.08);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.76);
 }
 
 .desktop-scroll::-webkit-scrollbar {
@@ -2439,25 +2439,25 @@ html.theme-light .header-icon-btn:hover > div {
 }
 
 .theme-chrome-bar {
-  background: rgba(11, 11, 11, 0.94);
+  background: rgba(11, 11, 11, 0.72);
   border-color: var(--shell-border);
   box-shadow: none;
 }
 
 html.theme-light .theme-chrome-bar {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.84);
   border-color: var(--shell-border);
   box-shadow: none;
 }
 
 .theme-chrome-drawer {
-  background: rgba(11, 11, 11, 0.97);
+  background: rgba(11, 11, 11, 0.86);
   border-color: var(--shell-border);
   box-shadow: none;
 }
 
 html.theme-light .theme-chrome-drawer {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.88);
   border-color: var(--shell-border);
   box-shadow: none;
 }
@@ -2471,13 +2471,13 @@ html.theme-light .theme-chrome-backdrop {
 }
 
 .theme-panel {
-  background: rgba(17, 17, 17, 0.96);
+  background: rgba(17, 17, 17, 0.84);
   border-color: var(--shell-border);
   box-shadow: none;
 }
 
 html.theme-light .theme-panel {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .theme-input {
