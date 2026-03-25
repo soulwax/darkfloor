@@ -272,7 +272,7 @@ export default function PersistentPlayer() {
           <button
             type="button"
             onClick={toggleQueue}
-            className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-l-lg border border-r-0 px-1.5 py-2 text-[var(--color-muted)] shadow-none transition-all hover:bg-[rgba(244,178,102,0.06)] hover:text-[var(--color-text)] md:flex"
+            className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-l-lg border border-r-0 px-1.5 py-2 text-[var(--color-muted)] shadow-none transition-colors hover:bg-white/4 hover:text-[var(--color-text)] md:flex"
             style={{
               right: showQueue
                 ? "calc(min(100vw, 28rem) + 0.35rem)"
@@ -290,7 +290,7 @@ export default function PersistentPlayer() {
               )}
               <ListMusic className="h-3.5 w-3.5 opacity-85" />
               <span
-                className="text-[9px] font-semibold uppercase tracking-[0.2em] opacity-85"
+                className="text-[9px] font-medium opacity-85"
                 style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
               >
                 {tt("queue")}
@@ -305,7 +305,7 @@ export default function PersistentPlayer() {
               right: "var(--desktop-right-rail-width, 0px)",
             }}
           >
-            <div className="player-backdrop pointer-events-auto mx-auto max-w-[72rem] overflow-hidden rounded-[1.35rem]">
+            <div className="player-backdrop pointer-events-auto mx-auto max-w-[56rem] overflow-hidden rounded-[1.35rem] xl:max-w-[60rem]">
               <div className="player-backdrop-inner">
                 <MaturePlayer {...playerProps} />
               </div>

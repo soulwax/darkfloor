@@ -11,10 +11,6 @@ import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { api } from "@starchild/api-client/trpc/react";
 import type { SimilarityPreference, Track } from "@starchild/types";
 import {
-  extractColorsFromImage,
-  type ColorPalette,
-} from "@/utils/colorExtractor";
-import {
   haptic,
   hapticLight,
   hapticMedium,
@@ -70,51 +66,6 @@ const QueueSettingsModal = dynamic(
     })),
   { ssr: false },
 );
-
-const FALLBACK_PALETTE: ColorPalette = {
-  primary: "rgba(100, 149, 237, 0.8)",
-  secondary: "rgba(135, 206, 250, 0.8)",
-  accent: "rgba(70, 130, 180, 0.8)",
-  hue: 210,
-  saturation: 60,
-  lightness: 65,
-};
-
-const RGBA_PATTERN = /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+/;
-
-const isPaletteUsable = (
-  palette: ColorPalette | null | undefined,
-): palette is ColorPalette => {
-  if (!palette) return false;
-
-  const colors = [palette.primary, palette.secondary, palette.accent];
-  if (
-    !colors.every(
-      (value) => typeof value === "string" && RGBA_PATTERN.test(value),
-    )
-  ) {
-    return false;
-  }
-
-  const { hue, saturation, lightness } = palette;
-  if (
-    !Number.isFinite(hue) ||
-    !Number.isFinite(saturation) ||
-    !Number.isFinite(lightness)
-  ) {
-    return false;
-  }
-
-  if (hue < 0 || hue > 360) return false;
-  if (saturation < 0 || saturation > 100) return false;
-  if (lightness < 0 || lightness > 100) return false;
-
-  return true;
-};
-
-const isPlaceholderCover = (coverUrl: string) =>
-  coverUrl.startsWith("data:image") ||
-  coverUrl.includes("/images/placeholder-cover.svg");
 
 interface QueueItemProps {
   track: Track;
@@ -287,12 +238,12 @@ function QueueItem({
       onContextMenu={handleContextMenu}
       className={`group relative flex items-center gap-3 p-3 transition-colors ${
         isSelected
-          ? "bg-[rgba(88,198,177,0.18)] ring-2 ring-[rgba(88,198,177,0.4)]"
+          ? "bg-white/8 ring-1 ring-white/10"
           : isActive
-            ? "bg-[rgba(244,178,102,0.16)] ring-1 ring-[rgba(244,178,102,0.3)]"
+            ? "bg-white/6 ring-1 ring-white/8"
             : isSmartTrack
-              ? "bg-[rgba(88,198,177,0.04)] active:bg-[rgba(88,198,177,0.08)]"
-              : "active:bg-[rgba(244,178,102,0.08)]"
+              ? "bg-white/3 active:bg-white/5"
+              : "active:bg-white/4"
       }`}
       onTouchStart={handleItemTouchStart}
       onTouchMove={handleItemTouchMove}
@@ -306,7 +257,7 @@ function QueueItem({
     >
       {/* Smart track indicator */}
       {isSmartTrack && (
-        <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r bg-[var(--color-accent-strong)]" />
+        <div className="absolute top-1/2 left-0 h-8 w-px -translate-y-1/2 rounded-r bg-[var(--color-accent)]" />
       )}
 
       {/* Drag handle */}
@@ -342,7 +293,7 @@ function QueueItem({
       </div>
 
       {/* Cover image with play button */}
-      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-[rgba(255,255,255,0.05)]">
+      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-sm bg-white/4">
         {coverImage ? (
           <Image
             src={coverImage}
@@ -406,7 +357,7 @@ function QueueItem({
           onTouchEnd={(e) => {
             e.stopPropagation();
           }}
-          className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-[rgba(88,198,177,0.16)] active:text-[var(--color-text)]"
+          className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-white/6 active:text-[var(--color-text)]"
           aria-label={tm("movePlayNext")}
           title={tm("playNext")}
         >
@@ -427,7 +378,7 @@ function QueueItem({
           onTouchEnd={(e) => {
             e.stopPropagation();
           }}
-          className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-[rgba(244,178,102,0.12)] active:text-[var(--color-text)]"
+          className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-white/6 active:text-[var(--color-text)]"
           aria-label={t("removeFromQueue")}
           title={t("removeFromQueue")}
         >
@@ -538,8 +489,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const [, setVisualizerEnabled] = useState(true);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const [isShareCopied, setIsShareCopied] = useState(false);
-  const [albumColorPalette, setAlbumColorPalette] =
-    useState<ColorPalette | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
     null,
   );
@@ -574,8 +523,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const expandedContentScrollRef = useRef<HTMLDivElement>(null);
   const expandedPanelRef = useRef<HTMLDivElement>(null);
   const expandedPanelHeightRef = useRef(0);
-  const paletteRequestRef = useRef(0);
-  const lastPaletteCoverRef = useRef<string | null>(null);
   const queueScrollRef = useRef<HTMLDivElement>(null);
   const queueScrollTrackRef = useRef<HTMLDivElement>(null);
   const queueScrollThumbRef = useRef<HTMLDivElement>(null);
@@ -1142,77 +1089,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     };
   }, [isExpanded]);
 
-  // Extract color palette from album cover - intentional async effect
-  /* eslint-disable react-hooks/set-state-in-effect -- Intentional: async color extraction */
-  useEffect(() => {
-    const fallbackCover =
-      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect fill='%236495ed' width='1' height='1'/%3E%3C/svg%3E";
-    const coverUrl = currentTrack
-      ? getCoverImage(currentTrack, "small")
-      : fallbackCover;
-
-    if (lastPaletteCoverRef.current === coverUrl) {
-      return;
-    }
-    lastPaletteCoverRef.current = coverUrl;
-
-    if (!currentTrack || isPlaceholderCover(coverUrl)) {
-      setAlbumColorPalette(null);
-      return;
-    }
-
-    const requestId = ++paletteRequestRef.current;
-    let cancelled = false;
-    let cleanup: (() => void) | null = null;
-
-    const runExtraction = () => {
-      extractColorsFromImage(coverUrl, { size: 64 })
-        .then((palette) => {
-          if (cancelled || requestId !== paletteRequestRef.current) return;
-          if (!isPaletteUsable(palette)) {
-            console.warn(
-              "Palette extraction returned invalid values; using fallback.",
-            );
-            setAlbumColorPalette(null);
-            return;
-          }
-          setAlbumColorPalette(palette);
-        })
-        .catch((error) => {
-          if (cancelled || requestId !== paletteRequestRef.current) return;
-          console.error("Failed to extract colors, using fallback:", error);
-          setAlbumColorPalette(null);
-        });
-    };
-
-    if (typeof window !== "undefined") {
-      const idleWindow = window as Window & {
-        requestIdleCallback?: (
-          cb: () => void,
-          options?: { timeout: number },
-        ) => number;
-        cancelIdleCallback?: (id: number) => void;
-      };
-      if (idleWindow.requestIdleCallback) {
-        const idleId = idleWindow.requestIdleCallback(runExtraction, {
-          timeout: 600,
-        });
-        cleanup = () => idleWindow.cancelIdleCallback?.(idleId);
-      } else {
-        const timeoutId = window.setTimeout(runExtraction, 120);
-        cleanup = () => clearTimeout(timeoutId);
-      }
-    } else {
-      runExtraction();
-    }
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [currentTrack]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   // Sync audio element from context - intentional initialization
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from context */
   useEffect(() => {
@@ -1408,202 +1284,15 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     currentTrack.album.cover_big ??
     currentTrack.album.cover_medium ??
     currentTrack.album.cover;
-
-  const extractRgbFromRgba = (rgba: string): [number, number, number] => {
-    const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgba);
-    if (match) {
-      return [
-        parseInt(match[1] ?? "0"),
-        parseInt(match[2] ?? "0"),
-        parseInt(match[3] ?? "0"),
-      ];
-    }
-    return [59, 130, 246];
-  };
-
-  const rgbToHex = (r: number, g: number, b: number): string => {
-    return `#${[r, g, b]
-      .map((x) => {
-        const hex = x.toString(16);
-        return hex.length === 1 ? `0${hex}` : hex;
-      })
-      .join("")}`;
-  };
-
-  const enhanceColor = (
-    r: number,
-    g: number,
-    b: number,
-    saturationBoost = 1.4,
-    brightnessBoost = 1.15,
-  ): [number, number, number] => {
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-
-    if (delta === 0) {
-      const enhanced = Math.min(255, Math.max(0, r * brightnessBoost));
-      return [enhanced, enhanced, enhanced];
-    }
-
-    const avg = (r + g + b) / 3;
-    const saturation = delta / (255 - Math.abs(2 * avg - 255));
-    const enhancedSaturation = Math.min(1, saturation * saturationBoost);
-
-    const factor = enhancedSaturation / saturation;
-    const newR = Math.min(
-      255,
-      Math.max(0, avg + (r - avg) * factor * brightnessBoost),
-    );
-    const newG = Math.min(
-      255,
-      Math.max(0, avg + (g - avg) * factor * brightnessBoost),
-    );
-    const newB = Math.min(
-      255,
-      Math.max(0, avg + (b - avg) * factor * brightnessBoost),
-    );
-
-    return [Math.round(newR), Math.round(newG), Math.round(newB)];
-  };
-
-  const getComplementaryColor = (
-    r: number,
-    g: number,
-    b: number,
-  ): [number, number, number] => {
-    const rNorm = r / 255;
-    const gNorm = g / 255;
-    const bNorm = b / 255;
-
-    const max = Math.max(rNorm, gNorm, bNorm);
-    const min = Math.min(rNorm, gNorm, bNorm);
-    const delta = max - min;
-
-    let h = 0;
-    let s = 0;
-    const l = (max + min) / 2;
-
-    if (delta !== 0) {
-      s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
-
-      if (max === rNorm) {
-        h = ((gNorm - bNorm) / delta + (gNorm < bNorm ? 6 : 0)) / 6;
-      } else if (max === gNorm) {
-        h = ((bNorm - rNorm) / delta + 2) / 6;
-      } else {
-        h = ((rNorm - gNorm) / delta + 4) / 6;
-      }
-    }
-
-    const compH = (h + 0.5) % 1;
-    const highS = Math.min(1, s * 1.8);
-    const brightL = Math.min(0.75, l * 1.2);
-
-    const c = (1 - Math.abs(2 * brightL - 1)) * highS;
-    const x = c * (1 - Math.abs(((compH * 6) % 2) - 1));
-    const m = brightL - c / 2;
-
-    let rOut = 0,
-      gOut = 0,
-      bOut = 0;
-    const hue = compH * 6;
-
-    if (hue < 1) {
-      [rOut, gOut, bOut] = [c, x, 0];
-    } else if (hue < 2) {
-      [rOut, gOut, bOut] = [x, c, 0];
-    } else if (hue < 3) {
-      [rOut, gOut, bOut] = [0, c, x];
-    } else if (hue < 4) {
-      [rOut, gOut, bOut] = [0, x, c];
-    } else if (hue < 5) {
-      [rOut, gOut, bOut] = [x, 0, c];
-    } else {
-      [rOut, gOut, bOut] = [c, 0, x];
-    }
-
-    return [
-      Math.round((rOut + m) * 255),
-      Math.round((gOut + m) * 255),
-      Math.round((bOut + m) * 255),
-    ];
-  };
-
-  const getPaletteColor = (
-    color: string,
-    opacity = 1,
-    enhance = false,
-  ): string => {
-    let [r, g, b] = extractRgbFromRgba(color);
-    if (enhance && albumColorPalette) {
-      [r, g, b] = enhanceColor(r, g, b);
-    }
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-
-  const getPaletteHex = (color: string, enhance = false): string => {
-    let [r, g, b] = extractRgbFromRgba(color);
-    if (enhance && albumColorPalette) {
-      [r, g, b] = enhanceColor(r, g, b);
-    }
-    return rgbToHex(r, g, b);
-  };
-
-  const palette = albumColorPalette ?? FALLBACK_PALETTE;
-
-  // Create a full-width gradient using all three key colors from the album cover
-  // Extract RGB values and apply appropriate opacity for background
-  const primaryRgb = extractRgbFromRgba(palette.primary);
-  const secondaryRgb = extractRgbFromRgba(palette.secondary);
-  const accentRgb = extractRgbFromRgba(palette.accent);
-
-  // Enhanced colors for better visual appeal
-  const [enhancedPrimaryR, enhancedPrimaryG, enhancedPrimaryB] = enhanceColor(
-    primaryRgb[0],
-    primaryRgb[1],
-    primaryRgb[2],
-  );
-  const [enhancedSecondaryR, enhancedSecondaryG, enhancedSecondaryB] =
-    enhanceColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
-  const [enhancedAccentR, enhancedAccentG, enhancedAccentB] = enhanceColor(
-    accentRgb[0],
-    accentRgb[1],
-    accentRgb[2],
-  );
-
-  // Create gradient with multiple color stops covering the full section
-  // Using 165deg angle for diagonal gradient, with colors distributed across 0% to 100%
-  // Uses all three key colors (primary, secondary, accent) from the album cover
-  const dynamicGradient = `linear-gradient(165deg, rgba(${enhancedPrimaryR}, ${enhancedPrimaryG}, ${enhancedPrimaryB}, 0.25) 0%, rgba(${enhancedPrimaryR}, ${enhancedPrimaryG}, ${enhancedPrimaryB}, 0.18) 25%, rgba(${enhancedSecondaryR}, ${enhancedSecondaryG}, ${enhancedSecondaryB}, 0.2) 50%, rgba(${enhancedSecondaryR}, ${enhancedSecondaryG}, ${enhancedSecondaryB}, 0.15) 70%, rgba(${enhancedAccentR}, ${enhancedAccentG}, ${enhancedAccentB}, 0.18) 85%, rgba(${enhancedAccentR}, ${enhancedAccentG}, ${enhancedAccentB}, 0.12) 100%)`;
-
-  const primaryColor = getPaletteHex(palette.primary, true);
-  const secondaryColor = getPaletteHex(palette.secondary, true);
-  const accentColor = getPaletteHex(palette.accent, true);
-  const primaryRgba = getPaletteColor(palette.primary, 0.6, true);
-  const secondaryRgba = getPaletteColor(palette.secondary, 0.5, true);
-  const primaryRgbaLight = getPaletteColor(palette.primary, 0.25, true);
-  const secondaryRgbaLight = getPaletteColor(palette.secondary, 0.2, true);
-  const accentRgbaLight = getPaletteColor(palette.accent, 0.18, true);
-  const primaryRgbaShadow = getPaletteColor(palette.primary, 0.4, true);
-  const primaryRgbaRing = getPaletteColor(palette.secondary, 0.7, true);
-  const primaryRgbaGlow = getPaletteColor(palette.secondary, 0.8, true);
-  const primaryRgbaShadowButton = getPaletteColor(palette.primary, 0.5, true);
-  const primaryRgbaBorder = getPaletteColor(palette.primary, 0.7, true);
-
-  const [compPrimaryR, compPrimaryG, compPrimaryB] = getComplementaryColor(
-    primaryRgb[0],
-    primaryRgb[1],
-    primaryRgb[2],
-  );
-  const [compSecondaryR, compSecondaryG, compSecondaryB] =
-    getComplementaryColor(secondaryRgb[0], secondaryRgb[1], secondaryRgb[2]);
-  const skipBackColor = rgbToHex(compPrimaryR, compPrimaryG, compPrimaryB);
-  const skipForwardColor = rgbToHex(
-    compSecondaryR,
-    compSecondaryG,
-    compSecondaryB,
-  );
+  const panelSurfaceStyle = {
+    border: "1px solid var(--shell-border)",
+    background: "var(--color-surface)",
+    boxShadow: "none",
+  } as const;
+  const progressFillColor = "var(--color-accent)";
+  const dividerColor = "rgba(255, 255, 255, 0.08)";
+  const skipBackColor = "var(--color-text)";
+  const skipForwardColor = "var(--color-text)";
 
   return (
     <>
@@ -1647,21 +1336,21 @@ export default function MobilePlayer(props: MobilePlayerProps) {
               {}
               <div
                 className="absolute inset-0 transition-all duration-1000"
-                style={{ background: dynamicGradient }}
+                style={{ background: "var(--color-bg)" }}
               />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_0%,rgba(8,13,20,0.8)_70%)]" />
+              <div className="absolute inset-0 bg-black/24" />
 
               {}
               <div className="mobile-player-expanded relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-center pt-1 pb-0.5">
-                  <div className="h-1 w-12 rounded-full bg-[rgba(255,255,255,0.3)]" />
+                  <div className="h-1 w-12 rounded-full bg-white/16" />
                 </div>
 
                 <div className="mobile-player-header flex items-center justify-between px-6 pt-1">
                   <motion.button
                     onClick={closeExpandedPlayer}
                     whileTap={{ scale: 0.9 }}
-                    className="touch-target rounded-full p-2 text-[var(--color-subtext)]"
+                    className="touch-target rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                     aria-label={t("collapsePlayer")}
                     title={t("collapsePlayer")}
                     data-drag-exempt="true"
@@ -1704,47 +1393,20 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                         >
                           {coverArt ? (
                             <div className="relative">
-                              <div
-                                className="absolute -inset-6 rounded-[40px] opacity-90 blur-2xl"
-                                style={{
-                                  background: `radial-gradient(circle, ${getPaletteColor(palette.accent, 0.6, true)} 0%, rgba(0,0,0,0) 70%)`,
-                                }}
-                              />
-                              <div
-                                className="absolute -inset-2 rounded-[34px] border"
-                                style={{
-                                  borderColor: getPaletteColor(
-                                    palette.primary,
-                                    0.4,
-                                    true,
-                                  ),
-                                }}
-                              />
-                              <div
-                                className="absolute -inset-1 rounded-[32px] border"
-                                style={{
-                                  borderColor: getPaletteColor(
-                                    palette.secondary,
-                                    0.3,
-                                    true,
-                                  ),
-                                }}
-                              />
-                              <div className="relative overflow-hidden rounded-[30px]">
+                              <div className="relative overflow-hidden rounded-[24px] border border-[color:var(--shell-border)]">
                                 <Image
                                   src={coverArt}
                                   alt={currentTrack.title}
                                   width={450}
                                   height={450}
-                                  className="relative z-10 aspect-square w-full rounded-[30px] object-cover shadow-[0_24px_64px_rgba(0,0,0,0.75)]"
+                                  className="relative z-10 aspect-square w-full rounded-[24px] object-cover"
                                   priority
                                   quality={90}
                                 />
-                                <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(145deg,rgba(255,255,255,0.18),transparent_45%,rgba(0,0,0,0.35))]" />
                               </div>
                             </div>
                           ) : (
-                            <div className="flex aspect-square w-full items-center justify-center rounded-[30px] bg-[rgba(244,178,102,0.12)] text-6xl text-[var(--color-muted)]">
+                            <div className="flex aspect-square w-full items-center justify-center rounded-[24px] border border-[color:var(--shell-border)] bg-white/4 text-6xl text-[var(--color-muted)]">
                               🎵
                             </div>
                           )}
@@ -1796,16 +1458,12 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                       >
                         <div className="mobile-player-content w-full">
                           <div
-                            className={`rounded-2xl backdrop-blur-xl ${
+                            className={`rounded-2xl ${
                               effectivePreferences?.compactMode
                                 ? "px-3 py-1.5"
                                 : "px-4 py-2"
                             }`}
-                            style={{
-                              border: `2px solid ${getPaletteColor(palette.primary, 0.5, true)}`,
-                              background: `linear-gradient(145deg, ${getPaletteColor(palette.primary, 0.15, true)}, ${getPaletteColor(palette.secondary, 0.1, true)}, var(--color-bg))`,
-                              boxShadow: `0 16px 40px rgba(0,0,0,0.45), 0 0 20px ${getPaletteColor(palette.primary, 0.3, true)}`,
-                            }}
+                            style={panelSurfaceStyle}
                           >
                             <div
                               className={`flex items-start justify-between ${
@@ -1831,7 +1489,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   transition={{ delay: 0.1 }}
-                                  className={`mt-0.5 font-semibold tracking-[0.25em] text-[var(--color-accent)] uppercase ${
+                                  className={`mt-1 font-medium text-[var(--color-subtext)] ${
                                     effectivePreferences?.compactMode
                                       ? "text-[11px]"
                                       : "text-xs"
@@ -1853,7 +1511,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               </div>
                               <div className="flex flex-col items-end text-[11px] text-[var(--color-subtext)]">
                                 <span
-                                  className={`tracking-[0.3em] text-[var(--color-muted)] uppercase ${
+                                  className={`text-[var(--color-muted)] ${
                                     effectivePreferences?.compactMode
                                       ? "text-[8px]"
                                       : "text-[9px]"
@@ -1871,7 +1529,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   {queue.length}
                                 </span>
                                 <span
-                                  className={`mt-1 tracking-[0.3em] text-[var(--color-muted)] uppercase ${
+                                  className={`mt-1 text-[var(--color-muted)] ${
                                     effectivePreferences?.compactMode
                                       ? "text-[8px]"
                                       : "text-[9px]"
@@ -1895,12 +1553,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
 
                         <div className="mobile-player-controls mobile-player-content mt-0.5 w-full pb-1">
                           <div
-                            className="rounded-[20px] px-3 py-1.5 backdrop-blur-xl"
-                            style={{
-                              border: `2px solid ${primaryRgbaBorder}`,
-                              background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
-                              boxShadow: `0 12px 32px ${primaryRgbaShadow}, 0 0 20px ${primaryRgba}40`,
-                            }}
+                            className="rounded-[20px] px-3 py-1.5"
+                            style={panelSurfaceStyle}
                           >
                             <div className="px-1 pb-1.5">
                               <div
@@ -1936,10 +1590,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               >
                                 {isSeeking && (
                                   <motion.div
-                                    className="absolute inset-0 rounded-full blur-md"
+                                    className="absolute inset-0 rounded-full"
                                     style={{
-                                      background: `linear-gradient(to right, ${getPaletteColor(palette.primary, 0.5, true)}, ${getPaletteColor(palette.secondary, 0.5, true)})`,
-                                      boxShadow: `0 0 20px ${getPaletteColor(palette.primary, 0.4, true)}`,
+                                      background: "rgba(255, 59, 59, 0.16)",
                                     }}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1.05 }}
@@ -1950,7 +1603,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 <motion.div
                                   className="h-full rounded-full"
                                   style={{
-                                    background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
+                                    background: progressFillColor,
                                     width: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
                                   }}
                                   transition={
@@ -1960,7 +1613,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   }
                                 />
                                 <motion.div
-                                  className="absolute top-1/2 rounded-full bg-white shadow-lg"
+                                  className="absolute top-1/2 rounded-full bg-[var(--color-text)]"
                                   style={{
                                     left: `${isSeeking ? (seekTime / duration) * 100 : progress}%`,
                                   }}
@@ -1977,7 +1630,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                     <motion.div
                                       className="absolute inset-0 rounded-full"
                                       style={{
-                                        backgroundColor: secondaryColor,
+                                        backgroundColor: progressFillColor,
                                       }}
                                       initial={{ scale: 1, opacity: 0.5 }}
                                       animate={{ scale: 2, opacity: 0 }}
@@ -2009,10 +1662,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             </div>
 
                             <div
-                              className="h-[2px] w-full bg-gradient-to-r from-transparent to-transparent"
+                              className="h-px w-full"
                               style={{
-                                background: `linear-gradient(to right, transparent, ${secondaryRgba}, transparent)`,
-                                boxShadow: `0 0 8px ${secondaryRgba}`,
+                                background: dividerColor,
                               }}
                             />
 
@@ -2026,14 +1678,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 whileTap={{ scale: 0.9 }}
                                 className={`touch-target rounded-full p-1 transition-colors ${
                                   isShuffled
-                                    ? ""
-                                    : "text-[var(--color-subtext)]"
+                                    ? "bg-white/6 text-[var(--color-accent)]"
+                                    : "text-[var(--color-subtext)] hover:bg-white/4 hover:text-[var(--color-text)]"
                                 }`}
-                                style={
-                                  isShuffled
-                                    ? { color: secondaryColor }
-                                    : undefined
-                                }
                                 aria-label={
                                   isShuffled
                                     ? t("disableShuffle")
@@ -2059,18 +1706,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   onSkipBackward();
                                 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
-                                style={
-                                  {
-                                    "--hover-color": secondaryColor,
-                                  } as React.CSSProperties
-                                }
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = secondaryColor;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = "";
-                                }}
+                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                                 title={t("skipBackwardShort")}
                                 aria-label={t("skipBackward10Seconds")}
                               >
@@ -2102,18 +1738,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   onSkipForward();
                                 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors"
-                                style={
-                                  {
-                                    "--hover-color": secondaryColor,
-                                  } as React.CSSProperties
-                                }
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = secondaryColor;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = "";
-                                }}
+                                className="touch-target rounded-full p-1 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                                 title={t("skipForwardShort")}
                                 aria-label={t("skipForward10Seconds")}
                               >
@@ -2146,14 +1771,9 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 whileTap={{ scale: 0.9 }}
                                 className={`touch-target rounded-full p-1 transition-colors ${
                                   repeatMode !== "none"
-                                    ? ""
-                                    : "text-[var(--color-subtext)]"
+                                    ? "bg-white/6 text-[var(--color-accent)]"
+                                    : "text-[var(--color-subtext)] hover:bg-white/4 hover:text-[var(--color-text)]"
                                 }`}
-                                style={
-                                  repeatMode !== "none"
-                                    ? { color: secondaryColor }
-                                    : undefined
-                                }
                                 aria-label={
                                   repeatMode === "none"
                                     ? t("enableRepeat")
@@ -2205,7 +1825,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   handlePrevious();
                                 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="touch-target-lg"
+                                className="touch-target-lg rounded-full text-[var(--color-text)] transition-colors hover:bg-white/4"
                                 style={{ color: skipBackColor }}
                                 aria-label={t("previousTrack")}
                                 title={t("previousTrack")}
@@ -2228,16 +1848,13 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   handlePlayPause();
                                 }}
                                 whileTap={{ scale: 0.92 }}
-                                whileHover={{ scale: 1.05 }}
-                                className="relative flex items-center justify-center rounded-full text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                whileHover={{ scale: 1.02 }}
+                                className="relative flex items-center justify-center rounded-full bg-[var(--color-text)] text-[var(--color-bg)] transition-opacity duration-150 disabled:cursor-not-allowed disabled:opacity-50"
                                 style={{
                                   width:
                                     "var(--mobile-player-play-button-size)",
                                   height:
                                     "var(--mobile-player-play-button-size)",
-                                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${accentColor})`,
-                                  boxShadow: `0 8px 24px ${primaryRgbaShadowButton}, 0 0 30px ${primaryRgbaGlow}60`,
-                                  border: `3px solid ${primaryRgbaRing}`,
                                 }}
                                 aria-label={
                                   isPlaying ? t("pauseTrack") : t("playTrack")
@@ -2247,14 +1864,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 }
                                 disabled={isLoading}
                               >
-                                <div
-                                  className="absolute -inset-3 rounded-full opacity-90 blur-2xl"
-                                  style={{
-                                    background: `radial-gradient(circle, ${primaryRgbaGlow} 0%, transparent 70%)`,
-                                    boxShadow: `0 0 40px ${primaryRgbaGlow}`,
-                                  }}
-                                />
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/15 to-transparent" />
                                 {isPlaying ? (
                                   <Pause className="relative h-7 w-7 fill-current" />
                                 ) : (
@@ -2272,7 +1881,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 }}
                                 disabled={queue.length === 0}
                                 whileTap={{ scale: 0.9 }}
-                                className="touch-target-lg disabled:cursor-not-allowed disabled:opacity-40"
+                                className="touch-target-lg rounded-full text-[var(--color-text)] transition-colors hover:bg-white/4 disabled:cursor-not-allowed disabled:opacity-40"
                                 style={{ color: skipForwardColor }}
                                 aria-label={t("nextTrack")}
                                 title={t("nextTrack")}
@@ -2299,12 +1908,8 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     data-drag-exempt="true"
                   >
                     <div
-                      className="rounded-[16px] px-2 py-1.5 backdrop-blur-xl"
-                      style={{
-                        border: `1px solid ${primaryRgbaBorder}`,
-                        background: `linear-gradient(145deg, ${primaryRgbaLight}, ${secondaryRgbaLight}, ${accentRgbaLight})`,
-                        boxShadow: `0 10px 26px ${primaryRgbaShadow}, 0 0 16px ${primaryRgbaShadow}`,
-                      }}
+                      className="rounded-[16px] px-2 py-1.5"
+                      style={panelSurfaceStyle}
                       data-drag-exempt="true"
                     >
                       <MobilePlayerFooterActions
@@ -2371,7 +1976,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="theme-chrome-backdrop fixed inset-0 z-[100] backdrop-blur-sm"
+                    className="theme-chrome-backdrop fixed inset-0 z-[100]"
                     onClick={() => {
                       hapticLight();
                       clearQueueUndoState();
@@ -2393,7 +1998,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                       }
                     }}
                     transition={springPresets.gentle}
-                    className="theme-chrome-drawer safe-bottom fixed top-0 right-0 z-[101] flex h-full w-full max-w-md flex-col border-l backdrop-blur-xl"
+                    className="theme-chrome-drawer safe-bottom fixed top-0 right-0 z-[101] flex h-full w-full max-w-md flex-col border-l"
                   >
                     <div className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.08)] p-4">
                       <div className="flex items-center justify-between">
@@ -2414,7 +2019,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 }}
                                 disabled={smartQueueState.isLoading}
                                 whileTap={{ scale: 0.9 }}
-                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(88,198,177,0.16)] hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-50"
                                 aria-label={
                                   smartQueueState.isActive
                                     ? tq("refreshSmartTracks")
@@ -2441,7 +2046,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   setShowQueueSettingsModal(true);
                                 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                                 aria-label={tq("smartTracksSettings")}
                                 title={tq("smartTracksSettings")}
                               >
@@ -2465,7 +2070,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   }
                                 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)] hover:text-[var(--color-text)]"
+                                className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                                 aria-label={tq("saveAsPlaylist")}
                                 title={tq("saveAsPlaylist")}
                               >
@@ -2482,7 +2087,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                 showToast(tq("cleared"), "success");
                               }}
                               whileTap={{ scale: 0.9 }}
-                              className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(242,139,130,0.12)] hover:text-[var(--color-text)]"
+                              className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                               aria-label={tq("clearQueue")}
                               title={tq("clearQueue")}
                             >
@@ -2498,7 +2103,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               setQueueSearchQuery("");
                             }}
                             whileTap={{ scale: 0.9 }}
-                            className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-[rgba(244,178,102,0.12)]"
+                            className="rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
                             aria-label={tq("closeQueue")}
                             title={tq("closeQueue")}
                           >
@@ -2513,7 +2118,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="flex items-center gap-2 rounded-lg border border-[rgba(88,198,177,0.25)] bg-[rgba(88,198,177,0.12)] p-3"
+                          className="flex items-center gap-2 rounded-lg border border-[color:var(--shell-border)] bg-white/6 p-3"
                         >
                           <span className="text-sm font-medium text-[var(--color-text)]">
                             {tq("selectedSummary", {
@@ -2524,7 +2129,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           <motion.button
                             onClick={handleRemoveSelectedQueueItems}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 rounded-lg bg-[rgba(248,139,130,0.2)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(248,139,130,0.3)]"
+                            className="flex items-center gap-2 rounded-lg bg-white/8 px-3 py-1.5 text-sm font-medium transition-colors active:bg-white/10"
                           >
                             <Trash2 className="h-4 w-4" />
                             {tq("removeSelected")}
@@ -2535,7 +2140,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               handleClearQueueSelection();
                             }}
                             whileTap={{ scale: 0.95 }}
-                            className="rounded-lg bg-[rgba(255,255,255,0.1)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(255,255,255,0.15)]"
+                            className="rounded-lg bg-white/8 px-3 py-1.5 text-sm font-medium transition-colors active:bg-white/10"
                           >
                             {tq("clearSelection")}
                           </motion.button>
@@ -2547,7 +2152,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="flex items-center gap-2 rounded-lg border border-[rgba(244,178,102,0.25)] bg-[rgba(244,178,102,0.12)] p-3"
+                          className="flex items-center gap-2 rounded-lg border border-[color:var(--shell-border)] bg-white/6 p-3"
                         >
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text)]">
                             {tq("removedTrack", {
@@ -2559,7 +2164,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                               handleUndoQueueRemove();
                             }}
                             whileTap={{ scale: 0.95 }}
-                            className="inline-flex items-center gap-1 rounded-lg bg-[rgba(88,198,177,0.2)] px-3 py-1.5 text-sm font-medium transition-colors active:bg-[rgba(88,198,177,0.3)]"
+                            className="inline-flex items-center gap-1 rounded-lg bg-white/8 px-3 py-1.5 text-sm font-medium transition-colors active:bg-white/10"
                           >
                             <RotateCcw className="h-4 w-4" />
                             {tq("undo")}
@@ -2625,7 +2230,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             {/* Now Playing */}
                             {filteredNowPlaying && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="bg-[rgba(245,241,232,0.02)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                <div className="bg-white/3 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                                   {tq("nowPlaying")}
                                 </div>
                                 <QueueItem
@@ -2709,7 +2314,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             {/* User Tracks */}
                             {filteredUserTracks.length > 0 && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                <div className="border-b border-white/6 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                                   {tq("nextInQueue")}
                                 </div>
                                 <div className="divide-y divide-[rgba(255,255,255,0.05)]">
@@ -2791,7 +2396,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                             {(filteredSmartTracks.length > 0 ||
                               smartQueueState.isLoading) && (
                               <div className="border-b border-[rgba(255,255,255,0.05)]">
-                                <div className="flex items-center gap-2 border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                                <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                                   <span>{tq("smartTracks")}</span>
                                   {smartQueueState.isLoading && (
                                     <LoadingSpinner

@@ -109,7 +109,7 @@ export default function MiniPlayer({
       animate={{ y: 0 }}
       exit={{ y: 100 }}
       transition={springPresets.gentle}
-      className="theme-chrome-bar safe-bottom fixed right-0 bottom-16 left-0 z-[60] border-t backdrop-blur-2xl md:bottom-0"
+      className="theme-chrome-bar safe-bottom fixed right-0 bottom-16 left-0 z-[60] border-t md:bottom-0"
     >
       {}
       <AutoQueueBadge count={lastAutoQueueCount} />
@@ -145,12 +145,12 @@ export default function MiniPlayer({
             alt={currentTrack.title}
             width={48}
             height={48}
-            className="flex-shrink-0 rounded-md shadow-md"
+            className="flex-shrink-0 rounded-sm"
             priority
             quality={75}
           />
         ) : (
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md bg-[rgba(244,178,102,0.12)] text-[var(--color-muted)]">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-sm bg-white/4 text-[var(--color-muted)]">
             🎵
           </div>
         )}
@@ -179,7 +179,7 @@ export default function MiniPlayer({
             data-drag-exempt="true"
             whileTap={{ scale: 0.88 }}
             transition={springPresets.snappy}
-            className="touch-target flex-shrink-0 rounded-full p-1.5 text-[var(--color-subtext)]"
+            className="touch-target flex-shrink-0 rounded-full p-1.5 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]"
             aria-label={tq("title", { count: queue.length })}
             title={tq("title", { count: queue.length })}
             type="button"
@@ -205,7 +205,7 @@ export default function MiniPlayer({
           data-drag-exempt="true"
           whileTap={{ scale: 0.88 }}
           transition={springPresets.snappy}
-          className="touch-target flex-shrink-0 rounded-full p-1.5 text-[var(--color-text)]"
+          className="touch-target flex-shrink-0 rounded-full bg-[var(--color-text)] p-1.5 text-[var(--color-bg)] transition-opacity hover:opacity-90"
           aria-label={isPlaying ? t("pauseTrack") : t("playTrack")}
           title={isPlaying ? t("pauseTrack") : t("playTrack")}
           type="button"

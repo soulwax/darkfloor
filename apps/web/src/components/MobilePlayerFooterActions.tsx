@@ -60,6 +60,10 @@ export function MobilePlayerFooterActions({
     : favoriteIsActive
       ? t("removeFromFavorites")
       : t("addToFavorites");
+  const actionButtonClass =
+    "touch-target rounded-full text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]";
+  const activeActionButtonClass =
+    "touch-target rounded-full bg-white/6 text-[var(--color-accent)] transition-colors hover:text-[var(--color-text)]";
 
   return (
     <div
@@ -70,10 +74,8 @@ export function MobilePlayerFooterActions({
       <motion.button
         onClick={onToggleQueuePanel}
         whileTap={{ scale: 0.9 }}
-        className={`touch-target relative ${
-          showQueuePanel
-            ? "text-[var(--color-accent)]"
-            : "text-[var(--color-subtext)]"
+        className={`relative ${
+          showQueuePanel ? activeActionButtonClass : actionButtonClass
         }`}
         aria-label={t("queue")}
         title={t("queue")}
@@ -90,10 +92,8 @@ export function MobilePlayerFooterActions({
         <motion.button
           onClick={onTogglePlaylistSelector}
           whileTap={{ scale: 0.9 }}
-          className={`touch-target ${!isAuthenticated ? "opacity-50" : ""} ${
-            showPlaylistSelector
-              ? "text-[var(--color-accent)]"
-              : "text-[var(--color-subtext)]"
+          className={`${!isAuthenticated ? "opacity-50" : ""} ${
+            showPlaylistSelector ? activeActionButtonClass : actionButtonClass
           }`}
           title={playlistLabel}
           aria-label={playlistLabel}
@@ -114,7 +114,7 @@ export function MobilePlayerFooterActions({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="theme-panel absolute right-0 bottom-full z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-xl border shadow-xl backdrop-blur-xl"
+                className="theme-panel absolute right-0 bottom-full z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-xl border"
                 data-drag-exempt="true"
               >
                 <div className="border-b border-[rgba(255,255,255,0.08)] p-3">
@@ -129,7 +129,7 @@ export function MobilePlayerFooterActions({
                         key={playlist.id}
                         onClick={() => onAddToPlaylist(playlist.id)}
                         disabled={isAddingToPlaylist}
-                        className="w-full px-4 py-3 text-left text-sm transition-colors hover:bg-[rgba(244,178,102,0.1)] disabled:opacity-50"
+                        className="w-full px-4 py-3 text-left text-sm transition-colors hover:bg-white/4 disabled:opacity-50"
                       >
                         <div className="flex items-center justify-between">
                           <div className="min-w-0 flex-1">
@@ -165,10 +165,8 @@ export function MobilePlayerFooterActions({
       <motion.button
         onClick={onShare}
         whileTap={{ scale: 0.9 }}
-        className={`touch-target transition-all ${
-          shareCopied
-            ? "text-[var(--color-accent)]"
-            : "text-[var(--color-subtext)]"
+        className={`${
+          shareCopied ? activeActionButtonClass : actionButtonClass
         }`}
         title={shareCopied ? t("linkCopied") : t("shareTrack")}
         aria-label={t("shareTrack")}
@@ -184,8 +182,8 @@ export function MobilePlayerFooterActions({
         onClick={onToggleFavorite}
         disabled={favoriteDisabled}
         whileTap={{ scale: 0.9 }}
-        className={`touch-target transition-all ${
-          favoriteIsActive ? "text-red-500" : "text-[var(--color-subtext)]"
+        className={`${
+          favoriteIsActive ? activeActionButtonClass : actionButtonClass
         } ${favoriteDisabled ? "opacity-50" : ""}`}
         title={favoriteLabel}
         aria-label={favoriteLabel}

@@ -44,7 +44,6 @@ type NavItem = {
   callbackUrl?: string;
 };
 
-const COLLAPSED_WIDTH = 76;
 const DEFAULT_EXPANDED_WIDTH = 272;
 const MIN_EXPANDED_WIDTH = 220;
 const MAX_EXPANDED_WIDTH = 420;
@@ -81,7 +80,8 @@ export function DesktopSidebar() {
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(DEFAULT_EXPANDED_WIDTH);
 
-  const width = collapsed ? COLLAPSED_WIDTH : expandedWidth;
+  const isOpen = !collapsed;
+  const width = isOpen ? expandedWidth : 0;
 
   // Set sidebar width CSS variable (used by Header positioning)
   useEffect(() => {
@@ -115,9 +115,9 @@ export function DesktopSidebar() {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
-    if (collapsed || isResizing) return;
+    if (!isOpen || isResizing) return;
     localStorage.set(STORAGE_KEYS.DESKTOP_SIDEBAR_WIDTH, expandedWidth);
-  }, [collapsed, isResizing, expandedWidth]);
+  }, [expandedWidth, isOpen, isResizing]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -169,7 +169,7 @@ export function DesktopSidebar() {
   }, [isResizing]);
 
   const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (collapsed || event.button !== 0) return;
+    if (!isOpen || event.button !== 0) return;
     if (!Number.isFinite(event.clientX)) {
       console.warn(
         "[DesktopSidebar] Invalid pointer position while starting resize.",
@@ -277,289 +277,309 @@ export function DesktopSidebar() {
 
   return (
     <>
-      <aside
-        className="electron-sidebar theme-chrome-sidebar relative sticky top-0 z-40 flex h-full shrink-0 border-r max-md:hidden"
-        style={{ width }}
+      <button
+        className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-r-lg border border-l-0 px-1.5 py-2 text-[var(--color-muted)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)] md:flex"
+        style={{
+          left: isOpen ? `calc(${width}px + 0.35rem)` : "0.35rem",
+        }}
+        onClick={() => {
+          const next = !collapsed;
+          setCollapsed(next);
+          localStorage.set(STORAGE_KEYS.DESKTOP_SIDEBAR_COLLAPSED, next);
+        }}
+        aria-label={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
+        title={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
+        aria-pressed={isOpen}
       >
-        <div
-          className={`electron-no-drag absolute top-0 right-0 z-50 h-full w-2 cursor-ew-resize transition-colors ${
-            collapsed
-              ? "pointer-events-none"
-              : isResizing
-                ? "bg-[rgba(244,178,102,0.22)]"
-                : "hover:bg-[rgba(244,178,102,0.12)]"
-          }`}
-          onPointerDown={startResize}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={ts("resizeSidebar")}
-          aria-valuemin={MIN_EXPANDED_WIDTH}
-          aria-valuemax={MAX_EXPANDED_WIDTH}
-          aria-valuenow={expandedWidth}
-        />
-
-        <button
-          className="electron-no-drag absolute top-6 -right-3 flex h-10 w-6 items-center justify-center rounded-full border border-[color:var(--shell-border)] bg-[rgba(14,20,28,0.94)] text-[var(--color-subtext)] shadow-[0_8px_16px_rgba(5,10,18,0.2)] transition-colors hover:border-[rgba(244,178,102,0.2)] hover:bg-[rgba(244,178,102,0.08)] hover:text-[var(--color-text)]"
-          onClick={() => {
-            const next = !collapsed;
-            setCollapsed(next);
-            localStorage.set(STORAGE_KEYS.DESKTOP_SIDEBAR_COLLAPSED, next);
-          }}
-          aria-label={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
-          title={collapsed ? ts("expandSidebar") : ts("collapseSidebar")}
-        >
+        <div className="flex flex-col items-center gap-1">
           {collapsed ? (
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-3 w-3 text-[var(--color-subtext)]" />
           ) : (
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-3 w-3 text-[var(--color-subtext)]" />
           )}
-        </button>
+          <ListMusic className="h-3.5 w-3.5 opacity-85" />
+          <span
+            className="text-[9px] font-medium opacity-85"
+            style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+          >
+            {ts("menu")}
+          </span>
+        </div>
+      </button>
 
-        <div className="flex h-full min-h-0 w-full flex-col bg-transparent">
-          <div className="px-3 pt-4 pb-2">
-            <div
-              className={`flex items-center ${collapsed ? "justify-center" : "justify-start"} rounded-xl px-2 py-1.5`}
-            >
-              <Image
-                src={emilyLogo}
-                alt="Starchild"
-                width={36}
-                height={36}
-                className="h-9 w-9 rounded-xl ring-1 ring-[rgba(244,178,102,0.24)]"
-                priority
-                unoptimized
-              />
-              {!collapsed && (
-                <div className="ml-4 min-w-0">
-                  <div className="header-logo-title truncate text-base font-semibold tracking-[0.02em] text-[var(--color-text)]">
-                    Starchild
-                  </div>
-                  <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
-                    {session
-                      ? `${ts("greeting")} ${
-                          session.user?.name ??
-                          session.user?.email ??
-                          session.user?.userHash ??
-                          ts("there")
-                        }`
-                      : ts("greetingFallback")}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+      {isOpen && (
+        <aside
+          className="electron-sidebar theme-chrome-sidebar relative sticky top-0 z-40 flex h-full shrink-0 border-r max-md:hidden"
+          style={{ width }}
+        >
+          <div
+            className={`electron-no-drag absolute top-0 right-0 z-50 h-full w-2 cursor-ew-resize transition-colors ${
+              collapsed
+                ? "pointer-events-none"
+                : isResizing
+                  ? "bg-[rgba(244,178,102,0.22)]"
+                  : "hover:bg-[rgba(244,178,102,0.12)]"
+            }`}
+            onPointerDown={startResize}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={ts("resizeSidebar")}
+            aria-valuemin={MIN_EXPANDED_WIDTH}
+            aria-valuemax={MAX_EXPANDED_WIDTH}
+            aria-valuenow={expandedWidth}
+          />
 
-          {!collapsed && (
-            <div className="shell-section-label px-4 pb-1">{ts("menu")}</div>
-          )}
-
-          <nav className="px-2 pb-2">
-            <div className="space-y-1">
-              {navItems.map((item) => {
-                const active =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname?.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={(event) => {
-                      if (!session && item.requiresAuth) {
-                        event.preventDefault();
-                        openAuthModal({
-                          callbackUrl: item.callbackUrl ?? item.href,
-                        });
-                      }
-                    }}
-                    className={`electron-no-drag group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
-                      active
-                        ? "bg-[rgba(244,178,102,0.12)] text-[var(--color-text)]"
-                        : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
-                    }`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    {!collapsed && (
-                      <span
-                        className={`absolute top-2 bottom-2 left-0 w-1 rounded-r-full transition-opacity ${
-                          active
-                            ? "bg-[var(--color-accent)] opacity-100"
-                            : "opacity-0 group-hover:bg-white/40 group-hover:opacity-100"
-                        }`}
-                      />
-                    )}
-                    <span className="shrink-0">{item.icon}</span>
-                    {!collapsed && (
-                      <span className="truncate font-medium">{item.label}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-
-          <div className="mt-2 min-h-0 flex-1 px-2 pb-24">
-            {session ? (
-              <>
-                <div className="flex items-center justify-between px-2">
-                  {!collapsed ? (
-                    <div className="shell-section-label">
-                      {ts("yourLibrary")}
-                    </div>
-                  ) : (
-                    <div className="h-3" />
-                  )}
-
-                  <button
-                    className="electron-no-drag shell-icon-action flex h-8 w-8 items-center justify-center"
-                    onClick={() => setCreateModalOpen(true)}
-                    aria-label={tp("createPlaylist")}
-                    title={collapsed ? tp("createPlaylist") : undefined}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="mt-2 min-h-0 overflow-y-auto pr-1">
-                  {playlistsQuery.isLoading ? (
-                    <div className="space-y-1 px-1 py-1">
-                      {Array.from({ length: collapsed ? 6 : 4 }).map(
-                        (_, index) => (
-                          <div
-                            key={`playlist-skeleton-${index}`}
-                            className={`flex items-center gap-3 rounded-xl ${
-                              collapsed
-                                ? "justify-center px-2 py-2"
-                                : "px-3 py-2.5"
-                            }`}
-                          >
-                            <div className="h-7 w-7 shrink-0 animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
-                            {!collapsed && (
-                              <div className="min-w-0 flex-1 space-y-1.5">
-                                <div className="h-3 w-2/3 animate-pulse rounded bg-[rgba(255,255,255,0.14)]" />
-                                <div className="h-2.5 w-1/3 animate-pulse rounded bg-[rgba(255,255,255,0.1)]" />
-                              </div>
-                            )}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  ) : playlistsQuery.data && playlistsQuery.data.length > 0 ? (
-                    <div className="space-y-1">
-                      {playlistsQuery.data.slice(0, 50).map((playlist) => {
-                        const href = `/playlists/${playlist.id}`;
-                        const active = pathname === href;
-                        return (
-                          <Link
-                            key={playlist.id}
-                            href={href}
-                            className={`electron-no-drag flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all ${
-                              active
-                                ? "bg-[rgba(255,255,255,0.08)] text-[var(--color-text)]"
-                                : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
-                            }`}
-                            title={collapsed ? playlist.name : undefined}
-                            aria-label={collapsed ? playlist.name : undefined}
-                          >
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.1)] text-xs font-bold text-[var(--color-text)]">
-                              {playlist.name?.charAt(0)?.toUpperCase() ?? "P"}
-                            </div>
-                            {!collapsed && (
-                              <div className="min-w-0 flex-1">
-                                <div className="truncate">{playlist.name}</div>
-                                <div className="truncate text-xs text-[var(--color-muted)]">
-                                  {tc("tracks", {
-                                    count: playlist.trackCount ?? 0,
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="px-3 py-2 text-sm text-[var(--color-subtext)]">
-                      {!collapsed ? (
-                        <button
-                          className="electron-no-drag shell-action inline-flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text)]"
-                          onClick={() => setCreateModalOpen(true)}
-                        >
-                          <Plus className="h-4 w-4" />
-                          {tp("createYourFirst")}
-                        </button>
-                      ) : (
-                        <span>—</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
+          <div className="flex h-full min-h-0 w-full flex-col bg-transparent">
+            <div className="px-3 pt-4 pb-2">
+              <div
+                className={`flex items-center ${collapsed ? "justify-center" : "justify-start"} rounded-xl px-2 py-1.5`}
+              >
+                <Image
+                  src={emilyLogo}
+                  alt="Starchild"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-xl ring-1 ring-[rgba(244,178,102,0.24)]"
+                  priority
+                  unoptimized
+                />
                 {!collapsed && (
-                  <div className="mt-3 px-2">
-                    <Link
-                      href="/playlists"
-                      className="electron-no-drag inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-subtext)] hover:text-[var(--color-text)]"
-                    >
-                      <ListMusic className="h-4 w-4" />
-                      {ts("seeAllPlaylists")}
-                    </Link>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="px-2">
-                {!collapsed ? (
-                  <div className="shell-panel-muted px-4 py-4 text-sm text-[var(--color-subtext)]">
-                    <div className="shell-section-label">
-                      {ts("yourLibrary")}
+                  <div className="ml-4 min-w-0">
+                    <div className="header-logo-title truncate text-base font-semibold tracking-[0.02em] text-[var(--color-text)]">
+                      Starchild
                     </div>
-                    <div className="mt-2 text-[var(--color-muted)]">
-                      {ts("yourPlaylistsWillAppearHere")}
+                    <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
+                      {session
+                        ? `${ts("greeting")} ${
+                            session.user?.name ??
+                            session.user?.email ??
+                            session.user?.userHash ??
+                            ts("there")
+                          }`
+                        : ts("greetingFallback")}
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex h-10 w-full items-center justify-center text-xs text-[var(--color-muted)]">
-                    —
                   </div>
                 )}
               </div>
+            </div>
+
+            {!collapsed && (
+              <div className="shell-section-label px-4 pb-1">{ts("menu")}</div>
+            )}
+
+            <nav className="px-2 pb-2">
+              <div className="space-y-1">
+                {navItems.map((item) => {
+                  const active =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname?.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={(event) => {
+                        if (!session && item.requiresAuth) {
+                          event.preventDefault();
+                          openAuthModal({
+                            callbackUrl: item.callbackUrl ?? item.href,
+                          });
+                        }
+                      }}
+                      className={`electron-no-drag group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+                        active
+                          ? "bg-[rgba(244,178,102,0.12)] text-[var(--color-text)]"
+                          : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
+                      }`}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      {!collapsed && (
+                        <span
+                          className={`absolute top-2 bottom-2 left-0 w-1 rounded-r-full transition-opacity ${
+                            active
+                              ? "bg-[var(--color-accent)] opacity-100"
+                              : "opacity-0 group-hover:bg-white/40 group-hover:opacity-100"
+                          }`}
+                        />
+                      )}
+                      <span className="shrink-0">{item.icon}</span>
+                      {!collapsed && (
+                        <span className="truncate font-medium">
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+
+            <div className="mt-2 min-h-0 flex-1 px-2 pb-24">
+              {session ? (
+                <>
+                  <div className="flex items-center justify-between px-2">
+                    {!collapsed ? (
+                      <div className="shell-section-label">
+                        {ts("yourLibrary")}
+                      </div>
+                    ) : (
+                      <div className="h-3" />
+                    )}
+
+                    <button
+                      className="electron-no-drag shell-icon-action flex h-8 w-8 items-center justify-center"
+                      onClick={() => setCreateModalOpen(true)}
+                      aria-label={tp("createPlaylist")}
+                      title={collapsed ? tp("createPlaylist") : undefined}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 min-h-0 overflow-y-auto pr-1">
+                    {playlistsQuery.isLoading ? (
+                      <div className="space-y-1 px-1 py-1">
+                        {Array.from({ length: collapsed ? 6 : 4 }).map(
+                          (_, index) => (
+                            <div
+                              key={`playlist-skeleton-${index}`}
+                              className={`flex items-center gap-3 rounded-xl ${
+                                collapsed
+                                  ? "justify-center px-2 py-2"
+                                  : "px-3 py-2.5"
+                              }`}
+                            >
+                              <div className="h-7 w-7 shrink-0 animate-pulse rounded-lg bg-[rgba(255,255,255,0.12)]" />
+                              {!collapsed && (
+                                <div className="min-w-0 flex-1 space-y-1.5">
+                                  <div className="h-3 w-2/3 animate-pulse rounded bg-[rgba(255,255,255,0.14)]" />
+                                  <div className="h-2.5 w-1/3 animate-pulse rounded bg-[rgba(255,255,255,0.1)]" />
+                                </div>
+                              )}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : playlistsQuery.data &&
+                      playlistsQuery.data.length > 0 ? (
+                      <div className="space-y-1">
+                        {playlistsQuery.data.slice(0, 50).map((playlist) => {
+                          const href = `/playlists/${playlist.id}`;
+                          const active = pathname === href;
+                          return (
+                            <Link
+                              key={playlist.id}
+                              href={href}
+                              className={`electron-no-drag flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all ${
+                                active
+                                  ? "bg-[rgba(255,255,255,0.08)] text-[var(--color-text)]"
+                                  : "text-[var(--color-subtext)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--color-text)]"
+                              }`}
+                              title={collapsed ? playlist.name : undefined}
+                              aria-label={collapsed ? playlist.name : undefined}
+                            >
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.1)] text-xs font-bold text-[var(--color-text)]">
+                                {playlist.name?.charAt(0)?.toUpperCase() ?? "P"}
+                              </div>
+                              {!collapsed && (
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate">
+                                    {playlist.name}
+                                  </div>
+                                  <div className="truncate text-xs text-[var(--color-muted)]">
+                                    {tc("tracks", {
+                                      count: playlist.trackCount ?? 0,
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-[var(--color-subtext)]">
+                        {!collapsed ? (
+                          <button
+                            className="electron-no-drag shell-action inline-flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text)]"
+                            onClick={() => setCreateModalOpen(true)}
+                          >
+                            <Plus className="h-4 w-4" />
+                            {tp("createYourFirst")}
+                          </button>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {!collapsed && (
+                    <div className="mt-3 px-2">
+                      <Link
+                        href="/playlists"
+                        className="electron-no-drag inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+                      >
+                        <ListMusic className="h-4 w-4" />
+                        {ts("seeAllPlaylists")}
+                      </Link>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="px-2">
+                  {!collapsed ? (
+                    <div className="shell-panel-muted px-4 py-4 text-sm text-[var(--color-subtext)]">
+                      <div className="shell-section-label">
+                        {ts("yourLibrary")}
+                      </div>
+                      <div className="mt-2 text-[var(--color-muted)]">
+                        {ts("yourPlaylistsWillAppearHere")}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-10 w-full items-center justify-center text-xs text-[var(--color-muted)]">
+                      —
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {!collapsed && session && (
+              <div className="mt-auto px-3 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
+                <button
+                  className="electron-no-drag shell-action flex w-full items-center justify-center gap-2 px-3 py-2 text-sm font-medium"
+                  onClick={() => void appSignOut({ callbackUrl: "/" })}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {tc("signOut")}
+                </button>
+              </div>
+            )}
+            {collapsed && session ? (
+              <div className="mt-auto px-2 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
+                <button
+                  className="electron-no-drag shell-icon-action flex h-9 w-full items-center justify-center"
+                  onClick={() => void appSignOut({ callbackUrl: "/" })}
+                  title={tc("signOut")}
+                  aria-label={tc("signOut")}
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
+
+            {!collapsed && (
+              <div className="px-3 pb-2 text-center">
+                <p className="text-[9px] text-[var(--color-muted)] opacity-30">
+                  v{APP_VERSION}
+                </p>
+              </div>
             )}
           </div>
-
-          {!collapsed && session && (
-            <div className="mt-auto px-3 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
-              <button
-                className="electron-no-drag shell-action flex w-full items-center justify-center gap-2 px-3 py-2 text-sm font-medium"
-                onClick={() => void appSignOut({ callbackUrl: "/" })}
-              >
-                <LogOut className="h-4 w-4" />
-                {tc("signOut")}
-              </button>
-            </div>
-          )}
-          {collapsed && session ? (
-            <div className="mt-auto px-2 pb-[calc(env(safe-area-inset-bottom)+var(--electron-sidebar-bottom-padding))]">
-              <button
-                className="electron-no-drag shell-icon-action flex h-9 w-full items-center justify-center"
-                onClick={() => void appSignOut({ callbackUrl: "/" })}
-                title={tc("signOut")}
-                aria-label={tc("signOut")}
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          ) : null}
-
-          {!collapsed && (
-            <div className="px-3 pb-2 text-center">
-              <p className="text-[9px] text-[var(--color-muted)] opacity-30">
-                v{APP_VERSION}
-              </p>
-            </div>
-          )}
-        </div>
-      </aside>
+        </aside>
+      )}
 
       <CreatePlaylistModal
         isOpen={createModalOpen}

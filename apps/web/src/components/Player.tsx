@@ -183,13 +183,17 @@ export default function MaturePlayer({
   if (!currentTrack) return null;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const iconButtonClass =
+    "rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]";
+  const activeIconButtonClass =
+    "rounded-full bg-white/6 p-2 text-[var(--color-accent)] transition-colors hover:text-[var(--color-text)]";
 
   return (
     <div className="w-full" onContextMenu={handlePlayerContextMenu}>
       {}
       <div
         ref={progressRef}
-        className="slider-track group relative h-1.5 w-full cursor-pointer rounded-full transition-all hover:h-2"
+        className="slider-track group relative h-1 w-full cursor-pointer rounded-full transition-[height] hover:h-1.5"
         onClick={handleProgressClick}
         onMouseDown={() => setIsDragging(true)}
         onMouseUp={() => setIsDragging(false)}
@@ -201,7 +205,7 @@ export default function MaturePlayer({
           style={{ width: `${progress}%` }}
         />
         <div
-          className="absolute h-3 w-3 rounded-full bg-white opacity-70 shadow-lg transition-all group-hover:scale-125 group-hover:opacity-100"
+          className="absolute h-2.5 w-2.5 rounded-full bg-[var(--color-text)] opacity-90 transition-opacity group-hover:opacity-100"
           style={{
             left: `${progress}%`,
             top: "50%",
@@ -226,12 +230,12 @@ export default function MaturePlayer({
                 quality={75}
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(244,178,102,0.12)] text-[var(--color-muted)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-md bg-white/4 text-[var(--color-muted)]">
                 🎵
               </div>
             )}
             {isLoading && (
-              <div className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-lg">
+              <div className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-md">
                 <div className="border-accent h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
@@ -252,7 +256,7 @@ export default function MaturePlayer({
               hapticLight();
               setShowAddToPlaylistModal(true);
             }}
-            className="rounded-full p-2 text-[var(--color-subtext)] transition-all hover:text-[var(--color-text)]"
+            className={iconButtonClass}
             title={tm("addToPlaylist")}
             aria-label={tm("addToPlaylist")}
           >
@@ -266,8 +270,8 @@ export default function MaturePlayer({
             disabled={addFavorite.isPending || removeFavorite.isPending}
             className={`rounded-full p-2 transition-all ${
               favoriteData?.isFavorite
-                ? "text-red-500 hover:text-red-400"
-                : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+                ? "bg-white/6 text-[var(--color-accent)]"
+                : "text-[var(--color-subtext)] hover:bg-white/4 hover:text-[var(--color-text)]"
             } ${addFavorite.isPending || removeFavorite.isPending ? "opacity-50" : ""}`}
             title={
               favoriteData?.isFavorite
@@ -295,10 +299,8 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={handleToggleShuffle}
-              className={`rounded-full p-2 transition ${
-                isShuffled
-                  ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
-                  : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+              className={`rounded-full p-2 transition-colors ${
+                isShuffled ? activeIconButtonClass : iconButtonClass
               }`}
               title={t("shuffleShortcut")}
               aria-label={t("shuffleShortcut")}
@@ -310,7 +312,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={handlePrevious}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("previousTrackShortcut")}
               aria-label={t("previousTrack")}
             >
@@ -323,7 +325,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onSkipBackward}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("skipBackwardShortcut")}
               aria-label={t("skipBackward10Seconds")}
             >
@@ -346,7 +348,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={handlePlayPause}
-              className="desktop-play-btn flex h-11 w-11 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-[var(--color-on-accent)] shadow-[var(--accent-btn-shadow-hover)] transition hover:scale-105 active:scale-95"
+              className="desktop-play-btn flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-text)] text-[var(--color-bg)] transition-opacity hover:opacity-90 active:opacity-80"
               title={t("playPauseShortcut")}
               aria-label={isPlaying ? t("pauseTrack") : t("playTrack")}
             >
@@ -381,7 +383,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onSkipForward}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("skipForwardShortcut")}
               aria-label={t("skipForward10Seconds")}
             >
@@ -404,7 +406,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={handleNext}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               disabled={queue.length === 0}
               title={t("nextTrackShortcut")}
               aria-label={t("nextTrack")}
@@ -418,10 +420,8 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={handleCycleRepeat}
-              className={`rounded-full p-2 transition ${
-                repeatMode !== "none"
-                  ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
-                  : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+              className={`rounded-full p-2 transition-colors ${
+                repeatMode !== "none" ? activeIconButtonClass : iconButtonClass
               }`}
               title={t("repeatShortcut", {
                 mode:
@@ -504,7 +504,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onToggleMute}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("muteShortcut")}
               aria-label={t("muteShortcut")}
             >
@@ -569,7 +569,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onToggleQueue}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("queueShortcut")}
               aria-label={tq("title", { count: queue.length })}
             >
@@ -594,7 +594,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onToggleEqualizer}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("equalizerShortcut")}
               aria-label={t("equalizerShortcut")}
             >
@@ -619,10 +619,8 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onToggleVisualizer}
-              className={`rounded-full p-2 transition ${
-                visualizerEnabled
-                  ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
-                  : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+              className={`rounded-full p-2 transition-colors ${
+                visualizerEnabled ? activeIconButtonClass : iconButtonClass
               }`}
               title={
                 visualizerEnabled ? t("hideVisualizer") : t("showVisualizer")
@@ -658,7 +656,7 @@ export default function MaturePlayer({
             <button
               type="button"
               onClick={onTogglePatternControls}
-              className="text-[var(--color-subtext)] transition hover:text-[var(--color-text)]"
+              className={iconButtonClass}
               title={t("patternControls")}
               aria-label={t("patternControls")}
             >
@@ -673,10 +671,8 @@ export default function MaturePlayer({
               hapticLight();
               setHideUI(!hideUI);
             }}
-            className={`rounded-full p-2 transition ${
-              hideUI
-                ? "bg-[rgba(244,178,102,0.18)] text-[var(--color-accent)] shadow-[0_0_16px_rgba(244,178,102,0.3)]"
-                : "text-[var(--color-subtext)] hover:text-[var(--color-text)]"
+            className={`rounded-full p-2 transition-colors ${
+              hideUI ? activeIconButtonClass : iconButtonClass
             }`}
             title={hideUI ? t("showUi") : t("hideUi")}
             aria-label={hideUI ? t("showUi") : t("hideUi")}

@@ -149,17 +149,17 @@ function SortableQueueItem({
       tabIndex={0}
       className={`group relative flex cursor-pointer items-center gap-3 p-3 transition-colors ${
         isSelected
-          ? "bg-[rgba(88,198,177,0.18)] ring-2 ring-[rgba(88,198,177,0.4)]"
+          ? "bg-white/8 ring-1 ring-white/10"
           : isActive
-            ? "bg-[rgba(244,178,102,0.16)] ring-1 ring-[rgba(244,178,102,0.3)]"
+            ? "bg-white/6 ring-1 ring-white/8"
             : isSmartTrack
-              ? "bg-[rgba(88,198,177,0.04)] hover:bg-[rgba(88,198,177,0.08)]"
-              : "hover:bg-[rgba(244,178,102,0.08)]"
+              ? "bg-white/3 hover:bg-white/5"
+              : "hover:bg-white/4"
       }`}
     >
       {}
       {isSmartTrack && (
-        <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r bg-[var(--color-accent-strong)]" />
+        <div className="absolute top-1/2 left-0 h-8 w-px -translate-y-1/2 rounded-r bg-[var(--color-accent)]" />
       )}
 
       {}
@@ -177,7 +177,7 @@ function SortableQueueItem({
       </div>
 
       {}
-      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-[rgba(255,255,255,0.05)]">
+      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-sm bg-white/4">
         {coverImage ? (
           <Image
             src={coverImage}
@@ -215,7 +215,7 @@ function SortableQueueItem({
               <button
                 type="button"
                 onClick={(e) => e.stopPropagation()}
-                className="peer rounded p-0.5 text-[var(--color-accent)]/80 transition-colors hover:text-[var(--color-accent)] focus-visible:text-[var(--color-accent)]"
+                className="peer rounded p-0.5 text-[var(--color-subtext)] transition-colors hover:text-[var(--color-text)] focus-visible:text-[var(--color-text)]"
                 aria-label={t("smartQueueRecommendationDetails")}
                 title={t("smartQueueRecommendationDetails")}
               >
@@ -223,10 +223,10 @@ function SortableQueueItem({
               </button>
               <span
                 role="tooltip"
-                className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-64 -translate-x-1/2 rounded-lg border border-[rgba(88,198,177,0.35)] bg-[rgba(8,10,12,0.94)] px-3 py-2 text-left text-[11px] leading-relaxed text-[var(--color-subtext)] opacity-0 shadow-lg backdrop-blur-sm transition-all duration-150 peer-hover:translate-y-0 peer-hover:opacity-100 peer-focus-visible:translate-y-0 peer-focus-visible:opacity-100"
+                className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-64 -translate-x-1/2 rounded-lg border border-[color:var(--shell-border)] bg-[color:var(--color-surface)] px-3 py-2 text-left text-[11px] leading-relaxed text-[var(--color-subtext)] opacity-0 transition-all duration-150 peer-hover:translate-y-0 peer-hover:opacity-100 peer-focus-visible:translate-y-0 peer-focus-visible:opacity-100"
               >
                 <span className="block font-semibold text-[var(--color-text)]">
-                  {`✨ ${t("autoQueued")}`}
+                  {t("autoQueued")}
                 </span>
                 {seedLabel && (
                   <span className="mt-0.5 block">
@@ -273,7 +273,7 @@ function SortableQueueItem({
             e.stopPropagation();
             onRemove();
           }}
-          className="flex-shrink-0 rounded p-1.5 opacity-0 transition-colors group-hover:opacity-100 hover:bg-[rgba(244,178,102,0.12)]"
+          className="flex-shrink-0 rounded p-1.5 opacity-0 transition-colors group-hover:opacity-100 hover:bg-white/6"
           aria-label={t("removeFromQueue")}
           title={t("removeFromQueue")}
         >
@@ -726,21 +726,21 @@ export function EnhancedQueue({
 
         {}
         {selectedIndices.size > 0 && (
-          <div className="flex items-center gap-2 rounded-lg border border-[rgba(88,198,177,0.2)] bg-[rgba(88,198,177,0.08)] p-3">
+          <div className="flex items-center gap-2 rounded-lg border border-[color:var(--shell-border)] bg-white/6 p-3">
             <span className="text-sm font-medium text-[var(--color-text)]">
               {t("selectedSummary", { count: selectedIndices.size })}
             </span>
             <div className="flex-1" />
             <button
               onClick={handleRemoveSelected}
-              className="flex items-center gap-2 rounded-lg bg-[rgba(248,139,130,0.2)] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[rgba(248,139,130,0.3)]"
+              className="flex items-center gap-2 rounded-lg bg-white/8 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
             >
               <Trash2 className="h-4 w-4" />
               {t("removeSelected")}
             </button>
             <button
               onClick={handleClearSelection}
-              className="rounded-lg bg-[rgba(255,255,255,0.1)] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[rgba(255,255,255,0.15)]"
+              className="rounded-lg bg-white/8 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10"
             >
               {t("clearSelection")}
             </button>
@@ -814,7 +814,7 @@ export function EnhancedQueue({
                 {}
                 {filteredNowPlaying && (
                   <div className="border-b border-[rgba(255,255,255,0.05)]">
-                    <div className="bg-[rgba(245,241,232,0.02)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                    <div className="bg-white/3 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                       {t("nowPlaying")}
                     </div>
                     <div
@@ -860,7 +860,7 @@ export function EnhancedQueue({
                 {}
                 {filteredUserTracks.length > 0 && (
                   <div className="border-b border-[rgba(255,255,255,0.05)]">
-                    <div className="border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                    <div className="border-b border-white/6 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                       {t("nextInQueue")}
                     </div>
                     <div className="divide-y divide-[rgba(255,255,255,0.05)]">
@@ -904,7 +904,7 @@ export function EnhancedQueue({
                 {(filteredSmartTracks.length > 0 ||
                   smartQueueState.isLoading) && (
                   <div className="border-b border-[rgba(255,255,255,0.05)]">
-                    <div className="flex items-center gap-2 border-b border-[rgba(245,241,232,0.05)] px-3 py-2 text-xs font-semibold tracking-wider text-[var(--color-subtext)] uppercase">
+                    <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2 text-xs font-medium text-[var(--color-subtext)]">
                       <span>{t("smartTracks")}</span>
                       {smartQueueState.isLoading && (
                         <LoadingSpinner

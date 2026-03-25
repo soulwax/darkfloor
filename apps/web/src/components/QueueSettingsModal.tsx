@@ -112,8 +112,8 @@ export function QueueSettingsModal({
                     onClick={() => setSimilarityLevel(option.value)}
                     className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
                       similarityLevel === option.value
-                        ? "border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.1)]"
-                        : "border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] hover:border-[rgba(244,178,102,0.16)] hover:bg-[rgba(244,178,102,0.05)]"
+                        ? "border-[color:var(--shell-border)] bg-white/6"
+                        : "border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] hover:bg-white/4"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -137,14 +137,14 @@ export function QueueSettingsModal({
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary flex-1 rounded-xl px-4 py-2.5 text-sm font-medium"
+              className="flex-1 rounded-xl border border-[color:var(--shell-border)] bg-[color:var(--shell-muted-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-white/4"
             >
               {tc("cancel")}
             </button>
             <button
               type="button"
               onClick={handleApply}
-              className="btn-primary flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold"
+              className="flex-1 rounded-xl bg-[var(--color-text)] px-4 py-2.5 text-sm font-semibold text-[var(--color-bg)] transition-opacity hover:opacity-90"
             >
               {t("apply")}
             </button>

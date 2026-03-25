@@ -24,12 +24,12 @@ export function AutoQueueBadge({ count, onDismiss }: AutoQueueBadgeProps) {
         exit={{ scale: 0, opacity: 0 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         onClick={onDismiss}
-        className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full bg-[var(--color-accent)] px-2.5 py-1 shadow-lg transition-colors hover:bg-[var(--color-accent-strong)]"
+        className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full border border-[color:var(--shell-border)] bg-[color:var(--color-surface)] px-2.5 py-1 transition-colors hover:bg-[color:var(--color-surface-hover)]"
         aria-label={t("autoQueuedTracks", { count })}
         title={t("autoQueued")}
       >
-        <Sparkles className="h-3 w-3 text-[var(--color-on-accent)]" />
-        <span className="text-xs font-semibold text-[var(--color-on-accent)]">
+        <Sparkles className="h-3 w-3 text-[var(--color-accent)]" />
+        <span className="text-xs font-semibold text-[var(--color-text)]">
           +{count}
         </span>
       </motion.button>

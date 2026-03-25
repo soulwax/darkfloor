@@ -309,7 +309,7 @@ export default function Header() {
   }
 
   const primaryActionClass =
-    "shell-action h-9 px-3 text-xs font-semibold aria-[current=page]:border-[rgba(244,178,102,0.24)] aria-[current=page]:bg-[rgba(244,178,102,0.12)] aria-[current=page]:text-[var(--color-text)]";
+    "shell-action h-9 whitespace-nowrap px-3 text-xs font-semibold aria-[current=page]:border-[rgba(244,178,102,0.24)] aria-[current=page]:bg-[rgba(244,178,102,0.12)] aria-[current=page]:text-[var(--color-text)]";
   const iconActionClass = "shell-icon-action h-9 w-9";
 
   return (
@@ -325,16 +325,16 @@ export default function Header() {
       suppressHydrationWarning
     >
       <div
-        className={`theme-chrome-header electron-header-main relative z-10 grid items-center border ${
+        className={`theme-chrome-header electron-header-main relative z-10 grid grid-rows-1 items-center border ${
           compactMode
             ? "grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-[1rem] py-1.5"
             : "grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[1.15rem] py-2"
         }`}
       >
-        <div className="electron-no-drag relative flex items-center gap-2 px-2 sm:px-3">
+        <div className="electron-no-drag relative flex min-w-0 flex-1 items-center">
           <div className="relative min-w-0 flex-1">
             <form
-              className={`electron-header-search flex w-full items-center gap-2 rounded-full border px-3 ${
+              className={`electron-header-search flex w-full flex-1 items-center gap-2 rounded-full border px-3 ${
                 compactMode ? "h-10" : "h-11"
               }`}
               onSubmit={(event) => {
@@ -393,7 +393,7 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="electron-no-drag flex min-w-0 items-center justify-end gap-2 pr-2 sm:pr-3">
+        <div className="electron-no-drag flex shrink-0 flex-nowrap items-center justify-end gap-2 pl-2 pr-2 whitespace-nowrap sm:pr-3">
           <Link
             href="/"
             className={primaryActionClass}
