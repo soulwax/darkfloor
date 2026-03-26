@@ -1262,6 +1262,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     const dragDecision = getMobilePlayerDragDecision(
       info.offset.y,
       panelHeight,
+      info.velocity.y,
     );
 
     if (dragDecision === "dismiss") {
@@ -1334,10 +1335,10 @@ export default function MobilePlayer(props: MobilePlayerProps) {
               className="fixed inset-0 z-[99] flex flex-col overflow-hidden pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+20px)]"
             >
               {}
-              <div className="absolute inset-0 bg-black/12" />
+              <div className="absolute inset-0 bg-black/10" />
 
               {}
-              <div className="mobile-player-expanded relative z-10 flex flex-1 flex-col">
+              <div className="mobile-player-expanded mobile-player-milkglass relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-center pt-1 pb-0.5">
                   <div className="h-1 w-12 rounded-full bg-white/16" />
                 </div>

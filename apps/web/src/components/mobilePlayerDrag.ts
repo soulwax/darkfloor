@@ -1,6 +1,8 @@
 // File: apps/web/src/components/mobilePlayerDrag.ts
 
-export const MOBILE_PLAYER_DISMISS_THRESHOLD_RATIO = 0.5;
+export const MOBILE_PLAYER_DISMISS_THRESHOLD_RATIO = 0.24;
+export const MOBILE_PLAYER_DISMISS_MIN_VELOCITY = 650;
+export const MOBILE_PLAYER_DISMISS_MIN_OFFSET = 32;
 
 export type MobilePlayerDragDecision = "dismiss" | "snap_back";
 
@@ -27,10 +29,21 @@ export const getMobilePlayerDismissThreshold = (
 export const getMobilePlayerDragDecision = (
   offsetY: number,
   panelHeight: number,
+  velocityY = 0,
   thresholdRatio = MOBILE_PLAYER_DISMISS_THRESHOLD_RATIO,
 ): MobilePlayerDragDecision => {
   const clampedOffset = clampDownwardDragOffset(offsetY);
-  const dismissThreshold = getMobilePlayerDismissThreshold(panelHeight, thresholdRatio);
+  const dismissThreshold = getMobilePlayerDismissThreshold(
+    panelHeight,
+    thresholdRatio,
+  );
 
-  return clampedOffset >= dismissThreshold ? "dismiss" : "snap_back";
+  if (clampedOffset >= dismissThreshold) {
+    return "dismiss";
+  }
+
+  return clampedOffset >= MOBILE_PLAYER_DISMISS_MIN_OFFSET &&
+    velocityY >= MOBILE_PLAYER_DISMISS_MIN_VELOCITY
+    ? "dismiss"
+    : "snap_back";
 };
