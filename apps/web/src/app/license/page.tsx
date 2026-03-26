@@ -230,7 +230,7 @@ modification follow.
               {t("gplFaq")}
             </a>
             <a
-              href="https://github.com/soulwax/starchild-music-frontend"
+              href="https://gitlab.com/soulwax/darkfloor-player.git"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-indigo-400 transition-colors hover:text-indigo-300"

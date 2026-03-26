@@ -1527,7 +1527,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
 
                   <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:mt-5 md:gap-2">
                     <motion.a
-                      href="https://github.com/soulwax/bluesix-library"
+                      href="https://gitlab.com/soulwax/darkfloor-player.git"
                       target="_blank"
                       rel="noopener noreferrer"
                       whileTap={{ scale: 0.95 }}

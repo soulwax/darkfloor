@@ -13,10 +13,10 @@
   "homepage": "https://starchildmusic.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/soulwax/bluesix-library"
+    "url": "https://gitlab.com/soulwax/darkfloor-player.git"
   },
   "bugs": {
-    "url": "https://github.com/soulwax/starchild-music-frontend/issues"
+    "url": "https://gitlab.com/soulwax/darkfloor-player/-/issues"
   },
   "keywords": [
     "starchildmusic",

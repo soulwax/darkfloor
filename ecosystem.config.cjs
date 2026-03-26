@@ -119,7 +119,7 @@ module.exports = {
       user: "node",
       host: ["starchildmusic.com"],
       ref: "origin/main",
-      repo: "git@github.com:soulwax/starchild-music-frontend.git",
+      repo: "git@gitlab.com:soulwax/darkfloor-player.git",
       path: "/home/soulwax/workspace/Web/Frontends/starchild-music-frontend",
       "post-deploy":
         "npm install && npm run build && pm2 reload ecosystem.config.cjs --env production --update-env",

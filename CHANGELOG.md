@@ -2080,7 +2080,7 @@ CallbackRouteError: r_: server responded with an error in the response body
 
 - **Repository Link**: Updated homepage link from GitLab to GitHub
   - Changed "View on GitLab" button to "View on GitHub"
-  - Updated URL from `https://gitlab.com/soulwax/bluesix-library` to `https://github.com/soulwax/bluesix-library`
+  - Updated URL from `https://github.com/soulwax/bluesix-library` to `https://gitlab.com/soulwax/darkfloor-player.git`
   - Replaced GitLab logo SVG with GitHub octocat logo SVG
   - **Location**: `src/app/HomePageClient.tsx:635-668`
 
@@ -4681,7 +4681,7 @@ ctx.arc(fw.x, fw.y, fw.size * 3, 0, TAU);    // Outer glow
 
 - **GitHub Repository Button**: Added link to GitHub repository on home page
   - Located at the bottom center of the empty state (when no search results are displayed)
-  - Links to `https://github.com/soulwax/bluesix-library`
+  - Links to `https://gitlab.com/soulwax/darkfloor-player.git`
   - Opens in new tab with proper security attributes
   - Features GitHub icon with "View on GitHub" text
   - Styled with subtle white background and hover effects
