@@ -339,7 +339,7 @@ export function DesktopSidebar() {
                   alt="Starchild"
                   width={36}
                   height={36}
-                  className="h-9 w-9 rounded-xl ring-1 ring-[rgba(244,178,102,0.24)]"
+                  className="sidebar-logo-glow h-9 w-9 rounded-xl"
                   priority
                   unoptimized
                 />

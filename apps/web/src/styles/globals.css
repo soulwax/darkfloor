@@ -1893,10 +1893,22 @@ html.theme-light .theme-chrome-header {
   box-shadow: 10px 0 28px rgba(5, 10, 18, 0.18);
 }
 
+.sidebar-logo-glow {
+  box-shadow:
+    0 0 0 1px rgba(244, 178, 102, 0.24),
+    0 0 18px rgba(244, 178, 102, 0.14);
+}
+
 html.theme-light .theme-chrome-sidebar {
   background: rgba(255, 255, 255, 0.92);
   border-color: var(--shell-border);
   box-shadow: 6px 0 20px rgba(0, 0, 0, 0.05);
+}
+
+html.theme-light .sidebar-logo-glow {
+  box-shadow:
+    0 0 0 1px rgba(212, 147, 61, 0.18),
+    0 0 14px rgba(212, 147, 61, 0.12);
 }
 
 /* Electron desktop chrome */
