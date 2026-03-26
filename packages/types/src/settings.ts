@@ -20,7 +20,12 @@ export interface UserSettings {
   similarityPreference: "strict" | "balanced" | "diverse";
 }
 
-export const STREAM_QUALITY_OPTIONS = ["128", "192", "256", "flac"] as const;
+export const STREAM_QUALITY_OPTIONS = [
+  "128",
+  "192",
+  "256",
+  "320",
+] as const;
 export type StreamQuality = (typeof STREAM_QUALITY_OPTIONS)[number];
 export const DEFAULT_STREAM_QUALITY: StreamQuality = "256";
 export const GUEST_STREAM_QUALITY: StreamQuality = "128";

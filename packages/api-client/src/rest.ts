@@ -122,12 +122,6 @@ function applyStreamQuality(
   const normalizedQuality = quality.trim().toLowerCase();
   if (!normalizedQuality) return;
 
-  if (normalizedQuality === "flac") {
-    url.searchParams.set("format", "flac");
-    url.searchParams.delete("kbps");
-    return;
-  }
-
   if (!/^\d+$/.test(normalizedQuality)) {
     return;
   }

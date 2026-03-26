@@ -149,41 +149,4 @@ describe("Stream API (V2-only)", () => {
       "[Stream API] Using API_V2_URL host: darkfloor.one",
     );
   });
-
-  it("forwards explicit flac mode without lossy kbps", async () => {
-    vi.resetModules();
-    vi.doMock("@/env", () => ({
-      env: {
-        API_V2_URL: "https://darkfloor.one/",
-        BLUESIX_API_KEY: "test-key",
-      },
-    }));
-
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Uint8Array([4, 5, 6]), {
-        status: 200,
-        headers: {
-          "content-type": "audio/flac",
-          "content-length": "3",
-        },
-      }),
-    );
-    global.fetch = fetchMock;
-
-    const { GET } = await import("@/app/api/stream/route");
-
-    const req = {
-      nextUrl: new URL(
-        "http://localhost:3000/api/stream?id=2665275062&format=flac",
-      ),
-      headers: new Headers(),
-    } as NextRequest;
-
-    const res = await GET(req);
-
-    expect(res.status).toBe(200);
-    const calledUrl = new URL(fetchMock.mock.calls[0]?.[0] as string);
-    expect(calledUrl.searchParams.get("format")).toBe("flac");
-    expect(calledUrl.searchParams.get("kbps")).toBeNull();
-  });
 });

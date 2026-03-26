@@ -182,7 +182,7 @@ export default function SettingsPage() {
     { label: t("streamQuality128"), value: "128" },
     { label: t("streamQuality192"), value: "192" },
     { label: t("streamQuality256"), value: "256" },
-    { label: t("streamQualityFlac"), value: "flac" },
+    { label: t("streamQuality320"), value: "320" },
   ];
 
   const updatePreferences = api.music.updatePreferences.useMutation({

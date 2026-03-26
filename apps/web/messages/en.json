@@ -537,7 +537,7 @@
     "streamQuality128": "128 kbps",
     "streamQuality192": "192 kbps",
     "streamQuality256": "256 kbps",
-    "streamQualityFlac": "FLAC",
+    "streamQuality320": "320 kbps",
     "equalizer": "Equalizer",
     "equalizerDesc": "Enable audio equalizer",
     "equalizerPreset": "Equalizer Preset",
