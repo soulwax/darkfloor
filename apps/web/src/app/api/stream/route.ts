@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const query = searchParams.get("q");
   const id = searchParams.get("id");
+  const format = searchParams.get("format")?.trim().toLowerCase();
 
   if (!query && !id) {
     return NextResponse.json(
@@ -135,10 +136,14 @@ export async function GET(req: NextRequest) {
 
     const url = new URL("music/stream/direct", `${normalizedBluesixUrl}/`);
     url.searchParams.set("key", configuredBluesixApiKey);
-    url.searchParams.set(
-      "kbps",
-      req.nextUrl.searchParams.get("kbps") ?? DEFAULT_GUEST_STREAM_KBPS,
-    );
+    if (format === "flac") {
+      url.searchParams.set("format", "flac");
+    } else {
+      url.searchParams.set(
+        "kbps",
+        req.nextUrl.searchParams.get("kbps") ?? DEFAULT_GUEST_STREAM_KBPS,
+      );
+    }
 
     if (id) {
       url.searchParams.set("id", id);

@@ -25,6 +25,7 @@ export const STREAM_QUALITY_OPTIONS = [
   "192",
   "256",
   "320",
+  "flac",
 ] as const;
 export type StreamQuality = (typeof STREAM_QUALITY_OPTIONS)[number];
 export const DEFAULT_STREAM_QUALITY: StreamQuality = "256";

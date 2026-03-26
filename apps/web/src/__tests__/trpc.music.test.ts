@@ -112,14 +112,14 @@ describe("musicRouter tRPC operations", () => {
     const caller = musicRouter.createCaller(context);
 
     const result = await caller.updatePreferences({
-      streamQuality: "320",
+      streamQuality: "flac",
     });
 
     expect(result).toEqual({ success: true });
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
-        streamQuality: "320",
+        streamQuality: "flac",
       }),
     );
   });
