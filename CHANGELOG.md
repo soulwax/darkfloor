@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-03-26
+
+### Added
+
+- **Mobile navigation now exposes Settings directly for signed-in listeners**: The mobile bottom navigation now labels the account/settings destination as `Settings` and uses a dedicated settings icon, making the shared preferences screen and stream quality controls much easier to find on phones.
+
+### Changed
+
+- **Streaming quality controls are now fully surfaced across desktop and mobile**: Signed-in users can now consistently manage `128 / 192 / 256 / 320 / Lossless (FLAC)` playback from the shared Settings UI on both form factors, while guest playback continues to default to `128 kbps` and authenticated playback defaults to `256 kbps`.
+- **Stream quality transport is aligned with the current backend contract**: Lossy playback requests continue to use `kbps=128|192|256|320`, and lossless playback now uses `format=flac`, matching the documented `/music/stream/direct` and `/music/stream/capabilities` contract.
+
 ## [1.6.1] - 2026-03-26
 
 ### Changed

@@ -18,6 +18,7 @@ import {
   Library,
   ListMusic,
   Music2,
+  Settings,
   User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -84,10 +85,18 @@ export default function MobileNavigation() {
       callbackUrl: "/playlists",
     },
     {
-      name: session ? tc("profile") : tc("signIn"),
+      name: session ? tc("settings") : tc("signIn"),
       path: session ? "/settings" : "/signin",
-      icon: <User className="h-5 w-5" strokeWidth={1.5} />,
-      activeIcon: <User className="h-5 w-5" strokeWidth={2.5} />,
+      icon: session ? (
+        <Settings className="h-5 w-5" strokeWidth={1.5} />
+      ) : (
+        <User className="h-5 w-5" strokeWidth={1.5} />
+      ),
+      activeIcon: session ? (
+        <Settings className="h-5 w-5" strokeWidth={2.5} />
+      ) : (
+        <User className="h-5 w-5" strokeWidth={2.5} />
+      ),
       requiresAuth: true,
       callbackUrl: "/",
     },
