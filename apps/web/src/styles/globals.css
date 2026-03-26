@@ -1895,8 +1895,9 @@ html.theme-light .theme-chrome-header {
 
 .sidebar-logo-glow {
   box-shadow:
-    0 0 0 1px rgba(244, 178, 102, 0.24),
-    0 0 18px rgba(244, 178, 102, 0.14);
+    0 0 0 1px rgba(244, 178, 102, 0.3),
+    0 0 24px rgba(244, 178, 102, 0.2),
+    0 0 36px rgba(244, 178, 102, 0.08);
 }
 
 html.theme-light .theme-chrome-sidebar {
@@ -1907,8 +1908,9 @@ html.theme-light .theme-chrome-sidebar {
 
 html.theme-light .sidebar-logo-glow {
   box-shadow:
-    0 0 0 1px rgba(212, 147, 61, 0.18),
-    0 0 14px rgba(212, 147, 61, 0.12);
+    0 0 0 1px rgba(212, 147, 61, 0.22),
+    0 0 18px rgba(212, 147, 61, 0.14),
+    0 0 28px rgba(212, 147, 61, 0.06);
 }
 
 /* Electron desktop chrome */
