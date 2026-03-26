@@ -1245,6 +1245,16 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     dragControls.start(event);
   };
 
+  const handleExpandedDragHandlePointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    dragControls.start(event);
+  };
+
   const handleExpandedDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
@@ -1322,7 +1332,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                 bottom:
                   typeof window !== "undefined" ? window.innerHeight : 1024,
               }}
-              dragElastic={0}
+              dragElastic={0.12}
               dragMomentum={false}
               dragListener={false}
               dragControls={dragControls}
@@ -1339,11 +1349,17 @@ export default function MobilePlayer(props: MobilePlayerProps) {
 
               {}
               <div className="mobile-player-expanded mobile-player-milkglass relative z-10 flex flex-1 flex-col">
-                <div className="flex justify-center pt-1 pb-0.5">
+                <div
+                  className="mobile-player-drag-handle touch-none flex justify-center pt-1 pb-0.5"
+                  onPointerDownCapture={handleExpandedDragHandlePointerDown}
+                >
                   <div className="h-1 w-12 rounded-full bg-white/16" />
                 </div>
 
-                <div className="mobile-player-header flex items-center justify-between px-6 pt-1">
+                <div
+                  className="mobile-player-header touch-none flex items-center justify-between px-6 pt-1"
+                  onPointerDownCapture={handleExpandedDragHandlePointerDown}
+                >
                   <motion.button
                     onClick={closeExpandedPlayer}
                     whileTap={{ scale: 0.9 }}

@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-03-26
+
+### Changed
+
+- **Player chrome is more restrained across desktop and mobile**: The desktop player shell, queue/sidebar tabs, header search area, and shared player surfaces were tightened so playback feels more compact, while the full-view mobile player now uses a frosted milkglass treatment that better obscures background visuals.
+- **Sidebar branding has a slightly stronger visual anchor**: The left sidebar logo now carries a soft theme-aware glow so the brand mark reads more clearly without changing the sidebar layout.
+- **Mobile full-player dismissal now feels lighter**: The swipe-down gesture on the expanded mobile player now dismisses on a shorter drag or a quicker downward flick, reducing the effort needed to collapse the player.
+
+### Fixed
+
+- **Direct track-opening links now normalize track payloads correctly**: `?track=...` and `/track/[id]` flows now transform track-by-id API responses into the shared nested `Track` shape expected by the player, fixing cases where shared track links resolved successfully on the server but failed once handed to the client player state.
+- **Discord OAuth callback is more resilient when profile data is incomplete**: Discord sign-in now falls back to a stable internal email value when the provider does not return an email address, preventing callback-time Auth.js/adapter failures against the non-null local user email schema.
+
 ## [1.6.0] - 2026-03-24
 
 ### Changed
