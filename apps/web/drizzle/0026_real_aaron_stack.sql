@@ -1,0 +1,1 @@
+ALTER TABLE "hexmusic-stream_user_preferences" ADD COLUMN "streamQuality" varchar(16) DEFAULT '256' NOT NULL;

@@ -17,7 +17,11 @@ import {
   normalizeSpotifyFeatureSettings,
 } from "@/utils/spotifyFeatureSettings";
 import { api } from "@starchild/api-client/trpc/react";
-import type { SettingsKey } from "@starchild/types/settings";
+import {
+  DEFAULT_STREAM_QUALITY,
+  type SettingsKey,
+  type StreamQuality,
+} from "@starchild/types/settings";
 import type { SpotifyFeatureSettings } from "@starchild/types/spotifySettings";
 import { hapticLight, hapticToggle } from "@/utils/haptics";
 import { settingsStorage } from "@/utils/settingsStorage";
@@ -173,6 +177,12 @@ export default function SettingsPage() {
     { label: t("similarityStrict"), value: "strict" },
     { label: t("similarityBalanced"), value: "balanced" },
     { label: t("similarityDiverse"), value: "diverse" },
+  ];
+  const streamQualityOptions = [
+    { label: t("streamQuality128"), value: "128" },
+    { label: t("streamQuality192"), value: "192" },
+    { label: t("streamQuality256"), value: "256" },
+    { label: t("streamQualityFlac"), value: "flac" },
   ];
 
   const updatePreferences = api.music.updatePreferences.useMutation({
@@ -575,6 +585,21 @@ export default function SettingsPage() {
     title: t("audio"),
     icon: <Volume2 className="h-5 w-5" />,
     items: [
+      {
+        id: "streamQuality",
+        label: t("streamQuality"),
+        description: getOptionLabel(
+          streamQualityOptions,
+          effectivePreferences?.streamQuality,
+          t("streamQuality256"),
+        ),
+        type: "select",
+        value:
+          (effectivePreferences?.streamQuality as StreamQuality | undefined) ??
+          DEFAULT_STREAM_QUALITY,
+        options: streamQualityOptions,
+        onChange: (value) => handleSelect("streamQuality", value as string),
+      },
       {
         id: "equalizerEnabled",
         label: t("equalizer"),

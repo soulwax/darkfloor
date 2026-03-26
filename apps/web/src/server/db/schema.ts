@@ -237,6 +237,7 @@ export const userPreferences = createTable(
     repeatMode: d.varchar({ length: 20 }).default("none").notNull(),
     shuffleEnabled: d.boolean().default(false).notNull(),
     keepPlaybackAlive: d.boolean().default(true).notNull(),
+    streamQuality: d.varchar({ length: 16 }).default("256").notNull(),
     equalizerEnabled: d.boolean().notNull().default(false),
     equalizerPreset: d.varchar({ length: 255 }).notNull().default("Flat"),
     equalizerBands: d

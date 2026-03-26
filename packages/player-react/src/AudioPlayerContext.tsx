@@ -11,6 +11,12 @@ import type {
   SmartQueueState,
   Track,
 } from "@starchild/types";
+import {
+  DEFAULT_STREAM_QUALITY,
+  GUEST_STREAM_QUALITY,
+  STREAM_QUALITY_OPTIONS,
+  type StreamQuality,
+} from "@starchild/types/settings";
 
 // DB stores dates as strings
 interface StoredQueuedTrack extends Omit<QueuedTrack, "addedAt"> {
@@ -99,6 +105,10 @@ const isRepeatMode = (value: unknown): value is "none" | "one" | "all" =>
 
 const coerceRepeatMode = (value: unknown): "none" | "one" | "all" =>
   isRepeatMode(value) ? value : "none";
+
+const isStreamQuality = (value: unknown): value is StreamQuality =>
+  typeof value === "string" &&
+  STREAM_QUALITY_OPTIONS.includes(value as StreamQuality);
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -561,6 +571,11 @@ export function AudioPlayerProvider({
   const player = useAudioPlayer({
     initialQueueState: initialQueueState,
     keepPlaybackAlive: preferences?.keepPlaybackAlive ?? true,
+    streamQuality: isAuthenticated
+      ? isStreamQuality(preferences?.streamQuality)
+        ? preferences.streamQuality
+        : DEFAULT_STREAM_QUALITY
+      : GUEST_STREAM_QUALITY,
     onBackgroundResumeError: handleBackgroundResumeError,
     onTrackChange: (track) => {
       if (track && isAuthenticated) {

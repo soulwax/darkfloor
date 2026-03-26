@@ -37,6 +37,7 @@ import {
 } from "@/server/services/recommendations";
 import { bluesix } from "@/services/bluesix";
 import { isTrack, type Track } from "@starchild/types";
+import { STREAM_QUALITY_OPTIONS } from "@starchild/types/settings";
 
 const trackSchema = z.object({
   id: z.number(),
@@ -172,6 +173,7 @@ const userPreferencesUiColumns = {
   repeatMode: true,
   shuffleEnabled: true,
   keepPlaybackAlive: true,
+  streamQuality: true,
   equalizerEnabled: true,
   equalizerPreset: true,
   equalizerBands: true,
@@ -1927,6 +1929,7 @@ export const musicRouter = createTRPCRouter({
         repeatMode: z.enum(["none", "one", "all"]).optional(),
         shuffleEnabled: z.boolean().optional(),
         keepPlaybackAlive: z.boolean().optional(),
+        streamQuality: z.enum(STREAM_QUALITY_OPTIONS).optional(),
         equalizerEnabled: z.boolean().optional(),
         equalizerPreset: z.string().optional(),
         equalizerBands: z.array(z.number()).optional(),

@@ -4,6 +4,10 @@
 
 import { AUDIO_CONSTANTS } from "@starchild/config/constants";
 import { STORAGE_KEYS } from "@starchild/config/storage";
+import {
+  DEFAULT_STREAM_QUALITY,
+  type StreamQuality,
+} from "@starchild/types/settings";
 import { localStorage } from "./storageService";
 import type {
   QueuedTrack,
@@ -84,6 +88,7 @@ interface UseAudioPlayerOptions {
   ) => Promise<Track[]>;
   onError?: (error: string, trackId?: number) => void;
   keepPlaybackAlive?: boolean;
+  streamQuality?: StreamQuality;
   onBackgroundResumeError?: (reason: string, error: unknown) => void;
   smartQueueSettings?: SmartQueueSettings;
   initialQueueState?: {
@@ -102,6 +107,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     onDuplicateTrack,
     onError,
     keepPlaybackAlive = true,
+    streamQuality = DEFAULT_STREAM_QUALITY,
     onBackgroundResumeError,
     initialQueueState,
   } = options;
@@ -167,6 +173,10 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       shouldAutoPlayNextRef.current = true;
     }
   }, []);
+  const buildStreamUrlById = useCallback(
+    (trackId: string) => getStreamUrlById(trackId, streamQuality),
+    [streamQuality],
+  );
 
   const queue = useMemo(
     () => queuedTracks.map((qt) => qt.track),
@@ -825,9 +835,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             if (!audioRef.current) return;
             if (streamErrorTrackIdRef.current !== currentTrack.id) return;
 
-            const retryUrl = `${getStreamUrlById(
-              currentTrack.id.toString(),
-            )}&retry=${Date.now()}`;
+            const retryUrl = `${buildStreamUrlById(currentTrack.id.toString())}&retry=${Date.now()}`;
             loadTrackRef.current?.(currentTrack, retryUrl);
             playRef
               .current?.()
@@ -944,7 +952,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       audio.removeEventListener("ratechange", handleRateChange);
       clearInterval(playbackRateInterval);
     };
-  }, [handleTrackEnd, currentTrack, onError, requestAutoPlayNext]);
+  }, [
+    buildStreamUrlById,
+    handleTrackEnd,
+    currentTrack,
+    onError,
+    requestAutoPlayNext,
+  ]);
 
   useEffect(() => {
     if (typeof document === "undefined" || typeof window === "undefined")
@@ -2226,7 +2240,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   useEffect(() => {
     if (!currentTrack || !audioRef.current) return;
 
-    const streamUrl = getStreamUrlById(currentTrack.id.toString());
+    const streamUrl = buildStreamUrlById(currentTrack.id.toString());
     const currentSrc = audioRef.current.src;
     const isNewTrack = lastLoadedTrackIdRef.current !== currentTrack.id;
     const needsLoad = isNewTrack || !currentSrc || currentSrc !== streamUrl;
@@ -2277,7 +2291,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         });
       }, AUTO_PLAY_DELAY_MS);
     }
-  }, [currentTrack, loadTrack, play]);
+  }, [buildStreamUrlById, currentTrack, loadTrack, play]);
 
   useEffect(() => {
     const syncInterval = setInterval(() => {
@@ -2466,7 +2480,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           "[useAudioPlayer] 🔄 Track already playing, restarting from beginning",
         );
         if (audioRef.current) {
-          const streamUrl = getStreamUrlById(track.id.toString());
+          const streamUrl = buildStreamUrlById(track.id.toString());
 
           if (audioRef.current.src !== streamUrl || !audioRef.current.src) {
             logger.debug(
@@ -2517,6 +2531,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       playFromQueue,
       isValidTrack,
       loadTrack,
+      buildStreamUrlById,
       createQueuedTrack,
       requestAutoPlayNext,
     ],

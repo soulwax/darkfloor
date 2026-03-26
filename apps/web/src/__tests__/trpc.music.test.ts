@@ -104,6 +104,26 @@ describe("musicRouter tRPC operations", () => {
     expect(db.insert).toHaveBeenCalled();
   });
 
+  it("persists stream quality preferences for signed-in users", async () => {
+    const db = createMockDb(null);
+
+    const context = createCallerContext(db);
+
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.updatePreferences({
+      streamQuality: "flac",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        streamQuality: "flac",
+      }),
+    );
+  });
+
   it("persists spotify feature settings per user and auto-enables complete profiles", async () => {
     const db = createMockDb(null);
 
@@ -124,7 +144,7 @@ describe("musicRouter tRPC operations", () => {
         spotifyClientId: "client-id",
         spotifyClientSecret: "client-secret",
         spotifyUsername: "spotify-user",
-        spotifySettingsUpdatedAt: expect.any(Date),
+        spotifySettingsUpdatedAt: expect.any(Date) as unknown as Date,
       }),
     );
   });
@@ -152,7 +172,7 @@ describe("musicRouter tRPC operations", () => {
         spotifyClientId: "client-id",
         spotifyClientSecret: "",
         spotifyUsername: "spotify-user",
-        spotifySettingsUpdatedAt: expect.any(Date),
+        spotifySettingsUpdatedAt: expect.any(Date) as unknown as Date,
       }),
     );
   });
@@ -165,6 +185,7 @@ describe("musicRouter tRPC operations", () => {
       repeatMode: "none",
       shuffleEnabled: false,
       keepPlaybackAlive: false,
+      streamQuality: "256",
       equalizerEnabled: false,
       equalizerPreset: "Flat",
       equalizerBands: [],

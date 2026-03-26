@@ -1,8 +1,6 @@
 // File: packages/api-client/src/rest.ts
 
 import type { SearchResponse, Track } from "@starchild/types";
-import type { StreamQuality } from "@starchild/types/settings";
-
 export interface FeedArtist {
   id: number;
   name: string;
@@ -115,18 +113,27 @@ function buildFeedUrl(
   return url.toString();
 }
 
-const STREAM_QUALITY_KBPS: Record<StreamQuality, number> = {
-  low: 128,
-  normal: 192,
-  high: 320,
-};
+function applyStreamQuality(
+  url: URL,
+  quality?: string | null,
+): void {
+  if (!quality) return;
 
-function resolveStreamKbps(quality?: StreamQuality | string): number | null {
-  if (!quality) return null;
-  if (quality in STREAM_QUALITY_KBPS) {
-    return STREAM_QUALITY_KBPS[quality as StreamQuality] ?? null;
+  const normalizedQuality = quality.trim().toLowerCase();
+  if (!normalizedQuality) return;
+
+  if (normalizedQuality === "flac") {
+    url.searchParams.set("format", "flac");
+    url.searchParams.delete("kbps");
+    return;
   }
-  return null;
+
+  if (!/^\d+$/.test(normalizedQuality)) {
+    return;
+  }
+
+  url.searchParams.set("kbps", normalizedQuality);
+  url.searchParams.delete("format");
 }
 
 async function fetchFeed<T>(
@@ -313,15 +320,23 @@ export async function getGenres(limit = 80): Promise<GenreListItem[]> {
   return payload.data.slice(0, safeLimit);
 }
 
-export function getStreamUrl(query: string): string {
+export function getStreamUrl(
+  query: string,
+  quality?: string | null,
+): string {
   const url = new URL("/api/stream", getBrowserOrigin("getStreamUrl"));
   url.searchParams.set("q", query);
+  applyStreamQuality(url, quality);
   return url.toString();
 }
 
-export function getStreamUrlById(id: string): string {
+export function getStreamUrlById(
+  id: string,
+  quality?: string | null,
+): string {
   const url = new URL("/api/stream", getBrowserOrigin("getStreamUrlById"));
   url.searchParams.set("id", id);
+  applyStreamQuality(url, quality);
   return url.toString();
 }
 
