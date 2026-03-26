@@ -73,6 +73,10 @@ drizzle.env.js
 
 public/**/*.js
 
+.claude/
+.cursor/
+docs/
+
 # Electron
 /dist
 *.dmg
