@@ -1,6 +1,6 @@
 # Agent Guide (songbird-frontend / Starchild Monorepo)
 
-Last updated: 2026-02-22
+Last updated: 2026-03-28
 
 This is the primary project context for coding agents in this repository. Read this file before making changes.
 
@@ -9,13 +9,15 @@ This is the primary project context for coding agents in this repository. Read t
 1. `AGENTS.md` (this file)
 2. `CONTEXT.md`
 3. `README.md`
-4. `docs/README.md`
-5. `docs/SETUP.md`
-6. `docs/DEPLOYMENT.md`
-7. `docs/TROUBLESHOOTING.md`
-8. `docs/ARCHITECTURE.md`
-9. `docs/API_ROUTE_USE.md`
-10. `docs/API_V2_SWAGGER.yaml` (upstream API contract, not this repo API surface)
+4. `api/AGENTS.md` and `api/CONTEXT.md` when the task touches the backend submodule
+5. `README.md`
+6. `docs/README.md`
+7. `docs/SETUP.md`
+8. `docs/DEPLOYMENT.md`
+9. `docs/TROUBLESHOOTING.md`
+10. `docs/ARCHITECTURE.md`
+11. `docs/API_ROUTE_USE.md`
+12. `docs/API_V2_SWAGGER.yaml` and `api/README.md` for backend contract/runtime context
 
 ## Required Engineering Standards
 
@@ -29,7 +31,7 @@ Contributors and coding agents should demonstrate:
 
 ## High-Level Architecture
 
-This repo is a Turborepo-style monorepo with app runtimes under `apps/` and shared code under `packages/`.
+This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`, shared code under `packages/`, and the Darkfloor API V2 backend checked in as the Git submodule `api/`.
 
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
@@ -44,11 +46,16 @@ This repo is a Turborepo-style monorepo with app runtimes under `apps/` and shar
 - Infra/runtime config:
   - Root runtime/build config in `package.json`, `turbo.json`, `vercel.json`, `Dockerfile`, `ecosystem*.cjs`
   - DB migrations in `apps/web/drizzle`
+- Backend submodule:
+  - `api/`: NestJS + Prisma backend repository with its own README and agent guidance
+  - Treat it as part of the working picture for tasks that span frontend proxies/contracts and backend implementation
+  - Editing `api/` is explicitly permitted when the user asks for backend-facing changes
 
 Note on upstream APIs:
 
-- This repo does not host NestJS services in-repo.
-- Upstream integrations (documented by `docs/API_V2_SWAGGER.yaml`) are exposed through Next.js route handlers under `apps/web/src/app/api/**`.
+- The frontend still consumes the backend through route handlers under `apps/web/src/app/api/**`.
+- The source implementation for that backend now lives in-repo as the `api/` submodule.
+- `docs/API_V2_SWAGGER.yaml` remains a vendored contract copy used by the frontend; when behavior-level backend work is requested, inspect `api/` directly.
 
 ## Where Core Logic Lives
 
@@ -82,6 +89,11 @@ Note on upstream APIs:
   - Config/constants/storage keys: `packages/config/src/*`
   - Auth helpers/logging/provider factories: `packages/auth/src/*`
   - App-local utilities: `apps/web/src/utils/*`
+- Backend implementation:
+  - Nest bootstrap/module wiring: `api/src/main.ts`, `api/src/app.module.ts`
+  - Feature modules/controllers/services: `api/src/modules/*`
+  - Prisma schema/migrations: `api/prisma/*`
+  - Backend-specific guidance: `api/AGENTS.md`, `api/CONTEXT.md`, `api/CODEX.md`
 
 ## Routing, tRPC, and API Module Conventions
 
@@ -124,6 +136,7 @@ Note on upstream APIs:
 - Prefer cross-file navigation and existing implementations over duplication.
 - Before multi-module edits, identify key files and each file's role.
 - Search for existing patterns first (router style, proxy style, error/logging style, DB handling) and follow them.
+- If a task spans frontend and backend behavior, inspect both root docs and the `api/` submodule docs before editing.
 
 ## Repo-Specific Patterns to Reuse
 
@@ -139,6 +152,7 @@ Note on upstream APIs:
 - Before implementation, summarize:
   - files to touch
   - existing patterns being followed
+- If touching `api/`, say so explicitly and treat backend changes as in-scope, not off-limits.
 - Keep changes minimal and localized.
 - Avoid global architecture/config changes unless explicitly requested.
 - Add concise comments only where logic is non-obvious.

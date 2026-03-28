@@ -1,6 +1,7 @@
 # Starchild Music Frontend
 
 Starchild Music is a monorepo for a Next.js music application with shared playback libraries and an Electron desktop runtime.
+The backend API now also lives in this workspace as the Git submodule at `./api`, so frontend and API work can be reasoned about together from one checkout.
 This README is intentionally concise; detailed onboarding and operations guides live in `docs/`.
 
 ## Repository Overview
@@ -17,6 +18,10 @@ This repository is organized as app runtimes plus shared packages:
   - `api-client`, `auth`, `config`, `types`
   - `player-core`, `player-react`, `audio-adapters`
   - `ui`, `visualizers`
+- `api/`: Darkfloor API V2 NestJS backend as a Git submodule
+  - independently versioned backend repository
+  - intentionally editable from this workspace when a task spans frontend and backend
+  - has its own local guidance in `api/AGENTS.md`, `api/CONTEXT.md`, and `api/CODEX.md`
 
 ## Architecture Snapshot
 
@@ -24,7 +29,8 @@ This repository is organized as app runtimes plus shared packages:
 - Internal first-party data API: tRPC routers (`apps/web/src/server/api/routers`)
 - Auth/session: NextAuth + Drizzle adapter (`apps/web/src/server/auth`)
 - Database: Postgres + Drizzle (`apps/web/src/server/db`, `apps/web/drizzle`)
-- Upstream integrations: route handlers under `apps/web/src/app/api/**`
+- Upstream integrations and backend contract consumption: route handlers under `apps/web/src/app/api/**`
+- Source backend implementation for that contract: `api/` NestJS service
 - Player internals:
   - `packages/player-react/src/AudioPlayerContext.tsx`
   - `packages/player-react/src/useAudioPlayer.ts`
@@ -56,6 +62,12 @@ Commands below are run from the repo root.
 
 ```bash
 pnpm install --frozen-lockfile
+```
+
+If you also need the backend submodule locally, initialize it after cloning:
+
+```bash
+git submodule update --init --recursive
 ```
 
 1. Create local environment file:
@@ -152,6 +164,12 @@ Notes:
   - `packages/player-react/src`
   - `packages/player-core/src`
   - `packages/types/src`
+- Backend submodule:
+  - `api/src`
+  - `api/src/modules`
+  - `api/prisma/schema.prisma`
+  - `api/README.md`
+  - `api/AGENTS.md`
 
 ## API Surface Summary
 
@@ -194,6 +212,8 @@ For production deployment runbooks and incident response, see `docs/DEPLOYMENT.m
 - `docs/ARCHITECTURE.md` (full architecture and data-flow deep dive)
 - `AGENTS.md` (agent workflow and repository conventions)
 - `CONTEXT.md` (fast technical map)
+- `api/README.md` (backend overview and runtime usage)
+- `api/AGENTS.md` / `api/CONTEXT.md` / `api/CODEX.md` (backend agent guidance)
 - `docs/README.md` (documentation index)
 - `docs/API_ROUTE_USE.md` (route-to-upstream mapping)
 - `docs/API_V2_SWAGGER.yaml` and `docs/API_V2_SWAGGER.json` (upstream API reference copy)
