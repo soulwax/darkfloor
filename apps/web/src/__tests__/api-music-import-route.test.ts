@@ -495,4 +495,102 @@ describe("Spotify music import route", () => {
     expect(response.status).toBe(502);
     expect(body.error).toMatch(/matched track payload/i);
   });
+
+  it("accepts matched track payloads with empty optional Deezer metadata", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn(async () =>
+      NextResponse.json({
+        ...makeBackendTranslationResponse(),
+        matchedTracks: [
+          {
+            ...makeBackendTranslationResponse().matchedTracks[0],
+            deezerTrack: {
+              ...makeBackendTranslationResponse().matchedTracks[0]!.deezerTrack,
+              title_version: "",
+              link: "https://www.deezer.com/track/101",
+              preview: null,
+              artist: {
+                ...makeBackendTranslationResponse().matchedTracks[0]!.deezerTrack
+                  .artist,
+                picture_small: "",
+              },
+              album: {
+                ...makeBackendTranslationResponse().matchedTracks[0]!.deezerTrack
+                  .album,
+                cover_small: "",
+              },
+            },
+          },
+        ],
+      }),
+    );
+
+    const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({
+        insert: vi
+          .fn()
+          .mockImplementationOnce(() => ({
+            values: vi.fn(() => ({
+              returning: vi.fn(async () => [
+                {
+                  id: 323,
+                  name: "Imported Playlist",
+                },
+              ]),
+            })),
+          }))
+          .mockImplementationOnce(() => ({
+            values: vi.fn(async () => undefined),
+          })),
+      }),
+    );
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({
+        user: { id: "user-1", email: "listener@example.com" },
+      })),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+    vi.doMock("@/lib/server/songbird-token", () => ({
+      getSongbirdAccessToken: vi.fn(async () => ({
+        accessToken: "service-token-1",
+        tokenType: "Bearer",
+        expiresIn: 300,
+        expiresAt: Date.now() + 300_000,
+        scopes: ["spotify.playlists.import:write"],
+      })),
+    }));
+    vi.doMock("@/server/db", () => ({
+      db: {
+        transaction,
+      },
+    }));
+
+    const route = await loadPostRoute(
+      "@/app/api/music/playlists/import/spotify/route",
+    );
+    const response = await route.POST(
+      makeRequest("/api/music/playlists/import/spotify", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+        }),
+      }),
+    );
+    const body = (await response.json()) as {
+      ok?: boolean;
+      playlist?: { id: string; name: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.playlist).toEqual({
+      id: "323",
+      name: "Imported Playlist",
+    });
+  });
 });
