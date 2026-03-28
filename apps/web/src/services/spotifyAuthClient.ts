@@ -132,9 +132,7 @@ function logSpotifyBrowserDebug(message: string, details?: unknown): void {
 
 function resolveAuthApiOrigin(): string {
   return resolveAuthApiBase({
-    configuredBase:
-      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
-      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
+    configuredBase: process.env.NEXT_PUBLIC_AUTH_API_BASE,
     fallbackOrigin:
       typeof window !== "undefined" ? window.location.origin : null,
   });
@@ -306,9 +304,9 @@ function hasSpotifySessionArtifacts(): boolean {
   }
 
   return Boolean(
-    readStoredRefreshToken() ||
-    getCsrfTokenFromCookies() ||
-    readCookieValue(document.cookie, APP_REFRESH_COOKIE_NAME) ||
+    readStoredRefreshToken() ??
+    getCsrfTokenFromCookies() ??
+    readCookieValue(document.cookie, APP_REFRESH_COOKIE_NAME) ??
     readCookieValue(document.cookie, OAUTH_SESSION_COOKIE_NAME),
   );
 }

@@ -116,15 +116,17 @@ Common variables:
 | `DATABASE_URL`                                              | required at runtime                   | Postgres connection string                                                                                             |
 | `NEXTAUTH_URL`                                              | recommended                           | Canonical app/auth base URL                                                                                            |
 | `API_V2_URL`                                                | required for V2 proxy routes          | Upstream API base URL                                                                                                  |
-| `SONGBIRD_API_URL`                                          | required for `/api/songbird/*` routes | Songbird API base URL                                                                                                  |
-| `UNIVERSAL_KEY` or `BLUESIX_API_KEY`                        | recommended                           | Upstream API auth key aliases used by proxy helpers                                                                    |
+| `NEXT_PUBLIC_AUTH_API_BASE`                                 | optional                              | Client-side override for backend auth/API host when it differs from the frontend origin                               |
+| `SONGBIRD_API_HEALTH_URI`                                   | optional                              | Path override for upstream health checks when the API uses something other than `/api/health`                         |
+| `UNIVERSAL_KEY`                                             | recommended                           | Canonical upstream auth key used for service token exchange and default proxy auth                                     |
+| `BLUESIX_API_KEY`                                           | optional                              | Override only when the upstream x-api-key should differ from `UNIVERSAL_KEY`                                           |
+| `SONGBIRD_API_URL`                                          | optional                              | Override only when Songbird token routes live on a different host than `API_V2_URL`                                   |
 | `AUTH_SPOTIFY_ENABLED` + `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED` | optional                              | Spotify auth feature flag pair                                                                                         |
 | `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET`               | required when Spotify auth is enabled | Spotify OAuth credentials                                                                                              |
-| `NEXT_PUBLIC_AUTH_API_ORIGIN`                               | optional                              | Legacy auth API origin used by backend auth proxy/debug routes; normal Spotify sign-in uses same-origin Auth.js routes |
 
 Notes:
 
-- Runtime aliases in `apps/web/src/env.js` allow compatibility with legacy names for Songbird/V2 key/url variables.
+- Runtime aliases in `apps/web/src/env.js` still exist for compatibility, but new env files should use the canonical keys shown here.
 - `apps/web/src/server/db/index.ts` throws if `DATABASE_URL` is missing.
 
 ## Development Commands

@@ -60,8 +60,18 @@ export const OAUTH_PROVIDER_BUTTON_STYLES: Record<
  * Enabled providers based on environment configuration
  */
 export const ENABLED_OAUTH_PROVIDER_IDS: readonly SupportedOAuthProviderId[] =
-  ["discord", "github"];
+  (() => {
+    const providers: SupportedOAuthProviderId[] = ["discord"];
 
+    const githubId = process.env.AUTH_GITHUB_ID;
+    const githubSecret = process.env.AUTH_GITHUB_SECRET;
+
+    if (githubId && githubSecret) {
+      providers.push("github");
+    }
+
+    return providers;
+  })();
 const enabledProviderIds = new Set<SupportedOAuthProviderId>(
   ENABLED_OAUTH_PROVIDER_IDS,
 );

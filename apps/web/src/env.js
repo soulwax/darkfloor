@@ -32,7 +32,6 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    API_BASE_URL: z.string().url().optional(),
     SONGBIRD_API_URL: z.string().url().optional(),
     SONGBIRD_API_HEALTH_URI: z.string().optional(),
     UNIVERSAL_KEY: z.string().optional(),
@@ -46,7 +45,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_VERSION: z.string().optional(),
     NEXT_PUBLIC_AUTH_API_BASE: z.string().url().optional(),
-    NEXT_PUBLIC_AUTH_API_ORIGIN: z.string().url().optional(),
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED: z
       .string()
       .optional()
@@ -73,43 +71,16 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
-    API_BASE_URL:
-      process.env.API_BASE_URL ??
-      process.env.API_V2_URL ??
-      process.env.SONGBIRD_API_URL ??
-      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
-      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN,
     SONGBIRD_API_URL:
       process.env.SONGBIRD_API_URL ??
-      process.env.API_BASE_URL ??
       process.env.API_V2_URL ??
-      process.env.V2_API_URL ??
-      process.env.NEXT_PUBLIC_V2_API_URL,
+      process.env.NEXT_PUBLIC_AUTH_API_BASE,
     SONGBIRD_API_HEALTH_URI:
-      process.env.SONGBIRD_API_HEALTH_URI ??
-      process.env.API_V2_HEALTH_URL ??
-      "/api/health",
-    UNIVERSAL_KEY:
-      process.env.UNIVERSAL_KEY ??
-      process.env.UNIVERSAL_API_KEY ??
-      process.env.BLUESIX_API_KEY ??
-      process.env.SONGBIRD_API_KEY,
-    API_V2_URL:
-      process.env.API_V2_URL ??
-      process.env.API_BASE_URL ??
-      process.env.SONGBIRD_API_URL ??
-      process.env.V2_API_URL ??
-      process.env.NEXT_PUBLIC_V2_API_URL,
+      process.env.SONGBIRD_API_HEALTH_URI ?? "/api/health",
+    UNIVERSAL_KEY: process.env.UNIVERSAL_KEY,
+    API_V2_URL: process.env.API_V2_URL ?? process.env.SONGBIRD_API_URL,
     NEXT_PUBLIC_AUTH_API_BASE:
       process.env.NEXT_PUBLIC_AUTH_API_BASE ??
-      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN ??
-      process.env.API_BASE_URL ??
-      process.env.API_V2_URL ??
-      process.env.SONGBIRD_API_URL,
-    NEXT_PUBLIC_AUTH_API_ORIGIN:
-      process.env.NEXT_PUBLIC_AUTH_API_ORIGIN ??
-      process.env.NEXT_PUBLIC_AUTH_API_BASE ??
-      process.env.API_BASE_URL ??
       process.env.API_V2_URL ??
       process.env.SONGBIRD_API_URL,
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED:
@@ -119,9 +90,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_AUTH_DEBUG_OAUTH,
     BLUESIX_API_KEY:
       process.env.BLUESIX_API_KEY ??
-      process.env.UNIVERSAL_KEY ??
-      process.env.UNIVERSAL_API_KEY ??
-      process.env.SONGBIRD_API_KEY,
+      process.env.UNIVERSAL_KEY,
     ELECTRON_BUILD: process.env.ELECTRON_BUILD,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
