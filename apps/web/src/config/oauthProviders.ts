@@ -18,6 +18,15 @@ const OAUTH_PROVIDERS = {
     buttonStyle:
       "bg-[#5865F2] text-white hover:brightness-110 active:brightness-95",
   },
+  github: {
+    name: "GitHub",
+    authSource: "nextauth",
+    action: {
+      kind: "signin",
+    } satisfies OAuthProviderAction,
+    buttonStyle:
+      "bg-[#171515] text-white hover:brightness-110 active:brightness-95",
+  },
 } as const;
 
 export type SupportedOAuthProviderId = keyof typeof OAUTH_PROVIDERS;
@@ -44,13 +53,14 @@ export const OAUTH_PROVIDER_BUTTON_STYLES: Record<
   string
 > = {
   discord: OAUTH_PROVIDERS.discord.buttonStyle,
+  github: OAUTH_PROVIDERS.github.buttonStyle,
 } as const;
 
 /**
  * Enabled providers based on environment configuration
  */
 export const ENABLED_OAUTH_PROVIDER_IDS: readonly SupportedOAuthProviderId[] =
-  ["discord"];
+  ["discord", "github"];
 
 const enabledProviderIds = new Set<SupportedOAuthProviderId>(
   ENABLED_OAUTH_PROVIDER_IDS,

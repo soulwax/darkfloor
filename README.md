@@ -80,6 +80,7 @@ cp .env.example .env
    - `AUTH_SECRET`
    - `AUTH_DISCORD_ID`
    - `AUTH_DISCORD_SECRET`
+   - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` if GitHub login should be enabled
    - `DATABASE_URL`
    - `API_V2_URL`
 
@@ -111,6 +112,7 @@ Common variables:
 | `AUTH_SECRET`                                               | required                              | NextAuth secret (min length enforced)                                                                                  |
 | `AUTH_DISCORD_ID`                                           | required                              | Discord OAuth client id                                                                                                |
 | `AUTH_DISCORD_SECRET`                                       | required                              | Discord OAuth client secret                                                                                            |
+| `AUTH_GITHUB_ID` + `AUTH_GITHUB_SECRET`                     | optional                              | GitHub OAuth credentials; when present, GitHub sign-in is enabled                                                     |
 | `DATABASE_URL`                                              | required at runtime                   | Postgres connection string                                                                                             |
 | `NEXTAUTH_URL`                                              | recommended                           | Canonical app/auth base URL                                                                                            |
 | `API_V2_URL`                                                | required for V2 proxy routes          | Upstream API base URL                                                                                                  |

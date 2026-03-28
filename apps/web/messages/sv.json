@@ -788,7 +788,7 @@
     "noProvidersAvailable": "Inga OAuth-leverantörer är tillgängliga just nu.",
     "spotifyCallbackLoading": "Laddar Spotify‑autentiseringscallback",
     "spotifyCallbackPreparing": "Förbereder Spotify‑autentiseringscallback...",
-    "spotifyDenied": "Spotify‑auktorisering nekades. Discord är nu den enda stödja inloggningsmetoden.",
+    "spotifyDenied": "Spotify-auktorisering nekades. Använd någon av de tillgängliga inloggningsmetoderna för att fortsätta.",
     "spotifyOAuthRemoved": "Spotify OAuth‑inloggning har tagits bort. Använd Discord för att logga in och konfigurera Spotify‑funktioner via Inställningar istället.",
     "spotifyConnectionFailed": "Spotify-spellistanslutningen kunde inte slutföras. Försök igen."
   },

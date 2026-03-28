@@ -35,7 +35,7 @@ vi.mock("next-intl", () => ({
       "auth.spotifyCallbackPreparing":
         "Preparing Spotify authentication callback...",
       "auth.spotifyDenied":
-        "Spotify authorization was denied. Discord is now the only supported sign-in method.",
+        "Spotify authorization was denied. Use one of the available sign-in methods to continue.",
       "auth.spotifyConnectionFailed":
         "Spotify playlist connection could not be completed. Try again.",
       "common.retry": "Try Again",
@@ -86,7 +86,7 @@ describe("SpotifyAuthCallbackPage", () => {
 
     expect(
       await screen.findByText(
-        "Spotify authorization was denied. Discord is now the only supported sign-in method.",
+        "Spotify authorization was denied. Use one of the available sign-in methods to continue.",
       ),
     ).toBeInTheDocument();
   });

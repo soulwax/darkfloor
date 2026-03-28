@@ -788,7 +788,7 @@
     "noProvidersAvailable": "Derzeit sind keine OAuth-Anbieter verfügbar.",
     "spotifyCallbackLoading": "Loading Spotify authentication callback",
     "spotifyCallbackPreparing": "Preparing Spotify authentication callback...",
-    "spotifyDenied": "Spotify authorization was denied. Discord is now the only supported sign-in method.",
+    "spotifyDenied": "Spotify authorization was denied. Use one of the available sign-in methods to continue.",
     "spotifyOAuthRemoved": "Spotify OAuth sign-in has been removed. Use Discord to sign in, and configure Spotify features from Settings instead.",
     "spotifyConnectionFailed": "Spotify playlist connection could not be completed. Try again."
   },

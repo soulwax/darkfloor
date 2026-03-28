@@ -13,6 +13,11 @@ import {
 } from "@starchild/auth";
 
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
+const TRACKED_OAUTH_PROVIDERS = new Set(["discord", "github", "spotify"]);
+
+function isTrackedOAuthProvider(provider: string | null): boolean {
+  return provider !== null && TRACKED_OAUTH_PROVIDERS.has(provider);
+}
 
 function parseAuthRoute(pathname: string): {
   action: string | null;
@@ -159,10 +164,7 @@ function logAuthRequest(request: Request): void {
       cookieKeys,
     });
 
-    if (
-      oauthVerboseDebugEnabled &&
-      (route.provider === "spotify" || route.provider === "discord")
-    ) {
+    if (oauthVerboseDebugEnabled && isTrackedOAuthProvider(route.provider)) {
       logAuthDebug("Incoming OAuth request (verbose)", {
         provider: route.provider,
         action: route.action,
@@ -175,7 +177,7 @@ function logAuthRequest(request: Request): void {
       });
     }
 
-    if (route.provider === "spotify" || route.provider === "discord") {
+    if (isTrackedOAuthProvider(route.provider)) {
       recordAuthFetchDumpEvent({
         label: `/api/auth/${route.provider}/${route.action ?? "unknown"}`,
         phase: "request",
@@ -219,10 +221,7 @@ function logAuthResponse(request: Request, response: Response): void {
     const url = new URL(request.url);
     const route = parseAuthRoute(url.pathname);
 
-    if (
-      oauthVerboseDebugEnabled &&
-      (route.provider === "spotify" || route.provider === "discord")
-    ) {
+    if (oauthVerboseDebugEnabled && isTrackedOAuthProvider(route.provider)) {
       logAuthDebug("Outgoing OAuth response (verbose)", {
         provider: route.provider,
         action: route.action,
@@ -232,7 +231,7 @@ function logAuthResponse(request: Request, response: Response): void {
       });
     }
 
-    if (route.provider === "spotify" || route.provider === "discord") {
+    if (isTrackedOAuthProvider(route.provider)) {
       recordAuthFetchDumpEvent({
         label: `/api/auth/${route.provider}/${route.action ?? "unknown"}`,
         phase: "response",
@@ -264,7 +263,7 @@ export async function GET(
     return response;
   } catch (error) {
     const route = parseAuthRoute(new URL(request.url).pathname);
-    if (route.provider === "spotify" || route.provider === "discord") {
+    if (isTrackedOAuthProvider(route.provider)) {
       recordAuthFetchDumpEvent({
         label: `/api/auth/${route.provider}/${route.action ?? "unknown"}`,
         phase: "error",
@@ -293,7 +292,7 @@ export async function POST(
     return response;
   } catch (error) {
     const route = parseAuthRoute(new URL(request.url).pathname);
-    if (route.provider === "spotify" || route.provider === "discord") {
+    if (isTrackedOAuthProvider(route.provider)) {
       recordAuthFetchDumpEvent({
         label: `/api/auth/${route.provider}/${route.action ?? "unknown"}`,
         phase: "error",

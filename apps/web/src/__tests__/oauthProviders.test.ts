@@ -7,7 +7,7 @@ describe("oauth provider config", () => {
     vi.resetModules();
   });
 
-  it("only exposes Discord in the OAuth provider UI list", async () => {
+  it("exposes configured Discord and GitHub providers in UI order", async () => {
     const { getEnabledOAuthUiProviders } =
       await import("@/config/oauthProviders");
 
@@ -18,11 +18,21 @@ describe("oauth provider config", () => {
           name: "Discord",
           type: "oauth",
         },
+        github: {
+          id: "github",
+          name: "GitHub",
+          type: "oauth",
+        },
       }),
     ).toEqual([
       {
         id: "discord",
         name: "Discord",
+        authSource: "nextauth",
+      },
+      {
+        id: "github",
+        name: "GitHub",
         authSource: "nextauth",
       },
     ]);
@@ -39,6 +49,11 @@ describe("oauth provider config", () => {
           name: "Discord",
           type: "oauth",
         },
+        github: {
+          id: "github",
+          name: "GitHub",
+          type: "oauth",
+        },
         spotify: {
           id: "spotify",
           name: "Spotify",
@@ -51,16 +66,25 @@ describe("oauth provider config", () => {
         name: "Discord",
         authSource: "nextauth",
       },
+      {
+        id: "github",
+        name: "GitHub",
+        authSource: "nextauth",
+      },
     ]);
   });
 
-  it("uses the default Discord CTA/action config", async () => {
+  it("uses the default CTA/action config for both supported providers", async () => {
     const { getOAuthProviderAction, getOAuthProviderCtaLabel } =
       await import("@/config/oauthProviders");
 
     expect(getOAuthProviderAction("discord")).toEqual({ kind: "signin" });
     expect(getOAuthProviderCtaLabel("discord", "Continue with Discord")).toBe(
       "Continue with Discord",
+    );
+    expect(getOAuthProviderAction("github")).toEqual({ kind: "signin" });
+    expect(getOAuthProviderCtaLabel("github", "Continue with GitHub")).toBe(
+      "Continue with GitHub",
     );
   });
 });

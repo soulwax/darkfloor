@@ -252,7 +252,7 @@ describe("Spotify music import route", () => {
         [{ request?: Request; pathname: string; method?: string; timeoutMs?: number }]
       >
     )[0]?.[0] as
-      | { request?: Request; pathname: string }
+      | { request?: Request; pathname: string; timeoutMs?: number }
       | undefined;
 
     expect(proxyArgs?.pathname).toBe("/spotify/playlists/import");

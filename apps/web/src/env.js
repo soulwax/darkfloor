@@ -14,6 +14,8 @@ export const env = createEnv({
       .transform((val) => val === "true"),
     AUTH_DISCORD_ID: z.string(),
     AUTH_DISCORD_SECRET: z.string(),
+    AUTH_GITHUB_ID: z.string().optional(),
+    AUTH_GITHUB_SECRET: z.string().optional(),
     AUTH_SPOTIFY_ENABLED: z
       .string()
       .optional()
@@ -61,6 +63,8 @@ export const env = createEnv({
     AUTH_TRUST_HOST: process.env.AUTH_TRUST_HOST,
     AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
     AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
+    AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
+    AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
     AUTH_SPOTIFY_ENABLED: process.env.AUTH_SPOTIFY_ENABLED,
     AUTH_DEBUG_OAUTH: process.env.AUTH_DEBUG_OAUTH,
     AUTH_DEBUG_TOKEN: process.env.AUTH_DEBUG_TOKEN,

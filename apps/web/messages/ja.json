@@ -788,7 +788,7 @@
     "noProvidersAvailable": "現在利用可能な OAuth プロバイダはありません。",
     "spotifyCallbackLoading": "Spotify 認証コールバックを読み込み中",
     "spotifyCallbackPreparing": "Spotify 認証コールバックを準備中...",
-    "spotifyDenied": "Spotify 認可が拒否されました。現在、サインイン方法としてサポートされているのは Discord のみです。",
+    "spotifyDenied": "Spotify 認可が拒否されました。利用可能なサインイン方法のいずれかを使って続行してください。",
     "spotifyOAuthRemoved": "Spotify OAuth サインインは廃止されました。サインインには Discord を使用し、Spotify 機能の設定は「設定」から行ってください。",
     "spotifyConnectionFailed": "Spotify プレイリスト接続を完了できませんでした。もう一度お試しください。"
   },

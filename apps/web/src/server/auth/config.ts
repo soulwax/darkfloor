@@ -4,6 +4,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { and, eq, sql } from "drizzle-orm";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
+import GitHubProvider from "next-auth/providers/github";
 
 import { env } from "@/env";
 import { db } from "@/server/db";
@@ -45,6 +46,104 @@ declare module "next-auth" {
 const authDebugEnabled = isAuthDebugEnabled();
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
 const configuredProviders = ["discord"];
+const oauthProviders: NonNullable<NextAuthConfig["providers"]> = [
+  DiscordProvider({
+    clientId: env.AUTH_DISCORD_ID,
+    clientSecret: env.AUTH_DISCORD_SECRET,
+    profile(rawProfile) {
+      const profile = rawProfile as {
+        id: string;
+        username?: string;
+        global_name?: string | null;
+        email?: string | null;
+        avatar?: string | null;
+        discriminator?: string;
+      };
+
+      const displayName =
+        profile.global_name ?? profile.username ?? "Discord User";
+      const fallbackEmail = `discord-${profile.id}@users.darkfloor.invalid`;
+
+      let image: string | null = null;
+      if (profile.avatar === null) {
+        const defaultAvatarNumber =
+          profile.discriminator === "0"
+            ? Number(BigInt(profile.id) >> BigInt(22)) % 6
+            : parseInt(profile.discriminator ?? "0", 10) % 5;
+        image = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarNumber}.png`;
+      } else if (
+        typeof profile.avatar === "string" &&
+        profile.avatar.length > 0
+      ) {
+        const format = profile.avatar.startsWith("a_") ? "gif" : "png";
+        image = `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${format}`;
+      }
+
+      if (!profile.email) {
+        logAuthWarn(
+          "Discord OAuth profile missing email; using fallback email",
+          {
+            profileIdHash: hashForLog(profile.id),
+            username: profile.username ?? null,
+          },
+        );
+      }
+
+      return {
+        id: profile.id,
+        name: displayName,
+        email: profile.email ?? fallbackEmail,
+        image,
+      };
+    },
+  }),
+];
+
+if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
+  configuredProviders.push("github");
+  oauthProviders.push(
+    GitHubProvider({
+      clientId: env.AUTH_GITHUB_ID,
+      clientSecret: env.AUTH_GITHUB_SECRET,
+      profile(rawProfile) {
+        const profile = rawProfile as {
+          id: number | string;
+          login?: string;
+          name?: string | null;
+          email?: string | null;
+          avatar_url?: string | null;
+        };
+
+        const profileId = String(profile.id);
+        const trimmedName = profile.name?.trim();
+        const displayName =
+          trimmedName && trimmedName.length > 0
+            ? trimmedName
+            : (profile.login ?? "GitHub User");
+        const fallbackEmail = `github-${profileId}@users.darkfloor.invalid`;
+
+        if (!profile.email) {
+          logAuthWarn("GitHub OAuth profile missing email; using fallback email", {
+            profileIdHash: hashForLog(profileId),
+            username: profile.login ?? null,
+          });
+        }
+
+        return {
+          id: profileId,
+          name: displayName,
+          email: profile.email ?? fallbackEmail,
+          image: profile.avatar_url ?? null,
+        };
+      },
+    }),
+  );
+} else if (env.AUTH_GITHUB_ID || env.AUTH_GITHUB_SECRET) {
+  logAuthWarn("GitHub provider disabled because credentials are incomplete", {
+    hasClientId: Boolean(env.AUTH_GITHUB_ID),
+    hasClientSecret: Boolean(env.AUTH_GITHUB_SECRET),
+  });
+}
 
 logAuthInfo("NextAuth config bootstrap", {
   authDebugEnabled,
@@ -60,7 +159,7 @@ logAuthInfo("NextAuth config bootstrap", {
 if (env.AUTH_SPOTIFY_ENABLED || env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED) {
   logAuthWarn("Spotify OAuth sign-in is disabled in the web runtime", {
     impact:
-      "Discord is now the only supported OAuth login method. Spotify features should be configured from Settings instead of Auth.js.",
+      "Spotify features should be configured from Settings instead of Auth.js. Web OAuth sign-in is handled by the configured NextAuth providers.",
   });
 }
 
@@ -74,58 +173,7 @@ export const authConfig = {
   debug: authDebugEnabled,
   basePath: "/api/auth",
   pages: { signIn: "/signin" },
-  providers: [
-    DiscordProvider({
-      clientId: env.AUTH_DISCORD_ID,
-      clientSecret: env.AUTH_DISCORD_SECRET,
-      profile(rawProfile) {
-        const profile = rawProfile as {
-          id: string;
-          username?: string;
-          global_name?: string | null;
-          email?: string | null;
-          avatar?: string | null;
-          discriminator?: string;
-        };
-
-        const displayName =
-          profile.global_name ?? profile.username ?? "Discord User";
-        const fallbackEmail = `discord-${profile.id}@users.darkfloor.invalid`;
-
-        let image: string | null = null;
-        if (profile.avatar === null) {
-          const defaultAvatarNumber =
-            profile.discriminator === "0"
-              ? Number(BigInt(profile.id) >> BigInt(22)) % 6
-              : parseInt(profile.discriminator ?? "0", 10) % 5;
-          image = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarNumber}.png`;
-        } else if (
-          typeof profile.avatar === "string" &&
-          profile.avatar.length > 0
-        ) {
-          const format = profile.avatar.startsWith("a_") ? "gif" : "png";
-          image = `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${format}`;
-        }
-
-        if (!profile.email) {
-          logAuthWarn(
-            "Discord OAuth profile missing email; using fallback email",
-            {
-              profileIdHash: hashForLog(profile.id),
-              username: profile.username ?? null,
-            },
-          );
-        }
-
-        return {
-          id: profile.id,
-          name: displayName,
-          email: profile.email ?? fallbackEmail,
-          image,
-        };
-      },
-    }),
-  ],
+  providers: oauthProviders,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,

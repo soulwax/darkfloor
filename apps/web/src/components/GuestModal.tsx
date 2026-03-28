@@ -10,11 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuthModal } from "@/contexts/AuthModalContext";
 import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { localStorage as appStorage } from "@/services/storage";
-import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { parsePreferredGenreId } from "@/utils/genre";
 import { settingsStorage } from "@/utils/settingsStorage";
 import {
@@ -27,7 +27,6 @@ import {
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { ChevronDown, Music2, X } from "lucide-react";
-import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -136,6 +135,7 @@ export function GuestModal({
   onContinueAsGuest,
   callbackUrl = "/library",
 }: GuestModalProps) {
+  const { openAuthModal } = useAuthModal();
   const t = useTranslations("guest");
   const {
     isPending: isLocaleSwitchPending,
@@ -706,11 +706,7 @@ export function GuestModal({
             <div className="space-y-2 pb-1">
               <button
                 type="button"
-                onClick={() =>
-                  void signIn("discord", {
-                    callbackUrl: buildAuthCallbackUrl(callbackUrl, "discord"),
-                  })
-                }
+                onClick={() => openAuthModal({ callbackUrl })}
                 className="h-12 w-full rounded-xl bg-[linear-gradient(135deg,#5865F2,#7480ff)] px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:brightness-110 active:brightness-95 sm:text-sm"
               >
                 {t("signInToSync")}

@@ -15,6 +15,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 const AUTH_CALLBACK_TIMEOUT_MS = 20_000;
 const OAUTH_PROVIDER_FALLBACK_NAMES: Record<string, string> = {
   discord: "Discord",
+  github: "GitHub",
   spotify: "Spotify",
 };
 
@@ -55,7 +56,7 @@ function AuthCallbackContent() {
       return getOAuthProviderDisplayName(providerId);
     }
     return OAUTH_PROVIDER_FALLBACK_NAMES[providerId] ?? providerId;
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const targetPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
