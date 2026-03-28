@@ -108,5 +108,5 @@ node_modules/
 /playwright/.auth/
 
 # local submodules / linked repos
-api
+/api
 
