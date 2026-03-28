@@ -3,6 +3,7 @@
 # dependencies
 
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 
@@ -109,4 +110,3 @@ node_modules/
 
 # local submodules / linked repos
 /api
-
