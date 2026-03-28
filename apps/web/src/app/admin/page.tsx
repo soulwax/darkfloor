@@ -553,6 +553,13 @@ function getErrorMessageFromPayload(payload: unknown): string | null {
   return message;
 }
 
+function isMissingAuthDebugTokenError(payload: unknown): boolean {
+  const message = getErrorMessageFromPayload(payload);
+  if (!message) return false;
+
+  return /AUTH_DEBUG_TOKEN/i.test(message);
+}
+
 function toPreviewText(rawText: string): string {
   if (!rawText.trim()) return "(empty)";
 
@@ -916,6 +923,10 @@ export default function AdminPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 503 && isMissingAuthDebugTokenError(parsedPayload)) {
+          return;
+        }
+
         showToast(
           getErrorMessageFromPayload(parsedPayload) ??
             `Upstream OAuth debug request failed (${response.status})`,

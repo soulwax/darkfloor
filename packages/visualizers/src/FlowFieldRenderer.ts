@@ -40,16 +40,26 @@ interface TransitionParticle {
   y: number;
   vx: number;
   vy: number;
+  targetX: number;
+  targetY: number;
+  targetVx: number;
+  targetVy: number;
   size: number;
+  targetSize: number;
   r: number;
   g: number;
   b: number;
+  targetR: number;
+  targetG: number;
+  targetB: number;
   alpha: number;
+  targetAlpha: number;
   life: number;
   maxLife: number;
   rotation: number;
   rotationSpeed: number;
   drag: number;
+  seed: number;
 }
 
 export class FlowFieldRenderer {
@@ -3010,11 +3020,12 @@ export class FlowFieldRenderer {
 
     if (this.isTransitioning) {
       const t = this.transitionProgress;
-
-      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const eased = t * t * t * (t * (t * 6 - 15) + 10);
+      const outgoingAlpha = Math.max(0, 1 - eased * 0.9);
+      const incomingAlpha = Math.min(1, 0.08 + eased * 0.92);
 
       ctx.save();
-      ctx.globalAlpha = 1 - eased;
+      ctx.globalAlpha = outgoingAlpha;
       this.renderPattern(
         this.currentPattern,
         audioIntensity,
@@ -3025,7 +3036,7 @@ export class FlowFieldRenderer {
       ctx.restore();
 
       ctx.save();
-      ctx.globalAlpha = eased;
+      ctx.globalAlpha = incomingAlpha;
       this.renderPattern(
         this.nextPattern,
         audioIntensity,
@@ -3070,7 +3081,7 @@ export class FlowFieldRenderer {
     }
 
     this.currentPattern = displayedPattern;
-    this.captureTransitionParticles();
+    this.captureTransitionParticles(pattern);
     this.nextPattern = pattern;
     this.isTransitioning = true;
     this.transitionProgress = 0;
@@ -3082,13 +3093,189 @@ export class FlowFieldRenderer {
     );
   }
 
-  private captureTransitionParticles(): void {
+  private getPatternTransitionFamily(pattern: Pattern): number {
+    switch (pattern) {
+      case "rays":
+      case "starfield":
+      case "galaxy":
+      case "portal":
+      case "vortexSpiral":
+      case "tunnel":
+      case "phoenix":
+        return 0;
+      case "rings":
+      case "mandala":
+      case "flowerOfLife":
+      case "metatron":
+      case "sriYantra":
+      case "merkaba":
+      case "moonPhases":
+      case "astrolabe":
+      case "chakras":
+        return 1;
+      case "matrix":
+      case "hexgrid":
+      case "labyrinth":
+      case "runes":
+      case "runicSpiral":
+      case "sigils":
+      case "kabbalah":
+      case "tarot":
+      case "crystalGrid":
+        return 2;
+      case "waves":
+      case "dna":
+      case "serpent":
+      case "fluid":
+      case "cosmicWeb":
+      case "ouroboros":
+      case "celestial":
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  private getPatternTransitionTarget(
+    pattern: Pattern,
+    index: number,
+    seed: number,
+  ): {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    r: number;
+    g: number;
+    b: number;
+    alpha: number;
+  } {
+    const family = this.getPatternTransitionFamily(pattern);
+    const minDimension = Math.min(this.width, this.height);
+    const maxDimension = Math.max(this.width, this.height);
+    const phi = seed * 12.9898 + index * 0.61803398875;
+    const angle = phi * FlowFieldRenderer.TWO_PI;
+    const secondaryAngle =
+      ((seed * 0.37 + index * 0.11 + family * 0.17) % 1) *
+      FlowFieldRenderer.TWO_PI;
+    const baseHue = this.fastMod360(
+      this.hueBase + family * 48 + (seed * 360 + index * 7.5),
+    );
+    const rgb = this.cachedHslToRgb(
+      baseHue / 360,
+      0.78 + ((seed * 0.19) % 0.18),
+      0.54 + ((seed * 0.31) % 0.18),
+    );
+    let x = this.centerX;
+    let y = this.centerY;
+    let vx = 0;
+    let vy = 0;
+    let size = 1.6 + ((seed * 7.1) % 1.6);
+    let alpha = 0.34 + ((seed * 0.43) % 0.28);
+
+    switch (family) {
+      case 0: {
+        const radius = minDimension * (0.1 + ((seed * 1.7) % 0.48));
+        const swirl = 0.12 + ((seed * 2.1) % 0.16);
+        x = this.centerX + Math.cos(angle) * radius;
+        y = this.centerY + Math.sin(angle) * radius;
+        vx = -Math.sin(angle) * swirl * maxDimension * 0.01;
+        vy = Math.cos(angle) * swirl * maxDimension * 0.01;
+        size += 0.7;
+        alpha += 0.08;
+        break;
+      }
+      case 1: {
+        const ringCount = 3 + (index % 4);
+        const ring = 1 + (index % ringCount);
+        const radius = (minDimension * 0.1 * ring) / ringCount + seed * 10;
+        x = this.centerX + Math.cos(angle) * radius;
+        y = this.centerY + Math.sin(angle) * radius;
+        vx = Math.cos(secondaryAngle) * 0.3;
+        vy = Math.sin(secondaryAngle) * 0.3;
+        size += 0.4;
+        break;
+      }
+      case 2: {
+        const cols = Math.max(6, Math.round(this.width / 110));
+        const rows = Math.max(4, Math.round(this.height / 110));
+        const cellX = this.width / cols;
+        const cellY = this.height / rows;
+        const gridX = index % cols;
+        const gridY = Math.floor(index / cols) % rows;
+        x = (gridX + 0.5) * cellX + Math.cos(angle) * cellX * 0.18;
+        y = (gridY + 0.5) * cellY + Math.sin(angle) * cellY * 0.18;
+        vx = Math.cos(angle) * 0.22;
+        vy = Math.sin(angle) * 0.22;
+        size -= 0.15;
+        alpha -= 0.06;
+        break;
+      }
+      case 3: {
+        const spanX = this.width * (0.28 + ((seed * 0.61) % 0.28));
+        const spanY = this.height * (0.18 + ((seed * 0.47) % 0.24));
+        const wave = Math.sin(angle * 2 + seed * 8);
+        x = this.centerX + Math.cos(angle) * spanX * 0.52;
+        y = this.centerY + Math.sin(angle * 2) * spanY * 0.42 + wave * 18;
+        vx = Math.cos(angle + Math.PI / 2) * 0.45;
+        vy = Math.sin(angle * 2 + Math.PI / 2) * 0.32;
+        alpha += 0.03;
+        break;
+      }
+      default: {
+        const radius = minDimension * (0.12 + ((seed * 1.13) % 0.42));
+        x = this.centerX + Math.cos(angle) * radius;
+        y = this.centerY + Math.sin(secondaryAngle) * radius * 0.7;
+        vx = Math.cos(secondaryAngle) * 0.28;
+        vy = Math.sin(angle) * 0.28;
+        break;
+      }
+    }
+
+    return {
+      x,
+      y,
+      vx,
+      vy,
+      size,
+      r: rgb[0] ?? 255,
+      g: rgb[1] ?? 255,
+      b: rgb[2] ?? 255,
+      alpha,
+    };
+  }
+
+  private retargetTransitionParticle(
+    particle: TransitionParticle,
+    pattern: Pattern,
+    index: number,
+  ): void {
+    const target = this.getPatternTransitionTarget(pattern, index, particle.seed);
+    particle.targetX = target.x;
+    particle.targetY = target.y;
+    particle.targetVx = target.vx;
+    particle.targetVy = target.vy;
+    particle.targetSize = target.size;
+    particle.targetR = target.r;
+    particle.targetG = target.g;
+    particle.targetB = target.b;
+    particle.targetAlpha = target.alpha;
+  }
+
+  private captureTransitionParticles(targetPattern: Pattern): void {
     if (this.width <= 0 || this.height <= 0) return;
 
     try {
       const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
       const data = imageData.data;
-      const nextParticles: TransitionParticle[] = [];
+      const nextParticles = this.transitionParticles
+        .slice(0, Math.max(120, Math.min(360, ((this.width * this.height) / 4200) | 0)))
+        .map((particle) => ({
+          ...particle,
+          life: Math.max(particle.life, 34 + Math.random() * 16),
+          maxLife: Math.max(particle.maxLife, 48 + Math.random() * 20),
+        }));
       const maxParticles = Math.max(
         120,
         Math.min(360, ((this.width * this.height) / 4200) | 0),
@@ -3132,18 +3319,34 @@ export class FlowFieldRenderer {
             y,
             vx: tangentX * swirlForce + (dx / this.width) * inwardForce,
             vy: tangentY * swirlForce + (dy / this.height) * inwardForce,
+            targetX: x,
+            targetY: y,
+            targetVx: 0,
+            targetVy: 0,
             size: 1 + brightness * 2.4 + Math.random() * 1.5,
+            targetSize: 1 + brightness * 2.4 + Math.random() * 1.5,
             r,
             g,
             b,
+            targetR: r,
+            targetG: g,
+            targetB: b,
             alpha: Math.min(1, alpha * (0.6 + brightness * 0.8)),
+            targetAlpha: Math.min(1, alpha * (0.6 + brightness * 0.8)),
             life: 28 + Math.random() * 26,
             maxLife: 28 + Math.random() * 26,
             rotation: Math.random() * FlowFieldRenderer.TWO_PI,
             rotationSpeed: (Math.random() - 0.5) * 0.12,
             drag: 0.965 + Math.random() * 0.02,
+            seed: Math.random(),
           });
         }
+      }
+
+      for (let i = 0; i < nextParticles.length; i++) {
+        const particle = nextParticles[i];
+        if (!particle) continue;
+        this.retargetTransitionParticle(particle, targetPattern, i);
       }
 
       this.transitionParticles = nextParticles;
@@ -3157,6 +3360,7 @@ export class FlowFieldRenderer {
     if (this.transitionParticles.length === 0) return;
 
     const ctx = this.ctx;
+    const transitionBlend = this.isTransitioning ? this.transitionProgress : 1;
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -3167,7 +3371,9 @@ export class FlowFieldRenderer {
 
       const previousX = particle.x;
       const previousY = particle.y;
-      const lifeStep = 1.1 + audioIntensity * 0.55;
+      const lifeStep = this.isTransitioning
+        ? 0.42 + audioIntensity * 0.18
+        : 0.78 + audioIntensity * 0.32;
       particle.life -= lifeStep;
 
       if (particle.life <= 0) {
@@ -3176,18 +3382,40 @@ export class FlowFieldRenderer {
       }
 
       const lifeProgress = particle.life / particle.maxLife;
-      const pullX = this.centerX - particle.x;
-      const pullY = this.centerY - particle.y;
-      particle.vx += pullX * 0.00028 * (0.5 + audioIntensity * 0.5);
-      particle.vy += pullY * 0.00028 * (0.5 + audioIntensity * 0.5);
+      const settleStrength =
+        0.012 + transitionBlend * 0.038 + audioIntensity * 0.006;
+      particle.vx += (particle.targetX - particle.x) * settleStrength;
+      particle.vy += (particle.targetY - particle.y) * settleStrength;
+      particle.vx +=
+        (particle.targetVx - particle.vx) *
+        (0.035 + transitionBlend * 0.04);
+      particle.vy +=
+        (particle.targetVy - particle.vy) *
+        (0.035 + transitionBlend * 0.04);
       particle.vx *= particle.drag;
       particle.vy *= particle.drag;
       particle.x += particle.vx;
       particle.y += particle.vy;
       particle.rotation += particle.rotationSpeed;
 
-      const alpha = particle.alpha * lifeProgress * lifeProgress;
-      const size = particle.size * (0.78 + lifeProgress * 0.42);
+      const colorLerp = 0.08 + transitionBlend * 0.08;
+      particle.r += (particle.targetR - particle.r) * colorLerp;
+      particle.g += (particle.targetG - particle.g) * colorLerp;
+      particle.b += (particle.targetB - particle.b) * colorLerp;
+      particle.alpha += (particle.targetAlpha - particle.alpha) * colorLerp;
+      particle.size += (particle.targetSize - particle.size) * colorLerp;
+
+      const settleDistance = Math.hypot(
+        particle.targetX - particle.x,
+        particle.targetY - particle.y,
+      );
+      const settleAlpha = Math.max(0.18, 1 - settleDistance / this.width);
+      const alpha =
+        particle.alpha *
+        lifeProgress *
+        (0.58 + transitionBlend * 0.42) *
+        settleAlpha;
+      const size = particle.size * (0.82 + transitionBlend * 0.28);
 
       ctx.strokeStyle = `rgba(${particle.r}, ${particle.g}, ${particle.b}, ${alpha * 0.75})`;
       ctx.lineWidth = Math.max(0.75, size * 0.55);
