@@ -45,6 +45,10 @@ export type EnabledOAuthUiProvider = {
   authSource: OAuthProviderAuthSource;
 };
 
+const SUPPORTED_OAUTH_PROVIDER_IDS = Object.keys(
+  OAUTH_PROVIDERS,
+) as SupportedOAuthProviderId[];
+
 /**
  * Button styles mapped by provider ID (derived from OAUTH_PROVIDERS)
  */
@@ -72,8 +76,8 @@ export const ENABLED_OAUTH_PROVIDER_IDS: readonly SupportedOAuthProviderId[] =
 
     return providers;
   })();
-const enabledProviderIds = new Set<SupportedOAuthProviderId>(
-  ENABLED_OAUTH_PROVIDER_IDS,
+const supportedProviderIds = new Set<SupportedOAuthProviderId>(
+  SUPPORTED_OAUTH_PROVIDER_IDS,
 );
 
 /**
@@ -82,7 +86,7 @@ const enabledProviderIds = new Set<SupportedOAuthProviderId>(
 export function isEnabledOAuthProviderId(
   providerId: string,
 ): providerId is SupportedOAuthProviderId {
-  return enabledProviderIds.has(providerId as SupportedOAuthProviderId);
+  return supportedProviderIds.has(providerId as SupportedOAuthProviderId);
 }
 
 /**
@@ -99,7 +103,7 @@ export function getEnabledOAuthUiProviders(
 ): EnabledOAuthUiProvider[] {
   if (!providers) return [];
 
-  return ENABLED_OAUTH_PROVIDER_IDS.flatMap((providerId) => {
+  return SUPPORTED_OAUTH_PROVIDER_IDS.flatMap((providerId) => {
     const provider = providers[providerId];
     if (!provider || !isEnabledOAuthProvider(provider)) return [];
 

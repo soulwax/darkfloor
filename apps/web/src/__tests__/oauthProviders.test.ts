@@ -38,6 +38,55 @@ describe("oauth provider config", () => {
     ]);
   });
 
+  it("shows GitHub in the UI when Auth.js reports it, even without browser-visible env vars", async () => {
+    const previousGithubId = process.env.AUTH_GITHUB_ID;
+    const previousGithubSecret = process.env.AUTH_GITHUB_SECRET;
+    delete process.env.AUTH_GITHUB_ID;
+    delete process.env.AUTH_GITHUB_SECRET;
+
+    vi.resetModules();
+    const { getEnabledOAuthUiProviders } =
+      await import("@/config/oauthProviders");
+
+    expect(
+      getEnabledOAuthUiProviders({
+        discord: {
+          id: "discord",
+          name: "Discord",
+          type: "oauth",
+        },
+        github: {
+          id: "github",
+          name: "GitHub",
+          type: "oauth",
+        },
+      }),
+    ).toEqual([
+      {
+        id: "discord",
+        name: "Discord",
+        authSource: "nextauth",
+      },
+      {
+        id: "github",
+        name: "GitHub",
+        authSource: "nextauth",
+      },
+    ]);
+
+    if (previousGithubId === undefined) {
+      delete process.env.AUTH_GITHUB_ID;
+    } else {
+      process.env.AUTH_GITHUB_ID = previousGithubId;
+    }
+
+    if (previousGithubSecret === undefined) {
+      delete process.env.AUTH_GITHUB_SECRET;
+    } else {
+      process.env.AUTH_GITHUB_SECRET = previousGithubSecret;
+    }
+  });
+
   it("ignores Spotify even if Auth.js reports it at runtime", async () => {
     const { getEnabledOAuthUiProviders } =
       await import("@/config/oauthProviders");
