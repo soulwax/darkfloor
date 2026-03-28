@@ -228,14 +228,7 @@ async function resolveOrCreateLocalUser(
   const byBackendId = await db.query.users.findFirst({
     where: eq(users.id, backendUserId),
   });
-  const byEmail =
-    !byBackendId && profile.emailVerified
-      ? await db.query.users.findFirst({
-          where: eq(users.email, email),
-        })
-      : null;
-
-  const existingUser = byBackendId ?? byEmail;
+  const existingUser = byBackendId;
   if (existingUser) {
     const updates: Partial<typeof users.$inferInsert> = {};
     if (profile.emailVerified && email !== existingUser.email) {

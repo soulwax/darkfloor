@@ -116,7 +116,7 @@ describe("Spotify auth proxy routes", () => {
     );
   });
 
-  it("bootstraps a local Auth.js session from backend-managed bearer auth", async () => {
+  it("creates a distinct local Auth.js user even when another verified email matches", async () => {
     vi.resetModules();
     vi.doMock("@/env", () => ({
       env: {
@@ -128,18 +128,23 @@ describe("Spotify auth proxy routes", () => {
       .fn()
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
-        id: "local-user-1",
-        email: "user@example.com",
-        name: "Existing User",
-        image: null,
-      })
-      .mockResolvedValueOnce({
         banned: false,
       });
-    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
-    const insert = vi.fn().mockReturnValue({
-      values: insertSessionValues,
+    const createUserReturning = vi
+      .fn()
+      .mockResolvedValue([{ id: "backend-user-1" }]);
+    const createUserValues = vi.fn().mockReturnValue({
+      returning: createUserReturning,
     });
+    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
+    const insert = vi
+      .fn()
+      .mockReturnValueOnce({
+        values: createUserValues,
+      })
+      .mockReturnValueOnce({
+        values: insertSessionValues,
+      });
 
     vi.doMock("@/server/db", () => ({
       db: {
@@ -189,8 +194,20 @@ describe("Spotify auth proxy routes", () => {
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(body.userId).toBe("local-user-1");
-    expect(findFirst).toHaveBeenCalledTimes(3);
+    expect(body.userId).toBe("backend-user-1");
+    expect(findFirst).toHaveBeenCalledTimes(2);
+    const createdUserPayload = createUserValues.mock.calls[0]?.[0] as
+      | {
+          id?: string;
+          email?: string;
+          emailVerified?: Date | null;
+          name?: string | null;
+        }
+      | undefined;
+    expect(createdUserPayload?.id).toBe("backend-user-1");
+    expect(createdUserPayload?.email).toBe("user@example.com");
+    expect(createdUserPayload?.emailVerified).toBeInstanceOf(Date);
+    expect(createdUserPayload?.name).toBe("Existing User");
 
     const setCookie = response.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("__Secure-authjs.session-token=");
@@ -200,7 +217,7 @@ describe("Spotify auth proxy routes", () => {
     const sessionInsertCall = insertSessionValues.mock.calls[0]?.[0] as
       | { userId?: string }
       | undefined;
-    expect(sessionInsertCall?.userId).toBe("local-user-1");
+    expect(sessionInsertCall?.userId).toBe("backend-user-1");
   });
 
   it("rejects banned users before creating a local Auth.js session", async () => {
@@ -224,10 +241,21 @@ describe("Spotify auth proxy routes", () => {
       .mockResolvedValueOnce({
         banned: true,
       });
-    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
-    const insert = vi.fn().mockReturnValue({
-      values: insertSessionValues,
+    const createUserReturning = vi
+      .fn()
+      .mockResolvedValue([{ id: "backend-user-1" }]);
+    const createUserValues = vi.fn().mockReturnValue({
+      returning: createUserReturning,
     });
+    const insertSessionValues = vi.fn().mockResolvedValue(undefined);
+    const insert = vi
+      .fn()
+      .mockReturnValueOnce({
+        values: createUserValues,
+      })
+      .mockReturnValueOnce({
+        values: insertSessionValues,
+      });
 
     vi.doMock("@/server/db", () => ({
       db: {
@@ -278,6 +306,12 @@ describe("Spotify auth proxy routes", () => {
     expect(response.status).toBe(403);
     expect(body.ok).toBe(false);
     expect(body.error).toMatch(/banned/i);
+    expect(createUserValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "backend-user-1",
+        email: "user@example.com",
+      }),
+    );
     expect(insertSessionValues).not.toHaveBeenCalled();
     expect(response.headers.get("set-cookie")).toBeNull();
   });
