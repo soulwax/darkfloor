@@ -14,25 +14,9 @@ import {
 
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
 const TRACKED_OAUTH_PROVIDERS = new Set(["discord", "github", "spotify"]);
-const AUTH_SESSION_COOKIE_NAMES = [
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
-  "next-auth.session-token",
-  "__Secure-next-auth.session-token",
-] as const;
 
 function isTrackedOAuthProvider(provider: string | null): boolean {
   return provider !== null && TRACKED_OAUTH_PROVIDERS.has(provider);
-}
-
-function shouldForceFreshOAuthSession(route: {
-  action: string | null;
-  provider: string | null;
-}): boolean {
-  return (
-    isTrackedOAuthProvider(route.provider) &&
-    (route.action === "signin" || route.action === "callback")
-  );
 }
 
 function parseAuthRoute(pathname: string): {
@@ -142,25 +126,6 @@ function redactSetCookieHeader(setCookieHeader: string | null): string[] {
         : firstPart;
     })
     .filter(Boolean);
-}
-
-function appendExpiredSessionCookies(response: Response): void {
-  for (const cookieName of AUTH_SESSION_COOKIE_NAMES) {
-    const directives = [
-      `${cookieName}=`,
-      "Path=/",
-      "HttpOnly",
-      "SameSite=Lax",
-      "Max-Age=0",
-      "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
-    ];
-
-    if (cookieName.startsWith("__Secure-")) {
-      directives.push("Secure");
-    }
-
-    response.headers.append("set-cookie", directives.join("; "));
-  }
 }
 
 function logAuthRequest(request: Request): void {
@@ -295,9 +260,6 @@ export async function GET(
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
     const response = await handlers.GET(request);
-    if (shouldForceFreshOAuthSession(route)) {
-      appendExpiredSessionCookies(response);
-    }
     logAuthResponse(request, response);
     return response;
   } catch (error) {
@@ -327,9 +289,6 @@ export async function POST(
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
     const response = await handlers.POST(request);
-    if (shouldForceFreshOAuthSession(route)) {
-      appendExpiredSessionCookies(response);
-    }
     logAuthResponse(request, response);
     return response;
   } catch (error) {
