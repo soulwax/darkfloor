@@ -11,6 +11,8 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 90;
+const SPOTIFY_IMPORT_PROXY_TIMEOUT_MS = 90_000;
 
 const spotifyImportSourceTrackSchema = z.object({
   index: z.number().int().nonnegative(),
@@ -295,14 +297,17 @@ async function createLocalPlaylistFromSpotifyImport(input: {
 }): Promise<{ id: number; name: string }> {
   const { payload, translation, userId } = input;
   const playlistName =
-    payload.nameOverride?.trim() ||
-    payload.sourcePlaylist?.name?.trim() ||
-    translation.playlist?.name?.trim() ||
-    translation.importReport.sourcePlaylistName;
+    coalesceString(
+      payload.nameOverride,
+      payload.sourcePlaylist?.name,
+      translation.playlist?.name,
+      translation.importReport.sourcePlaylistName,
+    ) ?? "Imported Spotify Playlist";
   const playlistDescription =
-    payload.descriptionOverride?.trim() ||
-    payload.sourcePlaylist?.description?.trim() ||
-    "Imported from Spotify";
+    coalesceString(
+      payload.descriptionOverride,
+      payload.sourcePlaylist?.description,
+    ) ?? "Imported from Spotify";
   const coverImage =
     payload.sourcePlaylist?.imageUrl?.trim() ??
     translation.matchedTracks[0]?.deezerTrack.album?.cover_medium ??
@@ -433,7 +438,7 @@ export async function POST(request: NextRequest) {
     pathname: "/spotify/playlists/import",
     request: upstreamRequest,
     method: "POST",
-    timeoutMs: 30000,
+    timeoutMs: SPOTIFY_IMPORT_PROXY_TIMEOUT_MS,
   });
 
   if (!upstreamResponse.ok) {

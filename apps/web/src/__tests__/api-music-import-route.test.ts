@@ -256,6 +256,7 @@ describe("Spotify music import route", () => {
       | undefined;
 
     expect(proxyArgs?.pathname).toBe("/spotify/playlists/import");
+    expect(proxyArgs?.timeoutMs).toBe(90_000);
     expect(proxyArgs?.request?.headers.get("authorization")).toBe(
       "Bearer service-token-1",
     );
@@ -315,15 +316,18 @@ describe("Spotify music import route", () => {
           trackId: 101,
           deezerId: 101,
           position: 0,
-          trackData: expect.objectContaining({
-            id: 101,
-            title: "Track One",
-            deezer_id: 101,
-            spotify_id: "spotify-track-1",
-          }),
         }),
       ],
     ]);
+    const firstInsertedTrack = (
+      insertedTrackRows[0] as Array<{ trackData: Record<string, unknown> }>
+    )[0];
+    expect(firstInsertedTrack?.trackData).toMatchObject({
+      id: 101,
+      title: "Track One",
+      deezer_id: 101,
+      spotify_id: "spotify-track-1",
+    });
   });
 
   it("preserves caller authorization when proxying upstream imports", async () => {
@@ -408,6 +412,20 @@ describe("Spotify music import route", () => {
     )[0]?.[0] as
       | { request?: Request }
       | undefined;
+    expect(
+      (
+        proxyApiV2.mock.calls as unknown as Array<
+          [
+            {
+              request?: Request;
+              pathname?: string;
+              method?: string;
+              timeoutMs?: number;
+            },
+          ]
+        >
+      )[0]?.[0]?.timeoutMs,
+    ).toBe(90_000);
     expect(proxyArgs?.request?.headers.get("authorization")).toBe(
       "Bearer app-token-1",
     );
