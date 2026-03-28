@@ -298,14 +298,8 @@ export default function PersistentPlayer() {
             </div>
           </button>
 
-          <div
-            className="pointer-events-none fixed bottom-0 z-50 px-4 pb-4"
-            style={{
-              left: "var(--electron-sidebar-width, 0px)",
-              right: "var(--desktop-right-rail-width, 0px)",
-            }}
-          >
-            <div className="player-backdrop pointer-events-auto mx-auto max-w-[56rem] overflow-hidden rounded-[1.35rem] xl:max-w-[60rem]">
+          <div className="pointer-events-none fixed bottom-0 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem]">
+            <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.35rem]">
               <div className="player-backdrop-inner">
                 <MaturePlayer {...playerProps} />
               </div>
