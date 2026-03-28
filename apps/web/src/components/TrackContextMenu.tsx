@@ -25,6 +25,7 @@ import { useWebShare } from "@/hooks/useWebShare";
 import { api } from "@starchild/api-client/trpc/react";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 
@@ -44,6 +45,7 @@ export function TrackContextMenu() {
   const t = useTranslations("trackMenu");
   const tc = useTranslations("common");
   const tm = useTranslations("metadata");
+  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const utils = api.useUtils();
@@ -233,15 +235,15 @@ export function TrackContextMenu() {
   const handleGoToArtist = () => {
     if (!track) return;
     hapticLight();
-    window.location.href = `/artist/${track.artist.id}`;
     closeMenu();
+    router.push(`/artist/${track.artist.id}`);
   };
 
   const handleGoToAlbum = () => {
     if (!track) return;
     hapticLight();
-    window.location.href = `/album/${track.album.id}`;
     closeMenu();
+    router.push(`/album/${track.album.id}`);
   };
 
   if (!track || !position) return null;

@@ -63,7 +63,6 @@ export function useLocaleSwitcher() {
 
       startTransition(() => {
         router.replace(href);
-        router.refresh();
       });
     },
     [locale, pathname, router, searchParams, startTransition],
