@@ -35,11 +35,29 @@ interface Bubble {
   rotation: number;
 }
 
+interface TransitionParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
+  life: number;
+  maxLife: number;
+  rotation: number;
+  rotationSpeed: number;
+  drag: number;
+}
+
 export class FlowFieldRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private particles: Particle[] = [];
   private bubbles: Bubble[] = [];
+  private transitionParticles: TransitionParticle[] = [];
   private time = 0;
   private width = 0;
   private height = 0;
@@ -995,17 +1013,16 @@ export class FlowFieldRenderer {
         }
       }
     } else if (this.patternTimer > dynamicDuration) {
-      this.isTransitioning = true;
-      this.transitionProgress = 0;
       this.patternIndex = (this.patternIndex + 1) % this.patternSequence.length;
 
       if (this.patternIndex === 0) {
         this.shufflePatterns();
       }
 
-      this.nextPattern = this.patternSequence[this.patternIndex] ?? "rays";
-
-      this.logPatternChange(this.nextPattern, "transitioning-to");
+      this.startPatternTransition(
+        this.patternSequence[this.patternIndex] ?? "rays",
+        "auto",
+      );
     }
   }
 
@@ -2976,9 +2993,18 @@ export class FlowFieldRenderer {
 
     this.updatePatternTransition(audioIntensity);
 
-    const fadeAmount = FlowFieldRenderer.TRAIL_PATTERNS.has(this.currentPattern)
-      ? 0.12
-      : 0.06;
+    const usesTrailFade =
+      FlowFieldRenderer.TRAIL_PATTERNS.has(this.currentPattern) ||
+      (this.isTransitioning &&
+        FlowFieldRenderer.TRAIL_PATTERNS.has(this.nextPattern));
+    const fadeAmount =
+      this.isTransitioning || this.transitionParticles.length > 0
+        ? usesTrailFade
+          ? 0.08
+          : 0.04
+        : usesTrailFade
+          ? 0.12
+          : 0.06;
     ctx.fillStyle = `rgba(0, 0, 0, ${fadeAmount + audioIntensity * 0.04})`;
     ctx.fillRect(0, 0, this.width, this.height);
 
@@ -3018,7 +3044,167 @@ export class FlowFieldRenderer {
       );
     }
 
+    this.renderTransitionParticles(audioIntensity);
     this.renderFpsCounter(ctx);
+  }
+
+  private startPatternTransition(
+    pattern: Pattern,
+    trigger: "auto" | "manual",
+  ): void {
+    if (!this.allPatterns.includes(pattern)) {
+      return;
+    }
+
+    const displayedPattern =
+      this.isTransitioning && this.transitionProgress >= 0.5
+        ? this.nextPattern
+        : this.currentPattern;
+
+    if (pattern === displayedPattern) {
+      this.currentPattern = displayedPattern;
+      this.isTransitioning = false;
+      this.transitionProgress = 0;
+      this.patternTimer = 0;
+      return;
+    }
+
+    this.currentPattern = displayedPattern;
+    this.captureTransitionParticles();
+    this.nextPattern = pattern;
+    this.isTransitioning = true;
+    this.transitionProgress = 0;
+    this.patternTimer = 0;
+
+    this.logPatternChange(
+      pattern,
+      trigger === "manual" ? "manual-selection" : "transitioning-to",
+    );
+  }
+
+  private captureTransitionParticles(): void {
+    if (this.width <= 0 || this.height <= 0) return;
+
+    try {
+      const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
+      const data = imageData.data;
+      const nextParticles: TransitionParticle[] = [];
+      const maxParticles = Math.max(
+        120,
+        Math.min(360, ((this.width * this.height) / 4200) | 0),
+      );
+      const sampleStep = Math.max(
+        6,
+        Math.round(Math.sqrt((this.width * this.height) / maxParticles)),
+      );
+
+      for (
+        let y = (Math.random() * sampleStep) | 0;
+        y < this.height && nextParticles.length < maxParticles;
+        y += sampleStep
+      ) {
+        for (
+          let x = (Math.random() * sampleStep) | 0;
+          x < this.width && nextParticles.length < maxParticles;
+          x += sampleStep
+        ) {
+          const idx = ((y * this.width + x) << 2) | 0;
+          const alpha = (data[idx + 3] ?? 0) / 255;
+          if (alpha < 0.08) continue;
+
+          const r = data[idx] ?? 0;
+          const g = data[idx + 1] ?? 0;
+          const b = data[idx + 2] ?? 0;
+          const brightness = (r + g + b) / (3 * 255);
+          if (brightness < 0.12) continue;
+          if (Math.random() > 0.18 + brightness * 0.72) continue;
+
+          const dx = this.centerX - x;
+          const dy = this.centerY - y;
+          const distance = Math.max(1, Math.hypot(dx, dy));
+          const tangentX = -dy / distance;
+          const tangentY = dx / distance;
+          const inwardForce = 0.18 + Math.random() * 0.24;
+          const swirlForce = (Math.random() - 0.5) * (0.85 + brightness * 1.2);
+
+          nextParticles.push({
+            x,
+            y,
+            vx: tangentX * swirlForce + (dx / this.width) * inwardForce,
+            vy: tangentY * swirlForce + (dy / this.height) * inwardForce,
+            size: 1 + brightness * 2.4 + Math.random() * 1.5,
+            r,
+            g,
+            b,
+            alpha: Math.min(1, alpha * (0.6 + brightness * 0.8)),
+            life: 28 + Math.random() * 26,
+            maxLife: 28 + Math.random() * 26,
+            rotation: Math.random() * FlowFieldRenderer.TWO_PI,
+            rotationSpeed: (Math.random() - 0.5) * 0.12,
+            drag: 0.965 + Math.random() * 0.02,
+          });
+        }
+      }
+
+      this.transitionParticles = nextParticles;
+    } catch (error) {
+      console.warn("[Visual] Failed to capture transition particles", error);
+      this.transitionParticles = [];
+    }
+  }
+
+  private renderTransitionParticles(audioIntensity: number): void {
+    if (this.transitionParticles.length === 0) return;
+
+    const ctx = this.ctx;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    for (let i = this.transitionParticles.length - 1; i >= 0; i--) {
+      const particle = this.transitionParticles[i];
+      if (!particle) continue;
+
+      const previousX = particle.x;
+      const previousY = particle.y;
+      const lifeStep = 1.1 + audioIntensity * 0.55;
+      particle.life -= lifeStep;
+
+      if (particle.life <= 0) {
+        this.transitionParticles.splice(i, 1);
+        continue;
+      }
+
+      const lifeProgress = particle.life / particle.maxLife;
+      const pullX = this.centerX - particle.x;
+      const pullY = this.centerY - particle.y;
+      particle.vx += pullX * 0.00028 * (0.5 + audioIntensity * 0.5);
+      particle.vy += pullY * 0.00028 * (0.5 + audioIntensity * 0.5);
+      particle.vx *= particle.drag;
+      particle.vy *= particle.drag;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.rotation += particle.rotationSpeed;
+
+      const alpha = particle.alpha * lifeProgress * lifeProgress;
+      const size = particle.size * (0.78 + lifeProgress * 0.42);
+
+      ctx.strokeStyle = `rgba(${particle.r}, ${particle.g}, ${particle.b}, ${alpha * 0.75})`;
+      ctx.lineWidth = Math.max(0.75, size * 0.55);
+      ctx.beginPath();
+      ctx.moveTo(previousX, previousY);
+      ctx.lineTo(particle.x, particle.y);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(particle.x, particle.y);
+      ctx.rotate(particle.rotation);
+      ctx.fillStyle = `rgba(${particle.r}, ${particle.g}, ${particle.b}, ${alpha})`;
+      ctx.fillRect(-size * 0.5, -size * 0.5, size, size);
+      ctx.restore();
+    }
+
+    ctx.restore();
   }
 
   private renderFpsCounter(ctx: CanvasRenderingContext2D): void {
@@ -3857,6 +4043,7 @@ export class FlowFieldRenderer {
     this.initializeParticles();
     this.initializeBubbles();
     this.initializeStars();
+    this.transitionParticles = [];
     this.hydrogenElectrons = [];
     this.initializeMatrixColumns();
     this.initializeConstellationStars();
@@ -3903,6 +4090,7 @@ export class FlowFieldRenderer {
     // Clear HSL color cache to prevent unbounded growth
     this.hslCache.clear();
     this.colorStringCache.clear();
+    this.transitionParticles = [];
 
     const reasonLabel =
       reason === "firefox-low-fps" ? "Firefox low FPS safeguard" : "every 10 patterns";
@@ -16075,17 +16263,11 @@ export class FlowFieldRenderer {
     return [...this.allPatterns];
   }
 
-  public setPattern(pattern: Pattern): void {
+  public setPattern(pattern: Pattern, options?: { immediate?: boolean }): void {
     if (!this.allPatterns.includes(pattern)) {
       console.warn(`Pattern "${pattern}" not found in available patterns`);
       return;
     }
-
-    this.isTransitioning = false;
-    this.transitionProgress = 0;
-    this.patternTimer = 0;
-
-    this.currentPattern = pattern;
 
     const currentIndex = this.patternSequence.indexOf(pattern);
     if (currentIndex !== -1) {
@@ -16098,14 +16280,17 @@ export class FlowFieldRenderer {
       this.nextPattern = this.allPatterns[nextAllIndex] ?? "rays";
     }
 
-    this.logPatternChange(this.currentPattern, "manual-selection");
-
-    // Increment pattern counter and perform deep reset every 10 patterns
-    this.patternsSinceReset++;
-    if (this.patternsSinceReset >= 10) {
-      this.resetCanvasState();
-      this.patternsSinceReset = 0;
+    if (options?.immediate) {
+      this.isTransitioning = false;
+      this.transitionProgress = 0;
+      this.patternTimer = 0;
+      this.currentPattern = pattern;
+      this.transitionParticles = [];
+      this.logPatternChange(this.currentPattern, "manual-selection");
+      return;
     }
+
+    this.startPatternTransition(pattern, "manual");
   }
 
   public getParticleCount(): number {

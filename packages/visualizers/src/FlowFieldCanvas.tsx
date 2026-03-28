@@ -223,7 +223,9 @@ export function FlowFieldCanvas({
           visualizerType !== "flowfield" &&
           VALID_PATTERNS.has(visualizerType)
         ) {
-          rendererRef.current.setPattern(visualizerType as Pattern);
+          rendererRef.current.setPattern(visualizerType as Pattern, {
+            immediate: true,
+          });
         }
       }
     };
