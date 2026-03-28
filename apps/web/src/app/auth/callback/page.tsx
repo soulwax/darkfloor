@@ -7,8 +7,8 @@ import {
   isEnabledOAuthProviderId,
 } from "@/config/oauthProviders";
 import { resolvePostAuthPath } from "@/utils/authRedirect";
-import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -49,14 +49,14 @@ function AuthCallbackContent() {
   const { status } = useSession();
   const [timedOut, setTimedOut] = useState(false);
 
-  const providerName = useMemo(() => {
-    const providerId = searchParams.get("provider");
+  const providerId = searchParams.get("provider");
+  const providerName = (() => {
     if (!providerId) return t("yourProvider");
     if (isEnabledOAuthProviderId(providerId)) {
       return getOAuthProviderDisplayName(providerId);
     }
     return OAUTH_PROVIDER_FALLBACK_NAMES[providerId] ?? providerId;
-  }, [searchParams, t]);
+  })();
 
   const targetPath = useMemo(() => {
     if (typeof window === "undefined") return "/";
