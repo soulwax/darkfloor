@@ -1937,6 +1937,7 @@ export const musicRouter = createTRPCRouter({
         queuePanelOpen: z.boolean().optional(),
         visualizerType: z.enum(["flowfield", "kaleidoscope"]).optional(),
         visualizerEnabled: z.boolean().optional(),
+        visualizerMode: z.enum(["random", "off", "specific"]).optional(),
         compactMode: z.boolean().optional(),
         theme: z.enum(["dark", "light"]).optional(),
         language: z.enum(["en", "de", "sv", "ja"]).optional(),

@@ -104,6 +104,26 @@ describe("musicRouter tRPC operations", () => {
     expect(db.insert).toHaveBeenCalled();
   });
 
+  it("persists visualizer mode preferences", async () => {
+    const db = createMockDb(null);
+
+    const context = createCallerContext(db);
+
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.updatePreferences({
+      visualizerMode: "specific",
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        visualizerMode: "specific",
+      }),
+    );
+  });
+
   it("persists stream quality preferences for signed-in users", async () => {
     const db = createMockDb(null);
 

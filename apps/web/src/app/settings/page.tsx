@@ -16,7 +16,11 @@ import {
   hasCompleteSpotifyFeatureSettings,
   normalizeSpotifyFeatureSettings,
 } from "@/utils/spotifyFeatureSettings";
-import { api } from "@starchild/api-client/trpc/react";
+import {
+  api,
+  type RouterInputs,
+  type RouterOutputs,
+} from "@starchild/api-client/trpc/react";
 import {
   DEFAULT_STREAM_QUALITY,
   type SettingsKey,
@@ -68,6 +72,9 @@ interface SettingsItem {
   href?: string;
   action?: () => void;
 }
+
+type ServerPreferenceInput = RouterInputs["music"]["updatePreferences"];
+type UserPreferencesData = RouterOutputs["music"]["getUserPreferences"] | undefined;
 
 type SpotifyCredentialTestDiagnostics = {
   enabled: boolean;
@@ -187,13 +194,34 @@ export default function SettingsPage() {
   ];
 
   const updatePreferences = api.music.updatePreferences.useMutation({
-    onSuccess: () => {
-      showToast(t("settingsSaved"), "success");
-    },
-    onError: () => {
-      showToast(t("failedToSave"), "error");
+    onError: (error) => {
+      console.error("[SettingsPage] Failed to save settings", error);
     },
   });
+
+  const persistServerPreference = async (
+    input: ServerPreferenceInput,
+    optimisticUpdate?: (previous: UserPreferencesData) => UserPreferencesData,
+  ) => {
+    const previousPreferences = utils.music.getUserPreferences.getData(undefined);
+
+    if (optimisticUpdate) {
+      utils.music.getUserPreferences.setData(
+        undefined,
+        optimisticUpdate(previousPreferences),
+      );
+    }
+
+    try {
+      await updatePreferences.mutateAsync(input);
+      showToast(t("settingsSaved"), "success");
+    } catch {
+      utils.music.getUserPreferences.setData(undefined, previousPreferences);
+      showToast(t("failedToSave"), "error");
+    } finally {
+      await utils.music.getUserPreferences.invalidate();
+    }
+  };
 
   const handleToggle = (key: string, value: boolean) => {
     hapticToggle();
@@ -205,7 +233,10 @@ export default function SettingsPage() {
     }
 
     if (session) {
-      updatePreferences.mutate({ [key]: value });
+      void persistServerPreference(
+        { [key]: value } as ServerPreferenceInput,
+        (previous) => (previous ? { ...previous, [key]: value } : previous),
+      );
     } else {
       settingsStorage.set(key as SettingsKey, value);
       setLocalSettings((prev) => ({ ...prev, [key]: value }));
@@ -216,7 +247,10 @@ export default function SettingsPage() {
   const handleSlider = (key: string, value: number) => {
     hapticLight();
     if (session) {
-      updatePreferences.mutate({ [key]: value });
+      void persistServerPreference(
+        { [key]: value } as ServerPreferenceInput,
+        (previous) => (previous ? { ...previous, [key]: value } : previous),
+      );
     } else {
       settingsStorage.set(key as SettingsKey, value);
       setLocalSettings((prev) => ({ ...prev, [key]: value }));
@@ -238,10 +272,11 @@ export default function SettingsPage() {
       html.classList.add("theme-dark");
       html.classList.remove("theme-light");
       if (session) {
-        utils.music.getUserPreferences.setData(undefined, (prev) =>
-          prev ? { ...prev, theme: themeValue } : prev,
+        void persistServerPreference(
+          { theme: themeValue },
+          (previous) =>
+            previous ? { ...previous, theme: themeValue } : previous,
         );
-        updatePreferences.mutate({ theme: themeValue });
       } else {
         setLocalSettings((prev) => ({ ...prev, theme: themeValue }));
         showToast(t("savedLocally"), "success");
@@ -249,7 +284,10 @@ export default function SettingsPage() {
       return;
     }
     if (session) {
-      updatePreferences.mutate({ [key]: value });
+      void persistServerPreference(
+        { [key]: value } as ServerPreferenceInput,
+        (previous) => (previous ? { ...previous, [key]: value } : previous),
+      );
     } else {
       settingsStorage.set(key as SettingsKey, value);
       setLocalSettings((prev) => ({ ...prev, [key]: value }));
@@ -382,17 +420,23 @@ export default function SettingsPage() {
       updatedAt: savedAt,
     });
 
-    await updatePreferences.mutateAsync(
-      buildSpotifyFeaturePreferenceInput(
-        {
-          ...normalizedDraft,
-          clientSecretConfigured: savedClientSecretConfigured,
-        },
-        {
-          includeClientSecret,
-        },
-      ),
-    );
+    try {
+      await updatePreferences.mutateAsync(
+        buildSpotifyFeaturePreferenceInput(
+          {
+            ...normalizedDraft,
+            clientSecretConfigured: savedClientSecretConfigured,
+          },
+          {
+            includeClientSecret,
+          },
+        ),
+      );
+      showToast(t("settingsSaved"), "success");
+    } catch {
+      showToast(t("failedToSave"), "error");
+      return;
+    }
 
     setSpotifySettings(savedSettings);
     setSpotifyDraft(savedSettings);
@@ -650,10 +694,11 @@ export default function SettingsPage() {
           const nextLocale = value as AppLocale;
           setLocale(nextLocale);
           if (session) {
-            utils.music.getUserPreferences.setData(undefined, (prev) =>
-              prev ? { ...prev, language: nextLocale } : prev,
+            void persistServerPreference(
+              { language: nextLocale },
+              (previous) =>
+                previous ? { ...previous, language: nextLocale } : previous,
             );
-            updatePreferences.mutate({ language: nextLocale });
           }
         },
       },
@@ -795,7 +840,7 @@ export default function SettingsPage() {
 
   const sections: SettingsSection[] = [
     playbackSection,
-    ...(isMobile ? [] : [audioSection]),
+    audioSection,
     visualSection,
     smartQueueSection,
   ];
