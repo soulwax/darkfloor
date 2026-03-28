@@ -318,8 +318,7 @@ export default function PersistentPlayer() {
           <div
             className="pointer-events-none fixed bottom-0 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem]"
             style={{
-              left:
-                "calc(50% + (var(--electron-sidebar-width, 0px) - var(--desktop-right-rail-width, 0px)) / 2)",
+              left: "50%",
             }}
           >
             <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.35rem]">

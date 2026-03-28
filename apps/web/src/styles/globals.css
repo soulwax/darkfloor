@@ -2076,9 +2076,10 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .desktop-stage {
-  width: calc(100% - var(--desktop-right-rail-width, 0px));
+  width: 100%;
   max-width: 100%;
   min-width: 0;
+  transform: translateX(calc(var(--electron-sidebar-width, 0px) * -0.5));
 }
 
 .desktop-surface {

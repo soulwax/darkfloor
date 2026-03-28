@@ -5,6 +5,20 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-03-28
+
+### Changed
+
+- **Desktop shell alignment is now much steadier**: The main content area and floating player were re-centered so the playback shell feels visually anchored, with improved desktop balance around the sidebar and queue states.
+- **Visualizer transitions now morph more fluidly between patterns**: Pattern changes now reuse and retarget transition particles so outgoing fragments drift into the incoming scene instead of reading like a simple crossfade.
+- **Workspace docs now reflect the colocated backend**: The root repo guidance and the `api/` submodule guidance now describe the backend as an editable in-workspace submodule so frontend and backend contract work can be understood together.
+
+### Fixed
+
+- **Settings persistence is stable again across desktop and mobile**: Preference saves now recover more cleanly in the UI, the production preferences schema now includes `streamQuality`, and the missing `visualizerMode` mutation field no longer causes settings writes to fail.
+- **Several interactions now behave more like a true SPA**: Internal artist/album navigation no longer forces hard document navigations, and locale changes no longer trigger an unnecessary route refresh that could feel like a page reload.
+- **Missing auth debug tokens no longer spam admin-facing errors**: The admin OAuth debug view now quietly tolerates the optional `AUTH_DEBUG_TOKEN` being unset instead of repeatedly surfacing noisy error toasts when that debug-only feature is unavailable.
+
 ## [1.6.2] - 2026-03-26
 
 ### Added
