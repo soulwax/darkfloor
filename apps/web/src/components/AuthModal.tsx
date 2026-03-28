@@ -15,7 +15,7 @@ import {
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
-import { getProviders, signIn } from "next-auth/react";
+import { getProviders, signIn, signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
@@ -138,6 +138,7 @@ export function AuthModal({
     });
 
     try {
+      await signOut({ redirect: false });
       await signIn(providerId, {
         callbackUrl: buildAuthCallbackUrl(callbackUrl, providerId),
       });
