@@ -1,16 +1,16 @@
 {
-  "name": "starchildmusic",
+  "name": "darkfloor-player",
   "version": "1.6.2",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
-  "email": "soulwax@nandcore.com",
+  "email": "soulwax@cock.li",
   "author": {
     "name": "Christian",
-    "email": "soulwax@nandcore.com"
+    "email": "soulwax@cock.li"
   },
   "license": "GPLv3",
-  "homepage": "https://starchildmusic.com",
+  "homepage": "https://darkfloor.org",
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/soulwax/darkfloor-player.git"
