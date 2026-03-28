@@ -14,7 +14,7 @@ import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { parsePreferredGenreId } from "@/utils/genre";
 import { useTranslations } from "next-intl";
-import { getProviders, signIn, signOut } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -316,7 +316,6 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        await signOut({ redirect: false });
                         await signIn(provider.id, {
                           callbackUrl: buildAuthCallbackUrl(
                             callbackUrl,
