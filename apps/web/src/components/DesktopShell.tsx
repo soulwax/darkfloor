@@ -68,7 +68,9 @@ export function DesktopShell({ children }: { children: ReactNode }) {
           }`}
         >
           <div className="desktop-scroll min-h-0 flex-1 overflow-y-auto">
-            {children}
+            <div className="desktop-stage flex min-h-full flex-col">
+              {children}
+            </div>
           </div>
         </div>
       </div>

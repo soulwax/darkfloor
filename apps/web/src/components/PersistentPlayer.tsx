@@ -53,6 +53,7 @@ const EnhancedQueue = dynamic(
 
 const MobilePlayer = dynamic(() => import("./MobilePlayer"), { ssr: false });
 const MiniPlayer = dynamic(() => import("./MiniPlayer"), { ssr: false });
+const DESKTOP_QUEUE_WIDTH = "min(100vw, 28rem)";
 
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
@@ -159,6 +160,22 @@ export default function PersistentPlayer() {
       updatePreferences.mutate({ equalizerPanelOpen: showEqualizer });
     }
   }, [showEqualizer, isAuthenticated, preferences, updatePreferences]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isMobile) {
+      document.documentElement.style.setProperty(
+        "--desktop-right-rail-width",
+        "0px",
+      );
+      return;
+    }
+
+    document.documentElement.style.setProperty(
+      "--desktop-right-rail-width",
+      showQueue ? DESKTOP_QUEUE_WIDTH : "0px",
+    );
+  }, [isMobile, showQueue]);
 
   const setQueueOpen = useCallback((next: boolean) => {
     setQueuePreferenceOverride(next);
@@ -275,7 +292,7 @@ export default function PersistentPlayer() {
             className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-l-lg border border-r-0 px-1.5 py-2 text-[var(--color-muted)] shadow-none transition-colors hover:bg-white/4 hover:text-[var(--color-text)] md:flex"
             style={{
               right: showQueue
-                ? "calc(min(100vw, 28rem) + 0.35rem)"
+                ? "calc(var(--desktop-right-rail-width, 0px) + 0.35rem)"
                 : "0.35rem",
             }}
             aria-label={showQueue ? tq("closeQueue") : tt("queue")}
@@ -298,7 +315,13 @@ export default function PersistentPlayer() {
             </div>
           </button>
 
-          <div className="pointer-events-none fixed bottom-0 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem]">
+          <div
+            className="pointer-events-none fixed bottom-0 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem]"
+            style={{
+              left:
+                "calc(50% + (var(--electron-sidebar-width, 0px) - var(--desktop-right-rail-width, 0px)) / 2)",
+            }}
+          >
             <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.35rem]">
               <div className="player-backdrop-inner">
                 <MaturePlayer {...playerProps} />

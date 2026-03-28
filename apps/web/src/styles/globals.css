@@ -94,6 +94,7 @@
   --electron-titlebar-inset-left: 0px;
   --electron-titlebar-inset-right: 0px;
   --electron-sidebar-width: 0px;
+  --desktop-right-rail-width: 0px;
   --electron-sidebar-bottom-padding: 0.75rem;
 }
 
@@ -2072,6 +2073,12 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 .desktop-main {
   background: transparent;
   padding-top: var(--electron-header-height);
+}
+
+.desktop-stage {
+  width: calc(100% - var(--desktop-right-rail-width, 0px));
+  max-width: 100%;
+  min-width: 0;
 }
 
 .desktop-surface {
