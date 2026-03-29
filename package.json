@@ -266,7 +266,8 @@
       "artifactName": "${productName}.${ext}",
       "requestExecutionLevel": "user",
       "unpackDirName": "starchild"
-    }
+    },
+    "npmRebuild": false
   },
   "ct3aMetadata": {
     "initVersion": "7.39.3"
