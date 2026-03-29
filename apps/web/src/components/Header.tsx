@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useGuestModal } from "@/contexts/GuestModalContext";
-import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useSearchSuggestions } from "@/hooks/useSearchSuggestions";
 import { normalizeHealthStatus } from "@/utils/healthStatus";
@@ -22,8 +21,6 @@ import {
   BarChart3,
   Home,
   Library,
-  Maximize2,
-  Minimize2,
   MoreHorizontal,
   Music2,
   Search,
@@ -58,7 +55,6 @@ export default function Header() {
   const headerSearchInputRef = useRef<HTMLInputElement>(null);
   const desktopHeaderRef = useRef<HTMLElement>(null);
   const searchBlurTimerRef = useRef<number | null>(null);
-  const { compactMode, toggleCompactMode } = useCompactModePreference();
 
   useEffect(() => {
     const healthUrls = ["/api/v2/status", "/api/v2/health"];
@@ -325,18 +321,12 @@ export default function Header() {
       suppressHydrationWarning
     >
       <div
-        className={`theme-chrome-header electron-header-main relative z-10 grid grid-rows-1 items-center border ${
-          compactMode
-            ? "grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-[1rem] py-1.5"
-            : "grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[1.15rem] py-2"
-        }`}
+        className="theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[1.15rem] border py-2"
       >
         <div className="electron-no-drag relative flex min-w-0 flex-1 items-center">
           <div className="relative min-w-0 flex-1">
             <form
-              className={`electron-header-search flex w-full flex-1 items-center gap-2 rounded-full border px-3 ${
-                compactMode ? "h-10" : "h-11"
-              }`}
+              className="electron-header-search flex h-11 w-full flex-1 items-center gap-2 rounded-full border px-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 submitHeaderSearch(searchText);
@@ -376,9 +366,7 @@ export default function Header() {
                 className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[rgba(244,178,102,0.16)] px-2.5 text-xs leading-none font-semibold text-[var(--color-text)] transition-colors hover:bg-[rgba(244,178,102,0.22)]"
               >
                 <Search className="h-3.5 w-3.5" />
-                <span className={compactMode ? "hidden" : "hidden lg:inline"}>
-                  {tc("search")}
-                </span>
+                <span className="hidden lg:inline">{tc("search")}</span>
               </button>
             </form>
             {showSuggestions && (
@@ -400,9 +388,7 @@ export default function Header() {
             aria-current={isHomeActive ? "page" : undefined}
           >
             <Home className="h-3.5 w-3.5" />
-            <span className={compactMode ? "hidden" : "hidden xl:inline"}>
-              {tc("home")}
-            </span>
+            <span className="hidden xl:inline">{tc("home")}</span>
           </Link>
           <Link
             href="/library"
@@ -410,9 +396,7 @@ export default function Header() {
             aria-current={isLibraryActive ? "page" : undefined}
           >
             <Library className="h-3.5 w-3.5" />
-            <span className={compactMode ? "hidden" : "hidden xl:inline"}>
-              {tc("library")}
-            </span>
+            <span className="hidden xl:inline">{tc("library")}</span>
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -427,16 +411,6 @@ export default function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuLabelText>{th("openMenu")}</DropdownMenuLabelText>
-              <DropdownMenuItem onSelect={toggleCompactMode} className="gap-2">
-                {compactMode ? (
-                  <Maximize2 className="h-4 w-4" />
-                ) : (
-                  <Minimize2 className="h-4 w-4" />
-                )}
-                <span>
-                  {compactMode ? th("switchExpanded") : th("switchCompact")}
-                </span>
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
                   if (!isGuestModalOpen) {

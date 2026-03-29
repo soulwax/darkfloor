@@ -741,14 +741,6 @@ export default function SettingsPage() {
         value: localSettings.showFpsCounter ?? false,
         onChange: (value) => handleToggle("showFpsCounter", value as boolean),
       },
-      {
-        id: "compactMode",
-        label: t("compactMode"),
-        description: t("compactModeDesc"),
-        type: "toggle",
-        value: effectivePreferences?.compactMode ?? false,
-        onChange: (value) => handleToggle("compactMode", value as boolean),
-      },
     ],
   };
 

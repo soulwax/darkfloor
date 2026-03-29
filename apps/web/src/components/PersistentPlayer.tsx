@@ -4,7 +4,6 @@
 
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import { useEqualizer } from "@/hooks/useEqualizer";
-import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { api } from "@starchild/api-client/trpc/react";
 
@@ -59,7 +58,6 @@ const DESKTOP_QUEUE_WIDTH = "min(100vw, 28rem)";
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
-  const { compactMode } = useCompactModePreference();
   const tq = useTranslations("queue");
   const tt = useTranslations("trackMenu");
 
@@ -323,13 +321,7 @@ export default function PersistentPlayer() {
               left: "50%",
             }}
           >
-            <div
-              className={`player-backdrop pointer-events-auto overflow-hidden ${
-                compactMode
-                  ? "mx-auto max-w-[44rem] rounded-[1rem]"
-                  : "rounded-[1.35rem]"
-              }`}
-            >
+            <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.35rem]">
               <div className="player-backdrop-inner">
                 <MaturePlayer {...playerProps} />
               </div>

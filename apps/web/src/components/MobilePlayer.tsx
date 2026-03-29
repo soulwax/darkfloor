@@ -19,7 +19,6 @@ import {
   hapticSuccess,
 } from "@/utils/haptics";
 import { getCoverImage } from "@/utils/images";
-import { settingsStorage } from "@/utils/settingsStorage";
 import { springPresets } from "@/utils/spring-animations";
 import { formatDuration, formatTime } from "@/utils/time";
 import { MobilePlayerFooterActions } from "./MobilePlayerFooterActions";
@@ -469,10 +468,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
       enabled: isAuthenticated,
     },
   );
-
-  const localSettings = settingsStorage.getAll();
-  const effectivePreferences = isAuthenticated ? preferences : localSettings;
-
   // Load smart queue settings
   const { data: smartQueueSettings } = api.music.getSmartQueueSettings.useQuery(
     undefined,
@@ -1391,11 +1386,7 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                         onDrag={handleArtworkDrag}
                         onDragEnd={handleArtworkDragEnd}
                         transition={springPresets.smooth}
-                        className={`mobile-player-artwork relative w-full cursor-grab active:cursor-grabbing ${
-                          effectivePreferences?.compactMode
-                            ? "max-w-[280px]"
-                            : "max-w-[360px]"
-                        }`}
+                        className="mobile-player-artwork relative w-full max-w-[360px] cursor-grab active:cursor-grabbing"
                       >
                         <motion.div
                           key="artwork"
@@ -1464,37 +1455,16 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                         )}
                       </motion.div>
 
-                      <div
-                        className={`mobile-player-info-controls flex w-full flex-col items-center ${
-                          effectivePreferences?.compactMode ? "gap-2" : "gap-4"
-                        }`}
-                      >
+                      <div className="mobile-player-info-controls flex w-full flex-col items-center gap-4">
                         <div className="mobile-player-content w-full">
-                          <div
-                            className={`rounded-2xl ${
-                              effectivePreferences?.compactMode
-                                ? "px-3 py-1.5"
-                                : "px-4 py-2"
-                            }`}
-                            style={panelSurfaceStyle}
-                          >
-                            <div
-                              className={`flex items-start justify-between ${
-                                effectivePreferences?.compactMode
-                                  ? "gap-2"
-                                  : "gap-4"
-                              }`}
-                            >
+                          <div className="rounded-2xl px-4 py-2" style={panelSurfaceStyle}>
+                            <div className="flex items-start justify-between gap-4">
                               <div className="min-w-0 text-left">
                                 <motion.h2
                                   key={currentTrack.id}
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  className={`leading-tight font-bold text-[var(--color-text)] ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-lg"
-                                      : "text-xl"
-                                  }`}
+                                  className="text-xl leading-tight font-bold text-[var(--color-text)]"
                                 >
                                   {currentTrack.title}
                                 </motion.h2>
@@ -1502,61 +1472,29 @@ export default function MobilePlayer(props: MobilePlayerProps) {
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   transition={{ delay: 0.1 }}
-                                  className={`mt-1 font-medium text-[var(--color-subtext)] ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-[11px]"
-                                      : "text-xs"
-                                  }`}
+                                  className="mt-1 text-xs font-medium text-[var(--color-subtext)]"
                                 >
                                   {currentTrack.artist.name}
                                 </motion.p>
                                 {currentTrack.album?.title && (
                                   <p
-                                    className={`mt-0.5 truncate text-[var(--color-subtext)] ${
-                                      effectivePreferences?.compactMode
-                                        ? "text-[9px]"
-                                        : "text-[10px]"
-                                    }`}
+                                    className="mt-0.5 truncate text-[10px] text-[var(--color-subtext)]"
                                   >
                                     {currentTrack.album.title}
                                   </p>
                                 )}
                               </div>
                               <div className="flex flex-col items-end text-[11px] text-[var(--color-subtext)]">
-                                <span
-                                  className={`text-[var(--color-muted)] ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-[8px]"
-                                      : "text-[9px]"
-                                  }`}
-                                >
+                                <span className="text-[9px] text-[var(--color-muted)]">
                                   {tq("label")}
                                 </span>
-                                <span
-                                  className={`font-semibold text-[var(--color-text)] tabular-nums ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-base"
-                                      : "text-lg"
-                                  }`}
-                                >
+                                <span className="text-lg font-semibold tabular-nums text-[var(--color-text)]">
                                   {queue.length}
                                 </span>
-                                <span
-                                  className={`mt-1 text-[var(--color-muted)] ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-[8px]"
-                                      : "text-[9px]"
-                                  }`}
-                                >
+                                <span className="mt-1 text-[9px] text-[var(--color-muted)]">
                                   {tq("total")}
                                 </span>
-                                <span
-                                  className={`font-semibold text-[var(--color-text)] tabular-nums ${
-                                    effectivePreferences?.compactMode
-                                      ? "text-xs"
-                                      : "text-sm"
-                                  }`}
-                                >
+                                <span className="text-sm font-semibold tabular-nums text-[var(--color-text)]">
                                   {formatDuration(totalDuration)}
                                 </span>
                               </div>
