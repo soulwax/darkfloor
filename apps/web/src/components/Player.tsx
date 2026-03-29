@@ -5,9 +5,12 @@
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import { api } from "@starchild/api-client/trpc/react";
 import type { Track } from "@starchild/types";
+import { useCompactModePreference } from "@/hooks/useCompactModePreference";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/utils/haptics";
 import { formatTime } from "@/utils/time";
 import {
+  Eye,
+  EyeOff,
   Heart,
   Layers,
   ListPlus,
@@ -18,7 +21,13 @@ import {
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useCallback, useRef, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent,
+} from "react";
 import { AddToPlaylistModal } from "./AddToPlaylistModal";
 import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 
@@ -78,6 +87,7 @@ export default function MaturePlayer({
   onTogglePatternControls,
 }: PlayerProps) {
   const t = useTranslations("player");
+  const th = useTranslations("header");
   const tq = useTranslations("queue");
   const tm = useTranslations("trackMenu");
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
@@ -85,6 +95,7 @@ export default function MaturePlayer({
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const { hideUI, setHideUI } = useGlobalPlayer();
+  const { compactMode, toggleCompactMode } = useCompactModePreference();
   const { openMenu } = useTrackContextMenu();
 
   const utils = api.useUtils();
@@ -180,6 +191,35 @@ export default function MaturePlayer({
     onSeek(percentage * duration);
   };
 
+  const handleProgressKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!duration) return;
+
+    const step = Math.max(5, Math.round(duration / 20));
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      onSeek(Math.max(0, currentTime - step));
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      onSeek(Math.min(duration, currentTime + step));
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      onSeek(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      onSeek(duration);
+    }
+  };
+
   if (!currentTrack) return null;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -187,44 +227,214 @@ export default function MaturePlayer({
     "rounded-full p-2 text-[var(--color-subtext)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)]";
   const activeIconButtonClass =
     "rounded-full bg-white/6 p-2 text-[var(--color-accent)] transition-colors hover:text-[var(--color-text)]";
+  const compactTransportButtonClass =
+    "flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-subtext)] transition-colors hover:bg-white/5 hover:text-[var(--color-text)]";
+  const favoriteButtonDisabled =
+    addFavorite.isPending || removeFavorite.isPending;
+  const compactToggleLabel = compactMode
+    ? th("switchExpanded")
+    : th("switchCompact");
+  const hideUiLabel = hideUI ? t("showUi") : t("hideUi");
+
+  const renderProgressBar = (
+    trackClassName: string,
+    thumbClassName: string,
+  ) => (
+    <div
+      ref={progressRef}
+      className={trackClassName}
+      onClick={handleProgressClick}
+      onMouseDown={() => setIsDragging(true)}
+      onMouseUp={() => setIsDragging(false)}
+      onMouseMove={handleProgressDrag}
+      onMouseLeave={() => setIsDragging(false)}
+      onKeyDown={handleProgressKeyDown}
+      tabIndex={0}
+      role="slider"
+      aria-label={t("seek")}
+      aria-valuemin={0}
+      aria-valuemax={duration || 0}
+      aria-valuenow={Math.min(currentTime, duration || 0)}
+      aria-valuetext={`${formatTime(currentTime)} / ${formatTime(duration)}`}
+    >
+      <div
+        className="accent-gradient h-full rounded-full shadow-sm transition-all"
+        style={{ width: `${progress}%` }}
+      />
+      <div
+        className={thumbClassName}
+        style={{
+          left: `${progress}%`,
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 10,
+        }}
+      />
+    </div>
+  );
+
+  const artworkSize = compactMode ? 44 : 56;
+
+  if (compactMode) {
+    return (
+      <div
+        className="mx-auto w-full max-w-[42rem]"
+        onContextMenu={handlePlayerContextMenu}
+      >
+        <div className="flex items-center gap-3 rounded-[1rem] border border-white/8 bg-black/10 px-3 py-2.5">
+          <div className="relative flex-shrink-0">
+            {currentTrack.album.cover_small ? (
+              <Image
+                src={currentTrack.album.cover_small}
+                alt={currentTrack.title}
+                width={artworkSize}
+                height={artworkSize}
+                className="rounded-md"
+                priority
+                quality={75}
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-md bg-white/4 text-sm text-[var(--color-muted)]">
+                🎵
+              </div>
+            )}
+            {isLoading && (
+              <div className="theme-card-overlay absolute inset-0 flex items-center justify-center rounded-md">
+                <div className="border-accent h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h4 className="truncate text-sm font-semibold text-[var(--color-text)]">
+                  {currentTrack.title}
+                </h4>
+                <p className="truncate text-[11px] text-[var(--color-subtext)]">
+                  {currentTrack.artist.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  toggleCompactMode();
+                }}
+                className={
+                  compactMode ? activeIconButtonClass : iconButtonClass
+                }
+                title={compactToggleLabel}
+                aria-label={compactToggleLabel}
+                aria-pressed={compactMode}
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className={compactTransportButtonClass}
+                title={t("previousTrackShortcut")}
+                aria-label={t("previousTrack")}
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePlayPause}
+                className="desktop-play-btn flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-text)] text-[var(--color-bg)] transition-opacity hover:opacity-90 active:opacity-80"
+                title={t("playPauseShortcut")}
+                aria-label={isPlaying ? t("pauseTrack") : t("playTrack")}
+              >
+                {isPlaying ? (
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="ml-0.5 h-[18px] w-[18px]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                className={compactTransportButtonClass}
+                disabled={queue.length === 0}
+                title={t("nextTrackShortcut")}
+                aria-label={t("nextTrack")}
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-[var(--color-subtext)]">
+              <span className="shrink-0 tabular-nums">
+                {formatTime(currentTime)}
+              </span>
+              <div className="min-w-0 flex-1">
+                {renderProgressBar(
+                  "slider-track group relative h-1 w-full cursor-pointer rounded-full transition-[height] hover:h-1.5",
+                  "absolute h-2.5 w-2.5 rounded-full bg-[var(--color-text)] opacity-90 transition-opacity group-hover:opacity-100",
+                )}
+              </div>
+              <span className="shrink-0 tabular-nums">
+                {formatTime(duration)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <AddToPlaylistModal
+          isOpen={showAddToPlaylistModal}
+          onClose={() => setShowAddToPlaylistModal(false)}
+          track={currentTrack}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full" onContextMenu={handlePlayerContextMenu}>
-      {}
-      <div
-        ref={progressRef}
-        className="slider-track group relative h-1 w-full cursor-pointer rounded-full transition-[height] hover:h-1.5"
-        onClick={handleProgressClick}
-        onMouseDown={() => setIsDragging(true)}
-        onMouseUp={() => setIsDragging(false)}
-        onMouseMove={handleProgressDrag}
-        onMouseLeave={() => setIsDragging(false)}
-      >
-        <div
-          className="accent-gradient h-full rounded-full shadow-sm transition-all"
-          style={{ width: `${progress}%` }}
-        />
-        <div
-          className="absolute h-2.5 w-2.5 rounded-full bg-[var(--color-text)] opacity-90 transition-opacity group-hover:opacity-100"
-          style={{
-            left: `${progress}%`,
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 10,
-          }}
-        />
-      </div>
+      {renderProgressBar(
+        "slider-track group relative h-1 w-full cursor-pointer rounded-full transition-[height] hover:h-1.5",
+        "absolute h-2.5 w-2.5 rounded-full bg-[var(--color-text)] opacity-90 transition-opacity group-hover:opacity-100",
+      )}
 
       <div className="mt-2 flex items-center justify-between gap-4">
-        {}
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="relative flex-shrink-0">
             {currentTrack.album.cover_small ? (
               <Image
                 src={currentTrack.album.cover_small}
                 alt={currentTrack.title}
-                width={56}
-                height={56}
+                width={artworkSize}
+                height={artworkSize}
                 className="rounded-lg"
                 priority
                 quality={75}
@@ -249,7 +459,6 @@ export default function MaturePlayer({
             </p>
           </div>
 
-          {}
           <button
             type="button"
             onClick={() => {
@@ -263,16 +472,15 @@ export default function MaturePlayer({
             <ListPlus className="h-5 w-5" />
           </button>
 
-          {}
           <button
             type="button"
             onClick={toggleFavorite}
-            disabled={addFavorite.isPending || removeFavorite.isPending}
+            disabled={favoriteButtonDisabled}
             className={`rounded-full p-2 transition-all ${
               favoriteData?.isFavorite
                 ? "bg-white/6 text-[var(--color-accent)]"
                 : "text-[var(--color-subtext)] hover:bg-white/4 hover:text-[var(--color-text)]"
-            } ${addFavorite.isPending || removeFavorite.isPending ? "opacity-50" : ""}`}
+            } ${favoriteButtonDisabled ? "opacity-50" : ""}`}
             title={
               favoriteData?.isFavorite
                 ? tm("removeFromFavorites")
@@ -292,10 +500,8 @@ export default function MaturePlayer({
           </button>
         </div>
 
-        {}
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-2">
-            {}
             <button
               type="button"
               onClick={handleToggleShuffle}
@@ -308,7 +514,6 @@ export default function MaturePlayer({
               <Shuffle className="h-4 w-4" />
             </button>
 
-            {}
             <button
               type="button"
               onClick={handlePrevious}
@@ -321,7 +526,6 @@ export default function MaturePlayer({
               </svg>
             </button>
 
-            {}
             <button
               type="button"
               onClick={onSkipBackward}
@@ -344,7 +548,6 @@ export default function MaturePlayer({
               </svg>
             </button>
 
-            {}
             <button
               type="button"
               onClick={handlePlayPause}
@@ -379,7 +582,6 @@ export default function MaturePlayer({
               )}
             </button>
 
-            {}
             <button
               type="button"
               onClick={onSkipForward}
@@ -402,7 +604,6 @@ export default function MaturePlayer({
               </svg>
             </button>
 
-            {}
             <button
               type="button"
               onClick={handleNext}
@@ -416,7 +617,6 @@ export default function MaturePlayer({
               </svg>
             </button>
 
-            {}
             <button
               type="button"
               onClick={handleCycleRepeat}
@@ -481,7 +681,6 @@ export default function MaturePlayer({
             </button>
           </div>
 
-          {}
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-subtext)]">
             <span>{formatTime(currentTime)}</span>
             <span className="text-[var(--color-muted)]">/</span>
@@ -489,17 +688,13 @@ export default function MaturePlayer({
           </div>
         </div>
 
-        {}
         <div className="flex flex-1 items-center justify-end gap-3">
-          {}
           {queue.length > 0 && (
             <span className="hidden text-sm text-[var(--color-subtext)] lg:block">
               {t("inQueue", { count: queue.length })}
             </span>
           )}
 
-          {}
-          {}
           <div className="relative hidden items-center gap-2 md:flex">
             <button
               type="button"
@@ -564,7 +759,6 @@ export default function MaturePlayer({
             </div>
           </div>
 
-          {}
           {onToggleQueue && (
             <button
               type="button"
@@ -589,7 +783,6 @@ export default function MaturePlayer({
             </button>
           )}
 
-          {}
           {onToggleEqualizer && (
             <button
               type="button"
@@ -614,7 +807,6 @@ export default function MaturePlayer({
             </button>
           )}
 
-          {}
           {onToggleVisualizer && (
             <button
               type="button"
@@ -651,7 +843,6 @@ export default function MaturePlayer({
             </button>
           )}
 
-          {}
           {onTogglePatternControls && visualizerEnabled && (
             <button
               type="button"
@@ -664,7 +855,22 @@ export default function MaturePlayer({
             </button>
           )}
 
-          {}
+          <button
+            type="button"
+            onClick={() => {
+              hapticLight();
+              toggleCompactMode();
+            }}
+            className={`rounded-full p-2 transition-colors ${
+              compactMode ? activeIconButtonClass : iconButtonClass
+            }`}
+            title={compactToggleLabel}
+            aria-label={compactToggleLabel}
+            aria-pressed={compactMode}
+          >
+            <Minimize2 className="h-5 w-5" />
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -674,20 +880,19 @@ export default function MaturePlayer({
             className={`rounded-full p-2 transition-colors ${
               hideUI ? activeIconButtonClass : iconButtonClass
             }`}
-            title={hideUI ? t("showUi") : t("hideUi")}
-            aria-label={hideUI ? t("showUi") : t("hideUi")}
+            title={hideUiLabel}
+            aria-label={hideUiLabel}
             aria-pressed={hideUI}
           >
             {hideUI ? (
-              <Minimize2 className="h-5 w-5" />
+              <Eye className="h-5 w-5" />
             ) : (
-              <Maximize2 className="h-5 w-5" />
+              <EyeOff className="h-5 w-5" />
             )}
           </button>
         </div>
       </div>
 
-      {}
       <AddToPlaylistModal
         isOpen={showAddToPlaylistModal}
         onClose={() => setShowAddToPlaylistModal(false)}
