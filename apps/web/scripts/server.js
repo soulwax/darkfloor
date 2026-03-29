@@ -25,8 +25,9 @@ const nodeEnv = process.env.NODE_ENV || "production";
 const isDev = nodeEnv === "development";
 
 if (isDev) {
-    console.log('[ENV] Development mode: Loading ONLY .env');
+  console.log("[ENV] Development mode: Loading .env.local, then .env");
   dotenv.config({ path: path.resolve(repoRoot, ".env"), override: true });
+  dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 } else {
         dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: false });
   dotenv.config({ path: path.resolve(repoRoot, ".env.production"), override: false });

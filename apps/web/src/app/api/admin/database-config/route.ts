@@ -46,6 +46,10 @@ function readOptionalEnvValue(key: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function resolveRepoRoot(): string {
+  return readOptionalEnvValue("REPO_ROOT") ?? process.cwd();
+}
+
 const TARGET_CONFIG: Record<
   DatabaseTargetKey,
   { label: string; relativePath: string; reloadHint: string }
@@ -139,8 +143,16 @@ async function readEnvVariable(
     const fileContents = await readFile(absolutePath, "utf8");
     const lines = fileContents.split(/\r?\n/u);
     for (const line of lines) {
-      if (!line.startsWith(`${key}=`)) continue;
-      const rawValue = line.slice(key.length + 1).trim();
+      const trimmedLine = line.trim();
+      if (!trimmedLine || trimmedLine.startsWith("#")) continue;
+
+      const normalizedLine = trimmedLine.startsWith("export ")
+        ? trimmedLine.slice("export ".length).trimStart()
+        : trimmedLine;
+
+      if (!normalizedLine.startsWith(`${key}=`)) continue;
+
+      const rawValue = normalizedLine.slice(key.length + 1).trim();
       if (rawValue.length === 0) return "";
 
       if (
@@ -181,7 +193,16 @@ async function upsertEnvVariable(
 
   const nextLine = `${key}=${quoteEnvValue(value)}`;
   const lines = fileContents.length > 0 ? fileContents.split(/\r?\n/u) : [];
-  const existingIndex = lines.findIndex((line) => line.startsWith(`${key}=`));
+  const existingIndex = lines.findIndex((line) => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith("#")) return false;
+
+    const normalizedLine = trimmedLine.startsWith("export ")
+      ? trimmedLine.slice("export ".length).trimStart()
+      : trimmedLine;
+
+    return normalizedLine.startsWith(`${key}=`);
+  });
 
   if (existingIndex >= 0) {
     lines[existingIndex] = nextLine;
@@ -189,7 +210,7 @@ async function upsertEnvVariable(
     lines.push(nextLine);
   }
 
-  const nextContents = `${lines.filter(Boolean).join("\n")}\n`;
+  const nextContents = `${lines.join("\n").replace(/\n*$/u, "")}\n`;
   await writeFile(absolutePath, nextContents, "utf8");
 }
 
@@ -226,7 +247,7 @@ export async function GET() {
     return jsonError("Admin access required.", 403);
   }
 
-  const repoRoot = readOptionalEnvValue("REPO_ROOT") ?? process.cwd();
+  const repoRoot = resolveRepoRoot();
 
   return NextResponse.json(
     {
@@ -277,7 +298,7 @@ export async function POST(request: Request) {
     return jsonError("databaseUrl is required.", 400);
   }
 
-  const repoRoot = process.cwd();
+  const repoRoot = resolveRepoRoot();
   const absolutePath = path.join(repoRoot, TARGET_CONFIG[target].relativePath);
 
   await upsertEnvVariable(absolutePath, "DATABASE_URL", databaseUrl);

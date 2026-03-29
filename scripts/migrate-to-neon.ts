@@ -9,10 +9,25 @@ import { Pool } from "pg";
 import { createInterface } from "readline";
 import { fileURLToPath } from "url";
 
-dotenv.config({ path: ".env.local" });
-dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..");
+
+function loadEnvFiles() {
+  const envFiles = [
+    path.join(repoRoot, ".env.local"),
+    path.join(repoRoot, ".env"),
+    path.join(repoRoot, "api/.env.local"),
+    path.join(repoRoot, "api/.env"),
+  ];
+
+  for (const envFile of envFiles) {
+    if (!existsSync(envFile)) continue;
+    dotenv.config({ path: envFile, override: false });
+  }
+}
+
+loadEnvFiles();
 
 const colors = {
   reset: "\x1b[0m",
@@ -591,8 +606,8 @@ async function copyTable(
             return value;
           });
           try {
-            await targetPool.query(insertQuery, values);
-            inserted++;
+            const insertResult = await targetPool.query(insertQuery, values);
+            inserted += insertResult.rowCount ?? 0;
           } catch (insertErr: any) {
             if (
               insertErr.code === "22P02" &&
@@ -732,6 +747,12 @@ async function main() {
   info(`Target schema push: ${targetSchemaPush.key ?? target.key}`);
   info(`Source: ${sourceUrl.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target: ${targetUrl.replace(/:[^:@]+@/, ":****@")}\n`);
+
+  if (sourceUrl === targetUrl) {
+    throw new Error(
+      `Source and target resolve to the same database URL (${source.key} -> ${target.key}). Set OLD_DATABASE_URL/NEW_DATABASE_URL in the root env or api/.env.local, or pass distinct env values before running the migration.`,
+    );
+  }
 
   const sourceSsl = getSslConfig(sourceUrl);
   const targetSsl = getSslConfig(targetUrl);
