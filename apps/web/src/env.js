@@ -29,6 +29,9 @@ export const env = createEnv({
     SPOTIFY_CLIENT_SECRET: z.string().optional(),
     NEXTAUTH_URL: z.string().url().optional(),
     DATABASE_URL: z.string().url().optional(),
+    REPO_ROOT: z.string().optional(),
+    ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT: z.string().optional(),
+    ADMIN_DB_CONFIG_API_RELOAD_HINT: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -70,6 +73,11 @@ export const env = createEnv({
     SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     DATABASE_URL: process.env.DATABASE_URL,
+    REPO_ROOT: process.env.REPO_ROOT,
+    ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT:
+      process.env.ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT,
+    ADMIN_DB_CONFIG_API_RELOAD_HINT:
+      process.env.ADMIN_DB_CONFIG_API_RELOAD_HINT,
     NODE_ENV: process.env.NODE_ENV,
     SONGBIRD_API_URL:
       process.env.SONGBIRD_API_URL ??
