@@ -12,11 +12,29 @@ const migrationsOutPath = "apps/web/drizzle";
 dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false });
 
+function resolveDatabaseUrl() {
+  const candidates = [
+    process.env.DRIZZLE_DATABASE_URL,
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.PRISMA_DATABASE_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.DATABASE_URL_UNPOOLED,
+  ];
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 function getSslConfig() {
-  const rawUrl =
-    process.env.DRIZZLE_DATABASE_URL?.trim() ??
-    process.env.DATABASE_URL?.trim();
-  const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
+  const databaseUrl = resolveDatabaseUrl();
   const connectionString = databaseUrl ?? process.env.DB_HOST ?? "";
   const isLocalDb =
     connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
@@ -28,10 +46,7 @@ function getSslConfig() {
   return { rejectUnauthorized: true };
 }
 
-const rawUrl =
-  process.env.DRIZZLE_DATABASE_URL?.trim() ??
-  process.env.DATABASE_URL?.trim();
-const databaseUrl = rawUrl && rawUrl.length > 0 ? rawUrl : undefined;
+const databaseUrl = resolveDatabaseUrl();
 
 if (!databaseUrl && !process.env.DB_HOST) {
   console.warn(

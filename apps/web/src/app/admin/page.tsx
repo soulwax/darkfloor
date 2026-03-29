@@ -11,12 +11,14 @@ import {
   CircleAlert,
   CircleCheck,
   Crown,
+  Database,
   FileText,
   Gauge,
   Ban,
   Link2,
   Loader2,
   Lock,
+  Save,
   Shield,
   RefreshCcw,
   Trash2,
@@ -127,6 +129,36 @@ type SpotifyAdminTrackSummary = {
   raw: unknown;
 };
 
+type DatabaseConfigTargetKey = "frontend" | "api";
+
+type DatabaseConfigSummary = {
+  scheme: string | null;
+  host: string | null;
+  port: number | null;
+  database: string | null;
+  username: string | null;
+};
+
+type DatabaseConfigTarget = {
+  key: DatabaseConfigTargetKey;
+  label: string;
+  envFilePath: string;
+  databaseUrl: string | null;
+  summary: DatabaseConfigSummary;
+  runtimeDatabaseUrl: string | null;
+  runtimeSummary: DatabaseConfigSummary | null;
+  runtimeMatchesFile: boolean | null;
+  reloadHint: string;
+};
+
+type DatabaseConfigResponse = {
+  ok: boolean;
+  fetchedAt: string;
+  frontend: DatabaseConfigTarget;
+  api: DatabaseConfigTarget;
+  error?: string;
+};
+
 const BASIC_SPOTIFY_LOGIN_SCOPES = [
   "user-read-email",
   "user-read-private",
@@ -216,7 +248,7 @@ function extractArrayCandidates(
   keys: string[],
 ): unknown[] | null {
   if (Array.isArray(payload)) {
-    return payload;
+    return payload as unknown[];
   }
 
   const root = asRecord(payload);
@@ -225,7 +257,7 @@ function extractArrayCandidates(
   for (const key of keys) {
     const directValue = root[key];
     if (Array.isArray(directValue)) {
-      return directValue;
+      return directValue as unknown[];
     }
 
     const nestedRecord = asRecord(directValue);
@@ -234,7 +266,7 @@ function extractArrayCandidates(
     for (const nestedKey of ["items", "data", "playlists", "tracks"]) {
       const nestedValue = nestedRecord[nestedKey];
       if (Array.isArray(nestedValue)) {
-        return nestedValue;
+        return nestedValue as unknown[];
       }
     }
   }
@@ -472,7 +504,7 @@ function extractUpstreamOAuthDumpEntries(
     const candidateValue = root[candidateKey];
     if (!Array.isArray(candidateValue)) continue;
 
-    return candidateValue
+    return (candidateValue as unknown[])
       .map((entry, index) => {
         if (!entry || typeof entry !== "object") {
           return {
@@ -723,6 +755,20 @@ export default function AdminPage() {
     null,
   );
   const [spotifyTokenUnavailable, setSpotifyTokenUnavailable] = useState(false);
+  const [databaseConfig, setDatabaseConfig] =
+    useState<DatabaseConfigResponse | null>(null);
+  const [databaseConfigError, setDatabaseConfigError] = useState<string | null>(
+    null,
+  );
+  const [isDatabaseConfigLoading, setIsDatabaseConfigLoading] = useState(false);
+  const [savingDatabaseTarget, setSavingDatabaseTarget] =
+    useState<DatabaseConfigTargetKey | null>(null);
+  const [databaseDrafts, setDatabaseDrafts] = useState<
+    Record<DatabaseConfigTargetKey, string>
+  >({
+    frontend: "",
+    api: "",
+  });
 
   const handleToggleAdmin = (userId: string, admin: boolean) => {
     updateAdmin.mutate({ userId, admin: !admin });
@@ -739,6 +785,104 @@ export default function AdminPage() {
     if (!confirmed) return;
     removeUser.mutate({ userId });
   };
+
+  const refreshDatabaseConfig = useCallback(async () => {
+    setIsDatabaseConfigLoading(true);
+    setDatabaseConfigError(null);
+
+    try {
+      const response = await fetch("/api/admin/database-config", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as DatabaseConfigResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error ??
+            `Database config request failed (${response.status})`,
+        );
+      }
+
+      setDatabaseConfig(payload);
+      setDatabaseDrafts({
+        frontend: payload.frontend.databaseUrl ?? "",
+        api: payload.api.databaseUrl ?? "",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load database config";
+      setDatabaseConfigError(message);
+      showToast(message, "error");
+    } finally {
+      setIsDatabaseConfigLoading(false);
+    }
+  }, [showToast]);
+
+  const handleDatabaseDraftChange = useCallback(
+    (target: DatabaseConfigTargetKey, value: string) => {
+      setDatabaseDrafts((current) => ({
+        ...current,
+        [target]: value,
+      }));
+    },
+    [],
+  );
+
+  const handleSaveDatabaseConfig = useCallback(
+    async (target: DatabaseConfigTargetKey) => {
+      const nextValue = databaseDrafts[target].trim();
+      if (!nextValue) {
+        showToast("DATABASE_URL is required.", "error");
+        return;
+      }
+
+      setSavingDatabaseTarget(target);
+      try {
+        const response = await fetch("/api/admin/database-config", {
+          method: "POST",
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            target,
+            databaseUrl: nextValue,
+          }),
+        });
+        const payload = (await response.json()) as DatabaseConfigResponse;
+        if (!response.ok || !payload.ok) {
+          throw new Error(
+            payload.error ?? `Database config save failed (${response.status})`,
+          );
+        }
+
+        setDatabaseConfig(payload);
+        setDatabaseDrafts({
+          frontend: payload.frontend.databaseUrl ?? "",
+          api: payload.api.databaseUrl ?? "",
+        });
+        setDatabaseConfigError(null);
+        const updatedTarget = payload[target];
+        showToast(
+          `${updatedTarget.label} database config saved. ${updatedTarget.reloadHint}`,
+          "success",
+        );
+      } catch (error) {
+        showToast(
+          error instanceof Error
+            ? error.message
+            : "Failed to save database config",
+          "error",
+        );
+      } finally {
+        setSavingDatabaseTarget(null);
+      }
+    },
+    [databaseDrafts, showToast],
+  );
 
   const refreshDiagnostics = useCallback(async () => {
     setIsDiagnosticsLoading(true);
@@ -923,7 +1067,10 @@ export default function AdminPage() {
       });
 
       if (!response.ok) {
-        if (response.status === 503 && isMissingAuthDebugTokenError(parsedPayload)) {
+        if (
+          response.status === 503 &&
+          isMissingAuthDebugTokenError(parsedPayload)
+        ) {
           return;
         }
 
@@ -970,6 +1117,10 @@ export default function AdminPage() {
   const spotifyPlaylists = useMemo(
     () => extractSpotifyPlaylistSummaries(spotifyPlaylistsData?.payload),
     [spotifyPlaylistsData?.payload],
+  );
+  const databaseTargets = useMemo(
+    () => (databaseConfig ? [databaseConfig.frontend, databaseConfig.api] : []),
+    [databaseConfig],
   );
   const selectedSpotifyPlaylistTracks = useMemo(
     () => extractSpotifyPlaylistTracks(selectedSpotifyPlaylistData?.payload),
@@ -1176,6 +1327,11 @@ export default function AdminPage() {
     selectedSpotifyPlaylistId,
     showToast,
   ]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    void refreshDatabaseConfig();
+  }, [isAuthorized, refreshDatabaseConfig]);
 
   useEffect(() => {
     if (!isAuthorized) return;
@@ -1402,6 +1558,165 @@ export default function AdminPage() {
                 </pre>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)]/90 via-[var(--color-surface-2)]/85 to-[rgba(244,178,102,0.12)] p-6 shadow-[var(--shadow-lg)]">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="flex items-center gap-2 text-sm tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+              <Database className="h-4 w-4 text-[var(--color-accent)]" />
+              Database Config
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-subtext)]">
+              Small local editor for the frontend and API
+              <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
+                DATABASE_URL
+              </code>
+              values.
+            </p>
+          </div>
+          <button
+            onClick={() => void refreshDatabaseConfig()}
+            disabled={isDatabaseConfigLoading}
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+          >
+            {isDatabaseConfigLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
+            Refresh database config
+          </button>
+        </div>
+
+        <div className="mb-4 rounded-2xl border border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.08)] px-4 py-3 text-sm text-[var(--color-subtext)]">
+          This updates
+          <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
+            .env.local
+          </code>
+          for the frontend and
+          <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
+            api/.env.local
+          </code>
+          for the API. PM2 processes still need a reload to pick up the new
+          values.
+        </div>
+
+        {databaseConfigError ? (
+          <div className="mb-4 rounded-2xl border border-[var(--color-danger)]/70 bg-[rgba(242,139,130,0.08)] px-4 py-3 text-sm text-[var(--color-danger)]">
+            {databaseConfigError}
+          </div>
+        ) : null}
+
+        {databaseTargets.length === 0 && isDatabaseConfigLoading ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {[1, 2].map((item) => (
+              <div
+                key={item}
+                className="h-64 animate-pulse rounded-2xl bg-[var(--color-surface)]/70"
+              />
+            ))}
+          </div>
+        ) : databaseTargets.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-subtext)]">
+            Database config has not been loaded yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {databaseTargets.map((target) => {
+              const isSaving = savingDatabaseTarget === target.key;
+              const currentDraft = databaseDrafts[target.key];
+              const isDirty =
+                currentDraft.trim() !== (target.databaseUrl ?? "");
+
+              return (
+                <div
+                  key={target.key}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-[var(--color-text)]">
+                        {target.label}
+                      </p>
+                      <p className="font-mono text-[11px] text-[var(--color-muted)]">
+                        {target.envFilePath}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      {target.summary.host ?? "host n/a"}
+                    </span>
+                  </div>
+
+                  <div className="mb-3 flex flex-wrap gap-2 text-xs text-[var(--color-subtext)]">
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                      db:{" "}
+                      <strong className="text-[var(--color-text)]">
+                        {target.summary.database ?? "n/a"}
+                      </strong>
+                    </span>
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                      port:{" "}
+                      <strong className="text-[var(--color-text)]">
+                        {target.summary.port ?? "n/a"}
+                      </strong>
+                    </span>
+                    <span className="rounded-full border border-[var(--color-border)] px-2 py-1">
+                      user:{" "}
+                      <strong className="text-[var(--color-text)]">
+                        {target.summary.username ?? "n/a"}
+                      </strong>
+                    </span>
+                  </div>
+
+                  {target.runtimeMatchesFile === false ? (
+                    <div className="mb-3 rounded-xl border border-[var(--color-warning)]/60 bg-[rgba(242,199,97,0.08)] px-3 py-2 text-xs text-[var(--color-warning)]">
+                      The current {target.label} runtime value does not match
+                      the file value yet. Reload the PM2 process after saving.
+                    </div>
+                  ) : null}
+
+                  <label
+                    className="mb-2 block text-xs font-semibold tracking-[0.08em] text-[var(--color-muted)] uppercase"
+                    htmlFor={`database-url-${target.key}`}
+                  >
+                    DATABASE_URL
+                  </label>
+                  <textarea
+                    id={`database-url-${target.key}`}
+                    value={currentDraft}
+                    onChange={(event) =>
+                      handleDatabaseDraftChange(target.key, event.target.value)
+                    }
+                    rows={4}
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    className="mb-3 w-full resize-y rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-3 font-mono text-sm text-[var(--color-text)] transition outline-none focus:border-[var(--color-accent)]"
+                  />
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-[var(--color-subtext)]">
+                      {target.reloadHint}
+                    </p>
+                    <button
+                      onClick={() => void handleSaveDatabaseConfig(target.key)}
+                      disabled={isSaving || !currentDraft.trim() || !isDirty}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/70 bg-[rgba(88,198,177,0.1)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      Save {target.label}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

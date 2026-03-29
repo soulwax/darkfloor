@@ -3,6 +3,7 @@
 # dependencies
 
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 
@@ -107,4 +108,5 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 
-
+# local submodules / linked repos
+/api

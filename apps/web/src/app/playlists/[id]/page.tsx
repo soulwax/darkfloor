@@ -32,16 +32,24 @@ export default function PlaylistDetailPage() {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
 
-  const { data: privatePlaylist, isLoading: isLoadingPrivate } =
+  const {
+    data: privatePlaylist,
+    isLoading: isLoadingPrivate,
+    error: privatePlaylistError,
+  } =
     api.music.getPlaylist.useQuery(
       { id: playlistId },
       { enabled: !!session && !isNaN(playlistId), retry: false },
     );
 
+  const shouldLoadPublicPlaylist =
+    !isNaN(playlistId) &&
+    (!session || privatePlaylistError?.message === "Playlist not found");
+
   const { data: publicPlaylist, isLoading: isLoadingPublic } =
     api.music.getPublicPlaylist.useQuery(
       { id: playlistId },
-      { enabled: !session && !isNaN(playlistId), retry: false },
+      { enabled: shouldLoadPublicPlaylist, retry: false },
     );
 
   const playlist = privatePlaylist ?? publicPlaylist;

@@ -6,6 +6,7 @@ import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { playlistTracks, playlists } from "@/server/db/schema";
 import { type Track } from "@starchild/types";
+import { sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -42,6 +43,11 @@ const spotifyImportRequestSchema = z.object({
   isPublic: z.boolean().optional(),
   sourcePlaylist: spotifyImportSourcePlaylistSchema.optional(),
 });
+
+type PostgresConstraintError = {
+  code?: string;
+  constraint?: string;
+};
 
 const backendDeezerTrackSchema = z
   .object({
@@ -187,6 +193,29 @@ function coalesceCoverImage(
   );
 }
 
+function isUniqueConstraintError(
+  error: unknown,
+  constraint?: string,
+): error is PostgresConstraintError {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as PostgresConstraintError;
+  if (candidate.code !== "23505") return false;
+  if (!constraint) return true;
+
+  return candidate.constraint === constraint;
+}
+
+async function syncPlaylistIdSequence(): Promise<void> {
+  await db.execute(sql`
+    SELECT setval(
+      pg_get_serial_sequence('"hexmusic-stream_playlist"', 'id'),
+      COALESCE((SELECT MAX("id") FROM "hexmusic-stream_playlist"), 0) + 1,
+      false
+    )
+  `);
+}
+
 function toLocalTrack(
   matchedTrack: z.infer<
     typeof backendSpotifyImportResponseSchema
@@ -317,42 +346,54 @@ async function createLocalPlaylistFromSpotifyImport(input: {
     toLocalTrack(matchedTrack),
   );
 
-  return db.transaction(async (tx) => {
-    const [playlist] = await tx
-      .insert(playlists)
-      .values({
-        userId,
-        name: playlistName,
-        description: playlistDescription,
-        isPublic: payload.isPublic ?? false,
-        coverImage,
-      })
-      .returning({
-        id: playlists.id,
-        name: playlists.name,
-      });
+  const insertPlaylist = async () =>
+    db.transaction(async (tx) => {
+      const [playlist] = await tx
+        .insert(playlists)
+        .values({
+          userId,
+          name: playlistName,
+          description: playlistDescription,
+          isPublic: payload.isPublic ?? false,
+          coverImage,
+        })
+        .returning({
+          id: playlists.id,
+          name: playlists.name,
+        });
 
-    if (!playlist) {
-      throw new Error("Failed to create the imported Starchild playlist.");
+      if (!playlist) {
+        throw new Error("Failed to create the imported Starchild playlist.");
+      }
+
+      if (tracks.length > 0) {
+        await tx.insert(playlistTracks).values(
+          tracks.map((track, position) => ({
+            playlistId: playlist.id,
+            trackId: track.id,
+            deezerId:
+              typeof track.deezer_id === "string"
+                ? Number.parseInt(track.deezer_id, 10)
+                : track.deezer_id,
+            trackData: track,
+            position,
+          })),
+        );
+      }
+
+      return playlist;
+    });
+
+  try {
+    return await insertPlaylist();
+  } catch (error) {
+    if (!isUniqueConstraintError(error, "hexmusic-stream_playlist_pkey")) {
+      throw error;
     }
 
-    if (tracks.length > 0) {
-      await tx.insert(playlistTracks).values(
-        tracks.map((track, position) => ({
-          playlistId: playlist.id,
-          trackId: track.id,
-          deezerId:
-            typeof track.deezer_id === "string"
-              ? Number.parseInt(track.deezer_id, 10)
-              : track.deezer_id,
-          trackData: track,
-          position,
-        })),
-      );
-    }
-
-    return playlist;
-  });
+    await syncPlaylistIdSequence();
+    return insertPlaylist();
+  }
 }
 
 export async function POST(request: NextRequest) {

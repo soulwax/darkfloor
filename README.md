@@ -191,7 +191,7 @@ For route-level details, see `docs/API_ROUTE_USE.md`.
 ## Runtime and Env Loading Behavior
 
 - Root server entrypoint: `scripts/server.js` (delegates to `apps/web/scripts/server.js`)
-- Dev mode (`NODE_ENV=development`): loads only `.env` with override
+- Dev mode (`NODE_ENV=development`): loads `.env`, then `.env.local` with override
 - Production mode: loads `.env.local`, then `.env.production`, then `.env`
 - Default app port: `3222` (set by `PORT`)
 

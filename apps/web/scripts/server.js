@@ -25,8 +25,9 @@ const nodeEnv = process.env.NODE_ENV || "production";
 const isDev = nodeEnv === "development";
 
 if (isDev) {
-    console.log('[ENV] Development mode: Loading ONLY .env');
+  console.log("[ENV] Development mode: Loading .env.local, then .env");
   dotenv.config({ path: path.resolve(repoRoot, ".env"), override: true });
+  dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 } else {
         dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: false });
   dotenv.config({ path: path.resolve(repoRoot, ".env.production"), override: false });
@@ -37,12 +38,23 @@ if (pm2Port) {
   process.env.PORT = pm2Port;
 }
 
+const resolvedDatabaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.PRISMA_DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL_UNPOOLED;
+
 console.log("=== Environment Variables Loaded ===");
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("PORT:", process.env.PORT);
 // SECURITY: Don't print NEXTAUTH_URL as it may contain infrastructure details
 console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL ? "✓ Set" : "✗ Missing");
-console.log("DATABASE_URL:", process.env.DATABASE_URL ? "✓ Set" : "✗ Missing");
+console.log(
+  "DATABASE_URL:",
+  resolvedDatabaseUrl ? "✓ Set" : "✗ Missing",
+);
 console.log("AUTH_SECRET:", process.env.AUTH_SECRET ? "✓ Set (" + process.env.AUTH_SECRET.length + " chars)" : "✗ Missing");
 console.log("====================================\n");
 

@@ -150,7 +150,7 @@ logAuthInfo("NextAuth config bootstrap", {
   oauthVerboseDebugEnabled,
   nodeEnv: process.env.NODE_ENV,
   electronBuild: env.ELECTRON_BUILD,
-  hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+  hasDatabaseUrl: Boolean(env.DATABASE_URL),
   authSpotifyEnabled: env.AUTH_SPOTIFY_ENABLED,
   publicAuthSpotifyEnabled: env.NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED,
   spotifyOAuthOwner: "disabled",

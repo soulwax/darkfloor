@@ -23,17 +23,57 @@ const DRIZZLE_FOLDER = "apps/web/drizzle";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config(); 
+function resolveDatabaseUrl(): string | undefined {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.PRISMA_DATABASE_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.DATABASE_URL_UNPOOLED,
+  ];
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 function getSslConfig(connectionString: string) {
-    if (connectionString.includes("neon.tech")) {
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    parsed = null;
+  }
+
+  const hostname = parsed?.hostname?.toLowerCase() ?? "";
+  const hasExplicitSslMode =
+    parsed?.searchParams.has("sslmode") ?? connectionString.includes("sslmode=");
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1"
+  ) {
     return undefined;
   }
 
-    const isCloudDb = 
-    connectionString.includes("aivencloud.com") || 
-    connectionString.includes("rds.amazonaws.com") ||
-    connectionString.includes("sslmode=");
+  const isCloudDb = 
+    hostname.includes("aivencloud.com") || 
+    hostname.includes("amazonaws.com") ||
+    hostname.includes("neon.tech") ||
+    hostname.includes("prisma.io");
 
-  if (!isCloudDb && connectionString.includes("localhost")) {
+  if (hasExplicitSslMode) {
+    return undefined;
+  }
+
+  if (!isCloudDb) {
     return undefined;
   }
 
@@ -71,10 +111,13 @@ function log(message: string, color: keyof typeof colors = "reset") {
 }
 
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = resolveDatabaseUrl();
 
   if (!databaseUrl) {
-    log("❌ DATABASE_URL environment variable is required", "red");
+    log(
+      "❌ A frontend database URL env is required (DATABASE_URL or Prisma/Postgres aliases)",
+      "red",
+    );
     process.exit(1);
   }
 

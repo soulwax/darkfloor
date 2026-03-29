@@ -223,6 +223,16 @@ async function syncPlaylistTrackIdSequence(database: typeof db): Promise<void> {
   `);
 }
 
+async function syncPlaylistIdSequence(database: typeof db): Promise<void> {
+  await database.execute(sql`
+    SELECT setval(
+      pg_get_serial_sequence('"hexmusic-stream_playlist"', 'id'),
+      COALESCE((SELECT MAX("id") FROM "hexmusic-stream_playlist"), 0) + 1,
+      false
+    )
+  `);
+}
+
 async function syncListeningHistoryIdSequence(
   database: typeof db,
 ): Promise<void> {
@@ -1184,17 +1194,29 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [playlist] = await ctx.db
-        .insert(playlists)
-        .values({
-          userId: ctx.session.user.id,
-          name: input.name,
-          description: input.description,
-          isPublic: input.isPublic,
-        })
-        .returning();
+      const insertPlaylist = () =>
+        ctx.db
+          .insert(playlists)
+          .values({
+            userId: ctx.session.user.id,
+            name: input.name,
+            description: input.description,
+            isPublic: input.isPublic,
+          })
+          .returning();
 
-      return playlist;
+      try {
+        const [playlist] = await insertPlaylist();
+        return playlist;
+      } catch (error) {
+        if (!isUniqueConstraintError(error, "hexmusic-stream_playlist_pkey")) {
+          throw error;
+        }
+
+        await syncPlaylistIdSequence(ctx.db);
+        const [playlist] = await insertPlaylist();
+        return playlist;
+      }
     }),
 
   updatePlaylistVisibility: protectedProcedure

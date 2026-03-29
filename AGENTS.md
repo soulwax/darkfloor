@@ -123,7 +123,7 @@ Note on upstream APIs:
   - For user-scoped upstream calls, forward caller-provided `Authorization` headers.
 - Server wrapper/env loading:
   - Root `scripts/server.js` delegates to `apps/web/scripts/server.js`.
-  - Dev mode loads only `.env` with override.
+  - Dev mode loads `.env`, then `.env.local` with override so local machine settings win.
   - Production loads `.env.local`, then `.env.production`, then `.env`.
 - Package manager:
   - `pnpm-lock.yaml` is the canonical lockfile; default install flow is `pnpm install --frozen-lockfile`.

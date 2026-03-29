@@ -9,10 +9,25 @@ import { Pool } from "pg";
 import { createInterface } from "readline";
 import { fileURLToPath } from "url";
 
-dotenv.config({ path: ".env.local" });
-dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..");
+
+function loadEnvFiles() {
+  const envFiles = [
+    path.join(repoRoot, ".env.local"),
+    path.join(repoRoot, ".env"),
+    path.join(repoRoot, "api/.env.local"),
+    path.join(repoRoot, "api/.env"),
+  ];
+
+  for (const envFile of envFiles) {
+    if (!existsSync(envFile)) continue;
+    dotenv.config({ path: envFile, override: false });
+  }
+}
+
+loadEnvFiles();
 
 const colors = {
   reset: "\x1b[0m",
@@ -139,6 +154,12 @@ Examples:
   pnpm migrate:neon -- --dry-run
   pnpm migrate:neon -- --existing=skip-table --skip-confirm
   pnpm migrate:neon -- --only-tables=hexmusic-stream_user,hexmusic-stream_session --existing=truncate --skip-confirm
+
+Notes:
+  - The script name remains "migrate:neon" for compatibility.
+  - Target URLs may be Prisma Postgres / managed Postgres URLs via
+    NEW_DATABASE_URL*, TARGET_DATABASE_URL*, POSTGRES_URL*, PRISMA_DATABASE_URL,
+    or DATABASE_URL* env aliases.
 `);
 }
 
@@ -259,16 +280,36 @@ function describeAction(action: TableAction): string {
 }
 
 function getSslConfig(connectionString: string) {
-  if (connectionString.includes("neon.tech")) {
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    parsed = null;
+  }
+
+  const hostname = parsed?.hostname.toLowerCase() ?? "";
+  const hasExplicitSslMode =
+    parsed?.searchParams.has("sslmode") ?? connectionString.includes("sslmode=");
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1"
+  ) {
     return undefined;
   }
 
   const isCloudDb =
-    connectionString.includes("aivencloud.com") ||
-    connectionString.includes("rds.amazonaws.com") ||
-    connectionString.includes("sslmode=");
+    hostname.includes("aivencloud.com") ||
+    hostname.includes("amazonaws.com") ||
+    hostname.includes("neon.tech") ||
+    hostname.includes("prisma.io");
 
-  if (!isCloudDb && connectionString.includes("localhost")) {
+  if (hasExplicitSslMode) {
+    return undefined;
+  }
+
+  if (!isCloudDb) {
     return undefined;
   }
 
@@ -294,7 +335,7 @@ function getSslConfig(connectionString: string) {
   }
 
   console.warn(
-    "[Migration] ⚠️  WARNING: Cloud database detected but no CA certificate found!",
+    "[Migration] ⚠️  WARNING: Cloud database detected without explicit sslmode and no CA certificate found!",
   );
   console.warn(
     "[Migration] ⚠️  Using rejectUnauthorized: false - vulnerable to MITM attacks",
@@ -591,8 +632,8 @@ async function copyTable(
             return value;
           });
           try {
-            await targetPool.query(insertQuery, values);
-            inserted++;
+            const insertResult = await targetPool.query(insertQuery, values);
+            inserted += insertResult.rowCount ?? 0;
           } catch (insertErr: any) {
             if (
               insertErr.code === "22P02" &&
@@ -663,7 +704,7 @@ async function main() {
     process.exit(1);
   }
 
-  log("\n🚀 Starting database migration to NEON Postgres\n", "bright");
+  log("\n🚀 Starting database migration to target PostgreSQL\n", "bright");
   info(
     `Mode: ${options.dryRun ? "dry-run" : "execute"} | existing=${options.existingDataMode} | batchSize=${options.batchSize}`,
   );
@@ -675,23 +716,27 @@ async function main() {
   }
 
   const sourceCandidates = [
+    "OLD_DATABASE_URL",
     "OLD_DATABASE_URL_UNPOOLED",
     "OLD_DATABASE_UNPOOLED",
-    "OLD_DATABASE_URL",
-    "SOURCE_DATABASE_URL_UNPOOLED",
     "SOURCE_DATABASE_URL",
-    "DATABASE_URL_UNPOOLED",
+    "SOURCE_DATABASE_URL_UNPOOLED",
     "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
   ] as const;
 
   const targetCandidates = [
+    "NEW_DATABASE_URL",
     "NEW_DATABASE_URL_UNPOOLED",
     "NEW_DATABASE_UNPOOLED",
-    "NEW_DATABASE_URL",
-    "TARGET_DATABASE_URL_UNPOOLED",
     "TARGET_DATABASE_URL",
+    "TARGET_DATABASE_URL_UNPOOLED",
+    "POSTGRES_PRISMA_URL",
+    "PRISMA_DATABASE_URL",
+    "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
     "DATABASE_URL_UNPOOLED",
-    "DATABASE_UNPOOLED",
   ] as const;
 
   const source = resolveEnvValue(sourceCandidates);
@@ -703,6 +748,10 @@ async function main() {
     "NEW_DATABASE_POOLED",
     "TARGET_DATABASE_URL",
     "TARGET_DATABASE_POOLED",
+    "POSTGRES_PRISMA_URL",
+    "PRISMA_DATABASE_URL",
+    "POSTGRES_URL",
+    "DATABASE_URL",
   ] as const);
   const targetSchemaPushUrl = targetSchemaPush.value ?? targetUrl;
 
@@ -721,16 +770,23 @@ async function main() {
       `❌ One target DB URL env var is required: ${targetCandidates.join(", ")}`,
     );
     error(
-      "   Recommended: Set NEW_DATABASE_URL_UNPOOLED for the Neon target database",
+      "   Recommended: Set NEW_DATABASE_URL_UNPOOLED or PRISMA_DATABASE_URL for the target database",
     );
     process.exit(1);
   }
 
-  info(`Source env key: ${source.key ?? "unknown"}`);
-  info(`Target env key: ${target.key ?? "unknown"}`);
-  info(`Target schema push key: ${targetSchemaPush.key ?? target.key ?? "unknown"}`);
+  if (!source.key || !source.value || !target.key || !target.value) throw new Error("Missing source/target URLs");
+  info(`Source (${source.key}): ${source.value.replace(/:[^:@]+@/, ":****@")}`);
+  info(`Target (${target.key}): ${target.value.replace(/:[^:@]+@/, ":****@")}`);
+  info(`Target schema push: ${targetSchemaPush.key ?? target.key}`);
   info(`Source: ${sourceUrl.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target: ${targetUrl.replace(/:[^:@]+@/, ":****@")}\n`);
+
+  if (sourceUrl === targetUrl) {
+    throw new Error(
+      `Source and target resolve to the same database URL (${source.key} -> ${target.key}). Set OLD_DATABASE_URL/NEW_DATABASE_URL in the root env or api/.env.local, or pass distinct env values before running the migration.`,
+    );
+  }
 
   const sourceSsl = getSslConfig(sourceUrl);
   const targetSsl = getSslConfig(targetUrl);
@@ -755,8 +811,10 @@ async function main() {
     await targetPool.query("SELECT 1");
     success("Target database connection successful\n");
 
-    runDrizzlePush(targetSchemaPushUrl);
-    log("", "reset");
+    if (targetSchemaPushUrl) {
+      runDrizzlePush(targetSchemaPushUrl);
+      log("", "reset");
+    }
 
     log("Discovering tables...", "cyan");
     const discoveredTables = await getTablesInOrder(sourcePool);

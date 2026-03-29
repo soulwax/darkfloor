@@ -4,11 +4,29 @@ import type { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const originalFetch = global.fetch;
+const originalVercel = process.env.VERCEL;
+const originalVercelEnv = process.env.VERCEL_ENV;
+const originalVercelUrl = process.env.VERCEL_URL;
 
 describe("Stream API (V2-only)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     global.fetch = originalFetch;
+    if (originalVercel === undefined) {
+      delete process.env.VERCEL;
+    } else {
+      process.env.VERCEL = originalVercel;
+    }
+    if (originalVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = originalVercelEnv;
+    }
+    if (originalVercelUrl === undefined) {
+      delete process.env.VERCEL_URL;
+    } else {
+      process.env.VERCEL_URL = originalVercelUrl;
+    }
   });
 
   it("streams via V2 and forwards Range header", async () => {
@@ -59,7 +77,7 @@ describe("Stream API (V2-only)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const calledUrl = new URL(fetchMock.mock.calls[0]?.[0] as string);
     expect(calledUrl.origin).toBe("https://darkfloor.one");
-    expect(calledUrl.pathname).toBe("/music/stream/direct");
+    expect(calledUrl.pathname).toBe("/music/stream");
     expect(calledUrl.searchParams.get("key")).toBe("test-key");
     expect(calledUrl.searchParams.get("kbps")).toBe("320");
     expect(calledUrl.searchParams.get("q")).toBe("I Disappear");
@@ -67,6 +85,41 @@ describe("Stream API (V2-only)", () => {
     const options = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
     const headers = (options?.headers ?? {}) as Record<string, string>;
     expect(headers.Range).toBe("bytes=0-2");
+  });
+
+  it("uses the direct stream route on Vercel", async () => {
+    process.env.VERCEL = "1";
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URL: "https://darkfloor.one/",
+        BLUESIX_API_KEY: "test-key",
+      },
+    }));
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: {
+          "content-type": "audio/mpeg",
+          "content-length": "3",
+        },
+      }),
+    );
+    global.fetch = fetchMock;
+
+    const { GET } = await import("@/app/api/stream/route");
+
+    const req = {
+      nextUrl: new URL("http://localhost:3000/api/stream?id=2665275062"),
+      headers: new Headers(),
+    } as NextRequest;
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
+    const calledUrl = new URL(fetchMock.mock.calls[0]?.[0] as string);
+    expect(calledUrl.pathname).toBe("/music/stream/direct");
   });
 
   it("returns 500 when V2 is not configured", async () => {
@@ -183,6 +236,7 @@ describe("Stream API (V2-only)", () => {
 
     expect(res.status).toBe(200);
     const calledUrl = new URL(fetchMock.mock.calls[0]?.[0] as string);
+    expect(calledUrl.pathname).toBe("/music/stream/direct");
     expect(calledUrl.searchParams.get("format")).toBe("flac");
     expect(calledUrl.searchParams.get("kbps")).toBeNull();
   });

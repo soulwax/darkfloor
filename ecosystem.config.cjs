@@ -5,6 +5,7 @@ const path = require("path");
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 const PORT = process.env.PORT || "3222";
+const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
 
 module.exports = {
   apps: [
@@ -31,10 +32,12 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: PORT,
+        HOSTNAME: HOSTNAME,
       },
       env_production: {
         NODE_ENV: "production",
         PORT: PORT,
+        HOSTNAME: HOSTNAME,
       },
       combine_logs: true,
       merge_logs: true,
@@ -86,10 +89,12 @@ module.exports = {
       env: {
         NODE_ENV: "development",
         PORT: PORT,
+        HOSTNAME: HOSTNAME,
       },
       env_development: {
         NODE_ENV: "development",
         PORT: PORT,
+        HOSTNAME: HOSTNAME,
       },
 
       combine_logs: true,

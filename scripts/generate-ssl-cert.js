@@ -22,9 +22,32 @@ if (isDev) {
 }
 
 async function generateSSLCert() {
-    const databaseUrl = process.env.DATABASE_URL || "";
-  if (databaseUrl.includes("neon.tech")) {
-    console.log("ℹ️  Neon database detected - SSL handled automatically, skipping certificate generation");
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.PRISMA_DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.DATABASE_URL_UNPOOLED ||
+    "";
+
+  let parsed = null;
+  try {
+    parsed = databaseUrl ? new URL(databaseUrl) : null;
+  } catch {
+    parsed = null;
+  }
+
+  const hostname = parsed?.hostname?.toLowerCase() ?? "";
+  const hasExplicitSslMode =
+    parsed?.searchParams.has("sslmode") ?? databaseUrl.includes("sslmode=");
+
+  if (
+    hostname.includes("neon.tech") ||
+    hostname.includes("prisma.io") ||
+    hasExplicitSslMode
+  ) {
+    console.log("ℹ️  Managed PostgreSQL URL detected - SSL handled by the connection string, skipping certificate generation");
     return;
   }
 
