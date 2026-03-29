@@ -82,7 +82,7 @@ const config = {
     NEXT_PUBLIC_APP_VERSION: appVersion,
   },
   reactStrictMode: true,
-
+  allowedDevOrigins: ['darkfloor.org'],
   output: "standalone",
   distDir: "../../.next",
 
@@ -102,8 +102,8 @@ const config = {
     removeConsole:
       process.env.NODE_ENV === "production"
         ? {
-            exclude: ["error", "warn"],
-          }
+          exclude: ["error", "warn"],
+        }
         : false,
   },
 

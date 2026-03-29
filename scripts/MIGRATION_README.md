@@ -35,9 +35,10 @@ The migration script (`migrate-to-neon.ts`) provides:
 **Usage:**
 
 ```bash
-# Set source + target (preferred names)
-export OLD_DATABASE_UNPOOLED="postgresql://source-user:pass@source-host/db"
-export NEW_DATABASE_URL_UNPOOLED="postgresql://target-user:pass@target-host/db"
+# Set source + target
+export OLD_DATABASE_URL="postgresql://source-user:pass@source-host/db"
+export NEW_DATABASE_URL="postgresql://target-user:pass@target-host/db"
+# (UNPOOLED variants optional; preferred for large parallel migrations)
 
 # Run migration with defaults (append mode + verification)
 pnpm migrate:neon

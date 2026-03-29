@@ -675,23 +675,23 @@ async function main() {
   }
 
   const sourceCandidates = [
+    "OLD_DATABASE_URL",
     "OLD_DATABASE_URL_UNPOOLED",
     "OLD_DATABASE_UNPOOLED",
-    "OLD_DATABASE_URL",
-    "SOURCE_DATABASE_URL_UNPOOLED",
     "SOURCE_DATABASE_URL",
-    "DATABASE_URL_UNPOOLED",
+    "SOURCE_DATABASE_URL_UNPOOLED",
     "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
   ] as const;
 
   const targetCandidates = [
+    "NEW_DATABASE_URL",
     "NEW_DATABASE_URL_UNPOOLED",
     "NEW_DATABASE_UNPOOLED",
-    "NEW_DATABASE_URL",
-    "TARGET_DATABASE_URL_UNPOOLED",
     "TARGET_DATABASE_URL",
+    "TARGET_DATABASE_URL_UNPOOLED",
+    "DATABASE_URL",
     "DATABASE_URL_UNPOOLED",
-    "DATABASE_UNPOOLED",
   ] as const;
 
   const source = resolveEnvValue(sourceCandidates);
@@ -726,9 +726,10 @@ async function main() {
     process.exit(1);
   }
 
-  info(`Source env key: ${source.key ?? "unknown"}`);
-  info(`Target env key: ${target.key ?? "unknown"}`);
-  info(`Target schema push key: ${targetSchemaPush.key ?? target.key ?? "unknown"}`);
+  if (!source.key || !source.value || !target.key || !target.value) throw new Error("Missing source/target URLs");
+  info(`Source (${source.key}): ${source.value.replace(/:[^:@]+@/, ":****@")}`);
+  info(`Target (${target.key}): ${target.value.replace(/:[^:@]+@/, ":****@")}`);
+  info(`Target schema push: ${targetSchemaPush.key ?? target.key}`);
   info(`Source: ${sourceUrl.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target: ${targetUrl.replace(/:[^:@]+@/, ":****@")}\n`);
 
