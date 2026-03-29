@@ -5,26 +5,6 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.0] - 2026-03-29
-
-### Added
-
-- **Three more FlowField visualizers expand the catalog again**: Added `prismaticTide` for stacked refracted wavebands, `helixGarden` for rotating sprout-like DNA stems, and `echoHarp` for luminous resonant string fans that pulse across the canvas.
-
-### Changed
-
-- **Pattern registration stays aligned with the growing renderer set**: The type union, random rotation list, and direct-selection validation were extended again so the new visuals behave like native first-class patterns.
-
-## [1.7.0] - 2026-03-29
-
-### Added
-
-- **Three new FlowField visualizers broaden the visual language**: Added `moireCanopy` for layered moire domes, `vectorBloom` for sharp kinetic blossom geometry, and `sonicIris` for an aperture-like shutter pattern that breathes with the music.
-
-### Changed
-
-- **Visualizer pattern registries now include the new selections everywhere they need to**: The typed pattern union, renderer rotation list, and runtime validation set now all recognize the new visuals so they work in random rotation and direct selection without loosening type safety.
-
 ## [1.6.4] - 2026-03-29
 
 ### Changed
