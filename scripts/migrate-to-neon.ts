@@ -811,8 +811,10 @@ async function main() {
     await targetPool.query("SELECT 1");
     success("Target database connection successful\n");
 
-    runDrizzlePush(targetSchemaPushUrl);
-    log("", "reset");
+    if (targetSchemaPushUrl) {
+      runDrizzlePush(targetSchemaPushUrl);
+      log("", "reset");
+    }
 
     log("Discovering tables...", "cyan");
     const discoveredTables = await getTablesInOrder(sourcePool);

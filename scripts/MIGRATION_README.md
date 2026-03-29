@@ -1,16 +1,16 @@
-# Database Migration to NEON Postgres
+# Database Migration to Managed PostgreSQL
 
-This guide explains how to migrate your database from your current PostgreSQL instance to NEON Postgres.
+This guide explains how to migrate your database from your current PostgreSQL instance to a managed PostgreSQL target such as Prisma Postgres.
 
 ## Prerequisites
 
-1. **Ensure schema exists on target database**: Before migrating data, you need to create the schema on the NEON database. Run:
+1. **Ensure schema exists on target database**: Before migrating data, create the schema on the target database. Run:
 
 ```bash
-# Set your NEON database URL temporarily
-export DATABASE_URL="postgresql://neondb_owner:npg_wGoei3E1pZdX@ep-wandering-night-agpfwl6e-pooler.c-2.eu-central-1.aws.neon.tech/starchild?sslmode=require&channel_binding=require"
+# Set your target database URL temporarily
+export DATABASE_URL="postgres://token:secret@db.prisma.io:5432/postgres?sslmode=require"
 
-# Push schema to NEON
+# Push schema to the target
 pnpm drizzle-kit push --config apps/web/drizzle.config.cjs
 ```
 
@@ -77,13 +77,13 @@ For very large databases, `pg_dump`/`pg_restore` might be faster:
 # 1. Dump schema only (if not already done)
 pg_dump $SOURCE_DATABASE_URL --schema-only > schema.sql
 
-# 2. Apply schema to NEON
+# 2. Apply schema to target
 psql $TARGET_DATABASE_URL < schema.sql
 
 # 3. Dump data only
 pg_dump $SOURCE_DATABASE_URL --data-only --disable-triggers > data.sql
 
-# 4. Restore data to NEON
+# 4. Restore data to target
 psql $TARGET_DATABASE_URL < data.sql
 ```
 
@@ -95,11 +95,14 @@ pg_dump $SOURCE_DATABASE_URL | psql $TARGET_DATABASE_URL
 
 ## Post-Migration
 
-1. **Update your environment variables** to point to NEON:
+1. **Update your environment variables** to point to the new database:
 
 ```bash
 # Update .env.local
-DATABASE_URL="postgresql://neondb_owner:npg_wGoei3E1pZdX@ep-wandering-night-agpfwl6e-pooler.c-2.eu-central-1.aws.neon.tech/starchild?sslmode=require&channel_binding=require"
+DATABASE_URL="postgres://token:secret@db.prisma.io:5432/postgres?sslmode=require"
+# Optional aliases also supported:
+# PRISMA_DATABASE_URL="${DATABASE_URL}"
+# POSTGRES_PRISMA_URL="${DATABASE_URL}"
 ```
 
 2. **Test the connection:**
@@ -126,7 +129,7 @@ SELECT 'playlists', (SELECT COUNT(*) FROM "hexmusic-stream_playlist")
 
 ### SSL Certificate Issues
 
-If you encounter SSL errors, the script will automatically use lenient SSL for NEON. For other databases, you may need to:
+If you encounter SSL errors, managed PostgreSQL URLs with explicit `sslmode=...` are used as-is. For certificate-based setups without explicit SSL mode, you may need to:
 
 1. Set `DB_SSL_CA` environment variable with your CA certificate
 2. Or place your CA certificate at `certs/ca.pem`
@@ -166,3 +169,4 @@ SELECT setval('hexmusic-stream_playlist_id_seq', (SELECT MAX(id) FROM "hexmusic-
 - Sequences are automatically reset to prevent ID conflicts
 - The script uses transactions for data integrity
 - Large tables are migrated in batches of 1000 rows for better performance
+- The `pnpm migrate:neon` command name is kept for compatibility even when the target is Prisma Postgres
