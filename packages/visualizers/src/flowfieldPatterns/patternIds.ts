@@ -121,4 +121,10 @@ export type Pattern =
   | "radarSweep"
   | "cometTrails"
   | "phaseBands"
-  | "valknut";
+  | "valknut"
+  | "moireCanopy"
+  | "vectorBloom"
+  | "sonicIris"
+  | "prismaticTide"
+  | "helixGarden"
+  | "echoHarp";

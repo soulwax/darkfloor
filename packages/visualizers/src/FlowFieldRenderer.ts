@@ -216,6 +216,12 @@ export class FlowFieldRenderer {
     "cometTrails",
     "phaseBands",
     "valknut",
+    "moireCanopy",
+    "vectorBloom",
+    "sonicIris",
+    "prismaticTide",
+    "helixGarden",
+    "echoHarp",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -3941,6 +3947,24 @@ export class FlowFieldRenderer {
         break;
       case "valknut":
         this.renderValknut(audioIntensity, bassIntensity, trebleIntensity);
+        break;
+      case "moireCanopy":
+        this.renderMoireCanopy(audioIntensity, bassIntensity, midIntensity);
+        break;
+      case "vectorBloom":
+        this.renderVectorBloom(audioIntensity, bassIntensity, trebleIntensity);
+        break;
+      case "sonicIris":
+        this.renderSonicIris(audioIntensity, bassIntensity, trebleIntensity);
+        break;
+      case "prismaticTide":
+        this.renderPrismaticTide(audioIntensity, bassIntensity, midIntensity);
+        break;
+      case "helixGarden":
+        this.renderHelixGarden(audioIntensity, bassIntensity, trebleIntensity);
+        break;
+      case "echoHarp":
+        this.renderEchoHarp(audioIntensity, bassIntensity, midIntensity);
         break;
     }
   }
@@ -16413,6 +16437,430 @@ export class FlowFieldRenderer {
       ctx.moveTo(cx1, cy1);
       ctx.lineTo(cx2, cy2);
       ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  private renderMoireCanopy(
+    audioIntensity: number,
+    bassIntensity: number,
+    midIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.translate(this.centerX, this.centerY);
+
+    const time = this.time * 0.00055;
+    const minDimension = Math.min(this.width, this.height);
+    const canopyRadius = minDimension * (0.36 + bassIntensity * 0.1);
+    const bandCount = Math.max(12, (18 * this.qualityScale) | 0);
+    const strandCount = Math.max(36, (64 * this.qualityScale) | 0);
+    const strandStep = (FlowFieldRenderer.TWO_PI * 2) / strandCount;
+
+    for (let band = 0; band < bandCount; band++) {
+      const bandProgress = band / Math.max(1, bandCount - 1);
+      const radius = canopyRadius * (0.28 + bandProgress * 0.9);
+      const yScale = 0.32 + bandProgress * 0.45;
+      const rotation =
+        time * (0.22 + bandProgress * 0.12) +
+        bandProgress * 1.6 +
+        this.fastSin(time * 1.4 + bandProgress * 5) * 0.18;
+      const hue = this.fastMod360(
+        this.hueBase + 210 + bandProgress * 95 + time * 45,
+      );
+
+      ctx.strokeStyle = this.hsla(
+        hue,
+        88,
+        64 + bandProgress * 10,
+        0.05 + audioIntensity * 0.06,
+      );
+      ctx.lineWidth = 0.8 + bandProgress * 1.35 + midIntensity * 1.2;
+      ctx.beginPath();
+
+      for (let i = 0; i <= strandCount; i++) {
+        const angle = i * strandStep;
+        const wave =
+          1 +
+          this.fastSin(angle * 5 + time * 3.2 + bandProgress * 7) *
+            (0.1 + bassIntensity * 0.14) +
+          this.fastSin(angle * 9 - time * 2.1) * (0.04 + midIntensity * 0.08);
+        const x = this.fastCos(angle + rotation) * radius * wave;
+        const y =
+          this.fastSin(angle - rotation * 0.7) * radius * yScale * wave * 0.95;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  private renderVectorBloom(
+    audioIntensity: number,
+    bassIntensity: number,
+    trebleIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.translate(this.centerX, this.centerY);
+
+    const time = this.time * 0.00085;
+    const minDimension = Math.min(this.width, this.height);
+    const petalCount = Math.max(8, (12 + bassIntensity * 16) | 0);
+    const layerCount = 4;
+    const maxLength = minDimension * (0.15 + audioIntensity * 0.16);
+    const angleStep = FlowFieldRenderer.TWO_PI / petalCount;
+
+    for (let layer = 0; layer < layerCount; layer++) {
+      const layerProgress = layer / Math.max(1, layerCount - 1);
+      const layerRotation =
+        time * (0.4 + layerProgress * 0.7) + layerProgress * 0.45;
+      const innerRadius = minDimension * (0.05 + layerProgress * 0.045);
+      const bloomLength = maxLength * (0.78 + layerProgress * 0.3);
+      const bloomWidth = bloomLength * (0.16 + trebleIntensity * 0.08);
+
+      for (let i = 0; i < petalCount; i++) {
+        const angle = i * angleStep + layerRotation;
+        const sway =
+          this.fastSin(time * 2.6 + i * 0.9 + layer * 1.3) *
+          (0.12 + audioIntensity * 0.1);
+        const length =
+          bloomLength * (0.82 + this.fastSin(angle * 3 + time) * 0.18);
+        const hue = this.fastMod360(
+          this.hueBase + 25 + layer * 72 + i * (180 / petalCount) + time * 60,
+        );
+
+        const startX = this.fastCos(angle) * innerRadius;
+        const startY = this.fastSin(angle) * innerRadius;
+        const tipX = this.fastCos(angle + sway) * (innerRadius + length);
+        const tipY = this.fastSin(angle + sway) * (innerRadius + length);
+        const wingAngle = angle + Math.PI * 0.5;
+        const wingX = this.fastCos(wingAngle) * bloomWidth;
+        const wingY = this.fastSin(wingAngle) * bloomWidth;
+
+        ctx.strokeStyle = this.hsla(hue, 92, 66, 0.2 + audioIntensity * 0.2);
+        ctx.lineWidth = 1.2 + layerProgress * 1.6 + trebleIntensity * 1.3;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(tipX, tipY);
+        ctx.lineTo(tipX - wingX * 0.55, tipY - wingY * 0.55);
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(tipX + wingX * 0.55, tipY + wingY * 0.55);
+        ctx.stroke();
+
+        ctx.fillStyle = this.hsla(
+          hue + 20,
+          96,
+          72,
+          0.08 + bassIntensity * 0.2,
+        );
+        ctx.beginPath();
+        ctx.arc(
+          tipX,
+          tipY,
+          1.8 + layerProgress * 2.4 + trebleIntensity * 2,
+          0,
+          FlowFieldRenderer.TWO_PI,
+        );
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  private renderSonicIris(
+    audioIntensity: number,
+    bassIntensity: number,
+    trebleIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.translate(this.centerX, this.centerY);
+
+    const time = this.time * 0.00075;
+    const minDimension = Math.min(this.width, this.height);
+    const bladeCount = Math.max(7, (9 + bassIntensity * 7) | 0);
+    const outerRadius = minDimension * (0.24 + audioIntensity * 0.12);
+    const innerRadius = outerRadius * (0.22 + bassIntensity * 0.18);
+    const aperture = 0.28 + bassIntensity * 0.32;
+    const baseRotation = time * 0.55;
+    const angleStep = FlowFieldRenderer.TWO_PI / bladeCount;
+
+    for (let i = 0; i < bladeCount; i++) {
+      const angle = i * angleStep + baseRotation;
+      const nextAngle = angle + angleStep * (0.52 + aperture * 0.26);
+      const hue = this.fastMod360(
+        this.hueBase + 300 + i * (150 / bladeCount) + time * 48,
+      );
+
+      const innerAngle = angle + angleStep * (0.16 + aperture * 0.15);
+      const pinch = outerRadius * (0.36 + trebleIntensity * 0.18);
+      const x1 = this.fastCos(angle) * innerRadius;
+      const y1 = this.fastSin(angle) * innerRadius;
+      const x2 = this.fastCos(innerAngle) * (outerRadius - pinch * 0.25);
+      const y2 = this.fastSin(innerAngle) * (outerRadius - pinch * 0.25);
+      const x3 = this.fastCos(nextAngle) * outerRadius;
+      const y3 = this.fastSin(nextAngle) * outerRadius;
+      const x4 =
+        this.fastCos(nextAngle - angleStep * 0.2) * (innerRadius * 0.95);
+      const y4 =
+        this.fastSin(nextAngle - angleStep * 0.2) * (innerRadius * 0.95);
+
+      ctx.fillStyle = this.hsla(hue, 82, 58, 0.08 + audioIntensity * 0.12);
+      ctx.strokeStyle = this.hsla(
+        hue + 18,
+        96,
+        72,
+        0.24 + trebleIntensity * 0.18,
+      );
+      ctx.lineWidth = 1.1 + trebleIntensity * 1.8;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(x2, y2, x3, y3);
+      ctx.quadraticCurveTo(
+        this.fastCos(nextAngle - angleStep * 0.32) * (outerRadius - pinch),
+        this.fastSin(nextAngle - angleStep * 0.32) * (outerRadius - pinch),
+        x4,
+        y4,
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    const ringCount = 3;
+    for (let ring = 0; ring < ringCount; ring++) {
+      const ringProgress = ring / Math.max(1, ringCount - 1);
+      const radius =
+        innerRadius * (0.72 + ringProgress * 0.65) +
+        this.fastSin(time * 2.8 + ring * 1.4) * outerRadius * 0.03;
+      const hue = this.fastMod360(this.hueBase + 180 + ring * 45 + time * 55);
+      ctx.strokeStyle = this.hsla(hue, 90, 68, 0.16 + audioIntensity * 0.14);
+      ctx.lineWidth = 1 + ringProgress * 1.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, FlowFieldRenderer.TWO_PI);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = this.hsla(
+      this.fastMod360(this.hueBase + 200 + time * 80),
+      95,
+      70,
+      0.32 + bassIntensity * 0.3,
+    );
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      innerRadius * (0.42 + bassIntensity * 0.18),
+      0,
+      FlowFieldRenderer.TWO_PI,
+    );
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  private renderPrismaticTide(
+    audioIntensity: number,
+    bassIntensity: number,
+    midIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    const time = this.time * 0.001;
+    const lineCount = Math.max(8, (12 * this.qualityScale) | 0);
+    const points = Math.max(48, (72 * this.qualityScale) | 0);
+    const stepX = this.width / Math.max(1, points - 1);
+    const baseAmplitude =
+      Math.min(this.width, this.height) * (0.035 + bassIntensity * 0.05);
+
+    for (let line = 0; line < lineCount; line++) {
+      const progress = line / Math.max(1, lineCount - 1);
+      const yBase = this.height * (0.12 + progress * 0.76);
+      const amplitude = baseAmplitude * (0.6 + progress * 0.9);
+      const frequency = 0.55 + progress * 1.6;
+      const drift = time * (0.7 + progress * 1.2);
+      const hue = this.fastMod360(
+        this.hueBase + 180 + progress * 140 + time * 70,
+      );
+
+      ctx.strokeStyle = this.hsla(
+        hue,
+        94,
+        66 + progress * 8,
+        0.07 + audioIntensity * 0.1,
+      );
+      ctx.lineWidth = 1 + progress * 2 + midIntensity * 1.4;
+      ctx.beginPath();
+
+      for (let p = 0; p < points; p++) {
+        const x = p * stepX;
+        const waveA = this.fastSin(p * 0.17 * frequency + drift);
+        const waveB = this.fastSin(p * 0.067 - drift * 1.7 + progress * 5);
+        const waveC = this.fastSin(x * 0.004 + time * 3 + progress * 8);
+        const y =
+          yBase +
+          waveA * amplitude +
+          waveB * amplitude * 0.42 +
+          waveC * amplitude * (0.16 + bassIntensity * 0.1);
+
+        if (p === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  private renderHelixGarden(
+    audioIntensity: number,
+    bassIntensity: number,
+    trebleIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    const time = this.time * 0.0009;
+    const stalkCount = Math.max(4, (6 * this.qualityScale) | 0);
+    const minDimension = Math.min(this.width, this.height);
+    const stemHeight = minDimension * (0.32 + audioIntensity * 0.16);
+    const stemSpacing = this.width / (stalkCount + 1);
+    const orbit = 18 + bassIntensity * 26;
+    const nodes = Math.max(18, (28 * this.qualityScale) | 0);
+
+    for (let stalk = 0; stalk < stalkCount; stalk++) {
+      const baseX = stemSpacing * (stalk + 1);
+      const baseY = this.height * 0.78;
+      const hue = this.fastMod360(
+        this.hueBase + 70 + stalk * 28 + time * 55,
+      );
+
+      ctx.strokeStyle = this.hsla(hue, 84, 62, 0.16 + audioIntensity * 0.14);
+      ctx.lineWidth = 1.2 + trebleIntensity;
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(baseX, baseY - stemHeight);
+      ctx.stroke();
+
+      for (let i = 0; i < nodes; i++) {
+        const progress = i / Math.max(1, nodes - 1);
+        const y = baseY - stemHeight * progress;
+        const twist = time * 4.2 + progress * 9 + stalk * 0.8;
+        const radius = orbit * (0.45 + 0.55 * (1 - progress));
+        const leftX = baseX + this.fastSin(twist) * radius;
+        const rightX = baseX + this.fastSin(twist + Math.PI) * radius;
+        const glowRadius = 1.8 + (1 - progress) * 2.8 + bassIntensity * 1.8;
+
+        ctx.strokeStyle = this.hsla(hue + 35, 92, 72, 0.14 + progress * 0.1);
+        ctx.lineWidth = 0.9 + progress * 1.1;
+        ctx.beginPath();
+        ctx.moveTo(leftX, y);
+        ctx.lineTo(rightX, y);
+        ctx.stroke();
+
+        ctx.fillStyle = this.hsla(hue, 96, 74, 0.14 + trebleIntensity * 0.18);
+        ctx.beginPath();
+        ctx.arc(leftX, y, glowRadius, 0, FlowFieldRenderer.TWO_PI);
+        ctx.fill();
+
+        ctx.fillStyle = this.hsla(
+          hue + 120,
+          90,
+          70,
+          0.12 + audioIntensity * 0.16,
+        );
+        ctx.beginPath();
+        ctx.arc(rightX, y, glowRadius * 0.92, 0, FlowFieldRenderer.TWO_PI);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  private renderEchoHarp(
+    audioIntensity: number,
+    bassIntensity: number,
+    midIntensity: number,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.translate(this.centerX, this.centerY);
+
+    const time = this.time * 0.0008;
+    const span =
+      Math.min(this.width, this.height) * (0.34 + bassIntensity * 0.08);
+    const stringCount = Math.max(12, (18 * this.qualityScale) | 0);
+    const fan = 1.15 + midIntensity * 0.45;
+
+    for (let i = 0; i < stringCount; i++) {
+      const progress = i / Math.max(1, stringCount - 1);
+      const angle = -fan + progress * fan * 2;
+      const bend =
+        this.fastSin(time * 2.7 + progress * 6) *
+        (0.18 + bassIntensity * 0.16);
+      const innerRadius = span * 0.18;
+      const outerRadius = span * (0.76 + progress * 0.18);
+      const hue = this.fastMod360(
+        this.hueBase + 310 + progress * 110 + time * 60,
+      );
+
+      const x1 = this.fastCos(angle) * innerRadius;
+      const y1 = this.fastSin(angle) * innerRadius;
+      const x2 = this.fastCos(angle + bend) * outerRadius;
+      const y2 = this.fastSin(angle + bend) * outerRadius;
+      const cx = this.fastCos(angle + bend * 0.5) * (outerRadius * 0.56);
+      const cy = this.fastSin(angle + bend * 0.5) * (outerRadius * 0.56);
+
+      ctx.strokeStyle = this.hsla(hue, 88, 70, 0.1 + audioIntensity * 0.16);
+      ctx.lineWidth = 1 + progress * 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cx, cy, x2, y2);
+      ctx.stroke();
+
+      const echoCount = 3;
+      for (let echo = 1; echo <= echoCount; echo++) {
+        const echoScale = 1 + echo * 0.12;
+        ctx.strokeStyle = this.hsla(
+          hue + echo * 18,
+          84,
+          68,
+          0.03 + audioIntensity * 0.04,
+        );
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(x1 * echoScale, y1 * echoScale);
+        ctx.quadraticCurveTo(
+          cx * echoScale,
+          cy * echoScale,
+          x2 * echoScale,
+          y2 * echoScale,
+        );
+        ctx.stroke();
+      }
     }
 
     ctx.restore();

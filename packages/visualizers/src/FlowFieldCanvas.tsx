@@ -141,6 +141,12 @@ const VALID_PATTERNS = new Set<string>([
   "cometTrails",
   "phaseBands",
   "valknut",
+  "moireCanopy",
+  "vectorBloom",
+  "sonicIris",
+  "prismaticTide",
+  "helixGarden",
+  "echoHarp",
 ]);
 
 export function FlowFieldCanvas({
