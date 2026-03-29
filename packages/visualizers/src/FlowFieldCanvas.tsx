@@ -147,6 +147,10 @@ const VALID_PATTERNS = new Set<string>([
   "prismaticTide",
   "helixGarden",
   "echoHarp",
+  "particleSwarm",
+  "metaballs",
+  "plasmaFractal",
+  "waveTunnel",
 ]);
 
 export function FlowFieldCanvas({

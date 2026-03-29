@@ -127,4 +127,8 @@ export type Pattern =
   | "sonicIris"
   | "prismaticTide"
   | "helixGarden"
-  | "echoHarp";
+  | "echoHarp"
+  | "particleSwarm"
+  | "metaballs"
+  | "plasmaFractal"
+  | "waveTunnel";

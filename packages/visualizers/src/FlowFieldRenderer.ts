@@ -4,6 +4,10 @@ import type { Pattern } from "./flowfieldPatterns/patternIds";
 import { renderHexGrid } from "./flowfieldPatterns/renderHexGrid";
 import { renderKaleidoscope } from "./flowfieldPatterns/renderKaleidoscope";
 import { renderRays } from "./flowfieldPatterns/renderRays";
+import { renderParticleSwarm } from "./flowfieldPatterns/renderParticleSwarm";
+import { renderMetaballs } from "./flowfieldPatterns/renderMetaballs";
+import { renderPlasmaFractal } from "./flowfieldPatterns/renderPlasmaFractal";
+import { renderWaveTunnel } from "./flowfieldPatterns/renderWaveTunnel";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -222,6 +226,10 @@ export class FlowFieldRenderer {
     "prismaticTide",
     "helixGarden",
     "echoHarp",
+    "particleSwarm",
+    "metaballs",
+    "plasmaFractal",
+    "waveTunnel",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -3965,6 +3973,38 @@ export class FlowFieldRenderer {
         break;
       case "echoHarp":
         this.renderEchoHarp(audioIntensity, bassIntensity, midIntensity);
+        break;
+      case "particleSwarm":
+        renderParticleSwarm(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "metaballs":
+        renderMetaballs(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "plasmaFractal":
+        renderPlasmaFractal(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "waveTunnel":
+        renderWaveTunnel(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
         break;
     }
   }
