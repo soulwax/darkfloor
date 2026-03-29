@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2026-03-29
+
+### Changed
+
+- **Windows Electron builds now try native rebuild automatically**: `electron:build:win` now starts with Electron Builder's native rebuild path enabled so Windows packaging no longer requires setting `STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true` just to attempt `@electron/rebuild`.
+
+### Fixed
+
+- **Windows packaging is still resilient on machines without C++ build tools**: If native rebuild fails because Visual Studio Build Tools or the `node-gyp` toolchain are unavailable, the Windows wrapper now retries once with rebuild disabled so packaging can still complete when recompiling native dependencies is unnecessary.
+
 ## [1.6.3] - 2026-03-28
 
 ### Changed

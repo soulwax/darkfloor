@@ -11,9 +11,6 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "../../..");
 const winUnpackedDir = path.join(rootDir, "dist", "win-unpacked");
 const winTargets = ["nsis", "portable"];
-const forceNativeRebuild = /^(1|true)$/i.test(
-  String(process.env.STARCHILD_ELECTRON_WIN_NATIVE_REBUILD ?? ""),
-);
 const noNativeRebuildFlags = [
   "-c.npmRebuild=false",
   "-c.nodeGypRebuild=false",
@@ -76,17 +73,14 @@ function cleanupWinUnpacked() {
   }
 }
 
-const shouldAttemptNativeRebuildFirst = forceNativeRebuild;
+const shouldAttemptNativeRebuildFirst = true;
 
-if (forceNativeRebuild) {
-  console.log(
-    "[electron-builder:win] STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true detected; native rebuild is enabled.",
-  );
-} else {
-  console.log(
-    "[electron-builder:win] Packaging with native rebuild disabled by default. Set STARCHILD_ELECTRON_WIN_NATIVE_REBUILD=true to force @electron/rebuild.",
-  );
-}
+console.log(
+  "[electron-builder:win] Packaging with native rebuild enabled by default via electron-builder/@electron/rebuild.",
+);
+console.log(
+  "[electron-builder:win] If the local Windows toolchain is missing, the wrapper will retry once with native rebuild disabled.",
+);
 
 for (const target of winTargets) {
   console.log(`[electron-builder:win] Building target "${target}"...`);
@@ -107,7 +101,7 @@ for (const target of winTargets) {
     isMissingVisualStudioForNativeRebuild(firstOutput);
   if (shouldRetryWithoutNativeRebuild) {
     console.log(
-      `\n[electron-builder:win] Native rebuild failed due to missing Visual Studio Build Tools for "${target}". Retrying with native rebuild disabled...\n`,
+      `\n[electron-builder:win] Native rebuild failed due to missing Visual Studio Build Tools for "${target}". Retrying once with native rebuild disabled so packaging can still succeed when native recompilation is unnecessary...\n`,
     );
     cleanupWinUnpacked();
 
