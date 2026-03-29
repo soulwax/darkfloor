@@ -29,9 +29,12 @@ if (isDev) {
   dotenv.config({ path: path.resolve(repoRoot, ".env"), override: true });
   dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
 } else {
-        dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: false });
-  dotenv.config({ path: path.resolve(repoRoot, ".env.production"), override: false });
-  dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false });
+  // In production we want the repo's runtime env files to win over any stale
+  // inherited shell or PM2 daemon variables, otherwise the app can keep using
+  // an old DATABASE_URL even after .env.local has been updated.
+  dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
+  dotenv.config({ path: path.resolve(repoRoot, ".env.production"), override: true });
+  dotenv.config({ path: path.resolve(repoRoot, ".env"), override: true });
 }
 
 if (pm2Port) {

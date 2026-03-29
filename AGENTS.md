@@ -124,7 +124,7 @@ Note on upstream APIs:
 - Server wrapper/env loading:
   - Root `scripts/server.js` delegates to `apps/web/scripts/server.js`.
   - Dev mode loads `.env`, then `.env.local` with override so local machine settings win.
-  - Production loads `.env.local`, then `.env.production`, then `.env`.
+  - Production loads `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env so stale PM2/shell variables do not win.
 - Package manager:
   - `pnpm-lock.yaml` is the canonical lockfile; default install flow is `pnpm install --frozen-lockfile`.
   - Root scripts may call `npm --prefix ...` internally; preserve script behavior unless explicitly changing it.

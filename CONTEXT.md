@@ -95,7 +95,7 @@ Player internals live in shared packages:
 - Runtime DB code requires `DATABASE_URL` (`apps/web/src/server/db/index.ts` throws if missing).
 - Server env loading is defined in `apps/web/scripts/server.js`:
   - `NODE_ENV=development`: load `.env`, then `.env.local` with override so local machine settings win.
-  - production: load `.env.local`, then `.env.production`, then `.env` (no override).
+  - production: load `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env.
 - Root `scripts/server.js` is a thin wrapper that imports `apps/web/scripts/server.js`.
 
 ## Change Guide (Where To Edit)
