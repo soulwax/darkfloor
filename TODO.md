@@ -1,32 +1,19 @@
-# Darkfloor Player Migration Script Update TODO
+# Visualizer Enhancement TODO
+## Status: ✅ In Progress
 
-## Status: In Progress
+**Goal:** Add 4 super creative visualizers: ParticleSwarm, Metaballs, PlasmaFractal, WaveTunnel.
 
-### 1. ✅ [DONE] Understand current script and dependencies
-- Read `scripts/migrate-to-neon.ts`
-- Confirmed env var resolution logic
+**Steps:**
+- [x] 1. Analyzed structure (patternIds.ts, FlowFieldRenderer.ts, FlowFieldCanvas.tsx, sample renderKaleidoscope.ts)
+- [ ] 2. Create `packages/visualizers/src/flowfieldPatterns/renderParticleSwarm.ts`
+- [ ] 3. Create `packages/visualizers/src/flowfieldPatterns/renderMetaballs.ts`
+- [ ] 4. Create `packages/visualizers/src/flowfieldPatterns/renderPlasmaFractal.ts`
+- [ ] 5. Create `packages/visualizers/src/flowfieldPatterns/renderWaveTunnel.ts`
+- [ ] 6. Update `packages/visualizers/src/flowfieldPatterns/patternIds.ts` - add new patterns to type/export
+- [ ] 7. Edit `packages/visualizers/src/FlowFieldRenderer.ts` - add imports & renderPattern switch cases
+- [ ] 8. Update `packages/visualizers/src/FlowFieldCanvas.tsx` - add to VALID_PATTERNS Set
+- [ ] 9. Build & test: `pnpm turbo build` then `pnpm --filter=web dev`
+- [ ] 10. Mark complete & attempt_completion
 
-### 2. 🔄 [PENDING] Create TODO.md
-- This file ✓
-
-### 3. ✅ [DONE] Edit scripts/migrate-to-neon.ts
-- Reordered sourceCandidates: OLD_DATABASE_URL first ✓
-- Reordered targetCandidates: NEW_DATABASE_URL first ✓
-- Updated log/info with safer string handling ✓
-- Preserved fallbacks (UNPOOLED optional) ✓
-
-### 4. ✅ [DONE] Edit scripts/MIGRATION_README.md
-- Updated examples to OLD_DATABASE_URL / NEW_DATABASE_URL ✓
-- Added note on optional UNPOOLED variants ✓
-
-### 5. ✅ [DONE] Test changes
-- Logic verified; prioritizes OLD_DATABASE_URL / NEW_DATABASE_URL ✓
-```
-OLD_DATABASE_URL="postgresql://neondb_owner:...@neon.tech/neondb..."
-NEW_DATABASE_URL="postgresql://myuser:...@localhost:5432/starchild..."
-pnpm migrate:neon -- --dry-run
-```
-
-### 6. ✅ [DONE] Update TODO.md with completion
-### 7. ✅ [DONE] attempt_completion
+**Current Step:** 2-5 (Creating new pattern files)
 
