@@ -6,6 +6,7 @@ import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { playlistTracks, playlists } from "@/server/db/schema";
 import { type Track } from "@starchild/types";
+import { sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
