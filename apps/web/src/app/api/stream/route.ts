@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const DEFAULT_GUEST_STREAM_KBPS = "128";
+const VERCEL_ENV_KEYS = ["VERCEL", "VERCEL_ENV", "VERCEL_URL"] as const;
 
 function redactKeyFromUrl(rawUrl: string): string {
   try {
@@ -28,6 +29,13 @@ function isSupportedAudioContentType(contentType: string | null): boolean {
     normalized.startsWith("audio/") ||
     normalized.includes("application/octet-stream")
   );
+}
+
+function isRunningOnVercel(): boolean {
+  return VERCEL_ENV_KEYS.some((key) => {
+    const value = process.env[key];
+    return typeof value === "string" && value.trim().length > 0;
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -134,7 +142,11 @@ export async function GET(req: NextRequest) {
       });
     };
 
-    const url = new URL("music/stream/direct", `${normalizedBluesixUrl}/`);
+    const useDirectStreamRoute = format === "flac" || isRunningOnVercel();
+    const upstreamPath = useDirectStreamRoute
+      ? "music/stream/direct"
+      : "music/stream";
+    const url = new URL(upstreamPath, `${normalizedBluesixUrl}/`);
     url.searchParams.set("key", configuredBluesixApiKey);
     if (format === "flac") {
       url.searchParams.set("format", "flac");
@@ -159,6 +171,7 @@ export async function GET(req: NextRequest) {
       "[Stream API] Fetching stream from:",
       redactedRequestUrl,
     );
+    console.log("[Stream API] Selected upstream route:", `/${upstreamPath}`);
     console.log(
       "[Stream API] Full URL (key hidden):",
       redactedRequestUrl,
