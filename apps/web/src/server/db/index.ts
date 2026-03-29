@@ -13,9 +13,11 @@ if (!databaseUrl) {
   );
 }
 
+const resolvedDatabaseUrl = databaseUrl;
+
 function getSslConfig() {
-  const isLocalDb = databaseUrl.includes("localhost") ||
-                    databaseUrl.includes("127.0.0.1");
+  const isLocalDb = resolvedDatabaseUrl.includes("localhost") ||
+                    resolvedDatabaseUrl.includes("127.0.0.1");
 
   if (isLocalDb) {
     console.log("[DB] Local database detected. SSL disabled.");
@@ -33,7 +35,7 @@ const sslConfig = getSslConfig();
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL_ENV !== undefined;
 
 const pool = new Pool({
-  connectionString: databaseUrl,
+  connectionString: resolvedDatabaseUrl,
   ...(sslConfig && { ssl: sslConfig }),
 
   max: isVercel ? 2 : 10,
@@ -82,6 +84,7 @@ if (typeof process !== "undefined") {
 }
 
 export const db = drizzle(pool, { schema });
+export type DatabaseClient = typeof db;
 export { pool };
 
 if (process.env.NODE_ENV === "development") {

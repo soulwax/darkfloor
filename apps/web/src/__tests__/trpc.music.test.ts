@@ -17,38 +17,46 @@ vi.mock("@/services/bluesix", () => ({
 }));
 
 import { musicRouter } from "@/server/api/routers/music";
+import type { AppDataStore } from "@/server/data";
 
 type CallerContext = Parameters<typeof musicRouter.createCaller>[0];
+
+type MockPreferenceRecord = Record<string, unknown> | null;
 
 type MockDb = {
   query: {
     userPreferences: {
-      findFirst: ReturnType<typeof vi.fn>;
+      findFirst: () => Promise<MockPreferenceRecord>;
     };
   };
-  insert: ReturnType<typeof vi.fn>;
-  insertValues: ReturnType<typeof vi.fn>;
-  update: ReturnType<typeof vi.fn>;
-  updateSet: ReturnType<typeof vi.fn>;
-  updateWhere: ReturnType<typeof vi.fn>;
+  insert: () => { values: (values: Record<string, unknown>) => Promise<void> };
+  insertValues: (values: Record<string, unknown>) => Promise<void>;
+  update: () => { set: (values: Record<string, unknown>) => { where: () => Promise<void> } };
+  updateSet: (values: Record<string, unknown>) => { where: () => Promise<void> };
+  updateWhere: () => Promise<void>;
 };
 
-const createMockDb = (findFirstResult: unknown = null): MockDb => {
-  const insertValues = vi.fn().mockResolvedValue(undefined);
-  const updateWhere = vi.fn().mockResolvedValue(undefined);
-  const updateSet = vi.fn().mockReturnValue({
+const createMockDb = (findFirstResult: MockPreferenceRecord = null): MockDb => {
+  const findFirst = vi
+    .fn<() => Promise<MockPreferenceRecord>>()
+    .mockResolvedValue(findFirstResult);
+  const insertValues = vi
+    .fn<(values: Record<string, unknown>) => Promise<void>>()
+    .mockResolvedValue(undefined);
+  const updateWhere = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const updateSet = vi.fn<(values: Record<string, unknown>) => { where: () => Promise<void> }>().mockReturnValue({
     where: updateWhere,
   });
-  const insert = vi.fn().mockReturnValue({
+  const insert = vi.fn<() => { values: (values: Record<string, unknown>) => Promise<void> }>().mockReturnValue({
     values: insertValues,
   });
-  const update = vi.fn().mockReturnValue({
+  const update = vi.fn<() => { set: (values: Record<string, unknown>) => { where: () => Promise<void> } }>().mockReturnValue({
     set: updateSet,
   });
   return {
     query: {
       userPreferences: {
-        findFirst: vi.fn().mockResolvedValue(findFirstResult),
+        findFirst,
       },
     },
     insert,
@@ -62,6 +70,57 @@ const createMockDb = (findFirstResult: unknown = null): MockDb => {
 const createCallerContext = (db: MockDb): CallerContext =>
   ({
     db: db as unknown as CallerContext extends { db: infer D } ? D : never,
+    dataStore: {
+      kind: "mock",
+      playlists: {} as AppDataStore["playlists"],
+      userPreferences: {
+        getByUserId: vi
+          .fn()
+          .mockImplementation(async () => {
+            const result = await db.query.userPreferences.findFirst();
+            return result as Record<string, unknown> | null;
+          }),
+        getUiByUserId: vi
+          .fn()
+          .mockImplementation(async () => {
+            const result = await db.query.userPreferences.findFirst();
+            return result as Record<string, unknown> | null;
+          }),
+        getOrCreateUiByUserId: vi
+          .fn()
+          .mockImplementation(async () => {
+            const result = await db.query.userPreferences.findFirst();
+            return result as Record<string, unknown> | null;
+          }),
+        upsert: vi.fn().mockImplementation(
+          async (_userId: string, values: Record<string, unknown>) => {
+          const existing = (await db.query.userPreferences.findFirst()) as
+            | Record<string, unknown>
+            | null;
+          if (existing) {
+            db.updateSet(values);
+            await db.updateWhere();
+            return;
+          }
+
+          await db.insertValues({
+            userId: "user-1",
+            ...values,
+          });
+          },
+        ),
+        reset: vi.fn().mockResolvedValue(undefined),
+        getQueueState: vi.fn().mockResolvedValue(null),
+        setQueueState: vi.fn().mockResolvedValue(undefined),
+        clearQueueState: vi.fn().mockResolvedValue(undefined),
+        getEqualizerByUserId: vi.fn().mockResolvedValue(null),
+        upsertEqualizerByUserId: vi.fn().mockResolvedValue({
+          enabled: false,
+          preset: "Flat",
+          bands: [],
+        }),
+      },
+    } as AppDataStore,
     session: {
       user: { id: "user-1", admin: false },
       expires: new Date().toISOString(),
@@ -101,7 +160,13 @@ describe("musicRouter tRPC operations", () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(db.insert).toHaveBeenCalled();
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        visualizerType: "flowfield",
+        keepPlaybackAlive: false,
+      }),
+    );
   });
 
   it("persists visualizer mode preferences", async () => {

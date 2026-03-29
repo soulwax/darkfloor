@@ -1,11 +1,9 @@
 // File: apps/web/src/server/api/routers/preferences.ts
 
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { DEFAULT_EQUALIZER } from "@/config/audioDefaults";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { userPreferences } from "@/server/db/schema";
 
 const SAFE_DEFAULTS = {
   preset: DEFAULT_EQUALIZER.preset,
@@ -26,38 +24,26 @@ export const preferencesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .insert(userPreferences)
-        .values({
-          userId: ctx.session.user.id,
-          equalizerPreset: input.preset,
-          equalizerBands: input.bands,
-          equalizerEnabled: input.enabled,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: userPreferences.userId,
-          set: {
-            equalizerPreset: input.preset,
-            equalizerBands: input.bands,
-            equalizerEnabled: input.enabled,
-            updatedAt: new Date(),
-          },
-        });
-
-      return input;
+      return ctx.dataStore.userPreferences.upsertEqualizerByUserId(
+        ctx.session.user.id,
+        {
+          preset: input.preset,
+          bands: input.bands,
+          enabled: input.enabled,
+        },
+      );
     }),
 
   getEqualizer: protectedProcedure.query(async ({ ctx }) => {
-    const prefs = await ctx.db.query.userPreferences.findFirst({
-      where: eq(userPreferences.userId, ctx.session.user.id),
-    });
+    const prefs = await ctx.dataStore.userPreferences.getEqualizerByUserId(
+      ctx.session.user.id,
+    );
 
     return prefs
       ? {
-          preset: prefs.equalizerPreset,
-          bands: prefs.equalizerBands,
-          enabled: prefs.equalizerEnabled,
+          preset: prefs.preset,
+          bands: prefs.bands,
+          enabled: prefs.enabled,
         }
       : SAFE_DEFAULTS;
   }),

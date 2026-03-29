@@ -166,39 +166,6 @@ function isUniqueConstraintError(
   return candidate.constraint === constraint;
 }
 
-const userPreferencesUiColumns = {
-  id: true,
-  userId: true,
-  volume: true,
-  repeatMode: true,
-  shuffleEnabled: true,
-  keepPlaybackAlive: true,
-  streamQuality: true,
-  equalizerEnabled: true,
-  equalizerPreset: true,
-  equalizerBands: true,
-  equalizerPanelOpen: true,
-  queuePanelOpen: true,
-  visualizerType: true,
-  visualizerEnabled: true,
-  visualizerMode: true,
-  compactMode: true,
-  theme: true,
-  language: true,
-  spotifyFeaturesEnabled: true,
-  spotifyClientId: true,
-  spotifyClientSecret: true,
-  spotifyUsername: true,
-  spotifySettingsUpdatedAt: true,
-  autoQueueEnabled: true,
-  autoQueueThreshold: true,
-  autoQueueCount: true,
-  smartMixEnabled: true,
-  similarityPreference: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
 function sanitizeUserPreferencesForUi<
   T extends {
     spotifyClientSecret: string;
@@ -211,26 +178,6 @@ function sanitizeUserPreferencesForUi<
     spotifyClientSecret: "",
     spotifyClientSecretConfigured: spotifyClientSecret.trim().length > 0,
   };
-}
-
-async function syncPlaylistTrackIdSequence(database: typeof db): Promise<void> {
-  await database.execute(sql`
-    SELECT setval(
-      pg_get_serial_sequence('"hexmusic-stream_playlist_track"', 'id'),
-      COALESCE((SELECT MAX("id") FROM "hexmusic-stream_playlist_track"), 0) + 1,
-      false
-    )
-  `);
-}
-
-async function syncPlaylistIdSequence(database: typeof db): Promise<void> {
-  await database.execute(sql`
-    SELECT setval(
-      pg_get_serial_sequence('"hexmusic-stream_playlist"', 'id'),
-      COALESCE((SELECT MAX("id") FROM "hexmusic-stream_playlist"), 0) + 1,
-      false
-    )
-  `);
 }
 
 async function syncListeningHistoryIdSequence(
@@ -1194,29 +1141,12 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const insertPlaylist = () =>
-        ctx.db
-          .insert(playlists)
-          .values({
-            userId: ctx.session.user.id,
-            name: input.name,
-            description: input.description,
-            isPublic: input.isPublic,
-          })
-          .returning();
-
-      try {
-        const [playlist] = await insertPlaylist();
-        return playlist;
-      } catch (error) {
-        if (!isUniqueConstraintError(error, "hexmusic-stream_playlist_pkey")) {
-          throw error;
-        }
-
-        await syncPlaylistIdSequence(ctx.db);
-        const [playlist] = await insertPlaylist();
-        return playlist;
-      }
+      return ctx.dataStore.playlists.createForUser({
+        userId: ctx.session.user.id,
+        name: input.name,
+        description: input.description,
+        isPublic: input.isPublic,
+      });
     }),
 
   updatePlaylistVisibility: protectedProcedure
@@ -1227,29 +1157,15 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.id),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
+      const updated = await ctx.dataStore.playlists.updateOwnedVisibility({
+        userId: ctx.session.user.id,
+        playlistId: input.id,
+        isPublic: input.isPublic,
       });
 
-      if (!playlist) {
+      if (!updated) {
         throw new Error("Playlist not found");
       }
-
-      await ctx.db
-        .update(playlists)
-        .set({
-          isPublic: input.isPublic,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(playlists.id, input.id),
-            eq(playlists.userId, ctx.session.user.id),
-          ),
-        );
 
       return { success: true, isPublic: input.isPublic };
     }),
@@ -1263,100 +1179,24 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.id),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
+      const updated = await ctx.dataStore.playlists.updateOwnedMetadata({
+        userId: ctx.session.user.id,
+        playlistId: input.id,
+        metadata: {
+          name: input.name,
+          description: input.description,
+        },
       });
 
-      if (!playlist) {
+      if (!updated) {
         throw new Error("Playlist not found");
       }
-
-      const updateData: Partial<typeof playlists.$inferInsert> = {};
-
-      if (input.name !== undefined) {
-        updateData.name = input.name;
-      }
-
-      if (input.description !== undefined) {
-        updateData.description =
-          input.description.trim().length > 0 ? input.description : null;
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        return { success: true };
-      }
-
-      updateData.updatedAt = new Date();
-
-      await ctx.db
-        .update(playlists)
-        .set(updateData)
-        .where(
-          and(
-            eq(playlists.id, input.id),
-            eq(playlists.userId, ctx.session.user.id),
-          ),
-        );
 
       return { success: true };
     }),
 
   getPlaylists: protectedProcedure.query(async ({ ctx }) => {
-    const playlistsResult = await ctx.db.query.playlists.findMany({
-      where: eq(playlists.userId, ctx.session.user.id),
-      orderBy: [desc(playlists.createdAt)],
-      with: {
-        tracks: {
-          orderBy: [desc(playlistTracks.position)],
-          limit: 4,
-        },
-      },
-    });
-
-    type PlaylistWithTracksFromQuery = {
-      id: number;
-      userId: string;
-      name: string;
-      description: string | null;
-      isPublic: boolean;
-      coverImage: string | null;
-      createdAt: Date;
-      updatedAt: Date | null;
-      tracks: Array<{
-        id: number;
-        trackId: number;
-        trackData: unknown;
-        playlistId: number;
-        position: number;
-        addedAt: Date;
-      }>;
-    };
-
-    const playlistsWithCount = await Promise.all(
-      (playlistsResult as PlaylistWithTracksFromQuery[]).map(
-        async (playlist) => {
-          const totalTracks = await ctx.db.query.playlistTracks.findMany({
-            where: eq(playlistTracks.playlistId, playlist.id),
-          });
-
-          return {
-            ...playlist,
-            trackCount: totalTracks.length,
-            tracks: playlist.tracks.map((t) => ({
-              id: t.id,
-              track: t.trackData as Track,
-              position: t.position,
-              addedAt: t.addedAt,
-            })),
-          };
-        },
-      ),
-    );
-
-    return playlistsWithCount;
+    return ctx.dataStore.playlists.listOwnedByUser(ctx.session.user.id);
   }),
 
   getPlaylistsWithTrackStatus: protectedProcedure
@@ -1367,109 +1207,38 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const playlistsResult = await ctx.db.query.playlists.findMany({
-        where: input.excludePlaylistId
-          ? and(
-              eq(playlists.userId, ctx.session.user.id),
-              sql`${playlists.id} != ${input.excludePlaylistId}`,
-            )
-          : eq(playlists.userId, ctx.session.user.id),
-        orderBy: [desc(playlists.createdAt)],
+      return ctx.dataStore.playlists.listOwnedByUserWithTrackStatus({
+        userId: ctx.session.user.id,
+        trackId: input.trackId,
+        excludePlaylistId: input.excludePlaylistId,
       });
-
-      const playlistsWithStatus = await Promise.all(
-        playlistsResult.map(async (playlist) => {
-          const trackInPlaylist = await ctx.db.query.playlistTracks.findFirst({
-            where: and(
-              eq(playlistTracks.playlistId, playlist.id),
-              eq(playlistTracks.trackId, input.trackId),
-            ),
-          });
-
-          const totalTracks = await ctx.db.query.playlistTracks.findMany({
-            where: eq(playlistTracks.playlistId, playlist.id),
-          });
-
-          return {
-            ...playlist,
-            trackCount: totalTracks.length,
-            hasTrack: !!trackInPlaylist,
-          };
-        }),
-      );
-
-      return playlistsWithStatus;
     }),
 
   getPlaylist: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.id),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
-        with: {
-          tracks: {
-            orderBy: [desc(playlistTracks.position)],
-          },
-        },
+      const playlist = await ctx.dataStore.playlists.getOwnedDetails({
+        userId: ctx.session.user.id,
+        playlistId: input.id,
       });
 
       if (!playlist) {
         throw new Error("Playlist not found");
       }
 
-      return {
-        ...playlist,
-        tracks: playlist.tracks.map(
-          (t: {
-            id: number;
-            trackData: unknown;
-            position: number;
-            addedAt: Date;
-          }) => ({
-            id: t.id,
-            track: t.trackData as Track,
-            position: t.position,
-            addedAt: t.addedAt,
-          }),
-        ),
-      };
+      return playlist;
     }),
 
   getPublicPlaylist: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(eq(playlists.id, input.id), eq(playlists.isPublic, true)),
-        with: {
-          tracks: {
-            orderBy: [desc(playlistTracks.position)],
-          },
-        },
-      });
+      const playlist = await ctx.dataStore.playlists.getPublicDetails(input.id);
 
       if (!playlist) {
         throw new Error("Playlist not found or not public");
       }
 
-      return {
-        ...playlist,
-        tracks: playlist.tracks.map(
-          (t: {
-            id: number;
-            trackData: unknown;
-            position: number;
-            addedAt: Date;
-          }) => ({
-            id: t.id,
-            track: t.trackData as Track,
-            position: t.position,
-            addedAt: t.addedAt,
-          }),
-        ),
-      };
+      return playlist;
     }),
 
   addToPlaylist: protectedProcedure
@@ -1480,67 +1249,17 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.playlistId),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
+      const result = await ctx.dataStore.playlists.addTrackToOwnedPlaylist({
+        userId: ctx.session.user.id,
+        playlistId: input.playlistId,
+        track: input.track as Track,
       });
 
-      if (!playlist) {
+      if (result.status === "playlist-not-found") {
         throw new Error("Playlist not found");
       }
 
-      const existing = await ctx.db.query.playlistTracks.findFirst({
-        where: and(
-          eq(playlistTracks.playlistId, input.playlistId),
-          eq(playlistTracks.trackId, input.track.id),
-        ),
-      });
-
-      if (existing) {
-        return { success: true, alreadyExists: true };
-      }
-
-      const maxPos = await ctx.db
-        .select({ max: sql<number>`max(${playlistTracks.position})` })
-        .from(playlistTracks)
-        .where(eq(playlistTracks.playlistId, input.playlistId));
-
-      const nextPosition = (maxPos[0]?.max ?? -1) + 1;
-      const trackEntry = {
-        playlistId: input.playlistId,
-        trackId: input.track.id,
-        deezerId: getDeezerId(input.track),
-        trackData: input.track,
-        position: nextPosition,
-      };
-
-      const insertTrack = async () =>
-        ctx.db
-          .insert(playlistTracks)
-          .values(trackEntry)
-          .onConflictDoNothing({
-            target: [playlistTracks.playlistId, playlistTracks.trackId],
-          })
-          .returning({ id: playlistTracks.id });
-
-      let inserted: Array<{ id: number }> = [];
-
-      try {
-        inserted = await insertTrack();
-      } catch (error) {
-        if (
-          isUniqueConstraintError(error, "hexmusic-stream_playlist_track_pkey")
-        ) {
-          await syncPlaylistTrackIdSequence(ctx.db);
-          inserted = await insertTrack();
-        } else {
-          throw error;
-        }
-      }
-
-      if (inserted.length === 0) {
+      if (result.status === "already-exists") {
         return { success: true, alreadyExists: true };
       }
 
@@ -1555,25 +1274,15 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.playlistId),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
+      const removed = await ctx.dataStore.playlists.removeTrackFromOwnedPlaylist({
+        userId: ctx.session.user.id,
+        playlistId: input.playlistId,
+        trackEntryId: input.trackEntryId,
       });
 
-      if (!playlist) {
+      if (!removed) {
         throw new Error("Playlist not found");
       }
-
-      await ctx.db
-        .delete(playlistTracks)
-        .where(
-          and(
-            eq(playlistTracks.id, input.trackEntryId),
-            eq(playlistTracks.playlistId, input.playlistId),
-          ),
-        );
 
       return { success: true };
     }),
@@ -1581,14 +1290,10 @@ export const musicRouter = createTRPCRouter({
   deletePlaylist: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(playlists)
-        .where(
-          and(
-            eq(playlists.id, input.id),
-            eq(playlists.userId, ctx.session.user.id),
-          ),
-        );
+      await ctx.dataStore.playlists.deleteOwnedPlaylist({
+        userId: ctx.session.user.id,
+        playlistId: input.id,
+      });
 
       return { success: true };
     }),
@@ -1606,27 +1311,14 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const playlist = await ctx.db.query.playlists.findFirst({
-        where: and(
-          eq(playlists.id, input.playlistId),
-          eq(playlists.userId, ctx.session.user.id),
-        ),
+      const reordered = await ctx.dataStore.playlists.reorderOwnedPlaylist({
+        userId: ctx.session.user.id,
+        playlistId: input.playlistId,
+        trackUpdates: input.trackUpdates,
       });
 
-      if (!playlist) {
+      if (!reordered) {
         throw new Error("Playlist not found");
-      }
-
-      for (const update of input.trackUpdates) {
-        await ctx.db
-          .update(playlistTracks)
-          .set({ position: update.newPosition })
-          .where(
-            and(
-              eq(playlistTracks.id, update.trackEntryId),
-              eq(playlistTracks.playlistId, input.playlistId),
-            ),
-          );
       }
 
       return { success: true };
@@ -1909,33 +1601,18 @@ export const musicRouter = createTRPCRouter({
     }),
 
   getUserPreferences: protectedProcedure.query(async ({ ctx }) => {
-    let prefs = await ctx.db.query.userPreferences.findFirst({
-      where: eq(userPreferences.userId, ctx.session.user.id),
-      columns: userPreferencesUiColumns,
-    });
-
-    if (!prefs) {
-      await ctx.db.insert(userPreferences).values({ userId: ctx.session.user.id });
-      prefs = await ctx.db.query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, ctx.session.user.id),
-        columns: userPreferencesUiColumns,
-      });
-    }
-
-    if (!prefs) {
-      throw new Error("Failed to load user preferences");
-    }
+    const prefs = await ctx.dataStore.userPreferences.getOrCreateUiByUserId(
+      ctx.session.user.id,
+    );
 
     if (prefs.theme === "light") {
-      await ctx.db
-        .update(userPreferences)
-        .set({ theme: "dark" })
-        .where(eq(userPreferences.userId, ctx.session.user.id));
-
-      const refreshedPrefs = await ctx.db.query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, ctx.session.user.id),
-        columns: userPreferencesUiColumns,
+      await ctx.dataStore.userPreferences.upsert(ctx.session.user.id, {
+        theme: "dark",
       });
+
+      const refreshedPrefs = await ctx.dataStore.userPreferences.getUiByUserId(
+        ctx.session.user.id,
+      );
       if (refreshedPrefs) {
         return sanitizeUserPreferencesForUi(refreshedPrefs);
       }
@@ -1982,9 +1659,9 @@ export const musicRouter = createTRPCRouter({
         ...(input.theme !== undefined ? { theme: "dark" as const } : {}),
       };
 
-      const existing = await ctx.db.query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, ctx.session.user.id),
-      });
+      const existing = await ctx.dataStore.userPreferences.getByUserId(
+        ctx.session.user.id,
+      );
 
       if (hasSpotifyFeaturePreferenceInput(input)) {
         const nextSpotifyProfile = {
@@ -2003,25 +1680,16 @@ export const musicRouter = createTRPCRouter({
         normalizedInput.spotifySettingsUpdatedAt = new Date();
       }
 
-      if (!existing) {
-        await ctx.db.insert(userPreferences).values({
-          userId: ctx.session.user.id,
-          ...normalizedInput,
-        });
-      } else {
-        await ctx.db
-          .update(userPreferences)
-          .set(normalizedInput)
-          .where(eq(userPreferences.userId, ctx.session.user.id));
-      }
+      await ctx.dataStore.userPreferences.upsert(
+        ctx.session.user.id,
+        normalizedInput,
+      );
 
       return { success: true };
     }),
 
   resetPreferences: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.db
-      .delete(userPreferences)
-      .where(eq(userPreferences.userId, ctx.session.user.id));
+    await ctx.dataStore.userPreferences.reset(ctx.session.user.id);
 
     return { success: true };
   }),
@@ -2055,10 +1723,6 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.userPreferences.findFirst({
-        where: eq(userPreferences.userId, ctx.session.user.id),
-      });
-
       const normalizedQueueState = input.queueState
         ? ({
             version: input.queueState.version,
@@ -2093,40 +1757,20 @@ export const musicRouter = createTRPCRouter({
           })
         : null;
 
-      if (!existing) {
-        await ctx.db.insert(userPreferences).values({
-          userId: ctx.session.user.id,
-          queueState: normalizedQueueState,
-        });
-      } else {
-        await ctx.db
-          .update(userPreferences)
-          .set({ queueState: normalizedQueueState })
-          .where(eq(userPreferences.userId, ctx.session.user.id));
-      }
+      await ctx.dataStore.userPreferences.setQueueState(
+        ctx.session.user.id,
+        normalizedQueueState,
+      );
 
       return { success: true };
     }),
 
   getQueueState: protectedProcedure.query(async ({ ctx }) => {
-    const prefs = await ctx.db.query.userPreferences.findFirst({
-      where: eq(userPreferences.userId, ctx.session.user.id),
-    });
-
-    return prefs?.queueState ?? null;
+    return ctx.dataStore.userPreferences.getQueueState(ctx.session.user.id);
   }),
 
   clearQueueState: protectedProcedure.mutation(async ({ ctx }) => {
-    const existing = await ctx.db.query.userPreferences.findFirst({
-      where: eq(userPreferences.userId, ctx.session.user.id),
-    });
-
-    if (existing) {
-      await ctx.db
-        .update(userPreferences)
-        .set({ queueState: null })
-        .where(eq(userPreferences.userId, ctx.session.user.id));
-    }
+    await ctx.dataStore.userPreferences.clearQueueState(ctx.session.user.id);
 
     return { success: true };
   }),
@@ -2276,10 +1920,10 @@ export const musicRouter = createTRPCRouter({
 
     return {
       ...state,
-      currentTrack: state.currentTrack as Track | null,
-      queue: (state.queue as Track[]) ?? [],
-      history: (state.history as Track[]) ?? [],
-      originalQueueOrder: (state.originalQueueOrder as Track[]) ?? [],
+      currentTrack: state.currentTrack,
+      queue: state.queue ?? [],
+      history: state.history ?? [],
+      originalQueueOrder: state.originalQueueOrder ?? [],
     };
   }),
 
@@ -2446,7 +2090,7 @@ export const musicRouter = createTRPCRouter({
       >();
 
       for (const item of items) {
-        const track = item.trackData as Track;
+        const track = item.trackData;
         const artistId = track.artist.id;
 
         if (!artistCounts.has(artistId)) {
@@ -2488,7 +2132,7 @@ export const musicRouter = createTRPCRouter({
         });
 
         if (cached) {
-          let tracks = cached.recommendedTracksData as Track[];
+          let tracks = cached.recommendedTracksData;
 
           if (input.excludeTrackIds && input.excludeTrackIds.length > 0) {
             tracks = tracks.filter(
@@ -2510,7 +2154,7 @@ export const musicRouter = createTRPCRouter({
 
       const artistCounts = new Map<number, number>();
       for (const item of topArtists) {
-        const track = item.trackData as Track;
+        const track = item.trackData;
         artistCounts.set(
           track.artist.id,
           (artistCounts.get(track.artist.id) ?? 0) + 1,
@@ -2689,7 +2333,7 @@ export const musicRouter = createTRPCRouter({
         });
 
         if (!input.useEnhanced && cached) {
-          let tracks = cached.recommendedTracksData as Track[];
+          let tracks = cached.recommendedTracksData;
 
           if (input.excludeTrackIds && input.excludeTrackIds.length > 0) {
             tracks = tracks.filter(
@@ -3430,7 +3074,7 @@ export const musicRouter = createTRPCRouter({
       const deduplicated = [];
 
       for (const h of history) {
-        const track = h.trackData as Track;
+        const track = h.trackData;
         if (!seenTrackIds.has(track.id)) {
           seenTrackIds.add(track.id);
           deduplicated.push({
@@ -3589,7 +3233,7 @@ export const musicRouter = createTRPCRouter({
       >();
 
       for (const item of items) {
-        const track = item.trackData as Track;
+        const track = item.trackData;
         const artistId = track.artist.id;
 
         if (!artistCounts.has(artistId)) {

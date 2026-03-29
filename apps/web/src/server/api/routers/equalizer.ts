@@ -1,8 +1,6 @@
 // File: apps/web/src/server/api/routers/equalizer.ts
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { userPreferences } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const EqualizerBandSchema = z.number().min(-12).max(12);
@@ -10,18 +8,11 @@ const EqualizerBandSchema = z.number().min(-12).max(12);
 export const equalizerRouter = createTRPCRouter({
 
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
-    const preferences = await ctx.db
-      .select({
-        equalizerEnabled: userPreferences.equalizerEnabled,
-        equalizerPreset: userPreferences.equalizerPreset,
-        equalizerBands: userPreferences.equalizerBands,
-      })
-      .from(userPreferences)
-      .where(eq(userPreferences.userId, ctx.session.user.id))
-      .limit(1);
+    const preferences = await ctx.dataStore.userPreferences.getEqualizerByUserId(
+      ctx.session.user.id,
+    );
 
-    if (!preferences.length) {
-
+    if (!preferences) {
       return {
         enabled: false,
         preset: "Flat",
@@ -29,19 +20,13 @@ export const equalizerRouter = createTRPCRouter({
       };
     }
 
-    const prefs = preferences[0];
-    if (!prefs) {
-
-      return {
-        enabled: false,
-        preset: "Flat",
-        bands: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      };
-    }
     return {
-      enabled: prefs.equalizerEnabled ?? false,
-      preset: prefs.equalizerPreset ?? "Flat",
-      bands: prefs.equalizerBands ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      enabled: preferences.enabled,
+      preset: preferences.preset,
+      bands:
+        preferences.bands.length > 0
+          ? preferences.bands
+          : [0, 0, 0, 0, 0, 0, 0, 0, 0],
     };
   }),
 
@@ -54,70 +39,14 @@ export const equalizerRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-
-      const existing = await ctx.db
-        .select({ id: userPreferences.id })
-        .from(userPreferences)
-        .where(eq(userPreferences.userId, userId))
-        .limit(1);
-
-      const updateData: Record<string, unknown> = {
-        updatedAt: new Date(),
-      };
-
-      if (input.enabled !== undefined) {
-        updateData.equalizerEnabled = input.enabled;
-      }
-      if (input.preset !== undefined) {
-        updateData.equalizerPreset = input.preset;
-      }
-      if (input.bands !== undefined) {
-        updateData.equalizerBands = input.bands;
-      }
-
-      let result;
-
-      if (existing.length > 0) {
-
-        result = await ctx.db
-          .update(userPreferences)
-          .set(updateData)
-          .where(eq(userPreferences.userId, userId))
-          .returning({
-            enabled: userPreferences.equalizerEnabled,
-            preset: userPreferences.equalizerPreset,
-            bands: userPreferences.equalizerBands,
-          });
-      } else {
-
-        result = await ctx.db
-          .insert(userPreferences)
-          .values({
-            userId,
-            equalizerEnabled: input.enabled ?? false,
-            equalizerPreset: input.preset ?? "Flat",
-            equalizerBands: input.bands ?? [0, 0, 0, 0, 0, 0, 0, 0, 0],
-            volume: 0.7,
-            repeatMode: "none",
-            shuffleEnabled: false,
-            visualizerEnabled: true,
-            compactMode: false,
-            theme: "dark",
-            autoQueueEnabled: false,
-            autoQueueThreshold: 3,
-            autoQueueCount: 5,
-            smartMixEnabled: true,
-            similarityPreference: "balanced",
-          })
-          .returning({
-            enabled: userPreferences.equalizerEnabled,
-            preset: userPreferences.equalizerPreset,
-            bands: userPreferences.equalizerBands,
-          });
-      }
-
-      return result[0];
+      return ctx.dataStore.userPreferences.upsertEqualizerByUserId(
+        ctx.session.user.id,
+        {
+          enabled: input.enabled,
+          preset: input.preset,
+          bands: input.bands,
+        },
+      );
     }),
 
   applyPreset: protectedProcedure
@@ -128,57 +57,13 @@ export const equalizerRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-
-      const existing = await ctx.db
-        .select({ id: userPreferences.id })
-        .from(userPreferences)
-        .where(eq(userPreferences.userId, userId))
-        .limit(1);
-
-      let result;
-
-      if (existing.length > 0) {
-        result = await ctx.db
-          .update(userPreferences)
-          .set({
-            equalizerPreset: input.preset,
-            equalizerBands: input.bands,
-            updatedAt: new Date(),
-          })
-          .where(eq(userPreferences.userId, userId))
-          .returning({
-            enabled: userPreferences.equalizerEnabled,
-            preset: userPreferences.equalizerPreset,
-            bands: userPreferences.equalizerBands,
-          });
-      } else {
-        result = await ctx.db
-          .insert(userPreferences)
-          .values({
-            userId,
-            equalizerEnabled: true,
-            equalizerPreset: input.preset,
-            equalizerBands: input.bands,
-            volume: 0.7,
-            repeatMode: "none",
-            shuffleEnabled: false,
-            visualizerEnabled: true,
-            compactMode: false,
-            theme: "dark",
-            autoQueueEnabled: false,
-            autoQueueThreshold: 3,
-            autoQueueCount: 5,
-            smartMixEnabled: true,
-            similarityPreference: "balanced",
-          })
-          .returning({
-            enabled: userPreferences.equalizerEnabled,
-            preset: userPreferences.equalizerPreset,
-            bands: userPreferences.equalizerBands,
-          });
-      }
-
-      return result[0];
+      return ctx.dataStore.userPreferences.upsertEqualizerByUserId(
+        ctx.session.user.id,
+        {
+          enabled: true,
+          preset: input.preset,
+          bands: input.bands,
+        },
+      );
     }),
 });
