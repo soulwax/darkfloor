@@ -5,15 +5,17 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-if (!env.DATABASE_URL) {
+const databaseUrl = env.DATABASE_URL;
+
+if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL is required for the application. It is only optional for drizzle-kit which can fall back to legacy DB_* variables."
+    "DATABASE_URL is required for the application. Prisma/Postgres aliases are accepted through env resolution, but the runtime still exposes the resolved value as DATABASE_URL."
   );
 }
 
 function getSslConfig() {
-  const isLocalDb = env.DATABASE_URL!.includes("localhost") ||
-                    env.DATABASE_URL!.includes("127.0.0.1");
+  const isLocalDb = databaseUrl.includes("localhost") ||
+                    databaseUrl.includes("127.0.0.1");
 
   if (isLocalDb) {
     console.log("[DB] Local database detected. SSL disabled.");
@@ -31,7 +33,7 @@ const sslConfig = getSslConfig();
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL_ENV !== undefined;
 
 const pool = new Pool({
-  connectionString: env.DATABASE_URL,
+  connectionString: databaseUrl,
   ...(sslConfig && { ssl: sslConfig }),
 
   max: isVercel ? 2 : 10,
@@ -91,6 +93,6 @@ if (process.env.NODE_ENV === "development") {
     .catch((error) => {
       console.error("[DB] ✗ Database connection FAILED:");
       console.error(error);
-      console.error("[DB] Please check your DATABASE_URL in .env.local");
+      console.error("[DB] Please check your frontend database URL envs in .env.local");
     });
 }

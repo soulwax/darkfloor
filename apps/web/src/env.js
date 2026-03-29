@@ -72,7 +72,13 @@ export const env = createEnv({
     SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_URL:
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_PRISMA_URL ??
+      process.env.PRISMA_DATABASE_URL ??
+      process.env.POSTGRES_URL ??
+      process.env.POSTGRES_URL_NON_POOLING ??
+      process.env.DATABASE_URL_UNPOOLED,
     REPO_ROOT: process.env.REPO_ROOT,
     ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT:
       process.env.ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT,

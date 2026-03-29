@@ -154,6 +154,12 @@ Examples:
   pnpm migrate:neon -- --dry-run
   pnpm migrate:neon -- --existing=skip-table --skip-confirm
   pnpm migrate:neon -- --only-tables=hexmusic-stream_user,hexmusic-stream_session --existing=truncate --skip-confirm
+
+Notes:
+  - The script name remains "migrate:neon" for compatibility.
+  - Target URLs may be Prisma Postgres / managed Postgres URLs via
+    NEW_DATABASE_URL*, TARGET_DATABASE_URL*, POSTGRES_URL*, PRISMA_DATABASE_URL,
+    or DATABASE_URL* env aliases.
 `);
 }
 
@@ -274,16 +280,36 @@ function describeAction(action: TableAction): string {
 }
 
 function getSslConfig(connectionString: string) {
-  if (connectionString.includes("neon.tech")) {
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    parsed = null;
+  }
+
+  const hostname = parsed?.hostname.toLowerCase() ?? "";
+  const hasExplicitSslMode =
+    parsed?.searchParams.has("sslmode") ?? connectionString.includes("sslmode=");
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1"
+  ) {
     return undefined;
   }
 
   const isCloudDb =
-    connectionString.includes("aivencloud.com") ||
-    connectionString.includes("rds.amazonaws.com") ||
-    connectionString.includes("sslmode=");
+    hostname.includes("aivencloud.com") ||
+    hostname.includes("amazonaws.com") ||
+    hostname.includes("neon.tech") ||
+    hostname.includes("prisma.io");
 
-  if (!isCloudDb && connectionString.includes("localhost")) {
+  if (hasExplicitSslMode) {
+    return undefined;
+  }
+
+  if (!isCloudDb) {
     return undefined;
   }
 
@@ -309,7 +335,7 @@ function getSslConfig(connectionString: string) {
   }
 
   console.warn(
-    "[Migration] ⚠️  WARNING: Cloud database detected but no CA certificate found!",
+    "[Migration] ⚠️  WARNING: Cloud database detected without explicit sslmode and no CA certificate found!",
   );
   console.warn(
     "[Migration] ⚠️  Using rejectUnauthorized: false - vulnerable to MITM attacks",
@@ -678,7 +704,7 @@ async function main() {
     process.exit(1);
   }
 
-  log("\n🚀 Starting database migration to NEON Postgres\n", "bright");
+  log("\n🚀 Starting database migration to target PostgreSQL\n", "bright");
   info(
     `Mode: ${options.dryRun ? "dry-run" : "execute"} | existing=${options.existingDataMode} | batchSize=${options.batchSize}`,
   );
@@ -705,6 +731,10 @@ async function main() {
     "NEW_DATABASE_UNPOOLED",
     "TARGET_DATABASE_URL",
     "TARGET_DATABASE_URL_UNPOOLED",
+    "POSTGRES_PRISMA_URL",
+    "PRISMA_DATABASE_URL",
+    "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
     "DATABASE_URL",
     "DATABASE_URL_UNPOOLED",
   ] as const;
@@ -718,6 +748,10 @@ async function main() {
     "NEW_DATABASE_POOLED",
     "TARGET_DATABASE_URL",
     "TARGET_DATABASE_POOLED",
+    "POSTGRES_PRISMA_URL",
+    "PRISMA_DATABASE_URL",
+    "POSTGRES_URL",
+    "DATABASE_URL",
   ] as const);
   const targetSchemaPushUrl = targetSchemaPush.value ?? targetUrl;
 
@@ -736,7 +770,7 @@ async function main() {
       `❌ One target DB URL env var is required: ${targetCandidates.join(", ")}`,
     );
     error(
-      "   Recommended: Set NEW_DATABASE_URL_UNPOOLED for the Neon target database",
+      "   Recommended: Set NEW_DATABASE_URL_UNPOOLED or PRISMA_DATABASE_URL for the target database",
     );
     process.exit(1);
   }
