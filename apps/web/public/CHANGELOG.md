@@ -5,6 +5,20 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-03-30
+
+### Added
+
+- **Four more FlowField visuals expand the renderer palette**: Added `particleSwarm`, `metaballs`, `plasmaFractal`, and `waveTunnel` as new selectable audio-reactive patterns with lightweight canvas rendering paths.
+
+### Changed
+
+- **Visualizer pattern naming is consistent again**: The new pattern IDs now follow the repo's camelCase naming convention across the type union, validation list, and renderer dispatch so pattern selection stays predictable.
+
+### Fixed
+
+- **Leftover visualizer artifacts from an earlier coding pass were cleaned up**: Removed duplicate scratch render files and an abandoned pattern TODO so the package no longer contains half-integrated visualizer experiments.
+
 ## [1.6.4] - 2026-03-29
 
 ### Changed
