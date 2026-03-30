@@ -1,16 +1,23 @@
-// File: apps/mobile/src/index.ts
-
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { VISUALIZER_TYPES } from "@starchild/config/visualizer";
-import type { RepeatMode } from "@starchild/player-core";
 import { DEFAULT_SPOTIFY_FEATURE_SETTINGS } from "@starchild/types/spotifySettings";
-import type { Track } from "@starchild/types";
 
-export interface MobileShellState {
-  queueLength: number;
-  repeatMode: RepeatMode;
-  currentTrack: Track | null;
-}
+import { MOBILE_DEMO_LIBRARY, MOBILE_NAV_TABS } from "./mobile-shell/data";
+import type { MobileShellState } from "./mobile-shell/types";
+
+export type {
+  MobileAccentTone,
+  MobileArtistSpotlight,
+  MobileCollection,
+  MobileMetric,
+  MobileQuickAction,
+  MobileShellSnapshot,
+  MobileShellState,
+  MobileTabDefinition,
+  MobileTabId,
+} from "./mobile-shell/types";
+
+export { MOBILE_DEMO_LIBRARY, MOBILE_NAV_TABS } from "./mobile-shell/data";
 
 export const MOBILE_SHELL_INFO = {
   app: "@starchild/mobile",
@@ -18,6 +25,7 @@ export const MOBILE_SHELL_INFO = {
   sharedStorageKeys: {
     volume: STORAGE_KEYS.VOLUME,
     queueState: STORAGE_KEYS.QUEUE_STATE,
+    currentTrack: STORAGE_KEYS.CURRENT_TRACK,
   },
   spotifyFeatureDefaults: DEFAULT_SPOTIFY_FEATURE_SETTINGS,
   supportedVisualizerTypes: VISUALIZER_TYPES,
@@ -25,8 +33,10 @@ export const MOBILE_SHELL_INFO = {
 
 export function createInitialMobileShellState(): MobileShellState {
   return {
-    queueLength: 0,
-    repeatMode: "none",
-    currentTrack: null,
+    activeTab: MOBILE_NAV_TABS[0].id,
+    currentTrack: MOBILE_DEMO_LIBRARY.nowPlaying.track,
+    queueLength: MOBILE_DEMO_LIBRARY.upNext.length + 1,
+    repeatMode: MOBILE_DEMO_LIBRARY.repeatMode,
+    searchQuery: "",
   };
 }

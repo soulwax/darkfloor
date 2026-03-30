@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-03-30
+
+### Added
+
+- **The mobile runtime now has a real app shell**: `apps/mobile` now ships a typed React Native experience with home, discover, library, and search views, a persistent now-playing dock, and bottom-tab navigation that feels like an actual listener app instead of a placeholder screen.
+- **Three more hyper-saturated FlowField visuals are now available**: Added `laserWeave`, `prismCells`, and `spectrumRibbons` as new selectable audio-reactive patterns with distinct rendering styles tuned for vivid color and smooth transitions.
+
+### Changed
+
+- **Mobile architecture is now ready for real feature work**: The Expo entry surface was reduced to a composition root, while app state, theme tokens, demo library data, and reusable React Native primitives now live under `apps/mobile/src/mobile-shell/*`.
+- **Mobile documentation and package metadata now match the new shell milestone**: The workspace README now describes the modular runtime structure and current limitations, and the mobile package version is aligned with the root release version.
+- **Modular FlowField patterns now receive adaptive detail hints**: The shared pattern context now exposes renderer detail scaling and Firefox detection so newer visuals can reduce work automatically on heavier canvases without breaking the existing transition system.
+
 ## [1.10.0] - 2026-03-30
 
 ### Added

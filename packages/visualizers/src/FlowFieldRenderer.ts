@@ -8,6 +8,9 @@ import { renderParticleSwarm } from "./flowfieldPatterns/renderParticleSwarm";
 import { renderMetaballs } from "./flowfieldPatterns/renderMetaballs";
 import { renderPlasmaFractal } from "./flowfieldPatterns/renderPlasmaFractal";
 import { renderWaveTunnel } from "./flowfieldPatterns/renderWaveTunnel";
+import { renderLaserWeave } from "./flowfieldPatterns/renderLaserWeave";
+import { renderPrismCells } from "./flowfieldPatterns/renderPrismCells";
+import { renderSpectrumRibbons } from "./flowfieldPatterns/renderSpectrumRibbons";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -230,6 +233,9 @@ export class FlowFieldRenderer {
     "metaballs",
     "plasmaFractal",
     "waveTunnel",
+    "laserWeave",
+    "prismCells",
+    "spectrumRibbons",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -863,6 +869,8 @@ export class FlowFieldRenderer {
       time: this.time,
       hueBase: this.hueBase,
       TWO_PI: FlowFieldRenderer.TWO_PI,
+      detailScale: this.getAdaptiveDetailScale(),
+      isFirefox: this.isFirefox,
       fastSin: (angle) => this.fastSin(angle),
       fastCos: (angle) => this.fastCos(angle),
       fastSqrt: (x) => this.fastSqrt(x),
@@ -3116,6 +3124,7 @@ export class FlowFieldRenderer {
       case "vortexSpiral":
       case "tunnel":
       case "phoenix":
+      case "laserWeave":
         return 0;
       case "rings":
       case "mandala":
@@ -3136,6 +3145,7 @@ export class FlowFieldRenderer {
       case "kabbalah":
       case "tarot":
       case "crystalGrid":
+      case "prismCells":
         return 2;
       case "waves":
       case "dna":
@@ -3144,6 +3154,7 @@ export class FlowFieldRenderer {
       case "cosmicWeb":
       case "ouroboros":
       case "celestial":
+      case "spectrumRibbons":
         return 3;
       default:
         return 4;
@@ -4000,6 +4011,30 @@ export class FlowFieldRenderer {
         break;
       case "waveTunnel":
         renderWaveTunnel(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "laserWeave":
+        renderLaserWeave(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "prismCells":
+        renderPrismCells(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "spectrumRibbons":
+        renderSpectrumRibbons(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,

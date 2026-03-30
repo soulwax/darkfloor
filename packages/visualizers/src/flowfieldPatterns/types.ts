@@ -9,6 +9,8 @@ export interface FlowFieldPatternContext {
   time: number;
   hueBase: number;
   TWO_PI: number;
+  detailScale: number;
+  isFirefox: boolean;
 
   fastSin: (angle: number) => number;
   fastCos: (angle: number) => number;

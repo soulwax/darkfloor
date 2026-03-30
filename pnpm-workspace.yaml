@@ -1,10 +1,14 @@
 # File: pnpm-workspace.yaml
 
+packages:
+- 'apps/*'
+- 'packages/*'
+
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - electron
-  - electron-winstaller
-  - esbuild
-  - sharp
-  - unrs-resolver
+- '@parcel/watcher'
+- '@swc/core'
+- electron
+- electron-winstaller
+- esbuild
+- sharp
+- unrs-resolver

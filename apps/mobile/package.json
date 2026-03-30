@@ -1,7 +1,7 @@
 {
   "name": "@starchild/mobile",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.12.0",
   "type": "module",
   "description": "Starchild React Native Web app workspace",
   "main": "./index.ts",
@@ -11,10 +11,13 @@
     "dev:ios": "expo start --ios",
     "dev:android": "expo start --android",
     "build": "expo export --platform web --output-dir dist",
-    "check": "npm run typecheck",
+    "check": "tsc --project tsconfig.json --noEmit",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@starchild/config": "workspace:*",
+    "@starchild/player-core": "workspace:*",
+    "@starchild/types": "workspace:*",
     "@expo/metro-runtime": "^6.1.0",
     "expo": "^55.0.0",
     "react": "19.2.0",

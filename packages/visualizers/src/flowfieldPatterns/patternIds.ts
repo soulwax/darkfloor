@@ -131,4 +131,7 @@ export type Pattern =
   | "particleSwarm"
   | "metaballs"
   | "plasmaFractal"
-  | "waveTunnel";
+  | "waveTunnel"
+  | "laserWeave"
+  | "prismCells"
+  | "spectrumRibbons";

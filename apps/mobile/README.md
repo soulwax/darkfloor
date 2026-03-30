@@ -1,12 +1,21 @@
 # apps/mobile
 
-React Native Web workspace powered by Expo.
+Expo-powered React Native workspace for the Starchild mobile runtime.
 
 Current scope:
-- Runs a real Expo app for web with an upgrade path to iOS and Android
-- Reuses shared monorepo packages through `@starchild/*` path aliases
-- Ships a typed landing surface in `App.tsx` backed by shared playback/config contracts
-- Exposes build/check scripts so Turborepo can include the app in workspace runs
+- Runs a real mobile shell for web today with a clean path to iOS and Android
+- Reuses shared monorepo contracts from `@starchild/config`, `@starchild/types`, and `@starchild/player-core`
+- Splits app-only UI, theme, state, and demo data into `src/mobile-shell/*` instead of keeping the app in one file
+- Provides queue, library, discover, and search surfaces that can later be swapped from staged data to live auth/playback/API integrations
+
+Key files:
+- `App.tsx`: tiny Expo entry composition root
+- `index.ts`: Expo registration entrypoint
+- `src/index.ts`: shared mobile-shell exports and bootstrap helpers
+- `src/mobile-shell/data.ts`: typed demo tracks, queue state, and tab metadata
+- `src/mobile-shell/useMobileShellState.ts`: mobile tab and search state
+- `src/mobile-shell/MobileApp.tsx`: screen composition and layout
+- `src/mobile-shell/components.tsx`: reusable React Native UI primitives for the shell
 
 Commands:
 - `pnpm --dir apps/mobile run dev` starts the React Native Web dev server
@@ -14,7 +23,7 @@ Commands:
 - `pnpm --dir apps/mobile run build` exports a web build to `dist/`
 - `pnpm --dir apps/mobile run typecheck` validates the app under the repo's strict TypeScript rules
 
-Not included yet:
-- Native platform folders via `expo prebuild`
-- Shared auth/playback runtime integration with the existing web app
-- Mobile-specific data fetching, routing, and release automation
+Still to do:
+- Install Expo/mobile dependencies in this workspace so local typecheck/build can run end to end
+- Replace staged data with shared auth, playback, and API-backed queries
+- Add routing, native-safe storage, and release automation for actual device targets
