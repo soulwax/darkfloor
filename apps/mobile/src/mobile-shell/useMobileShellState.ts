@@ -1,8 +1,14 @@
-import { startTransition, useDeferredValue, useState } from "react";
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useReducer,
+} from "react";
 import type { Track } from "@starchild/player-core";
 
 import { createInitialMobileShellState } from "../index";
 import { MOBILE_DEMO_LIBRARY, MOBILE_NAV_TABS } from "./data";
+import { persistMobileShellState, restoreMobileShellState } from "./storage";
 import type { MobileShellState, MobileTabId } from "./types";
 
 interface MobileShellController {
@@ -14,21 +20,6 @@ interface MobileShellController {
   deferredSearchQuery: string;
   setActiveTab: (tabId: MobileTabId) => void;
   setSearchQuery: (value: string) => void;
-}
-
-function matchesTrack(track: Track, query: string): boolean {
-  const normalizedQuery = query.trim().toLowerCase();
-
-  if (!normalizedQuery) {
-    return false;
-  }
-
-  return [
-    track.title,
-    track.artist.name,
-    track.album.title,
-    track.release_date ?? "",
-  ].some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
 function collectSearchTracks(): Track[] {
@@ -51,42 +42,103 @@ function collectSearchTracks(): Track[] {
   return [...dedupedTracks.values()];
 }
 
+interface IndexedTrack {
+  track: Track;
+  searchKey: string;
+}
+
+type MobileShellAction =
+  | {
+      type: "set-active-tab";
+      tabId: MobileTabId;
+    }
+  | {
+      type: "set-search-query";
+      value: string;
+    };
+
 const searchableTracks = collectSearchTracks();
+const indexedTracks: readonly IndexedTrack[] = searchableTracks.map((track) => ({
+  track,
+  searchKey: [
+    track.title,
+    track.artist.name,
+    track.album.title,
+    track.release_date ?? "",
+  ]
+    .join("\n")
+    .toLowerCase(),
+}));
+
+function createMobileShellState(): MobileShellState {
+  return restoreMobileShellState(createInitialMobileShellState());
+}
+
+function mobileShellReducer(
+  state: MobileShellState,
+  action: MobileShellAction,
+): MobileShellState {
+  switch (action.type) {
+    case "set-active-tab":
+      return {
+        ...state,
+        activeTab: action.tabId,
+      };
+    case "set-search-query": {
+      const trimmedValue = action.value.trim();
+      const nextTab =
+        trimmedValue.length > 0
+          ? "search"
+          : state.activeTab === "search"
+            ? "home"
+            : state.activeTab;
+
+      return {
+        ...state,
+        activeTab: nextTab,
+        searchQuery: action.value,
+      };
+    }
+    default:
+      return state;
+  }
+}
 
 export function useMobileShellState(): MobileShellController {
-  const [state, setState] = useState<MobileShellState>(
-    createInitialMobileShellState(),
+  const [state, dispatch] = useReducer(
+    mobileShellReducer,
+    undefined,
+    () => createMobileShellState(),
   );
   const deferredSearchQuery = useDeferredValue(state.searchQuery.trim());
+  const normalizedDeferredSearchQuery = deferredSearchQuery.toLowerCase();
 
-  const searchResults = searchableTracks.filter((track) =>
-    matchesTrack(track, deferredSearchQuery),
-  );
+  const searchResults =
+    normalizedDeferredSearchQuery.length === 0
+      ? []
+      : indexedTracks
+          .filter((entry) =>
+            entry.searchKey.includes(normalizedDeferredSearchQuery),
+          )
+          .map((entry) => entry.track);
+
+  useEffect(() => {
+    persistMobileShellState(state);
+  }, [state]);
 
   function setActiveTab(tabId: MobileTabId): void {
     startTransition(() => {
-      setState((currentState) => ({
-        ...currentState,
-        activeTab: tabId,
-      }));
+      dispatch({
+        type: "set-active-tab",
+        tabId,
+      });
     });
   }
 
   function setSearchQuery(value: string): void {
-    setState((currentState) => {
-      const trimmedValue = value.trim();
-      const nextTab =
-        trimmedValue.length > 0
-          ? "search"
-          : currentState.activeTab === "search"
-            ? "home"
-            : currentState.activeTab;
-
-      return {
-        ...currentState,
-        activeTab: nextTab,
-        searchQuery: value,
-      };
+    dispatch({
+      type: "set-search-query",
+      value,
     });
   }
 

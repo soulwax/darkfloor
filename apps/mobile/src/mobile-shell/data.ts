@@ -230,29 +230,32 @@ const quickActions: readonly MobileQuickAction[] = [
   {
     id: "queue",
     label: "Queue sync",
-    description: "Carry the same order into desktop and web sessions.",
+    description: "Carry the same order into desktop and web sessions later.",
     value: "5 tracks ready",
     tone: "mint",
   },
   {
-    id: "offline",
-    label: "Offline prep",
-    description: "Pin the next commute mix before native downloads land.",
-    value: "12 songs staged",
+    id: "resume",
+    label: "Resume state",
+    description:
+      "Restore the active tab, search query, and track context when the shell reopens.",
+    value: "Stored locally",
     tone: "blue",
   },
   {
-    id: "visualizer",
-    label: "Visualizer handoff",
-    description: "Reuse the same flowfield and kaleidoscope presets later.",
-    value: "2 shared modes",
+    id: "layout",
+    label: "Native framing",
+    description:
+      "Safe-area aware chrome keeps the same shell composition viable on device targets.",
+    value: "Expo ready",
     tone: "coral",
   },
   {
     id: "session",
     label: "Session resume",
-    description: "Restore the last track, time, and repeat mode on launch.",
-    value: "Repeat all",
+    description:
+      "The shell now has a real boot seam for wiring auth, playback, and API data next.",
+    value: "Next seam defined",
     tone: "gold",
   },
 ] as const;

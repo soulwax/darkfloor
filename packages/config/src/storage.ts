@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   QUEUE_STATE: `${STORAGE_PREFIX}queue_state`,
   CURRENT_TRACK: `${STORAGE_PREFIX}current_track`,
   CURRENT_TIME: `${STORAGE_PREFIX}current_time`,
+  MOBILE_SHELL_STATE: `${STORAGE_PREFIX}mobile_shell_state`,
 
   THEME: `${STORAGE_PREFIX}theme`,
   EQUALIZER_PRESET: `${STORAGE_PREFIX}equalizer_preset`,

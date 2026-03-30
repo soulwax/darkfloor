@@ -8,7 +8,7 @@ Last updated: 2026-03-28
 - The Darkfloor API V2 backend is also present in this workspace as the Git submodule `api/`.
 - Primary product: `apps/web` (App Router + tRPC + NextAuth + Drizzle/Postgres).
 - Desktop runtime: `apps/desktop/electron` (legacy compatibility wrappers also exist under root `electron/`).
-- Mobile runtime: `apps/mobile` Expo-based React Native Web app.
+- Mobile runtime: `apps/mobile` Expo-based React Native Web app with a persisted shell controller under `src/mobile-shell/*`.
 - API model:
   - Internal app data: tRPC at `/api/trpc`.
   - External integrations: Next.js route handlers under `apps/web/src/app/api/**` (Songbird/Bluesix V2 + Deezer).
@@ -19,14 +19,10 @@ Last updated: 2026-03-28
 1. `AGENTS.md`
 2. `CONTEXT.md`
 3. `README.md`
-4. `api/AGENTS.md` and `api/CONTEXT.md` for backend-facing work
-5. `docs/README.md`
-6. `docs/SETUP.md`
-7. `docs/DEPLOYMENT.md`
-8. `docs/TROUBLESHOOTING.md`
-9. `docs/ARCHITECTURE.md`
-10. `docs/API_ROUTE_USE.md`
-11. `docs/API_V2_SWAGGER.yaml`
+4. `AI_TOOLING.md`
+5. `apps/mobile/README.md` for mobile-facing work
+6. `api/AGENTS.md` and `api/CONTEXT.md` for backend-facing work
+7. `CHANGELOG.md` for user-visible change context
 
 ## Workspace Map
 
@@ -50,6 +46,7 @@ Last updated: 2026-03-28
   - `apps/web/src/env.js` env schema validation (`@t3-oss/env-nextjs`)
   - `apps/web/drizzle/` SQL migrations
 - `apps/desktop/electron/` Electron main/preload + builder helpers
+- `apps/mobile/src/mobile-shell/` mobile runtime composition, state, and persistence
 - `packages/*` shared workspace libraries (import via `@starchild/*`)
   - `api-client`, `types`, `config`, `auth`
   - `player-core`, `player-react`, `audio-adapters`
@@ -119,5 +116,6 @@ Player internals live in shared packages:
 ## Notes
 
 - Upstream Swagger files (`docs/API_V2_SWAGGER.yaml` / `.json`) describe the service configured via `API_V2_URL`; that service's source now lives in the `api/` submodule.
+- Verify the live filesystem before trusting older repo maps such as `tree.txt`; optional docs and tool-specific files may differ across checkouts.
 - Vercel config (`vercel.json`) uses pnpm commands (`pnpm install --frozen-lockfile`, `pnpm run build`).
 - Current pnpm recursive/workspace scope is root package only; package code sharing is handled through TS path alias resolution.

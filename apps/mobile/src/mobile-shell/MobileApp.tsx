@@ -1,6 +1,8 @@
 import type { JSX } from "react";
 import {
+  KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,7 +27,7 @@ import {
 import { MOBILE_DEMO_LIBRARY } from "./data";
 import { formatTrackDuration, mobileTheme } from "./theme";
 import { useMobileShellState } from "./useMobileShellState";
-import type { MobileTabId } from "./types";
+import type { MobileMetric, MobileTabId } from "./types";
 
 interface TrackPanelContent {
   title: string;
@@ -112,6 +114,36 @@ function getSupportPanelCopy(activeTab: MobileTabId): {
   }
 }
 
+function getSessionMetrics(
+  queueLength: number,
+  hydrationSource: "default" | "restored",
+): readonly MobileMetric[] {
+  return [
+    {
+      label: "Queue depth",
+      value: String(queueLength).padStart(2, "0"),
+      hint: "Now playing plus the rest of the staged queue.",
+    },
+    {
+      label: "Shell state",
+      value: hydrationSource === "restored" ? "Saved" : "Fresh",
+      hint:
+        hydrationSource === "restored"
+          ? "Recovered from the last stored mobile session."
+          : "Starts clean, then persists once the shell changes.",
+    },
+    {
+      label: "Visualizers",
+      value: String(MOBILE_SHELL_INFO.supportedVisualizerTypes.length).padStart(
+        2,
+        "0",
+      ),
+      hint:
+        "Shared visualizer contracts are already available for the mobile runtime.",
+    },
+  ];
+}
+
 export function MobileApp(): JSX.Element {
   const { width } = useWindowDimensions();
   const isWideLayout = width >= 980;
@@ -131,227 +163,256 @@ export function MobileApp(): JSX.Element {
     deferredSearchQuery,
   );
   const supportCopy = getSupportPanelCopy(activeTab);
+  const sessionMetrics = getSessionMetrics(
+    state.queueLength,
+    state.hydrationSource,
+  );
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.screen}
+      >
+        <View style={styles.glowTop} />
+        <View style={styles.glowBottom} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View
-          style={[
-            styles.header,
-            isWideLayout ? styles.headerWide : styles.headerStack,
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerCopy}>
-            <Text style={styles.kicker}>Starchild Mobile</Text>
-            <Text style={styles.title}>
-              A proper React Native shell for queue, library, and search work.
-            </Text>
-            <Text style={styles.description}>
-              The mobile workspace now behaves like an app surface instead of a
-              static landing page. Shared queue state, storage keys, and player
-              contracts stay aligned with web and desktop while the native path
-              stays open through Expo.
-            </Text>
-          </View>
+          <View style={styles.contentInner}>
+            <View
+              style={[
+                styles.header,
+                isWideLayout ? styles.headerWide : styles.headerStack,
+              ]}
+            >
+              <View style={styles.headerCopy}>
+                <Text style={styles.kicker}>Starchild Mobile</Text>
+                <Text style={styles.title}>
+                  A proper React Native shell for queue, library, and search
+                  work.
+                </Text>
+                <Text style={styles.description}>
+                  The mobile workspace now boots through a typed shell state
+                  controller, restores the last session when browser storage is
+                  available, and keeps its player contracts aligned with web and
+                  desktop while the Expo native path stays open.
+                </Text>
+              </View>
 
-          <View style={styles.headerPills}>
-            <StatusPill label="Platform" value={Platform.OS} />
-            <StatusPill
-              label="Visualizer"
-              value={MOBILE_SHELL_INFO.supportedVisualizerTypes.join(" / ")}
-            />
-            <StatusPill label="Repeat" value={state.repeatMode} />
-          </View>
-        </View>
-
-        <SearchField onChangeText={setSearchQuery} value={searchQuery} />
-
-        <View
-          style={[
-            styles.heroGrid,
-            isWideLayout ? styles.heroGridWide : styles.heroGridStack,
-          ]}
-        >
-          <View style={styles.heroCard}>
-            <Text style={styles.heroEyebrow}>Now playing</Text>
-            <Text style={styles.heroTitle}>
-              {MOBILE_DEMO_LIBRARY.nowPlaying.track.title}
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              {MOBILE_DEMO_LIBRARY.nowPlaying.track.artist.name} •{" "}
-              {MOBILE_DEMO_LIBRARY.nowPlaying.track.album.title}
-            </Text>
-            <Text style={styles.heroBody}>
-              Shared playback state can already describe the current track, the
-              queue length, and repeat mode. That gives us a clean seam for
-              wiring the real engine next without throwing away this shell.
-            </Text>
-
-            <View style={styles.heroPills}>
-              <StatusPill
-                label="Queue"
-                value={`${state.queueLength} tracks`}
-              />
-              <StatusPill
-                label="Duration"
-                value={formatTrackDuration(
-                  MOBILE_DEMO_LIBRARY.nowPlaying.track.duration,
-                )}
-              />
-              <StatusPill
-                label="Storage"
-                value={MOBILE_SHELL_INFO.sharedStorageKeys.currentTrack}
-              />
+              <View style={styles.headerPills}>
+                <StatusPill label="Platform" value={Platform.OS} />
+                <StatusPill
+                  label="Shell state"
+                  value={
+                    state.hydrationSource === "restored" ? "restored" : "fresh"
+                  }
+                />
+                <StatusPill label="Repeat" value={state.repeatMode} />
+              </View>
             </View>
 
-            <View style={styles.progressTrack}>
-              <View style={styles.progressFill} />
-            </View>
-          </View>
+            <SearchField onChangeText={setSearchQuery} value={searchQuery} />
 
-          <View style={styles.metricSection}>
-            <SectionHeading
-              subtitle="Small, typed metrics that can be replaced with live values once auth and data layers arrive."
-              title="Session status"
-            />
-            <View style={styles.metricGrid}>
-              {MOBILE_DEMO_LIBRARY.metrics.map((metric) => (
-                <MetricCard key={metric.label} metric={metric} />
-              ))}
-            </View>
-          </View>
-        </View>
+            <View
+              style={[
+                styles.heroGrid,
+                isWideLayout ? styles.heroGridWide : styles.heroGridStack,
+              ]}
+            >
+              <View style={styles.heroCard}>
+                <Text style={styles.heroEyebrow}>Now playing</Text>
+                <Text style={styles.heroTitle}>
+                  {MOBILE_DEMO_LIBRARY.nowPlaying.track.title}
+                </Text>
+                <Text style={styles.heroSubtitle}>
+                  {MOBILE_DEMO_LIBRARY.nowPlaying.track.artist.name} •{" "}
+                  {MOBILE_DEMO_LIBRARY.nowPlaying.track.album.title}
+                </Text>
+                <Text style={styles.heroBody}>
+                  Shared playback state already describes the current track, the
+                  queue length, and repeat mode. The shell now persists that
+                  frame of reference as well, giving the mobile runtime a real
+                  boot/resume seam instead of a one-shot demo render.
+                </Text>
 
-        <View style={styles.section}>
-          <SectionHeading
-            subtitle="These cards sketch the mobile-first jobs this app should eventually own."
-            title="Quick actions"
-          />
-          <ScrollView
-            contentContainerStyle={styles.horizontalRail}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {MOBILE_DEMO_LIBRARY.quickActions.map((action) => (
-              <CollectionCard
-                collection={{
-                  curator: action.value,
-                  id: action.id,
-                  subtitle: action.description,
-                  title: action.label,
-                  tone: action.tone,
-                  trackCount: 0,
-                }}
-                key={action.id}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View
-          style={[
-            styles.supportGrid,
-            isWideLayout ? styles.supportGridWide : styles.supportGridStack,
-          ]}
-        >
-          <View style={styles.section}>
-            <SectionHeading
-              subtitle={primaryPanel.subtitle}
-              title={primaryPanel.title}
-            />
-
-            {primaryPanel.tracks.length > 0 ? (
-              <View style={styles.trackList}>
-                {primaryPanel.tracks.map((track) => (
-                  <TrackRow
-                    caption={track.album.title}
-                    key={track.id}
-                    tone={primaryPanel.tone}
-                    track={track}
+                <View style={styles.heroPills}>
+                  <StatusPill
+                    label="Queue"
+                    value={`${state.queueLength} tracks`}
                   />
-                ))}
+                  <StatusPill
+                    label="Duration"
+                    value={formatTrackDuration(
+                      MOBILE_DEMO_LIBRARY.nowPlaying.track.duration,
+                    )}
+                  />
+                  <StatusPill
+                    label="Resume"
+                    value="local shell"
+                  />
+                </View>
+
+                <View style={styles.progressTrack}>
+                  <View style={styles.progressFill} />
+                </View>
               </View>
-            ) : (
-              <EmptyState
-                body="Try a song title, artist name, album, or a release date such as 2026-03-24."
-                title="No matches yet"
+
+              <View style={styles.metricSection}>
+                <SectionHeading
+                  subtitle="Typed runtime indicators that reflect how the shell now boots and persists."
+                  title="Session status"
+                />
+                <View style={styles.metricGrid}>
+                  {sessionMetrics.map((metric) => (
+                    <MetricCard key={metric.label} metric={metric} />
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <SectionHeading
+                subtitle="These cards sketch the mobile-first jobs this app should eventually own."
+                title="Quick actions"
               />
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <SectionHeading
-              subtitle={supportCopy.subtitle}
-              title={supportCopy.title}
-            />
-
-            {activeTab === "discover" ? (
-              <View style={styles.cardStack}>
-                {MOBILE_DEMO_LIBRARY.artists.map((artist) => (
-                  <ArtistCard artist={artist} key={artist.id} />
-                ))}
-              </View>
-            ) : activeTab === "search" ? (
-              <View style={styles.promptStack}>
-                {MOBILE_DEMO_LIBRARY.searchPrompts.map((prompt) => (
-                  <View key={prompt} style={styles.promptCard}>
-                    <Text style={styles.promptTitle}>{prompt}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
               <ScrollView
                 contentContainerStyle={styles.horizontalRail}
                 horizontal
                 showsHorizontalScrollIndicator={false}
               >
-                {MOBILE_DEMO_LIBRARY.collections.map((collection) => (
-                  <CollectionCard collection={collection} key={collection.id} />
+                {MOBILE_DEMO_LIBRARY.quickActions.map((action) => (
+                  <CollectionCard
+                    collection={{
+                      curator: action.value,
+                      id: action.id,
+                      subtitle: action.description,
+                      title: action.label,
+                      tone: action.tone,
+                      trackCount: 0,
+                    }}
+                    key={action.id}
+                  />
                 ))}
               </ScrollView>
-            )}
-          </View>
-        </View>
+            </View>
 
-        <View style={styles.section}>
-          <SectionHeading
-            subtitle="A second list keeps the shell honest about the kinds of scrolling surfaces a real listener app needs."
-            title="Recently played"
-          />
+            <View
+              style={[
+                styles.supportGrid,
+                isWideLayout ? styles.supportGridWide : styles.supportGridStack,
+              ]}
+            >
+              <View style={styles.section}>
+                <SectionHeading
+                  subtitle={primaryPanel.subtitle}
+                  title={primaryPanel.title}
+                />
 
-          <View style={styles.trackList}>
-            {MOBILE_DEMO_LIBRARY.recentTracks.map((track) => (
-              <TrackRow
-                caption={`released ${track.release_date ?? "unknown"}`}
-                key={track.id}
-                tone="blue"
-                track={track}
+                {primaryPanel.tracks.length > 0 ? (
+                  <View style={styles.trackList}>
+                    {primaryPanel.tracks.map((track) => (
+                      <TrackRow
+                        caption={track.album.title}
+                        key={track.id}
+                        tone={primaryPanel.tone}
+                        track={track}
+                      />
+                    ))}
+                  </View>
+                ) : (
+                  <EmptyState
+                    body="Try a song title, artist name, album, or a release date such as 2026-03-24."
+                    title="No matches yet"
+                  />
+                )}
+              </View>
+
+              <View style={styles.section}>
+                <SectionHeading
+                  subtitle={supportCopy.subtitle}
+                  title={supportCopy.title}
+                />
+
+                {activeTab === "discover" ? (
+                  <View style={styles.cardStack}>
+                    {MOBILE_DEMO_LIBRARY.artists.map((artist) => (
+                      <ArtistCard artist={artist} key={artist.id} />
+                    ))}
+                  </View>
+                ) : activeTab === "search" ? (
+                  <View style={styles.promptStack}>
+                    {MOBILE_DEMO_LIBRARY.searchPrompts.map((prompt) => (
+                      <View key={prompt} style={styles.promptCard}>
+                        <Text style={styles.promptTitle}>{prompt}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <ScrollView
+                    contentContainerStyle={styles.horizontalRail}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {MOBILE_DEMO_LIBRARY.collections.map((collection) => (
+                      <CollectionCard
+                        collection={collection}
+                        key={collection.id}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <SectionHeading
+                subtitle="A second list keeps the shell honest about the kinds of scrolling surfaces a real listener app needs."
+                title="Recently played"
               />
-            ))}
+
+              <View style={styles.trackList}>
+                {MOBILE_DEMO_LIBRARY.recentTracks.map((track) => (
+                  <TrackRow
+                    caption={`released ${track.release_date ?? "unknown"}`}
+                    key={track.id}
+                    tone="blue"
+                    track={track}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.bottomChrome}>
+          <View style={styles.bottomChromeInner}>
+            <NowPlayingDock
+              queueLength={state.queueLength}
+              repeatMode={state.repeatMode}
+              track={state.currentTrack ?? MOBILE_DEMO_LIBRARY.nowPlaying.track}
+            />
+            <BottomTabBar
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              tabs={navTabs}
+            />
           </View>
         </View>
-      </ScrollView>
-
-      <View style={styles.bottomChrome}>
-        <NowPlayingDock
-          queueLength={state.queueLength}
-          repeatMode={state.repeatMode}
-          track={state.currentTrack ?? MOBILE_DEMO_LIBRARY.nowPlaying.track}
-        />
-        <BottomTabBar
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          tabs={navTabs}
-        />
-      </View>
-    </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: mobileTheme.colors.screen,
+  },
   screen: {
     flex: 1,
     backgroundColor: mobileTheme.colors.screen,
@@ -379,6 +440,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 28,
     paddingBottom: 190,
+  },
+  contentInner: {
+    width: "100%",
+    maxWidth: 1240,
+    alignSelf: "center",
     gap: 18,
   },
   header: {
@@ -545,6 +611,11 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     bottom: 14,
+  },
+  bottomChromeInner: {
+    width: "100%",
+    maxWidth: 1240,
+    alignSelf: "center",
     gap: 10,
   },
 });

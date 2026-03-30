@@ -67,11 +67,15 @@ export function SearchField({
       <Text style={searchStyles.label}>Search the shared catalog</Text>
       <TextInput
         accessibilityLabel="Search the shared catalog"
+        accessibilityHint="Filters tracks, artists, albums, and release dates in the mobile demo catalog."
         autoCapitalize="none"
         autoCorrect={false}
+        clearButtonMode="while-editing"
+        keyboardAppearance="dark"
         onChangeText={onChangeText}
         placeholder="Track, artist, album, or release date"
         placeholderTextColor={mobileTheme.colors.textSubtle}
+        returnKeyType="search"
         selectionColor={mobileTheme.colors.mint}
         style={searchStyles.input}
         value={value}
@@ -264,7 +268,8 @@ export function BottomTabBar({
 
         return (
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
             key={tab.id}
             onPress={() => onChange(tab.id)}
             style={({ pressed }: { pressed: boolean }) => [

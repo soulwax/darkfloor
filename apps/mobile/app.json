@@ -3,7 +3,7 @@
     "name": "Starchild Mobile",
     "slug": "starchild-mobile",
     "scheme": "starchild-mobile",
-    "version": "1.10.0",
+    "version": "1.14.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [

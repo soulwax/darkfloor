@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-03-30
+
+### Added
+
+- **The mobile runtime now restores its shell state between sessions**: `apps/mobile` now persists the active tab, search query, queue summary, repeat mode, and current track context through a typed mobile-shell storage layer, giving the Expo app a real boot/resume seam instead of always starting fresh.
+- **AI tooling now has a single neutral quick-start**: Added `AI_TOOLING.md` as the canonical cross-tool assistant guide, plus thin compatibility files in `CLAUDE.md` and `.github/copilot-instructions.md` so different coding assistants start from the same repo map.
+
+### Changed
+
+- **The mobile shell now behaves more like a production runtime**: The app frame now uses safe-area-aware layout, keyboard-aware scrolling, centered wide-screen composition, reducer-driven shell state, and indexed search so the current React Native Web app is easier to extend toward device targets.
+- **Root guidance now points at real files instead of stale snapshots**: `AGENTS.md`, `README.md`, and `apps/mobile/README.md` were updated to reflect the docs that actually exist in this checkout, the mobile runtime architecture, and the preferred root scripts for mobile work.
+- **Root package tooling now exposes direct iOS and Android launch commands**: Added `pnpm dev:mobile:ios` and `pnpm dev:mobile:android` so mobile target workflows are available from the repo root without remembering app-local commands.
+
 ## [1.13.0] - 2026-03-30
 
 ### Added

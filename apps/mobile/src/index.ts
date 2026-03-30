@@ -22,10 +22,16 @@ export { MOBILE_DEMO_LIBRARY, MOBILE_NAV_TABS } from "./mobile-shell/data";
 export const MOBILE_SHELL_INFO = {
   app: "@starchild/mobile",
   status: "react-native-web",
+  capabilities: {
+    nativeTargetsReady: true,
+    persistsShellState: true,
+    safeAreaLayout: true,
+  },
   sharedStorageKeys: {
     volume: STORAGE_KEYS.VOLUME,
     queueState: STORAGE_KEYS.QUEUE_STATE,
     currentTrack: STORAGE_KEYS.CURRENT_TRACK,
+    mobileShellState: STORAGE_KEYS.MOBILE_SHELL_STATE,
   },
   spotifyFeatureDefaults: DEFAULT_SPOTIFY_FEATURE_SETTINGS,
   supportedVisualizerTypes: VISUALIZER_TYPES,
@@ -38,5 +44,7 @@ export function createInitialMobileShellState(): MobileShellState {
     queueLength: MOBILE_DEMO_LIBRARY.upNext.length + 1,
     repeatMode: MOBILE_DEMO_LIBRARY.repeatMode,
     searchQuery: "",
+    hydrationSource: "default",
+    restoredAt: null,
   };
 }

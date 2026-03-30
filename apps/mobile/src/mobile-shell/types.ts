@@ -4,6 +4,8 @@ export type MobileTabId = "home" | "discover" | "library" | "search";
 
 export type MobileAccentTone = "mint" | "blue" | "coral" | "gold";
 
+export type MobileHydrationSource = "default" | "restored";
+
 export interface MobileTabDefinition {
   id: MobileTabId;
   label: string;
@@ -61,4 +63,6 @@ export interface MobileShellState {
   queueLength: number;
   repeatMode: RepeatMode;
   searchQuery: string;
+  hydrationSource: MobileHydrationSource;
+  restoredAt: string | null;
 }

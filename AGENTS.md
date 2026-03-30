@@ -1,6 +1,6 @@
 # Agent Guide (songbird-frontend / Starchild Monorepo)
 
-Last updated: 2026-03-28
+Last updated: 2026-03-30
 
 This is the primary project context for coding agents in this repository. Read this file before making changes.
 
@@ -9,15 +9,11 @@ This is the primary project context for coding agents in this repository. Read t
 1. `AGENTS.md` (this file)
 2. `CONTEXT.md`
 3. `README.md`
-4. `api/AGENTS.md` and `api/CONTEXT.md` when the task touches the backend submodule
-5. `README.md`
-6. `docs/README.md`
-7. `docs/SETUP.md`
-8. `docs/DEPLOYMENT.md`
-9. `docs/TROUBLESHOOTING.md`
-10. `docs/ARCHITECTURE.md`
-11. `docs/API_ROUTE_USE.md`
-12. `docs/API_V2_SWAGGER.yaml` and `api/README.md` for backend contract/runtime context
+4. `AI_TOOLING.md`
+5. `apps/mobile/README.md` when the task touches the mobile runtime
+6. `api/AGENTS.md`, `api/CONTEXT.md`, and `api/CODEX.md` when the task touches the backend submodule
+7. `CHANGELOG.md` when the task is user-visible or release-sensitive
+8. `tree.txt` only as a rough snapshot; verify the live filesystem before trusting it
 
 ## Required Engineering Standards
 
@@ -29,6 +25,12 @@ Contributors and coding agents should demonstrate:
 4. State isolation and hook design (UI state vs playback engine boundaries)
 5. Monorepo boundary discipline (respect app/package import boundaries)
 
+## Documentation Reality Check
+
+- The root repo may not always contain the optional `docs/` tree referenced by older snapshots.
+- Tool-specific files should stay thin and point back to `AGENTS.md` plus `AI_TOOLING.md`.
+- Verify actual files in the working tree before assuming `CLAUDE.md`, `.cursor/`, `.claude/`, or similar helper folders exist.
+
 ## High-Level Architecture
 
 This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`, shared code under `packages/`, and the Darkfloor API V2 backend checked in as the Git submodule `api/`.
@@ -36,14 +38,14 @@ This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
   - `apps/desktop`: Electron wrapper and packaging scripts
-  - `apps/mobile`: Expo-based React Native Web app with a future path to iOS/Android
+  - `apps/mobile`: Expo-based React Native Web app with a future path to iOS and Android
 - Shared packages:
   - Runtime packages: `packages/api-client`, `packages/auth`, `packages/config`, `packages/types`
   - Playback packages: `packages/player-core`, `packages/player-react`, `packages/audio-adapters`
-  - UI/visual packages: `packages/ui`, `packages/visualizers`
+  - UI and visual packages: `packages/ui`, `packages/visualizers`
   - Config placeholders: `packages/eslint-config`, `packages/tsconfig`
   - Package imports in app code (`@starchild/*`) resolve to `packages/*/src` via TypeScript path aliases
-- Infra/runtime config:
+- Infra and runtime config:
   - Root runtime/build config in `package.json`, `turbo.json`, `vercel.json`, `Dockerfile`, `ecosystem*.cjs`
   - DB migrations in `apps/web/drizzle`
 - Backend submodule:
@@ -55,7 +57,7 @@ Note on upstream APIs:
 
 - The frontend still consumes the backend through route handlers under `apps/web/src/app/api/**`.
 - The source implementation for that backend now lives in-repo as the `api/` submodule.
-- `docs/API_V2_SWAGGER.yaml` remains a vendored contract copy used by the frontend; when behavior-level backend work is requested, inspect `api/` directly.
+- `docs/API_V2_SWAGGER.yaml` may exist as a vendored contract copy in some checkouts, but behavior-level backend work should inspect `api/` directly.
 
 ## Where Core Logic Lives
 
@@ -67,6 +69,11 @@ Note on upstream APIs:
   - React context/hook: `packages/player-react/src/AudioPlayerContext.tsx`, `packages/player-react/src/useAudioPlayer.ts`
   - Core playback logic: `packages/player-core/src/*`
   - Audio adapters: `packages/audio-adapters/src/*`
+- Mobile runtime:
+  - Expo entrypoints: `apps/mobile/App.tsx`, `apps/mobile/index.ts`
+  - Mobile shell composition/state: `apps/mobile/src/mobile-shell/*`
+  - Mobile runtime metadata: `apps/mobile/src/index.ts`
+  - Mobile workspace guidance: `apps/mobile/README.md`
 - Streaming/proxy:
   - Stream endpoint: `apps/web/src/app/api/stream/route.ts`
   - Songbird token helpers: `apps/web/src/lib/server/songbird-token.ts`
@@ -145,6 +152,7 @@ Note on upstream APIs:
 - Existing route-handler logging/error format (structured logs, no secret leakage).
 - Existing DB conflict handling/retry behavior (sequence sync where needed).
 - Existing player/provider patterns from `packages/player-react` and `apps/web/src/contexts/*`.
+- Existing mobile-shell split in `apps/mobile/src/mobile-shell/*` instead of a single-file Expo app.
 - For Spotify OAuth in cross-origin setups (`NEXT_PUBLIC_AUTH_API_ORIGIN` differs from frontend origin), initiate browser login on the canonical auth API origin (`${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...`) so PKCE/session cookies are issued on the callback origin.
 
 ## Change Behavior for Future Tasks
@@ -157,6 +165,7 @@ Note on upstream APIs:
 - Avoid global architecture/config changes unless explicitly requested.
 - Add concise comments only where logic is non-obvious.
 - Validate with targeted checks/tests relevant to edited modules.
+- For user-visible changes, update version metadata and `CHANGELOG.md`.
 
 ## Maintenance Rule
 

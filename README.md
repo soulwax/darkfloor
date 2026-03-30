@@ -2,7 +2,7 @@
 
 Starchild Music is a monorepo for a Next.js music application with shared playback libraries and an Electron desktop runtime.
 The backend API now also lives in this workspace as the Git submodule at `./api`, so frontend and API work can be reasoned about together from one checkout.
-This README is intentionally concise; detailed onboarding and operations guides live in `docs/`.
+This README is intentionally concise; use `AGENTS.md`, `CONTEXT.md`, and `AI_TOOLING.md` for the current repo map.
 
 ## Repository Overview
 
@@ -13,7 +13,7 @@ This repository is organized as app runtimes plus shared packages:
   - NextAuth (`/api/auth/[...nextauth]`)
   - Route-handler proxies for Songbird/Bluesix V2 and Deezer (`/api/**`)
 - `apps/desktop`: Electron wrapper and packaging scripts
-- `apps/mobile`: Expo-based React Native Web app with a future path to native targets
+- `apps/mobile`: Expo-based React Native Web app with a persisted mobile shell and a future path to native targets
 - `packages/*`: shared runtime libraries (`@starchild/*`)
   - `api-client`, `auth`, `config`, `types`
   - `player-core`, `player-react`, `audio-adapters`
@@ -36,7 +36,7 @@ This repository is organized as app runtimes plus shared packages:
   - `packages/player-react/src/useAudioPlayer.ts`
   - `packages/player-core/src/index.ts`
 
-For full system and data-flow details, see `docs/ARCHITECTURE.md`.
+For fast repo orientation, start with `CONTEXT.md`, `AGENTS.md`, and `AI_TOOLING.md`.
 
 ## Required Engineering Standards
 
@@ -99,7 +99,7 @@ pnpm dev
 
 1. Open `http://localhost:3222`.
 
-For full onboarding and local bootstrap details, see `docs/SETUP.md`.
+For the mobile runtime specifically, use `apps/mobile/README.md` after the root docs.
 
 ## Environment Variables
 
@@ -136,6 +136,9 @@ Notes:
 | `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
 | `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
 | `pnpm dev:mobile`   | Start the Expo React Native Web app                   |
+| `pnpm dev:mobile:native` | Start Expo for native targets                    |
+| `pnpm dev:mobile:ios` | Start the Expo iOS target                           |
+| `pnpm dev:mobile:android` | Start the Expo Android target                   |
 | `pnpm build`        | Build web app (`apps/web`)                            |
 | `pnpm mobile:build` | Export the mobile app for web to `apps/mobile/dist`   |
 | `pnpm start`        | Start production server via custom wrapper            |
@@ -189,7 +192,7 @@ Notes:
 | Music proxy routes | `apps/web/src/app/api/music/**/route.ts`           | Discovery/search/playlists proxy endpoints |
 | Songbird routes    | `apps/web/src/app/api/songbird/**/route.ts`        | Token-authenticated Songbird endpoints     |
 
-For route-level details, see `docs/API_ROUTE_USE.md`.
+For route-level behavior, inspect the route handlers under `apps/web/src/app/api/**` and the backend implementation in `api/src/modules/**`.
 
 ## Runtime and Env Loading Behavior
 
@@ -197,6 +200,16 @@ For route-level details, see `docs/API_ROUTE_USE.md`.
 - Dev mode (`NODE_ENV=development`): loads `.env`, then `.env.local` with override
 - Production mode: loads `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env
 - Default app port: `3222` (set by `PORT`)
+
+## AI And Automation
+
+- `AGENTS.md` is the canonical repository workflow guide for coding agents.
+- `AI_TOOLING.md` is the tool-neutral quick-start for Codex, Claude Code, Cursor, Copilot, and similar assistants.
+- `apps/mobile/README.md` covers the current mobile shell architecture and validation flow.
+- Tool-specific compatibility files stay thin:
+  - `CLAUDE.md`
+  - `.github/copilot-instructions.md`
+- Verify the live filesystem before trusting older repo snapshots like `tree.txt`.
 
 ## Deployment Modes
 
@@ -209,21 +222,20 @@ For route-level details, see `docs/API_ROUTE_USE.md`.
 - PM2:
   - `ecosystem.config.cjs` and `ecosystem.docker.cjs`
 
-For production deployment runbooks and incident response, see `docs/DEPLOYMENT.md`.
+For deployment behavior, inspect `vercel.json`, `Dockerfile`, `docker-compose.yml`, and the PM2 config files at the repo root.
 
 ## Additional Documentation
 
-- `docs/SETUP.md` (detailed local setup and onboarding)
-- `docs/DEPLOYMENT.md` (deployment and operations runbooks)
-- `docs/TROUBLESHOOTING.md` (common production and dev failure modes)
-- `docs/ARCHITECTURE.md` (full architecture and data-flow deep dive)
+- `AI_TOOLING.md` (tool-neutral AI assistant quick-start)
 - `AGENTS.md` (agent workflow and repository conventions)
 - `CONTEXT.md` (fast technical map)
+- `apps/mobile/README.md` (mobile runtime architecture and validation flow)
+- `CLAUDE.md` (thin compatibility file that points back to the canonical docs)
+- `.github/copilot-instructions.md` (Copilot compatibility wrapper around the same guidance)
 - `api/README.md` (backend overview and runtime usage)
 - `api/AGENTS.md` / `api/CONTEXT.md` / `api/CODEX.md` (backend agent guidance)
-- `docs/README.md` (documentation index)
-- `docs/API_ROUTE_USE.md` (route-to-upstream mapping)
-- `docs/API_V2_SWAGGER.yaml` and `docs/API_V2_SWAGGER.json` (upstream API reference copy)
+- `CHANGELOG.md` (release history and user-visible milestones)
+- `tree.txt` (rough repository snapshot; verify against the live filesystem before relying on it)
 
 ## License
 

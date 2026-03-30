@@ -1,6 +1,6 @@
 {
   "name": "darkfloor-player",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
@@ -59,6 +59,8 @@
     "dev:next:turbo": "npm --prefix apps/web run dev:next:turbo",
     "dev:mobile": "npm --prefix apps/mobile run dev",
     "dev:mobile:native": "npm --prefix apps/mobile run dev:native",
+    "dev:mobile:ios": "npm --prefix apps/mobile run dev:ios",
+    "dev:mobile:android": "npm --prefix apps/mobile run dev:android",
     "dev:win": "cross-env NODE_ENV=development node scripts/server.js",
     "ws:build": "npx turbo run build",
     "ws:dev": "npx turbo run dev --parallel",
