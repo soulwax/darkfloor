@@ -11,6 +11,9 @@ import { renderWaveTunnel } from "./flowfieldPatterns/renderWaveTunnel";
 import { renderLaserWeave } from "./flowfieldPatterns/renderLaserWeave";
 import { renderPrismCells } from "./flowfieldPatterns/renderPrismCells";
 import { renderSpectrumRibbons } from "./flowfieldPatterns/renderSpectrumRibbons";
+import { renderMirrorFlux } from "./flowfieldPatterns/renderMirrorFlux";
+import { renderGlitchMosaic } from "./flowfieldPatterns/renderGlitchMosaic";
+import { renderNovaGlyphs } from "./flowfieldPatterns/renderNovaGlyphs";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -236,6 +239,9 @@ export class FlowFieldRenderer {
     "laserWeave",
     "prismCells",
     "spectrumRibbons",
+    "mirrorFlux",
+    "glitchMosaic",
+    "novaGlyphs",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -3125,6 +3131,7 @@ export class FlowFieldRenderer {
       case "tunnel":
       case "phoenix":
       case "laserWeave":
+      case "novaGlyphs":
         return 0;
       case "rings":
       case "mandala":
@@ -3146,6 +3153,7 @@ export class FlowFieldRenderer {
       case "tarot":
       case "crystalGrid":
       case "prismCells":
+      case "glitchMosaic":
         return 2;
       case "waves":
       case "dna":
@@ -3155,6 +3163,7 @@ export class FlowFieldRenderer {
       case "ouroboros":
       case "celestial":
       case "spectrumRibbons":
+      case "mirrorFlux":
         return 3;
       default:
         return 4;
@@ -4035,6 +4044,30 @@ export class FlowFieldRenderer {
         break;
       case "spectrumRibbons":
         renderSpectrumRibbons(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "mirrorFlux":
+        renderMirrorFlux(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "glitchMosaic":
+        renderGlitchMosaic(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "novaGlyphs":
+        renderNovaGlyphs(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,

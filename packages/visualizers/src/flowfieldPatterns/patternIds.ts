@@ -134,4 +134,7 @@ export type Pattern =
   | "waveTunnel"
   | "laserWeave"
   | "prismCells"
-  | "spectrumRibbons";
+  | "spectrumRibbons"
+  | "mirrorFlux"
+  | "glitchMosaic"
+  | "novaGlyphs";

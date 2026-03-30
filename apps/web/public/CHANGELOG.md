@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-03-30
+
+### Added
+
+- **Three more hyper-optimized FlowField visuals push into stranger territory**: Added `mirrorFlux`, `glitchMosaic`, and `novaGlyphs` as selectable audio-reactive patterns with mirrored ribbon symmetry, fractured chroma tiling, and radial glyph-burst motion.
+
+### Changed
+
+- **The newest visualizer modules lean even harder into Firefox-friendly rendering**: These patterns favor bounded loop counts, `fillRect` and polyline-heavy drawing, shared fast helper math, and adaptive detail scaling so they stay vivid without leaning on arc-heavy canvas work.
+
 ## [1.12.0] - 2026-03-30
 
 ### Added

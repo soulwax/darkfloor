@@ -154,6 +154,9 @@ const VALID_PATTERNS = new Set<string>([
   "laserWeave",
   "prismCells",
   "spectrumRibbons",
+  "mirrorFlux",
+  "glitchMosaic",
+  "novaGlyphs",
 ]);
 
 export function FlowFieldCanvas({
