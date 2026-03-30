@@ -14,6 +14,9 @@ import { renderSpectrumRibbons } from "./flowfieldPatterns/renderSpectrumRibbons
 import { renderMirrorFlux } from "./flowfieldPatterns/renderMirrorFlux";
 import { renderGlitchMosaic } from "./flowfieldPatterns/renderGlitchMosaic";
 import { renderNovaGlyphs } from "./flowfieldPatterns/renderNovaGlyphs";
+import { renderCathedralPulse } from "./flowfieldPatterns/renderCathedralPulse";
+import { renderMonolithDrift } from "./flowfieldPatterns/renderMonolithDrift";
+import { renderSilkHalo } from "./flowfieldPatterns/renderSilkHalo";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -242,6 +245,9 @@ export class FlowFieldRenderer {
     "mirrorFlux",
     "glitchMosaic",
     "novaGlyphs",
+    "cathedralPulse",
+    "monolithDrift",
+    "silkHalo",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -3132,6 +3138,7 @@ export class FlowFieldRenderer {
       case "phoenix":
       case "laserWeave":
       case "novaGlyphs":
+      case "cathedralPulse":
         return 0;
       case "rings":
       case "mandala":
@@ -3154,6 +3161,7 @@ export class FlowFieldRenderer {
       case "crystalGrid":
       case "prismCells":
       case "glitchMosaic":
+      case "monolithDrift":
         return 2;
       case "waves":
       case "dna":
@@ -3164,6 +3172,7 @@ export class FlowFieldRenderer {
       case "celestial":
       case "spectrumRibbons":
       case "mirrorFlux":
+      case "silkHalo":
         return 3;
       default:
         return 4;
@@ -4068,6 +4077,30 @@ export class FlowFieldRenderer {
         break;
       case "novaGlyphs":
         renderNovaGlyphs(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "cathedralPulse":
+        renderCathedralPulse(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          midIntensity,
+        );
+        break;
+      case "monolithDrift":
+        renderMonolithDrift(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "silkHalo":
+        renderSilkHalo(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,

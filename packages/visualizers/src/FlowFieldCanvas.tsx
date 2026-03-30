@@ -157,6 +157,9 @@ const VALID_PATTERNS = new Set<string>([
   "mirrorFlux",
   "glitchMosaic",
   "novaGlyphs",
+  "cathedralPulse",
+  "monolithDrift",
+  "silkHalo",
 ]);
 
 export function FlowFieldCanvas({

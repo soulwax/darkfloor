@@ -137,4 +137,7 @@ export type Pattern =
   | "spectrumRibbons"
   | "mirrorFlux"
   | "glitchMosaic"
-  | "novaGlyphs";
+  | "novaGlyphs"
+  | "cathedralPulse"
+  | "monolithDrift"
+  | "silkHalo";
