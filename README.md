@@ -13,7 +13,7 @@ This repository is organized as app runtimes plus shared packages:
   - NextAuth (`/api/auth/[...nextauth]`)
   - Route-handler proxies for Songbird/Bluesix V2 and Deezer (`/api/**`)
 - `apps/desktop`: Electron wrapper and packaging scripts
-- `apps/mobile`: scaffolded mobile shell (minimal runtime wiring)
+- `apps/mobile`: Expo-based React Native Web app with a future path to native targets
 - `packages/*`: shared runtime libraries (`@starchild/*`)
   - `api-client`, `auth`, `config`, `types`
   - `player-core`, `player-react`, `audio-adapters`
@@ -135,9 +135,12 @@ Notes:
 | ------------------- | ----------------------------------------------------- |
 | `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
 | `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
+| `pnpm dev:mobile`   | Start the Expo React Native Web app                   |
 | `pnpm build`        | Build web app (`apps/web`)                            |
+| `pnpm mobile:build` | Export the mobile app for web to `apps/mobile/dist`   |
 | `pnpm start`        | Start production server via custom wrapper            |
 | `pnpm check`        | Boundary check + lint + typecheck                     |
+| `pnpm mobile:check` | Type-check the Expo mobile app                        |
 | `pnpm test`         | Run Vitest suite in `apps/web`                        |
 | `pnpm format:write` | Format repository code                                |
 | `pnpm electron:dev` | Run dev server and Electron together                  |

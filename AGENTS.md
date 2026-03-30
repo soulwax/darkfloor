@@ -36,7 +36,7 @@ This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
   - `apps/desktop`: Electron wrapper and packaging scripts
-  - `apps/mobile`: mobile shell scaffold (currently minimal runtime wiring)
+  - `apps/mobile`: Expo-based React Native Web app with a future path to iOS/Android
 - Shared packages:
   - Runtime packages: `packages/api-client`, `packages/auth`, `packages/config`, `packages/types`
   - Playback packages: `packages/player-core`, `packages/player-react`, `packages/audio-adapters`

@@ -8,7 +8,7 @@ Last updated: 2026-03-28
 - The Darkfloor API V2 backend is also present in this workspace as the Git submodule `api/`.
 - Primary product: `apps/web` (App Router + tRPC + NextAuth + Drizzle/Postgres).
 - Desktop runtime: `apps/desktop/electron` (legacy compatibility wrappers also exist under root `electron/`).
-- Mobile runtime: `apps/mobile` scaffold (minimal runtime wiring, mostly type-check coverage).
+- Mobile runtime: `apps/mobile` Expo-based React Native Web app.
 - API model:
   - Internal app data: tRPC at `/api/trpc`.
   - External integrations: Next.js route handlers under `apps/web/src/app/api/**` (Songbird/Bluesix V2 + Deezer).

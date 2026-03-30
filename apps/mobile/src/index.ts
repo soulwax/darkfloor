@@ -14,7 +14,7 @@ export interface MobileShellState {
 
 export const MOBILE_SHELL_INFO = {
   app: "@starchild/mobile",
-  status: "scaffold",
+  status: "react-native-web",
   sharedStorageKeys: {
     volume: STORAGE_KEYS.VOLUME,
     queueState: STORAGE_KEYS.QUEUE_STATE,

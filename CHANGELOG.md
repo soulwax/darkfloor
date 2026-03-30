@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-03-30
+
+### Added
+
+- **A real mobile runtime now ships in the monorepo**: `apps/mobile` is now an Expo-powered React Native Web app instead of a type-only placeholder, with a typed entrypoint, Expo app config, and a web-exportable build target.
+
+### Changed
+
+- **Workspace tooling now exposes mobile app commands**: The root package scripts now include dedicated mobile dev, build, and check commands so the new runtime can be worked on without disturbing the existing Next.js and Electron flows.
+- **Repo guidance now reflects the new runtime shape**: The root agent and onboarding docs now describe `apps/mobile` as a real React Native Web workspace with shared package reuse and a future path to native targets.
+
 ## [1.9.0] - 2026-03-30
 
 ### Added

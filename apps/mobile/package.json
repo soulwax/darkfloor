@@ -3,11 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Mobile app shell workspace",
+  "description": "Starchild React Native Web app workspace",
+  "main": "./index.ts",
   "scripts": {
-    "dev": "node -e \"console.log('apps/mobile shell scaffold: runtime not wired yet')\"",
-    "build": "npm run typecheck",
+    "dev": "expo start --web",
+    "dev:native": "expo start",
+    "dev:ios": "expo start --ios",
+    "dev:android": "expo start --android",
+    "build": "expo export --platform web --output-dir dist",
     "check": "npm run typecheck",
     "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "^6.1.0",
+    "expo": "^55.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.0",
+    "react-native-web": "0.21.0"
   }
 }
