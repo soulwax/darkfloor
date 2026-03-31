@@ -5,6 +5,21 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-03-31
+
+### Added
+
+- **Experimental Tauri desktop lane**: Added an opt-in Tauri shell under `apps/desktop/src-tauri` with separate `pnpm tauri:*` scripts, its own bundle identity, and a staged resource pipeline so the current Electron build remains the default desktop path.
+- **Tauri bundle staging flow**: Added a desktop prep script that rebuilds the existing Next standalone app, ensures a platform-matched bundled Node runtime is present, and stages standalone/server assets into `apps/desktop/.tauri-bundle/` for Tauri packaging without modifying Electron artifacts.
+
+### Changed
+
+- **Desktop workspace docs now cover both shells**: `apps/desktop` and the root README now explain the new experimental Tauri commands, prerequisites, and env loading behavior so the parallel desktop targets are easier to understand.
+
+### Fixed
+
+- **Windows packaged Electron startup is more reliable**: The packaged runtime now validates standalone completeness before launch, prefers the stable `resources/.next/standalone` copy when available, and reuses an in-flight window bootstrap instead of starting the bundled server twice. The Windows `afterPack` step now mirrors the full Next standalone bundle into `resources` as well, so portable builds no longer lose the hidden `.next` build metadata that Next 16 needs at boot.
+
 ## [1.14.2] - 2026-03-31
 
 ### Changed

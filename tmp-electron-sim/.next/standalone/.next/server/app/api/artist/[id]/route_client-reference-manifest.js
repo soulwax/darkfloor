@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/artist/[id]/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"D:\\Workspace\\Web\\Electron\\darkfloor-player\\apps\\web\\src\\app\\api\\artist\\[id]\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

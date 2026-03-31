@@ -1,0 +1,15 @@
+[package]
+name = "starchild-tauri-experimental"
+version = "1.15.0"
+description = "Experimental Tauri shell for Starchild Music"
+authors = ["Christian <soulwax@cock.li>"]
+license = "GPL-3.0-only"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dotenvy = "0.15"
+tauri = { version = "2", features = [] }
+url = "2"

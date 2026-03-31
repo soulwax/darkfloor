@@ -1,0 +1,567 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ],
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ],
+      "regex": "^/api(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/_next/static/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ],
+      "regex": "^/_next/static(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/album/[id]",
+      "regex": "^/album/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/album/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/spotify/playlists/[playlistId]",
+      "regex": "^/api/admin/spotify/playlists/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPplaylistId": "nxtPplaylistId"
+      },
+      "namedRegex": "^/api/admin/spotify/playlists/(?<nxtPplaylistId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/album/[id]",
+      "regex": "^/api/album/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/album/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/album/[id]/tracks",
+      "regex": "^/api/album/([^/]+?)/tracks(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/album/(?<nxtPid>[^/]+?)/tracks(?:/)?$"
+    },
+    {
+      "page": "/api/artist/[id]",
+      "regex": "^/api/artist/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/artist/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/artist/[id]/tracks",
+      "regex": "^/api/artist/([^/]+?)/tracks(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/artist/(?<nxtPid>[^/]+?)/tracks(?:/)?$"
+    },
+    {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+    {
+      "page": "/api/playlist/[id]",
+      "regex": "^/api/playlist/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/playlist/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/spotify/playlists/[playlistId]",
+      "regex": "^/api/spotify/playlists/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPplaylistId": "nxtPplaylistId"
+      },
+      "namedRegex": "^/api/spotify/playlists/(?<nxtPplaylistId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/track/[id]",
+      "regex": "^/api/track/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/track/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/trpc/[trpc]",
+      "regex": "^/api/trpc/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPtrpc": "nxtPtrpc"
+      },
+      "namedRegex": "^/api/trpc/(?<nxtPtrpc>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/v2/music/tracks/[id]/metadata",
+      "regex": "^/api/v2/music/tracks/([^/]+?)/metadata(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/v2/music/tracks/(?<nxtPid>[^/]+?)/metadata(?:/)?$"
+    },
+    {
+      "page": "/artist/[id]",
+      "regex": "^/artist/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/artist/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/discover/playlists/[id]",
+      "regex": "^/discover/playlists/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/discover/playlists/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/playlists/[id]",
+      "regex": "^/playlists/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/playlists/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/track/[id]",
+      "regex": "^/track/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/track/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/[userhash]",
+      "regex": "^/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserhash": "nxtPuserhash"
+      },
+      "namedRegex": "^/(?<nxtPuserhash>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/about",
+      "regex": "^/about(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/about(?:/)?$"
+    },
+    {
+      "page": "/admin",
+      "regex": "^/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/api/admin/auth/fetch-dump",
+      "regex": "^/api/admin/auth/fetch\\-dump(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/auth/fetch\\-dump(?:/)?$"
+    },
+    {
+      "page": "/api/admin/database-config",
+      "regex": "^/api/admin/database\\-config(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/database\\-config(?:/)?$"
+    },
+    {
+      "page": "/api/admin/spotify/auth/status",
+      "regex": "^/api/admin/spotify/auth/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/spotify/auth/status(?:/)?$"
+    },
+    {
+      "page": "/api/admin/spotify/playlists",
+      "regex": "^/api/admin/spotify/playlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/spotify/playlists(?:/)?$"
+    },
+    {
+      "page": "/api/auth/me",
+      "regex": "^/api/auth/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/me(?:/)?$"
+    },
+    {
+      "page": "/api/auth/oauth/fetch-dump",
+      "regex": "^/api/auth/oauth/fetch\\-dump(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/oauth/fetch\\-dump(?:/)?$"
+    },
+    {
+      "page": "/api/auth/spotify",
+      "regex": "^/api/auth/spotify(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/spotify(?:/)?$"
+    },
+    {
+      "page": "/api/auth/spotify/callback",
+      "regex": "^/api/auth/spotify/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/spotify/callback(?:/)?$"
+    },
+    {
+      "page": "/api/auth/spotify/debug",
+      "regex": "^/api/auth/spotify/debug(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/spotify/debug(?:/)?$"
+    },
+    {
+      "page": "/api/auth/spotify/refresh",
+      "regex": "^/api/auth/spotify/refresh(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/spotify/refresh(?:/)?$"
+    },
+    {
+      "page": "/api/auth/spotify/session",
+      "regex": "^/api/auth/spotify/session(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/spotify/session(?:/)?$"
+    },
+    {
+      "page": "/api/changelog",
+      "regex": "^/api/changelog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/changelog(?:/)?$"
+    },
+    {
+      "page": "/api/health",
+      "regex": "^/api/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health(?:/)?$"
+    },
+    {
+      "page": "/api/music/genres",
+      "regex": "^/api/music/genres(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/genres(?:/)?$"
+    },
+    {
+      "page": "/api/music/playlists/by-genre",
+      "regex": "^/api/music/playlists/by\\-genre(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/playlists/by\\-genre(?:/)?$"
+    },
+    {
+      "page": "/api/music/playlists/by-genre-id",
+      "regex": "^/api/music/playlists/by\\-genre\\-id(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/playlists/by\\-genre\\-id(?:/)?$"
+    },
+    {
+      "page": "/api/music/playlists/import/spotify",
+      "regex": "^/api/music/playlists/import/spotify(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/playlists/import/spotify(?:/)?$"
+    },
+    {
+      "page": "/api/music/playlists/popular",
+      "regex": "^/api/music/playlists/popular(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/playlists/popular(?:/)?$"
+    },
+    {
+      "page": "/api/music/releases/latest",
+      "regex": "^/api/music/releases/latest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/releases/latest(?:/)?$"
+    },
+    {
+      "page": "/api/music/search",
+      "regex": "^/api/music/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/search(?:/)?$"
+    },
+    {
+      "page": "/api/music/search/advanced",
+      "regex": "^/api/music/search/advanced(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/music/search/advanced(?:/)?$"
+    },
+    {
+      "page": "/api/og",
+      "regex": "^/api/og(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/og(?:/)?$"
+    },
+    {
+      "page": "/api/songbird/auth-me",
+      "regex": "^/api/songbird/auth\\-me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/songbird/auth\\-me(?:/)?$"
+    },
+    {
+      "page": "/api/songbird/cache-stats",
+      "regex": "^/api/songbird/cache\\-stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/songbird/cache\\-stats(?:/)?$"
+    },
+    {
+      "page": "/api/spotify/credentials/test",
+      "regex": "^/api/spotify/credentials/test(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/spotify/credentials/test(?:/)?$"
+    },
+    {
+      "page": "/api/spotify/playlists",
+      "regex": "^/api/spotify/playlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/spotify/playlists(?:/)?$"
+    },
+    {
+      "page": "/api/stream",
+      "regex": "^/api/stream(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stream(?:/)?$"
+    },
+    {
+      "page": "/api/v2/auth/me",
+      "regex": "^/api/v2/auth/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/auth/me(?:/)?$"
+    },
+    {
+      "page": "/api/v2/auth/refresh",
+      "regex": "^/api/v2/auth/refresh(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/auth/refresh(?:/)?$"
+    },
+    {
+      "page": "/api/v2/cache/clear",
+      "regex": "^/api/v2/cache/clear(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/cache/clear(?:/)?$"
+    },
+    {
+      "page": "/api/v2/cache/stats",
+      "regex": "^/api/v2/cache/stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/cache/stats(?:/)?$"
+    },
+    {
+      "page": "/api/v2/config/public",
+      "regex": "^/api/v2/config/public(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/config/public(?:/)?$"
+    },
+    {
+      "page": "/api/v2/docs/openapi",
+      "regex": "^/api/v2/docs/openapi(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/docs/openapi(?:/)?$"
+    },
+    {
+      "page": "/api/v2/health",
+      "regex": "^/api/v2/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/health(?:/)?$"
+    },
+    {
+      "page": "/api/v2/health/ready",
+      "regex": "^/api/v2/health/ready(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/health/ready(?:/)?$"
+    },
+    {
+      "page": "/api/v2/metrics",
+      "regex": "^/api/v2/metrics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/metrics(?:/)?$"
+    },
+    {
+      "page": "/api/v2/music/stream/capabilities",
+      "regex": "^/api/v2/music/stream/capabilities(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/music/stream/capabilities(?:/)?$"
+    },
+    {
+      "page": "/api/v2/rate-limits",
+      "regex": "^/api/v2/rate\\-limits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/rate\\-limits(?:/)?$"
+    },
+    {
+      "page": "/api/v2/status",
+      "regex": "^/api/v2/status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/status(?:/)?$"
+    },
+    {
+      "page": "/api/v2/version",
+      "regex": "^/api/v2/version(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/v2/version(?:/)?$"
+    },
+    {
+      "page": "/auth/callback",
+      "regex": "^/auth/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback(?:/)?$"
+    },
+    {
+      "page": "/auth/spotify/callback",
+      "regex": "^/auth/spotify/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/spotify/callback(?:/)?$"
+    },
+    {
+      "page": "/library",
+      "regex": "^/library(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/library(?:/)?$"
+    },
+    {
+      "page": "/license",
+      "regex": "^/license(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/license(?:/)?$"
+    },
+    {
+      "page": "/playlists",
+      "regex": "^/playlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/playlists(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    },
+    {
+      "page": "/signin",
+      "regex": "^/signin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signin(?:/)?$"
+    },
+    {
+      "page": "/songbird/auth-me",
+      "regex": "^/songbird/auth\\-me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/songbird/auth\\-me(?:/)?$"
+    },
+    {
+      "page": "/songbird/cache-stats",
+      "regex": "^/songbird/cache\\-stats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/songbird/cache\\-stats(?:/)?$"
+    },
+    {
+      "page": "/spotify",
+      "regex": "^/spotify(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/spotify(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

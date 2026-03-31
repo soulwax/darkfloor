@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "functions": {
+    "/_middleware": {
+      "runtime": "nodejs",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\.json)?[\\/#\\?]?$",
+          "originalSource": "/api/:path*"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next|.*\\..*).*))(\\.json)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next|.*\\..*).*)"
+        }
+      ]
+    },
+    "/api/admin/auth/fetch-dump": {},
+    "/api/admin/database-config": {},
+    "/api/admin/spotify/auth/status": {},
+    "/api/admin/spotify/playlists": {},
+    "/api/admin/spotify/playlists/[playlistId]": {},
+    "/api/auth/me": {},
+    "/api/auth/oauth/fetch-dump": {},
+    "/api/auth/spotify": {},
+    "/api/auth/spotify/callback": {},
+    "/api/auth/spotify/debug": {},
+    "/api/auth/spotify/refresh": {},
+    "/api/auth/spotify/session": {},
+    "/api/changelog": {},
+    "/api/music/genres": {},
+    "/api/music/playlists/by-genre": {},
+    "/api/music/playlists/by-genre-id": {},
+    "/api/music/playlists/import/spotify": {
+      "maxDuration": 90
+    },
+    "/api/music/playlists/popular": {},
+    "/api/music/releases/latest": {},
+    "/api/music/search": {},
+    "/api/music/search/advanced": {},
+    "/api/og": {},
+    "/api/playlist/[id]": {},
+    "/api/songbird/auth-me": {},
+    "/api/songbird/cache-stats": {},
+    "/api/spotify/credentials/test": {},
+    "/api/spotify/playlists": {},
+    "/api/spotify/playlists/[playlistId]": {},
+    "/api/stream": {
+      "maxDuration": 60
+    },
+    "/api/track/[id]": {},
+    "/api/trpc/[trpc]": {
+      "maxDuration": 30
+    },
+    "/api/v2/auth/me": {},
+    "/api/v2/auth/refresh": {},
+    "/api/v2/cache/clear": {},
+    "/api/v2/cache/stats": {},
+    "/api/v2/config/public": {},
+    "/api/v2/docs/openapi": {},
+    "/api/v2/health": {},
+    "/api/v2/health/ready": {},
+    "/api/v2/metrics": {},
+    "/api/v2/music/stream/capabilities": {},
+    "/api/v2/music/tracks/[id]/metadata": {},
+    "/api/v2/rate-limits": {},
+    "/api/v2/status": {},
+    "/api/v2/version": {}
+  }
+}

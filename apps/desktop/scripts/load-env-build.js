@@ -14,11 +14,24 @@ dotenv.config({ path: path.resolve(repoRoot, ".env.local"), quiet: true });
 
 const command = process.argv.slice(2).join(" ");
 const localBinPath = path.resolve(repoRoot, "node_modules/.bin");
+const currentNodeBinPath = path.dirname(process.execPath);
+const currentCorepackShimPath = path.resolve(
+  currentNodeBinPath,
+  "node_modules",
+  "corepack",
+  "shims",
+);
 const delimiter = path.delimiter;
 const existingPath = process.env.PATH ?? process.env.Path ?? "";
-const mergedPath = existingPath
-  ? `${localBinPath}${delimiter}${existingPath}`
-  : localBinPath;
+const pathEntries = [
+  localBinPath,
+  currentNodeBinPath,
+  currentCorepackShimPath,
+];
+if (existingPath) {
+  pathEntries.push(existingPath);
+}
+const mergedPath = pathEntries.filter(Boolean).join(delimiter);
 
 const childEnv = {
   ...process.env,

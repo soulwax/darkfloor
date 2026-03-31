@@ -244,10 +244,10 @@ try {
 
   const isPackagedRuntime = app?.isPackaged === true;
   const packagedStandaloneDirs = [
-    path.join(path.dirname(process.execPath), ".next", "standalone"),
     process.resourcesPath
       ? path.join(process.resourcesPath, ".next", "standalone")
       : undefined,
+    path.join(path.dirname(process.execPath), ".next", "standalone"),
   ].filter(Boolean);
   const packagedEncryptedEnvPaths = packagedStandaloneDirs.flatMap(
     (standaloneDir) => [
@@ -567,6 +567,8 @@ const isAllowedOAuthNavigation = (rawUrl) => {
 
 /** @type {BrowserWindow | null} */
 let mainWindow = null;
+/** @type {Promise<void> | null} */
+let createWindowPromise = null;
 /** @type {import('child_process').ChildProcess | null} */
 let serverProcess = null;
 
@@ -933,32 +935,75 @@ const startServer = async () => {
     return candidates.find((candidate) => fs.existsSync(candidate));
   };
 
+  /**
+   * @param {string} dir
+   * @returns {{
+   *   dir: string;
+   *   serverPath: string | undefined;
+   *   hasBuildId: boolean;
+   *   hasNodeModules: boolean;
+   *   hasStaticDir: boolean;
+   *   isComplete: boolean;
+   *   missing: string[];
+   * }}
+   */
+  const inspectStandaloneBundle = (dir) => {
+    const serverPath = resolveStandaloneServerPath(dir);
+    const hasBuildId = fs.existsSync(path.join(dir, ".next", "BUILD_ID"));
+    const hasNodeModules = fs.existsSync(path.join(dir, "node_modules"));
+    const hasStaticDir = fs.existsSync(path.join(dir, ".next", "static"));
+    const missing = [];
+
+    if (!serverPath) missing.push("server.js");
+    if (!hasBuildId) missing.push(".next/BUILD_ID");
+    if (!hasNodeModules) missing.push("node_modules");
+    if (!hasStaticDir) missing.push(".next/static");
+
+    return {
+      dir,
+      serverPath,
+      hasBuildId,
+      hasNodeModules,
+      hasStaticDir,
+      isComplete: missing.length === 0,
+      missing,
+    };
+  };
+
   let standaloneDir;
+  /** @type {ReturnType<typeof inspectStandaloneBundle>} */
+  let standaloneBundle;
   if (app.isPackaged) {
-    const exeDirStandalone = path.join(
-      path.dirname(process.execPath),
-      ".next",
-      "standalone",
-    );
-    const resourcesStandalone = path.join(
-      process.resourcesPath,
-      ".next",
-      "standalone",
-    );
-    const exeDirServer = resolveStandaloneServerPath(exeDirStandalone);
-    const resourcesServer = resolveStandaloneServerPath(resourcesStandalone);
-    if (exeDirServer) {
-      standaloneDir = exeDirStandalone;
-    } else if (resourcesServer) {
-      standaloneDir = resourcesStandalone;
-    } else {
-      standaloneDir = exeDirStandalone;
+    const packagedBundles = [
+      process.resourcesPath
+        ? path.join(process.resourcesPath, ".next", "standalone")
+        : undefined,
+      path.join(path.dirname(process.execPath), ".next", "standalone"),
+    ]
+      .filter(Boolean)
+      .map((dir) => inspectStandaloneBundle(dir));
+
+    for (const bundle of packagedBundles) {
+      log(
+        "[Standalone Candidate]",
+        bundle.dir,
+        bundle.isComplete
+          ? "complete"
+          : `missing ${bundle.missing.join(", ") || "unknown files"}`,
+      );
     }
+
+    standaloneBundle =
+      packagedBundles.find((bundle) => bundle.isComplete) ??
+      packagedBundles.find((bundle) => bundle.serverPath) ??
+      packagedBundles[0];
   } else {
     standaloneDir = path.join(repoRoot, ".next", "standalone");
+    standaloneBundle = inspectStandaloneBundle(standaloneDir);
   }
 
-  const serverPath = resolveStandaloneServerPath(standaloneDir);
+  standaloneDir = standaloneBundle.dir;
+  const serverPath = standaloneBundle.serverPath;
 
   log("Paths:");
   log("  Standalone dir:", standaloneDir);
@@ -967,6 +1012,13 @@ const startServer = async () => {
 
   if (!serverPath) {
     const error = `Server file not found under standalone output: ${standaloneDir}`;
+    log("ERROR:", error);
+    dialog.showErrorBox("Server Error", error);
+    throw new Error(error);
+  }
+
+  if (!standaloneBundle.isComplete) {
+    const error = `Standalone output is incomplete under ${standaloneDir}. Missing: ${standaloneBundle.missing.join(", ")}`;
     log("ERROR:", error);
     dialog.showErrorBox("Server Error", error);
     throw new Error(error);
@@ -1149,7 +1201,7 @@ const startServer = async () => {
 /**
  * @returns {Promise<void>}
  */
-const createWindow = async () => {
+const createWindowImpl = async () => {
   log("Creating window...");
   log(`Mode: ${isDev ? "Development" : "Production"}`);
   log(`Packaged: ${app.isPackaged}`);
@@ -1453,6 +1505,31 @@ const createWindow = async () => {
   });
 
   registerMediaKeys();
+};
+
+/**
+ * @returns {Promise<void>}
+ */
+const createWindow = async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    log("Window already exists; skipping duplicate createWindow call");
+    return;
+  }
+
+  if (createWindowPromise) {
+    log("Window creation already in progress; reusing existing startup flow");
+    return createWindowPromise;
+  }
+
+  if (mainWindow?.isDestroyed()) {
+    mainWindow = null;
+  }
+
+  createWindowPromise = createWindowImpl().finally(() => {
+    createWindowPromise = null;
+  });
+
+  return createWindowPromise;
 };
 
 /**

@@ -1,0 +1,30 @@
+{
+  "name": "@starchild/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Starchild Next.js web app workspace",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development node scripts/server.js",
+    "dev:next": "next dev --port 3222",
+    "dev:next:turbo": "next dev --turbo --port 3222",
+    "build": "pnpm --dir ../.. run copy:changelog && next build --webpack",
+    "start": "cross-env NODE_ENV=production node scripts/server.js",
+    "start:next": "next start --port 3222",
+    "check": "eslint . && tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
+    "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
+    "db:generate": "drizzle-kit generate --config drizzle.config.cjs",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.cjs",
+    "db:push": "drizzle-kit push --config drizzle.config.cjs",
+    "db:studio": "drizzle-kit studio --config drizzle.config.cjs"
+  },
+  "dependencies": {
+    "next-intl": "^4.8.3"
+  }
+}

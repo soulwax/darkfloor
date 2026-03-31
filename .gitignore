@@ -85,6 +85,8 @@ docs/
 *.deb
 *.rpm
 *.snap
+/apps/desktop/.tauri-bundle/
+/apps/desktop/src-tauri/target/
 
 .github/docs/*.md
 

@@ -12,7 +12,7 @@ This repository is organized as app runtimes plus shared packages:
   - tRPC API (`/api/trpc`)
   - NextAuth (`/api/auth/[...nextauth]`)
   - Route-handler proxies for Songbird/Bluesix V2 and Deezer (`/api/**`)
-- `apps/desktop`: Electron wrapper and packaging scripts
+- `apps/desktop`: Electron wrapper, packaging scripts, and an experimental Tauri desktop shell
 - `apps/mobile`: Expo-based React Native Web app with a persisted mobile shell and a future path to native targets
 - `packages/*`: shared runtime libraries (`@starchild/*`)
   - `api-client`, `auth`, `config`, `types`
@@ -151,6 +151,8 @@ Notes:
 | `pnpm test`         | Run Vitest suite in `apps/web`                        |
 | `pnpm format:write` | Format repository code                                |
 | `pnpm electron:dev` | Run dev server and Electron together                  |
+| `pnpm tauri:dev`    | Run dev server and the experimental Tauri shell       |
+| `pnpm tauri:build`  | Build the experimental Tauri desktop app              |
 | `pnpm ws:build`     | Build all workspaces with Turborepo                   |
 | `pnpm ws:check`     | Run workspace checks with Turborepo                   |
 | `pnpm ws:test`      | Run workspace tests with Turborepo                    |

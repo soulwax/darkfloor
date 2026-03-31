@@ -19,25 +19,25 @@ module.exports = async function afterPack(context) {
   if (!projectDir || !appOutDir) return;
 
   const srcStandalone = path.join(projectDir, ".next", "standalone");
-  // Ship standalone next to the app (extraFiles) so NSIS installer includes it
-  // including node_modules. extraResources can omit files in the installed app.
-  const destStandalone = path.join(appOutDir, ".next", "standalone");
+  const standaloneDestinations = [
+    {
+      dir: path.join(appOutDir, ".next", "standalone"),
+      label: "app directory",
+    },
+  ];
+
+  if (process.platform === "win32") {
+    standaloneDestinations.unshift({
+      dir: path.join(appOutDir, "resources", ".next", "standalone"),
+      label: "resources directory",
+    });
+  }
 
   if (!fs.existsSync(srcStandalone)) {
     console.warn("[afterPack] Next standalone output missing:", srcStandalone);
     return;
   }
 
-  console.log("[afterPack] Copying Next standalone output to:", destStandalone);
-
-  fs.rmSync(destStandalone, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(destStandalone), { recursive: true });
-  fs.cpSync(srcStandalone, destStandalone, {
-    recursive: true,
-    dereference: true,
-  });
-
-  const destNodeModules = path.join(destStandalone, "node_modules");
   /**
    * Materialize symlinked modules so packaged runtimes don't keep absolute
    * links back to the build machine's pnpm store or workspace.
@@ -178,88 +178,124 @@ module.exports = async function afterPack(context) {
     return hoisted;
   };
 
-  const materializedStandaloneNodeModules = materializeSymlinkModules(
-    destNodeModules,
-    "node_modules",
-  );
-  if (materializedStandaloneNodeModules > 0) {
-    console.log(
-      `[afterPack] Materialized ${materializedStandaloneNodeModules} symlink(s) in packaged standalone node_modules.`,
-    );
-  }
+  /**
+   * @param {string} standaloneDir
+   * @returns {string | undefined}
+   */
+  const resolveStandaloneServerPath = (standaloneDir) => {
+    const candidates = [
+      path.join(standaloneDir, "server.js"),
+      path.join(standaloneDir, "apps", "web", "server.js"),
+    ];
+    return candidates.find((candidate) => fs.existsSync(candidate));
+  };
 
-  const hoistedStandalonePackages = hoistPnpmPackages(destNodeModules);
-  if (hoistedStandalonePackages > 0) {
-    console.log(
-      `[afterPack] Hoisted ${hoistedStandalonePackages} traced package(s) into packaged standalone node_modules.`,
+  /**
+   * @param {string} destStandalone
+   * @param {string} label
+   * @returns {void}
+   */
+  const verifyStandaloneBundle = (destStandalone, label) => {
+    const destNodeModules = path.join(destStandalone, "node_modules");
+    const materializedStandaloneNodeModules = materializeSymlinkModules(
+      destNodeModules,
+      `${label} node_modules`,
     );
-  }
-
-  const aliasedNodeModules = path.join(destStandalone, ".next", "node_modules");
-  const hasAliasedNodeModules = fs.existsSync(aliasedNodeModules);
-  if (hasAliasedNodeModules) {
-    const materializedAliases = materializeSymlinkModules(
-      aliasedNodeModules,
-      ".next/node_modules",
-    );
-    if (materializedAliases > 0) {
+    if (materializedStandaloneNodeModules > 0) {
       console.log(
-        `[afterPack] Materialized ${materializedAliases} symlink(s) in packaged standalone .next/node_modules.`,
+        `[afterPack] Materialized ${materializedStandaloneNodeModules} symlink(s) in ${label} standalone node_modules.`,
       );
     }
-  } else {
-    console.log(
-      "[afterPack] No .next/node_modules alias directory found in standalone output; skipping alias materialization.",
+
+    const hoistedStandalonePackages = hoistPnpmPackages(destNodeModules);
+    if (hoistedStandalonePackages > 0) {
+      console.log(
+        `[afterPack] Hoisted ${hoistedStandalonePackages} traced package(s) into ${label} standalone node_modules.`,
+      );
+    }
+
+    const aliasedNodeModules = path.join(
+      destStandalone,
+      ".next",
+      "node_modules",
     );
-  }
-
-  // Ensure installed packages, server, and static assets are delivered in the built app
-  const destServerCandidates = [
-    path.join(destStandalone, "server.js"),
-    path.join(destStandalone, "apps", "web", "server.js"),
-  ];
-  const destServerJs = destServerCandidates.find((candidate) =>
-    fs.existsSync(candidate),
-  );
-  const destStaticDir = path.join(destStandalone, ".next", "static");
-  const missing = [];
-  if (!fs.existsSync(destNodeModules)) missing.push("node_modules");
-  if (!destServerJs) missing.push("server.js");
-  if (!fs.existsSync(destStaticDir)) missing.push(".next/static");
-
-  const turbopackRuntimePath = path.join(
-    destStandalone,
-    ".next",
-    "server",
-    "chunks",
-    "[turbopack]_runtime.js",
-  );
-  if (fs.existsSync(turbopackRuntimePath)) {
-    const runtimeSource = fs.readFileSync(turbopackRuntimePath, "utf8");
-    const matches = runtimeSource.match(/\bpg-[a-f0-9]{8,}\b/g) ?? [];
-    const requiredPgAliases = Array.from(new Set(matches));
-
-    if (requiredPgAliases.length > 0 && !hasAliasedNodeModules) {
-      missing.push(".next/node_modules");
+    const hasAliasedNodeModules = fs.existsSync(aliasedNodeModules);
+    if (hasAliasedNodeModules) {
+      const materializedAliases = materializeSymlinkModules(
+        aliasedNodeModules,
+        `${label} .next/node_modules`,
+      );
+      if (materializedAliases > 0) {
+        console.log(
+          `[afterPack] Materialized ${materializedAliases} symlink(s) in ${label} standalone .next/node_modules.`,
+        );
+      }
     } else {
-      for (const alias of requiredPgAliases) {
-        const aliasPath = path.join(aliasedNodeModules, alias);
-        if (!fs.existsSync(aliasPath)) {
-          missing.push(`.next/node_modules/${alias}`);
+      console.log(
+        `[afterPack] No .next/node_modules alias directory found in ${label} standalone output; skipping alias materialization.`,
+      );
+    }
+
+    const destServerJs = resolveStandaloneServerPath(destStandalone);
+    const destBuildId = path.join(destStandalone, ".next", "BUILD_ID");
+    const destStaticDir = path.join(destStandalone, ".next", "static");
+    const missing = [];
+    if (!fs.existsSync(destNodeModules)) missing.push("node_modules");
+    if (!destServerJs) missing.push("server.js");
+    if (!fs.existsSync(destBuildId)) missing.push(".next/BUILD_ID");
+    if (!fs.existsSync(destStaticDir)) missing.push(".next/static");
+
+    const turbopackRuntimePath = path.join(
+      destStandalone,
+      ".next",
+      "server",
+      "chunks",
+      "[turbopack]_runtime.js",
+    );
+    if (fs.existsSync(turbopackRuntimePath)) {
+      const runtimeSource = fs.readFileSync(turbopackRuntimePath, "utf8");
+      const matches = runtimeSource.match(/\bpg-[a-f0-9]{8,}\b/g) ?? [];
+      const requiredPgAliases = Array.from(new Set(matches));
+
+      if (requiredPgAliases.length > 0 && !hasAliasedNodeModules) {
+        missing.push(".next/node_modules");
+      } else {
+        for (const alias of requiredPgAliases) {
+          const aliasPath = path.join(aliasedNodeModules, alias);
+          if (!fs.existsSync(aliasPath)) {
+            missing.push(`.next/node_modules/${alias}`);
+          }
         }
       }
     }
-  }
-  if (missing.length > 0) {
-    const msg = `[afterPack] Packaged app missing required standalone files: ${missing.join(", ")}. Installer would be broken.`;
 
-    console.error(msg);
-    throw new Error(msg);
-  }
+    if (missing.length > 0) {
+      const msg = `[afterPack] ${label} standalone bundle is missing required files: ${missing.join(", ")}. Packaged app would be broken.`;
 
-  console.log(
-    "[afterPack] Verified standalone node_modules, server.js, and .next/static are present in packaged app.",
-  );
+      console.error(msg);
+      throw new Error(msg);
+    }
+
+    console.log(
+      `[afterPack] Verified ${label} standalone bundle includes node_modules, server.js, .next/BUILD_ID, and .next/static.`,
+    );
+  };
+
+  for (const destination of standaloneDestinations) {
+    console.log(
+      `[afterPack] Copying Next standalone output to ${destination.label}:`,
+      destination.dir,
+    );
+
+    fs.rmSync(destination.dir, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(destination.dir), { recursive: true });
+    fs.cpSync(srcStandalone, destination.dir, {
+      recursive: true,
+      dereference: true,
+    });
+
+    verifyStandaloneBundle(destination.dir, destination.label);
+  }
 
   // Ensure bundled Node.js runtime is present so the installed app can run the server without system Node
   const resourcesNode = path.join(appOutDir, "resources", "node");

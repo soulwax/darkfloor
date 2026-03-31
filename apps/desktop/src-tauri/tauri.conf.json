@@ -1,0 +1,33 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Starchild Tauri Experimental",
+  "version": "1.15.0",
+  "identifier": "org.darkfloor.starchild.tauri.experimental",
+  "build": {
+    "beforeBuildCommand": "pnpm run tauri:prepare",
+    "beforeDevCommand": "pnpm run tauri:dev:server",
+    "devUrl": "http://127.0.0.1:3222"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Music",
+    "shortDescription": "Experimental Tauri shell for Starchild Music",
+    "targets": "all",
+    "icon": [
+      "../../web/public/icon.ico",
+      "../../web/public/icon.icns",
+      "../../web/public/icon.png",
+      "../../web/public/icon-512.png"
+    ],
+    "resources": {
+      "../.tauri-bundle/node/": "node",
+      "../.tauri-bundle/standalone/": "standalone"
+    }
+  }
+}

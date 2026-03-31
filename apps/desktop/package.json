@@ -3,5 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Starchild Electron desktop workspace"
+  "description": "Starchild desktop workspace with Electron and experimental Tauri shells",
+  "scripts": {
+    "tauri:dev": "tauri dev --config src-tauri/tauri.conf.json",
+    "tauri:dev:server": "pnpm --dir ../.. run dev",
+    "tauri:prepare": "node ./scripts/prepare-tauri-bundle.cjs",
+    "tauri:build": "tauri build --config src-tauri/tauri.conf.json",
+    "tauri:build:debug": "tauri build --debug --config src-tauri/tauri.conf.json"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1"
+  }
 }
