@@ -135,7 +135,7 @@ Note on upstream APIs:
 - Package manager:
   - `pnpm-lock.yaml` is the canonical lockfile; default install flow is `pnpm install --frozen-lockfile`.
   - Root scripts may call `npm --prefix ...` internally; preserve script behavior unless explicitly changing it.
-  - Current pnpm recursive/workspace scope is root package only; cross-package imports are handled by TS path aliases.
+  - The pnpm workspace includes `apps/*`, `packages/*`, and `api/`, so root `pnpm install --frozen-lockfile` also installs the backend submodule when present.
 
 ## Navigation and Indexing Expectations
 

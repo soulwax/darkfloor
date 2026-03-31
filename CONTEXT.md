@@ -118,4 +118,4 @@ Player internals live in shared packages:
 - Upstream Swagger files (`docs/API_V2_SWAGGER.yaml` / `.json`) describe the service configured via `API_V2_URL`; that service's source now lives in the `api/` submodule.
 - Verify the live filesystem before trusting older repo maps such as `tree.txt`; optional docs and tool-specific files may differ across checkouts.
 - Vercel config (`vercel.json`) uses pnpm commands (`pnpm install --frozen-lockfile`, `pnpm run build`).
-- Current pnpm recursive/workspace scope is root package only; package code sharing is handled through TS path alias resolution.
+- The pnpm workspace includes `apps/*`, `packages/*`, and `api/`, so root `pnpm install --frozen-lockfile` also installs the backend submodule when present.

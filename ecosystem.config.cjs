@@ -68,6 +68,70 @@ module.exports = {
       health_check_url: `http://localhost:${PORT}/api/health`,
     },
     {
+      name: "darkfloor-api-v2",
+      script: "./dist/main.js",
+      cwd: path.resolve(__dirname, "api"),
+      interpreter: "node",
+
+      instances: 4,
+      exec_mode: "cluster",
+
+      max_memory_restart: "1G",
+      min_uptime: "10s",
+
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 4000,
+      wait_ready: true,
+      listen_timeout: 10000,
+
+      exp_backoff_restart_delay: 100,
+
+      pre_start: "npm run build",
+      env: {
+        NODE_ENV: "production",
+        NODE_OPTIONS: "--openssl-legacy-provider",
+        PORT: process.env.API_PORT || process.env.API_V2_PORT || "3333",
+        DB_POOL_MAX: "5",
+        DB_POOL_MIN: "1",
+        DB_POOL_IDLE_TIMEOUT: "10000",
+        DB_POOL_CONNECTION_TIMEOUT: "5000",
+      },
+      env_production: {
+        NODE_ENV: "production",
+        NODE_OPTIONS: "--openssl-legacy-provider",
+        PORT: process.env.API_PORT || process.env.API_V2_PORT || "3333",
+        DB_POOL_MAX: "5",
+        DB_POOL_MIN: "1",
+        DB_POOL_IDLE_TIMEOUT: "10000",
+        DB_POOL_CONNECTION_TIMEOUT: "5000",
+      },
+
+      combine_logs: true,
+      merge_logs: true,
+
+      error_file: "./logs/pm2-error.log",
+      out_file: "./logs/pm2-out.log",
+      log_file: "./logs/pm2-combined.log",
+
+      time: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+
+      watch: false,
+      ignore_watch: ["node_modules", "logs", "*.log"],
+
+      shutdown_with_message: true,
+      source_map_support: true,
+      instance_var: "INSTANCE_ID",
+
+      kill_timeout: 5000,
+      health_check_grace_period: 5000,
+      health_check_fatal_exceptions: true,
+      health_check_url: `http://localhost:${
+        process.env.API_PORT || process.env.API_V2_PORT || "3333"
+      }/health`,
+    },
+    {
 
       name: "bluesix-frontend-dev",
       script: "scripts/server.js",
@@ -118,6 +182,58 @@ module.exports = {
       health_check_fatal_exceptions: true,
       health_check_url: `http://localhost:${PORT}/api/health`,
     },
+    {
+      name: "darkfloor-api-v2-dev",
+      script: "npm",
+      args: "run dev",
+      cwd: path.resolve(__dirname, "api"),
+      interpreter: "none",
+
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "1G",
+      min_uptime: "10s",
+
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 4000,
+      kill_timeout: 5000,
+
+      exp_backoff_restart_delay: 100,
+      env: {
+        NODE_ENV: "development",
+        NODE_OPTIONS: "--openssl-legacy-provider",
+        PORT: process.env.API_PORT || process.env.API_V2_PORT || "3333",
+      },
+      env_development: {
+        NODE_ENV: "development",
+        NODE_OPTIONS: "--openssl-legacy-provider",
+        PORT: process.env.API_PORT || process.env.API_V2_PORT || "3333",
+      },
+
+      combine_logs: true,
+      merge_logs: true,
+
+      error_file: "./logs/pm2-dev-error.log",
+      out_file: "./logs/pm2-dev-out.log",
+      log_file: "./logs/pm2-dev-combined.log",
+
+      time: true,
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+
+      watch: false,
+      ignore_watch: ["node_modules", "logs", "dist", "*.log"],
+
+      shutdown_with_message: true,
+      source_map_support: true,
+      instance_var: "INSTANCE_ID",
+
+      health_check_grace_period: 5000,
+      health_check_fatal_exceptions: true,
+      health_check_url: `http://localhost:${
+        process.env.API_PORT || process.env.API_V2_PORT || "3333"
+      }/health`,
+    },
   ],
   deploy: {
     production: {
@@ -127,7 +243,7 @@ module.exports = {
       repo: "git@gitlab.com:soulwax/darkfloor-player.git",
       path: "/home/soulwax/workspace/Web/Frontends/starchild-music-frontend",
       "post-deploy":
-        "npm install && npm run build && pm2 reload ecosystem.config.cjs --env production --update-env",
+        "pnpm install --frozen-lockfile && pnpm run build && pnpm run pm2:reload",
       "pre-setup": "",
       env: {
         NODE_ENV: "production",

@@ -3,6 +3,7 @@
 packages:
 - 'apps/*'
 - 'packages/*'
+- 'api'
 
 onlyBuiltDependencies:
 - '@parcel/watcher'

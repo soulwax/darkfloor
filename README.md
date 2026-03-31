@@ -64,6 +64,8 @@ Commands below are run from the repo root.
 pnpm install --frozen-lockfile
 ```
 
+That root install also covers the checked-out `api/` submodule through the pnpm workspace.
+
 If you also need the backend submodule locally, initialize it after cloning:
 
 ```bash
@@ -135,13 +137,15 @@ Notes:
 | ------------------- | ----------------------------------------------------- |
 | `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
 | `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
+| `pnpm dev:api`      | Start the NestJS API in watch mode from `api/`        |
 | `pnpm dev:mobile`   | Start the Expo React Native Web app                   |
 | `pnpm dev:mobile:native` | Start Expo for native targets                    |
 | `pnpm dev:mobile:ios` | Start the Expo iOS target                           |
 | `pnpm dev:mobile:android` | Start the Expo Android target                   |
-| `pnpm build`        | Build web app (`apps/web`)                            |
+| `pnpm build`        | Build both the web app and the `api/` submodule       |
 | `pnpm mobile:build` | Export the mobile app for web to `apps/mobile/dist`   |
 | `pnpm start`        | Start production server via custom wrapper            |
+| `pnpm start:api`    | Start the built API from `api/dist`                   |
 | `pnpm check`        | Boundary check + lint + typecheck                     |
 | `pnpm mobile:check` | Type-check the Expo mobile app                        |
 | `pnpm test`         | Run Vitest suite in `apps/web`                        |
