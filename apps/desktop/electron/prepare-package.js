@@ -16,9 +16,7 @@ const path = require("path");
 console.log("[Prepare] Preparing standalone package for Electron...\n");
 
 const rootDir = path.resolve(__dirname, "../../..");
-const webAppDir = path.join(rootDir, "apps", "web");
-const nextBuildDir = path.join(webAppDir, ".next");
-const standaloneDir = path.join(nextBuildDir, "standalone");
+const standaloneDir = path.join(rootDir, ".next", "standalone");
 const standaloneServerCandidates = [
   path.join(standaloneDir, "server.js"),
   path.join(standaloneDir, "apps", "web", "server.js"),
@@ -41,21 +39,14 @@ if (
   !standaloneServerJs ||
   !standalonePackageJson
 ) {
-  console.error(
-    "[Prepare] ERROR: apps/web/.next/standalone is incomplete. Required: node_modules and server.js.",
-  );
-  console.error(
-    "[Prepare] Run 'next build' with ELECTRON_BUILD=true first. Standalone dir:",
-    standaloneDir,
-  );
+  console.error("[Prepare] ERROR: .next/standalone is incomplete. Required: node_modules and server.js.");
+  console.error("[Prepare] Run 'next build' with ELECTRON_BUILD=true first. Standalone dir:", standaloneDir);
   process.exit(1);
 }
-console.log(
-  "[Prepare] Verified apps/web/.next/standalone has node_modules and server.js",
-);
+console.log("[Prepare] Verified .next/standalone has node_modules and server.js");
 console.log("[Prepare] Server entry:", standaloneServerJs);
 console.log("[Prepare] Package entry:", standalonePackageJson, "\n");
-const staticSource = path.join(nextBuildDir, "static");
+const staticSource = path.join(rootDir, ".next", "static");
 const staticDest = path.join(standaloneDir, ".next", "static");
 const publicSource = path.join(rootDir, "apps", "web", "public");
 const publicDest = path.join(standaloneDir, "public");

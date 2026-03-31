@@ -3,7 +3,6 @@
 const fs = require("fs");
 const path = require("path");
 const repoRoot = path.resolve(__dirname, "../../..");
-const webNextDir = path.join(repoRoot, "apps", "web", ".next");
 
 console.log("🔍 Checking Next.js build output...\n");
 
@@ -21,27 +20,27 @@ const checks = [
   {
     name: "Standalone server",
     path: resolveFirstExisting([
-      "apps/web/.next/standalone/server.js",
-      "apps/web/.next/standalone/apps/web/server.js",
+      ".next/standalone/server.js",
+      ".next/standalone/apps/web/server.js",
     ]),
     required: true,
   },
   {
     name: "Standalone package.json",
     path: resolveFirstExisting([
-      "apps/web/.next/standalone/package.json",
-      "apps/web/.next/standalone/apps/web/package.json",
+      ".next/standalone/package.json",
+      ".next/standalone/apps/web/package.json",
     ]),
     required: true,
   },
   {
     name: "Static files",
-    path: path.join(webNextDir, "static"),
+    path: path.join(repoRoot, ".next/static"),
     required: true,
   },
   {
     name: "Build manifest",
-    path: path.join(webNextDir, "build-manifest.json"),
+    path: path.join(repoRoot, ".next/build-manifest.json"),
     required: false,
   },
 ];
