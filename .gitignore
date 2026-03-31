@@ -110,3 +110,19 @@ node_modules/
 
 # local submodules / linked repos
 /api
+
+# extracted packaging artifacts
+/squashfs-root/
+
+# local runtime / tool caches
+.cache/
+.eslintcache
+.stylelintcache
+.vite/
+tmp-electron-run.log
+
+# editor / patch leftovers
+.vscode/
+.history/
+*.orig
+*.rej

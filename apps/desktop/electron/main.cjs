@@ -55,6 +55,11 @@ if (!app) {
   );
   process.exit(1);
 }
+try {
+  app.setName("Starchild");
+} catch {
+  // best-effort
+}
 const repoRoot = path.resolve(__dirname, "../../..");
 const webPublicDir = path.join(repoRoot, "apps", "web", "public");
 

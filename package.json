@@ -1,5 +1,6 @@
 {
   "name": "darkfloor-player",
+  "desktopName": "Starchild.desktop",
   "version": "1.14.1",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
@@ -256,7 +257,13 @@
         "AppImage",
         "deb"
       ],
+      "executableName": "Starchild",
       "icon": "apps/web/public/icon.png",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "Starchild"
+        }
+      },
       "artifactName": "${productName}.${ext}",
       "category": "AudioVideo,Audio"
     },

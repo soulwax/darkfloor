@@ -1,3 +1,3 @@
 [submodule "api"]
 	path = api
-	url = git@gitlab.com:soulwax/darkfloor-api
+	url = https://github.com/soulwax/songbird-api.git
