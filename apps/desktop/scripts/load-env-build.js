@@ -25,6 +25,18 @@ const childEnv = {
   PATH: mergedPath,
 };
 
+const electronBuildRequested =
+  process.env.ELECTRON_BUILD === "true" || command.includes("ELECTRON_BUILD=true");
+
+if (electronBuildRequested) {
+  // Electron packaging only needs these values to satisfy Next.js env validation
+  // during compilation. The packaged runtime still reads real values from .env.local.
+  childEnv.AUTH_SECRET ??= "electron-build-placeholder-secret-1234567890";
+  childEnv.AUTH_DISCORD_ID ??= "electron-build-placeholder-discord-id";
+  childEnv.AUTH_DISCORD_SECRET ??=
+    "electron-build-placeholder-discord-secret";
+}
+
 if ("Path" in process.env) {
   childEnv.Path = mergedPath;
 }
@@ -36,6 +48,18 @@ if (!command) {
 }
 
 console.log(`🔧 Loading environment from .env.local only`);
+if (electronBuildRequested) {
+  const placeholderKeys = [
+    "AUTH_SECRET",
+    "AUTH_DISCORD_ID",
+    "AUTH_DISCORD_SECRET",
+  ].filter((key) => !(key in process.env) || !process.env[key]);
+  if (placeholderKeys.length > 0) {
+    console.log(
+      `🧱 Using Electron build placeholder env for: ${placeholderKeys.join(", ")}`,
+    );
+  }
+}
 console.log(`📦 Running: ${command}`);
 
 try {
