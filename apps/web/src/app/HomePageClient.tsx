@@ -57,6 +57,14 @@ type HomePageClientProps = {
   apiHostname?: string;
 };
 
+type IdleWindow = Window & {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 function normalizeFeedTrack(track: Track): Track {
   return {
     ...track,
@@ -81,6 +89,72 @@ function parseFeedPlaylistTracks(payload: unknown): Track[] {
       : [];
 
   return rows.filter(isTrack).map(normalizeFeedTrack);
+}
+
+function uniqueNonEmptyStrings(values: string[]): string[] {
+  return Array.from(
+    new Set(
+      values.map((value) => value.trim()).filter((value) => value.length > 0),
+    ),
+  );
+}
+
+function scheduleBrowserIdleTask(
+  callback: () => void,
+  timeout = 1200,
+): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const idleWindow = window as IdleWindow;
+
+  if (typeof idleWindow.requestIdleCallback === "function") {
+    const handle = idleWindow.requestIdleCallback(() => {
+      callback();
+    }, { timeout });
+
+    return () => {
+      idleWindow.cancelIdleCallback?.(handle);
+    };
+  }
+
+  const handle = window.setTimeout(callback, timeout);
+  return () => {
+    window.clearTimeout(handle);
+  };
+}
+
+async function collectTracksFromQueries(
+  queries: string[],
+  options: {
+    maxRequests: number;
+    perQueryLimit: number;
+    targetCount: number;
+  },
+): Promise<Track[]> {
+  const { maxRequests, perQueryLimit, targetCount } = options;
+  const collected: Track[] = [];
+  const seenTrackIds = new Set<number>();
+
+  for (const query of uniqueNonEmptyStrings(queries).slice(0, maxRequests)) {
+    try {
+      const response = await searchTracks(query, 0);
+      for (const track of response.data.slice(0, perQueryLimit)) {
+        if (seenTrackIds.has(track.id)) continue;
+        seenTrackIds.add(track.id);
+        collected.push(track);
+
+        if (collected.length >= targetCount) {
+          return collected;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return collected;
 }
 
 export default function HomePageClient({ apiHostname }: HomePageClientProps) {
@@ -112,11 +186,29 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   const [tastePlaylists, setTastePlaylists] = useState<PlaylistFeedItem[]>([]);
   const [preferredGenreId, setPreferredGenreId] = useState<number | null>(null);
   const [preferredGenreName, setPreferredGenreName] = useState("");
-  const [isFeedLoading, setIsFeedLoading] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(
+    () =>
+      typeof document === "undefined" ||
+      document.visibilityState === "visible",
+  );
+  const [isHomeFeedIdleReady, setIsHomeFeedIdleReady] = useState(false);
+  const [isFeedSectionNearViewport, setIsFeedSectionNearViewport] =
+    useState(false);
+  const [isFeedCoreLoading, setIsFeedCoreLoading] = useState(false);
+  const [isFeedEnrichmentLoading, setIsFeedEnrichmentLoading] =
+    useState(false);
+  const [hasLoadedFeedCore, setHasLoadedFeedCore] = useState(false);
+  const [hasLoadedFeedEnrichment, setHasLoadedFeedEnrichment] =
+    useState(false);
+  const [feedReleaseQueries, setFeedReleaseQueries] = useState<string[]>([]);
+  const [feedMadeForYouQueries, setFeedMadeForYouQueries] = useState<
+    string[]
+  >([]);
   const lastUrlQueryRef = useRef<string | null>(null);
   const lastTrackIdRef = useRef<string | null>(null);
   const shouldAutoPlayRef = useRef(false);
   const lastTasteSyncRef = useRef("");
+  const feedSectionAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const player = useGlobalPlayer();
   const hasActiveRouteQuery = [
@@ -132,7 +224,63 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   );
 
   useEffect(() => {
+    if (!homeFeedEnabled || isHomeFeedIdleReady || !isPageVisible) return;
+
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      setIsHomeFeedIdleReady(true);
+    }, 1500);
+
+    return cancelIdleTask;
+  }, [homeFeedEnabled, isHomeFeedIdleReady, isPageVisible]);
+
+  useEffect(() => {
+    if (!homeFeedEnabled || isFeedSectionNearViewport) return;
+
+    const anchor = feedSectionAnchorRef.current;
+    if (!anchor) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsFeedSectionNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+
+        setIsFeedSectionNearViewport(true);
+        observer.disconnect();
+      },
+      {
+        rootMargin: "240px 0px",
+      },
+    );
+
+    observer.observe(anchor);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [homeFeedEnabled, isFeedSectionNearViewport]);
+
+  useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const handleVisibilityChange = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    handleVisibilityChange();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -629,6 +777,10 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
     () => dedupePlaylists(tastePlaylists).slice(0, 8),
     [dedupePlaylists, tastePlaylists],
   );
+  const isTasteFeedLoading =
+    homeFeedEnabled && (!hasLoadedFeedCore || isFeedCoreLoading);
+  const isTrackFeedLoading =
+    homeFeedEnabled && (!hasLoadedFeedEnrichment || isFeedEnrichmentLoading);
 
   const tasteSeedArtists = useMemo(
     () =>
@@ -692,41 +844,28 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
   ]);
 
   useEffect(() => {
-    if (!homeFeedEnabled) return;
+    if (!homeFeedEnabled || !isHomeFeedIdleReady || hasLoadedFeedCore) return;
 
     let cancelled = false;
 
-    const uniqueQueries = (queries: string[]) =>
-      Array.from(
-        new Set(
-          queries
-            .map((query) => query.trim())
-            .filter((query) => query.length > 0),
-        ),
-      );
-
     const loadFeedRows = async () => {
-      setIsFeedLoading(true);
+      setIsFeedCoreLoading(true);
 
       try {
-        const seedArtists = Array.from(
-          new Set(
-            [...favoriteTracks, ...historyTracks]
-              .map((track) => track.artist.name.trim())
-              .filter((name) => name.length > 0),
-          ),
-        ).slice(0, 4);
+        const seedArtists = tasteSeedArtists.slice(0, 4);
 
         const [latestReleases, popularPlaylists, genrePlaylists] =
           await Promise.all([
-            getLatestReleases(36).catch(() => []),
-            getPopularPlaylists(60).catch(() => []),
+            getLatestReleases(24).catch(() => []),
+            getPopularPlaylists(36).catch(() => []),
             preferredGenreId
-              ? getPlaylistsByGenreId(preferredGenreId, 100).catch(() => [])
+              ? getPlaylistsByGenreId(preferredGenreId, 40).catch(() => [])
               : preferredGenreName
-                ? getPlaylistsByGenre(preferredGenreName, 100).catch(() => [])
+                ? getPlaylistsByGenre(preferredGenreName, 40).catch(() => [])
                 : Promise.resolve([]),
           ]);
+
+        if (cancelled) return;
 
         const tasteSeedTitles = new Set(
           (Array.isArray(tasteProfile?.seedPlaylistTitles)
@@ -765,7 +904,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
           ...popularPlaylists,
         ]).slice(0, 24);
 
-        const releaseQueries = uniqueQueries([
+        const releaseQueries = uniqueNonEmptyStrings([
           ...latestReleases
             .map((release) =>
               [release.artist?.name?.trim(), release.title?.trim()]
@@ -775,9 +914,9 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
             .filter((query) => query.length > 0),
           `${new Date().getFullYear()} latest releases`,
           "fresh new music",
-        ]).slice(0, 12);
+        ]).slice(0, 8);
 
-        const madeForYouQueries = uniqueQueries([
+        const madeForYouQueries = uniqueNonEmptyStrings([
           ...genrePlaylists
             .map((playlist) => playlist.title ?? "")
             .slice(0, 10),
@@ -786,46 +925,15 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
             .slice(0, 8),
           ...seedArtists.map((artist) => `${artist} essentials`),
           preferredGenreName ? `${preferredGenreName} essentials` : "",
-        ]).slice(0, 14);
+        ]).slice(0, 10);
 
-        const [madeForYouResults, newReleaseResults] = await Promise.all([
-          Promise.all(
-            madeForYouQueries.map(async (seedQuery) => {
-              try {
-                const response = await searchTracks(seedQuery, 0);
-                return response.data.slice(0, 6);
-              } catch {
-                return [] as Track[];
-              }
-            }),
-          ),
-          Promise.all(
-            releaseQueries.map(async (releaseQuery) => {
-              try {
-                const response = await searchTracks(releaseQuery, 0);
-                return response.data.slice(0, 2);
-              } catch {
-                return [] as Track[];
-              }
-            }),
-          ),
-        ]);
-
-        if (cancelled) return;
-
-        setMadeForYouTracks(
-          dedupeTracks([...favoriteTracks, ...madeForYouResults.flat()]).slice(
-            0,
-            24,
-          ),
-        );
         setTastePlaylists(curatedTastePlaylists);
-        setNewReleaseTracks(
-          dedupeTracks(newReleaseResults.flat()).slice(0, 24),
-        );
+        setFeedReleaseQueries(releaseQueries);
+        setFeedMadeForYouQueries(madeForYouQueries);
+        setHasLoadedFeedCore(true);
       } finally {
         if (!cancelled) {
-          setIsFeedLoading(false);
+          setIsFeedCoreLoading(false);
         }
       }
     };
@@ -837,13 +945,80 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
     };
   }, [
     dedupePlaylists,
-    dedupeTracks,
-    favoriteTracks,
-    historyTracks,
+    hasLoadedFeedCore,
     homeFeedEnabled,
+    isHomeFeedIdleReady,
     preferredGenreId,
     preferredGenreName,
     tasteProfile,
+    tasteSeedArtists,
+  ]);
+
+  useEffect(() => {
+    if (
+      !homeFeedEnabled ||
+      !hasLoadedFeedCore ||
+      hasLoadedFeedEnrichment ||
+      !isFeedSectionNearViewport ||
+      !isPageVisible
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const cancelIdleTask = scheduleBrowserIdleTask(() => {
+      const loadFeedEnrichment = async () => {
+        setIsFeedEnrichmentLoading(true);
+
+        try {
+          const [madeForYouResults, newReleaseResults] = await Promise.all([
+            collectTracksFromQueries(feedMadeForYouQueries, {
+              maxRequests: 5,
+              perQueryLimit: 6,
+              targetCount: 24,
+            }),
+            collectTracksFromQueries(feedReleaseQueries, {
+              maxRequests: 4,
+              perQueryLimit: 3,
+              targetCount: 24,
+            }),
+          ]);
+
+          if (cancelled) return;
+
+          setMadeForYouTracks(
+            dedupeTracks([...favoriteTracks, ...madeForYouResults]).slice(
+              0,
+              24,
+            ),
+          );
+          setNewReleaseTracks(dedupeTracks(newReleaseResults).slice(0, 24));
+          setHasLoadedFeedEnrichment(true);
+        } finally {
+          if (!cancelled) {
+            setIsFeedEnrichmentLoading(false);
+          }
+        }
+      };
+
+      void loadFeedEnrichment();
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      cancelIdleTask();
+    };
+  }, [
+    dedupeTracks,
+    favoriteTracks,
+    feedMadeForYouQueries,
+    feedReleaseQueries,
+    hasLoadedFeedCore,
+    hasLoadedFeedEnrichment,
+    homeFeedEnabled,
+    isFeedSectionNearViewport,
+    isPageVisible,
   ]);
 
   const hasMore = results.length < total;
@@ -1112,6 +1287,11 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
               >
                 {homeFeedEnabled && (
                   <div className="space-y-4">
+                    <div
+                      ref={feedSectionAnchorRef}
+                      className="h-px w-full"
+                      aria-hidden="true"
+                    />
                     <HomeFeedRow
                       title={t("continueListening")}
                       subtitle={t("continueListeningSubtitle")}
@@ -1154,7 +1334,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         handleFeedTrackSelect(track, madeForYouRowTracks)
                       }
                       isLoading={
-                        (favoritesLoading || isFeedLoading) &&
+                        (favoritesLoading || isTrackFeedLoading) &&
                         madeForYouRowTracks.length === 0
                       }
                       emptyLabel={t("madeForYouEmpty")}
@@ -1173,7 +1353,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                           </span>
                         )}
                       </div>
-                      {isFeedLoading && tastePlaylistsRow.length === 0 ? (
+                      {isTasteFeedLoading && tastePlaylistsRow.length === 0 ? (
                         <div className="flex items-center justify-center py-5">
                           <div className="spinner spinner-sm" />
                         </div>
@@ -1296,7 +1476,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                         handleFeedTrackSelect(track, newReleaseRowTracks)
                       }
                       isLoading={
-                        isFeedLoading && newReleaseRowTracks.length === 0
+                        isTrackFeedLoading && newReleaseRowTracks.length === 0
                       }
                       emptyLabel={t("newReleasesEmpty")}
                     />

@@ -47,6 +47,7 @@ export default function Header() {
   const [searchText, setSearchText] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const isLinuxElectron =
     typeof window !== "undefined" &&
     window.electron?.isElectron === true &&
@@ -57,6 +58,8 @@ export default function Header() {
   const searchBlurTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!isMoreMenuOpen) return;
+
     const healthUrls = ["/api/v2/status", "/api/v2/health"];
 
     let isMounted = true;
@@ -154,17 +157,17 @@ export default function Header() {
 
     void checkHealth();
 
-    const interval = setInterval(() => {
-      if (isMounted) {
+    const interval = window.setInterval(() => {
+      if (isMounted && document.visibilityState === "visible") {
         void checkHealth();
       }
     }, 30000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      window.clearInterval(interval);
     };
-  }, []);
+  }, [isMoreMenuOpen]);
 
   useEffect(() => {
     if (isMobile) {
@@ -398,7 +401,7 @@ export default function Header() {
             <Library className="h-3.5 w-3.5" />
             <span className="hidden xl:inline">{tc("library")}</span>
           </Link>
-          <DropdownMenu>
+          <DropdownMenu open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
