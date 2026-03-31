@@ -26,6 +26,10 @@ const encryptedEnvPath = path.resolve(
   repoRoot,
   process.env.ELECTRON_ENV_ENCRYPTED_FILE || ".next/standalone/.env.local.enc",
 );
+const legacyEncryptedEnvPaths = [
+  path.resolve(repoRoot, "apps/web/.next/standalone/.env.local.enc"),
+  path.resolve(repoRoot, "apps/web/.next/standalone/.env.enc"),
+].filter((candidate) => candidate !== encryptedEnvPath);
 const privateKeyPath = path.resolve(
   repoRoot,
   process.env.ELECTRON_ENV_PRIVATE_KEY_PATH ||
@@ -80,6 +84,34 @@ if (!autoEncryptEnabled) {
   process.exit(0);
 }
 
+/**
+ * @param {string[]} candidatePaths
+ * @returns {void}
+ */
+function removeStaleEncryptedEnvFiles(candidatePaths) {
+  for (const candidatePath of candidatePaths) {
+    if (!fs.existsSync(candidatePath)) continue;
+
+    fs.rmSync(candidatePath, { force: true });
+    console.log(
+      "[Electron env] Removed legacy encrypted env file:",
+      candidatePath,
+    );
+
+    const candidateDir = path.dirname(candidatePath);
+    try {
+      if (
+        fs.existsSync(candidateDir) &&
+        fs.readdirSync(candidateDir).length === 0
+      ) {
+        fs.rmSync(candidateDir, { recursive: true, force: true });
+      }
+    } catch {
+      // best-effort cleanup only
+    }
+  }
+}
+
 if (!fs.existsSync(sourceEnvPath)) {
   if (fs.existsSync(encryptedEnvPath)) {
     fs.rmSync(encryptedEnvPath, { force: true });
@@ -88,6 +120,7 @@ if (!fs.existsSync(sourceEnvPath)) {
       encryptedEnvPath,
     );
   }
+  removeStaleEncryptedEnvFiles(legacyEncryptedEnvPaths);
   console.warn(
     "[Electron env] Source env file not found, skipping encryption:",
     sourceEnvPath,
@@ -126,6 +159,7 @@ try {
     `${JSON.stringify(payload, null, 2)}\n`,
     "utf8",
   );
+  removeStaleEncryptedEnvFiles(legacyEncryptedEnvPaths);
 
   console.log("[Electron env] Encrypted env file:", encryptedEnvPath);
   console.log("[Electron env] Algorithm:", ALGORITHM);

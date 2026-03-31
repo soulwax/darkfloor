@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Desktop workspace docs now cover both shells**: `apps/desktop` and the root README now explain the new experimental Tauri commands, prerequisites, and env loading behavior so the parallel desktop targets are easier to understand.
 
+### Fixed
+
+- **Windows packaged Electron startup is more reliable**: The packaged runtime now validates standalone completeness before launch, prefers the stable `resources/.next/standalone` copy when available, and reuses an in-flight window bootstrap instead of starting the bundled server twice. The Windows `afterPack` step now mirrors the full Next standalone bundle into `resources` as well, so portable builds no longer lose the hidden `.next` build metadata that Next 16 needs at boot.
+
 ## [1.14.2] - 2026-03-31
 
 ### Changed
