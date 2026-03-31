@@ -140,4 +140,10 @@ export type Pattern =
   | "novaGlyphs"
   | "cathedralPulse"
   | "monolithDrift"
-  | "silkHalo";
+  | "silkHalo"
+  | "solsticeBloom"
+  | "shardCascade"
+  | "velvetHelix"
+  | "phyllotaxisCrucible"
+  | "verdantRetort"
+  | "mycelialCatalyst";

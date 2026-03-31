@@ -29,6 +29,12 @@ export function FlowFieldBackground({
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const connectedAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isFirefox, setIsFirefox] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    setIsFirefox(/firefox/i.test(navigator.userAgent ?? ""));
+  }, []);
 
   // Sync playing state with audio element - intentional event subscription
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from audio element events */
@@ -38,14 +44,8 @@ export function FlowFieldBackground({
       return;
     }
 
-    const handlePlay = () => {
-      console.log("[FlowFieldBackground] Audio play event");
-      setIsPlaying(true);
-    };
-    const handlePause = () => {
-      console.log("[FlowFieldBackground] Audio pause event");
-      setIsPlaying(false);
-    };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
     setIsPlaying(!audioElement.paused);
 
@@ -61,7 +61,6 @@ export function FlowFieldBackground({
 
   useEffect(() => {
     if (!audioElement) {
-
       if (connectedAudioElementRef.current) {
         releaseAudioConnection(connectedAudioElementRef.current);
       }
@@ -96,12 +95,6 @@ export function FlowFieldBackground({
 
     ensureConnectionChain(connection);
 
-    console.log("[FlowFieldBackground] Audio connection setup complete", {
-      hasAnalyser: !!connection.analyser,
-      hasFilters: !!(connection.filters && connection.filters.length > 0),
-      contextState: connection.audioContext.state,
-    });
-
     return () => {
       // Don't release the audio connection on cleanup - it's managed by the audioContextManager
       // and should persist across component unmounts to avoid interrupting playback.
@@ -119,7 +112,6 @@ export function FlowFieldBackground({
     if (!canvas) return;
 
     const updateSize = () => {
-
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
@@ -146,22 +138,13 @@ export function FlowFieldBackground({
   }, [showFpsCounter]);
 
   useEffect(() => {
-    console.log("[FlowFieldBackground] Animation loop check", {
-      isPlaying,
-      hasAnalyser: !!analyserRef.current,
-      hasRenderer: !!rendererRef.current,
-    });
-
     if (!isPlaying || !analyserRef.current || !rendererRef.current) {
       if (animationFrameRef.current) {
-        console.log("[FlowFieldBackground] Stopping animation loop");
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
       return;
     }
-
-    console.log("[FlowFieldBackground] Starting animation loop");
 
     const analyser = analyserRef.current;
     const renderer = rendererRef.current;
@@ -198,9 +181,13 @@ export function FlowFieldBackground({
         height: "100vh",
         zIndex: -1,
         pointerEvents: "none",
-        opacity: 0.6,
-        filter: "blur(8px) contrast(1.4) saturate(1.6)",
-        mixBlendMode: "screen",
+        contain: "paint",
+        backfaceVisibility: "hidden",
+        opacity: isFirefox ? 0.78 : 0.68,
+        filter: isFirefox
+          ? "contrast(1.18) saturate(1.38)"
+          : "blur(10px) contrast(1.52) saturate(1.92)",
+        mixBlendMode: isFirefox ? "normal" : "screen",
       }}
     />
   );

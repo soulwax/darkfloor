@@ -11,10 +11,16 @@ export function renderGlitchMosaic(
   trebleIntensity: number,
 ): void {
   const ctx = p.ctx;
-  const detailScale = p.detailScale * (p.isFirefox ? 0.68 : 1);
+  const detailScale = Math.max(
+    0.72,
+    p.detailScale * (p.isFirefox ? 0.64 : 1.05),
+  );
   const cols = Math.max(
     12,
-    Math.min(30, (14 + detailScale * 8 + bassIntensity * 10) | 0),
+    Math.min(
+      p.isFirefox ? 28 : 32,
+      (14 + detailScale * 8 + bassIntensity * 10) | 0,
+    ),
   );
   const rows = Math.max(
     8,
@@ -23,7 +29,7 @@ export function renderGlitchMosaic(
   const cellW = p.width / cols;
   const cellH = p.height / rows;
   const time = p.time * 0.0019;
-  const chromaShift = 1.2 + trebleIntensity * 3.4;
+  const chromaShift = 1.6 + trebleIntensity * 4.2 + audioIntensity * 1.1;
 
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -50,9 +56,7 @@ export function renderGlitchMosaic(
         p.hueBase + rowHueShift + col * 11 + pulse * 160 + dist * 0.12,
       );
       const bodyX =
-        x +
-        cellW * 0.11 +
-        p.fastSin(time * 3.6 + row * 0.19) * cellW * 0.04;
+        x + cellW * 0.11 + p.fastSin(time * 3.6 + row * 0.19) * cellW * 0.04;
       const bodyY =
         y +
         cellH * 0.16 +
@@ -63,14 +67,15 @@ export function renderGlitchMosaic(
         y +
         cellH * (0.1 + ((col + row) & 3) * 0.18) +
         p.fastCos(time * 2.8 + col * 0.31) * cellH * 0.05;
+      const bandW = cellW * (0.76 + pulse * 0.14);
       const bandH = cellH * (0.18 + pulse * 0.24);
-      const lightness = clamp(46 + pulse * 28 - dist * 0.012, 34, 82);
+      const lightness = clamp(48 + pulse * 30 - dist * 0.01, 36, 84);
 
       ctx.fillStyle = p.hsla(
         hue,
         100,
         lightness + 8,
-        0.12 + pulse * 0.15 + audioIntensity * 0.08,
+        0.14 + pulse * 0.16 + audioIntensity * 0.1,
       );
       ctx.fillRect(bodyX - chromaShift, bodyY, bodyW, bodyH);
 
@@ -78,25 +83,45 @@ export function renderGlitchMosaic(
         p.fastMod360(hue + 34),
         100,
         lightness,
-        0.08 + pulse * 0.12 + bassIntensity * 0.08,
+        0.1 + pulse * 0.14 + bassIntensity * 0.1,
       );
-      ctx.fillRect(bodyX + chromaShift, bodyY + chromaShift * 0.3, bodyW, bodyH);
+      ctx.fillRect(
+        bodyX + chromaShift,
+        bodyY + chromaShift * 0.3,
+        bodyW,
+        bodyH,
+      );
 
       ctx.fillStyle = p.hsla(
         p.fastMod360(hue + 84),
         100,
         lightness + 10,
-        0.08 + pulse * 0.14 + trebleIntensity * 0.08,
+        0.1 + pulse * 0.16 + trebleIntensity * 0.1,
       );
-      ctx.fillRect(bodyX, bandY, cellW * (0.76 + pulse * 0.14), bandH);
+      ctx.fillRect(bodyX, bandY, bandW, bandH);
+
+      if (pulse > 0.44 && (!p.isFirefox || ((col + row) & 1) === 0)) {
+        ctx.fillStyle = p.hsla(
+          p.fastMod360(hue + 162),
+          100,
+          82,
+          0.1 + pulse * 0.12,
+        );
+        ctx.fillRect(
+          bodyX + bodyW * 0.16,
+          bodyY + bodyH * 0.18,
+          bodyW * (0.14 + pulse * 0.08),
+          bodyH * 0.2,
+        );
+      }
 
       ctx.strokeStyle = p.hsla(
         p.fastMod360(hue + 132),
         100,
         lightness + 16,
-        0.08 + pulse * 0.16,
+        0.1 + pulse * 0.18,
       );
-      ctx.lineWidth = 0.8 + pulse * 1.5;
+      ctx.lineWidth = 0.9 + pulse * 1.6 + bassIntensity * 0.3;
       ctx.beginPath();
       if (((col + row) & 1) === 0) {
         ctx.moveTo(bodyX, bodyY + bodyH);
@@ -107,11 +132,9 @@ export function renderGlitchMosaic(
       }
       ctx.stroke();
 
-      if (pulse > 0.62) {
+      if (pulse > 0.56) {
         const sparkSize =
-          1.5 +
-          trebleIntensity * 1.5 +
-          (((col + row) & 1) === 0 ? 0.5 : 0.1);
+          1.7 + trebleIntensity * 1.7 + (((col + row) & 1) === 0 ? 0.5 : 0.1);
         ctx.fillStyle = p.hsla(
           p.fastMod360(hue + 196),
           100,

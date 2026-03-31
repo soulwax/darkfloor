@@ -17,6 +17,12 @@ import { renderNovaGlyphs } from "./flowfieldPatterns/renderNovaGlyphs";
 import { renderCathedralPulse } from "./flowfieldPatterns/renderCathedralPulse";
 import { renderMonolithDrift } from "./flowfieldPatterns/renderMonolithDrift";
 import { renderSilkHalo } from "./flowfieldPatterns/renderSilkHalo";
+import { renderSolsticeBloom } from "./flowfieldPatterns/renderSolsticeBloom";
+import { renderShardCascade } from "./flowfieldPatterns/renderShardCascade";
+import { renderVelvetHelix } from "./flowfieldPatterns/renderVelvetHelix";
+import { renderPhyllotaxisCrucible } from "./flowfieldPatterns/renderPhyllotaxisCrucible";
+import { renderVerdantRetort } from "./flowfieldPatterns/renderVerdantRetort";
+import { renderMycelialCatalyst } from "./flowfieldPatterns/renderMycelialCatalyst";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -248,6 +254,12 @@ export class FlowFieldRenderer {
     "cathedralPulse",
     "monolithDrift",
     "silkHalo",
+    "solsticeBloom",
+    "shardCascade",
+    "velvetHelix",
+    "phyllotaxisCrucible",
+    "verdantRetort",
+    "mycelialCatalyst",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -398,6 +410,24 @@ export class FlowFieldRenderer {
     "fireworks",
     "starfield",
     "constellation",
+  ]);
+  private static readonly HIGH_ENERGY_MODULAR_PATTERNS = new Set<Pattern>([
+    "waveTunnel",
+    "laserWeave",
+    "prismCells",
+    "spectrumRibbons",
+    "mirrorFlux",
+    "glitchMosaic",
+    "novaGlyphs",
+    "cathedralPulse",
+    "monolithDrift",
+    "silkHalo",
+    "solsticeBloom",
+    "shardCascade",
+    "velvetHelix",
+    "phyllotaxisCrucible",
+    "verdantRetort",
+    "mycelialCatalyst",
   ]);
   private static readonly MYSTICAL_HUES = [
     270, 280, 290, 240, 250, 0, 330, 340, 180, 200, 310, 350,
@@ -832,8 +862,7 @@ export class FlowFieldRenderer {
       return;
     }
 
-    const isLowFpsFrame =
-      dt >= FlowFieldRenderer.FIREFOX_LOW_FPS_FRAME_TIME_MS;
+    const isLowFpsFrame = dt >= FlowFieldRenderer.FIREFOX_LOW_FPS_FRAME_TIME_MS;
     if (!isLowFpsFrame) {
       this.firefoxLowFpsStreak = Math.max(0, this.firefoxLowFpsStreak - 2);
       return;
@@ -866,7 +895,14 @@ export class FlowFieldRenderer {
   ): number {
     const resolutionScale =
       pixelCount > 900_000 ? 0.7 : pixelCount > 700_000 ? 0.85 : 1;
-    return resolutionScale * this.qualityScale;
+    const firefoxScale = this.isFirefox
+      ? pixelCount > 900_000
+        ? 0.84
+        : pixelCount > 700_000
+          ? 0.92
+          : 0.98
+      : 1;
+    return resolutionScale * firefoxScale * this.qualityScale;
   }
 
   private getPatternContext(
@@ -3041,6 +3077,10 @@ export class FlowFieldRenderer {
       FlowFieldRenderer.TRAIL_PATTERNS.has(this.currentPattern) ||
       (this.isTransitioning &&
         FlowFieldRenderer.TRAIL_PATTERNS.has(this.nextPattern));
+    const usesHighEnergyFade =
+      FlowFieldRenderer.HIGH_ENERGY_MODULAR_PATTERNS.has(this.currentPattern) ||
+      (this.isTransitioning &&
+        FlowFieldRenderer.HIGH_ENERGY_MODULAR_PATTERNS.has(this.nextPattern));
     const fadeAmount =
       this.isTransitioning || this.transitionParticles.length > 0
         ? usesTrailFade
@@ -3049,7 +3089,21 @@ export class FlowFieldRenderer {
         : usesTrailFade
           ? 0.12
           : 0.06;
-    ctx.fillStyle = `rgba(0, 0, 0, ${fadeAmount + audioIntensity * 0.04})`;
+    const firefoxFadeBoost = this.isFirefox
+      ? usesHighEnergyFade
+        ? 0.035
+        : 0.02
+      : 0;
+    const transitionFadeBoost =
+      this.isTransitioning && usesHighEnergyFade ? 0.012 : 0;
+    const frameFade = Math.min(
+      0.24,
+      fadeAmount +
+        audioIntensity * 0.04 +
+        firefoxFadeBoost +
+        transitionFadeBoost,
+    );
+    ctx.fillStyle = `rgba(0, 0, 0, ${frameFade})`;
     ctx.fillRect(0, 0, this.width, this.height);
 
     if (this.isTransitioning) {
@@ -3149,6 +3203,8 @@ export class FlowFieldRenderer {
       case "moonPhases":
       case "astrolabe":
       case "chakras":
+      case "solsticeBloom":
+      case "phyllotaxisCrucible":
         return 1;
       case "matrix":
       case "hexgrid":
@@ -3162,6 +3218,8 @@ export class FlowFieldRenderer {
       case "prismCells":
       case "glitchMosaic":
       case "monolithDrift":
+      case "shardCascade":
+      case "verdantRetort":
         return 2;
       case "waves":
       case "dna":
@@ -3173,6 +3231,8 @@ export class FlowFieldRenderer {
       case "spectrumRibbons":
       case "mirrorFlux":
       case "silkHalo":
+      case "velvetHelix":
+      case "mycelialCatalyst":
         return 3;
       default:
         return 4;
@@ -3294,7 +3354,11 @@ export class FlowFieldRenderer {
     pattern: Pattern,
     index: number,
   ): void {
-    const target = this.getPatternTransitionTarget(pattern, index, particle.seed);
+    const target = this.getPatternTransitionTarget(
+      pattern,
+      index,
+      particle.seed,
+    );
     particle.targetX = target.x;
     particle.targetY = target.y;
     particle.targetVx = target.vx;
@@ -3313,7 +3377,10 @@ export class FlowFieldRenderer {
       const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
       const data = imageData.data;
       const nextParticles = this.transitionParticles
-        .slice(0, Math.max(120, Math.min(360, ((this.width * this.height) / 4200) | 0)))
+        .slice(
+          0,
+          Math.max(120, Math.min(360, ((this.width * this.height) / 4200) | 0)),
+        )
         .map((particle) => ({
           ...particle,
           life: Math.max(particle.life, 34 + Math.random() * 16),
@@ -3430,11 +3497,9 @@ export class FlowFieldRenderer {
       particle.vx += (particle.targetX - particle.x) * settleStrength;
       particle.vy += (particle.targetY - particle.y) * settleStrength;
       particle.vx +=
-        (particle.targetVx - particle.vx) *
-        (0.035 + transitionBlend * 0.04);
+        (particle.targetVx - particle.vx) * (0.035 + transitionBlend * 0.04);
       particle.vy +=
-        (particle.targetVy - particle.vy) *
-        (0.035 + transitionBlend * 0.04);
+        (particle.targetVy - particle.vy) * (0.035 + transitionBlend * 0.04);
       particle.vx *= particle.drag;
       particle.vy *= particle.drag;
       particle.x += particle.vx;
@@ -4107,6 +4172,54 @@ export class FlowFieldRenderer {
           trebleIntensity,
         );
         break;
+      case "solsticeBloom":
+        renderSolsticeBloom(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "shardCascade":
+        renderShardCascade(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "velvetHelix":
+        renderVelvetHelix(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "phyllotaxisCrucible":
+        renderPhyllotaxisCrucible(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "verdantRetort":
+        renderVerdantRetort(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "mycelialCatalyst":
+        renderMycelialCatalyst(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
     }
   }
 
@@ -4486,7 +4599,9 @@ export class FlowFieldRenderer {
     this.transitionParticles = [];
 
     const reasonLabel =
-      reason === "firefox-low-fps" ? "Firefox low FPS safeguard" : "every 10 patterns";
+      reason === "firefox-low-fps"
+        ? "Firefox low FPS safeguard"
+        : "every 10 patterns";
     console.log(`[Visual] 🔄 Deep canvas reset performed (${reasonLabel})`);
   }
 
@@ -16203,8 +16318,7 @@ export class FlowFieldRenderer {
         const response =
           (this.fastSin(phase) * 0.65 + this.fastSin(overtone) * 0.35 + 1) *
           0.5;
-        const height =
-          maxHeight * (0.18 + response * 0.82) * globalGain;
+        const height = maxHeight * (0.18 + response * 0.82) * globalGain;
         const x = i * stride + (stride - columnWidth) * 0.5;
         const y = baselineY - height;
 
@@ -16322,8 +16436,7 @@ export class FlowFieldRenderer {
       const ring = 1 + (node % ringCount);
       const radius = ring * ringStep;
       const angle = (twoPi * node) / nodeCount + time * 0.3;
-      const wrapped =
-        ((angle - sweepAngle + Math.PI * 3) % twoPi) - Math.PI;
+      const wrapped = ((angle - sweepAngle + Math.PI * 3) % twoPi) - Math.PI;
       const visibility = Math.max(
         0,
         1 - Math.abs(wrapped) / (0.9 + bassIntensity * 0.9),
@@ -16379,7 +16492,8 @@ export class FlowFieldRenderer {
         const t = i / cometCount;
         const orbitRadius = maxRadius * (0.2 + t * 0.8);
         const angle = t * twoPi + time * (0.9 + (i % 5) * 0.13);
-        const wobble = this.fastSin(time * 2.3 + i * 0.31) * (8 + bassIntensity * 18);
+        const wobble =
+          this.fastSin(time * 2.3 + i * 0.31) * (8 + bassIntensity * 18);
         const radius = orbitRadius + wobble;
         const x = this.fastCos(angle) * radius;
         const y = this.fastSin(angle) * radius;
@@ -16429,8 +16543,7 @@ export class FlowFieldRenderer {
 
     for (let band = 0; band < bandCount; band++) {
       const yBase = verticalSpacing * (band + 1);
-      const amplitude =
-        (12 + bassIntensity * 34) * (1 + band * 0.08);
+      const amplitude = (12 + bassIntensity * 34) * (1 + band * 0.08);
       const frequency = 0.72 + band * 0.24 + midIntensity * 0.95;
       const drift = time * (1 + band * 0.17);
 
@@ -16699,12 +16812,7 @@ export class FlowFieldRenderer {
         ctx.lineTo(tipX + wingX * 0.55, tipY + wingY * 0.55);
         ctx.stroke();
 
-        ctx.fillStyle = this.hsla(
-          hue + 20,
-          96,
-          72,
-          0.08 + bassIntensity * 0.2,
-        );
+        ctx.fillStyle = this.hsla(hue + 20, 96, 72, 0.08 + bassIntensity * 0.2);
         ctx.beginPath();
         ctx.arc(
           tipX,
@@ -16893,9 +17001,7 @@ export class FlowFieldRenderer {
     for (let stalk = 0; stalk < stalkCount; stalk++) {
       const baseX = stemSpacing * (stalk + 1);
       const baseY = this.height * 0.78;
-      const hue = this.fastMod360(
-        this.hueBase + 70 + stalk * 28 + time * 55,
-      );
+      const hue = this.fastMod360(this.hueBase + 70 + stalk * 28 + time * 55);
 
       ctx.strokeStyle = this.hsla(hue, 84, 62, 0.16 + audioIntensity * 0.14);
       ctx.lineWidth = 1.2 + trebleIntensity;
@@ -16960,8 +17066,7 @@ export class FlowFieldRenderer {
       const progress = i / Math.max(1, stringCount - 1);
       const angle = -fan + progress * fan * 2;
       const bend =
-        this.fastSin(time * 2.7 + progress * 6) *
-        (0.18 + bassIntensity * 0.16);
+        this.fastSin(time * 2.7 + progress * 6) * (0.18 + bassIntensity * 0.16);
       const innerRadius = span * 0.18;
       const outerRadius = span * (0.76 + progress * 0.18);
       const hue = this.fastMod360(

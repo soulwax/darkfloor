@@ -30,16 +30,22 @@ export function renderSpectrumRibbons(
   trebleIntensity: number,
 ): void {
   const ctx = p.ctx;
-  const detailScale = p.detailScale * (p.isFirefox ? 0.76 : 1);
+  const detailScale = Math.max(
+    0.72,
+    p.detailScale * (p.isFirefox ? 0.72 : 1.08),
+  );
   const ribbonCount = Math.max(
     4,
-    Math.min(9, (5 + bassIntensity * 6 + detailScale * 2) | 0),
+    Math.min(10, (5 + bassIntensity * 6 + detailScale * 3) | 0),
   );
-  const steps = Math.max(18, Math.min(48, (24 + detailScale * 18) | 0));
-  const sparkCount = Math.max(4, Math.min(10, (4 + detailScale * 4) | 0));
+  const steps = Math.max(
+    20,
+    Math.min(p.isFirefox ? 40 : 56, (26 + detailScale * 20) | 0),
+  );
+  const sparkCount = Math.max(4, Math.min(12, (4 + detailScale * 5) | 0));
   const sparkStride = p.isFirefox ? 2 : 1;
   const verticalSpan = p.height * 0.5;
-  const amplitude = p.height * (0.026 + bassIntensity * 0.085);
+  const amplitude = p.height * (0.03 + bassIntensity * 0.09);
   const time = p.time * 0.002;
   const invSteps = 1 / steps;
 
@@ -58,31 +64,62 @@ export function renderSpectrumRibbons(
     const hue = p.fastMod360(
       p.hueBase + 25 + i * (300 / ribbonCount) + p.time * 0.05,
     );
+    const sampleBuffer = new Float32Array(steps + 1);
+
+    for (let step = 0; step <= steps; step++) {
+      const xNorm = step * invSteps;
+      sampleBuffer[step] = sampleRibbon(
+        p,
+        xNorm,
+        phase,
+        lane,
+        freqA,
+        freqB,
+        amplitude,
+        trebleIntensity,
+      );
+    }
+
+    const fillOffset =
+      (lane < 0 ? -1 : 1) * (14 + laneWeight * 18 + bassIntensity * 20);
+
+    ctx.fillStyle = p.hsla(
+      p.fastMod360(hue + 16),
+      100,
+      56 + laneWeight * 14,
+      0.05 + audioIntensity * 0.14,
+    );
+    ctx.beginPath();
+    for (let step = 0; step <= steps; step++) {
+      const x = step * invSteps * p.width;
+      const y = baseY + sampleBuffer[step]!;
+
+      if (step === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    for (let step = steps; step >= 0; step--) {
+      const x = step * invSteps * p.width;
+      const y = baseY + sampleBuffer[step]! + fillOffset;
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
 
     ctx.strokeStyle = p.hsla(
       hue,
       100,
-      64 + ((i & 1) === 0 ? 0 : 6),
-      0.16 + audioIntensity * 0.22,
+      66 + laneWeight * 10 + ((i & 1) === 0 ? 0 : 6),
+      0.18 + audioIntensity * 0.24,
     );
-    ctx.lineWidth = 6 + laneWeight * 10 + bassIntensity * 8;
+    ctx.lineWidth = 6.5 + laneWeight * 11 + bassIntensity * 9;
     ctx.beginPath();
 
     for (let step = 0; step <= steps; step++) {
-      const xNorm = step * invSteps;
-      const x = xNorm * p.width;
-      const y =
-        baseY +
-        sampleRibbon(
-          p,
-          xNorm,
-          phase,
-          lane,
-          freqA,
-          freqB,
-          amplitude,
-          trebleIntensity,
-        );
+      const x = step * invSteps * p.width;
+      const y = baseY + sampleBuffer[step]!;
 
       if (step === 0) {
         ctx.moveTo(x, y);
@@ -97,27 +134,14 @@ export function renderSpectrumRibbons(
       p.fastMod360(hue + 56),
       100,
       84,
-      0.08 + audioIntensity * 0.18,
+      0.1 + audioIntensity * 0.2,
     );
-    ctx.lineWidth = 1.4 + trebleIntensity * 1.8;
+    ctx.lineWidth = 1.6 + trebleIntensity * 2.1;
     ctx.beginPath();
 
     for (let step = 0; step <= steps; step++) {
-      const xNorm = step * invSteps;
-      const x = xNorm * p.width;
-      const y =
-        baseY +
-        sampleRibbon(
-          p,
-          xNorm,
-          phase,
-          lane,
-          freqA,
-          freqB,
-          amplitude,
-          trebleIntensity,
-        ) -
-        (2 + laneWeight * 2);
+      const x = step * invSteps * p.width;
+      const y = baseY + sampleBuffer[step]! - (2.2 + laneWeight * 2.4);
 
       if (step === 0) {
         ctx.moveTo(x, y);
@@ -129,26 +153,14 @@ export function renderSpectrumRibbons(
     ctx.stroke();
 
     for (let spark = 0; spark < sparkCount; spark += sparkStride) {
-      const xNorm = ((time * 0.21 + i * 0.13 + spark * 0.17) % 1 + 1) % 1;
-      const y =
-        baseY +
-        sampleRibbon(
-          p,
-          xNorm,
-          phase,
-          lane,
-          freqA,
-          freqB,
-          amplitude,
-          trebleIntensity,
-        );
+      const xNorm = (((time * 0.21 + i * 0.13 + spark * 0.17) % 1) + 1) % 1;
+      const sampleIndex = Math.min(steps, Math.round(xNorm * steps));
+      const y = baseY + sampleBuffer[sampleIndex]!;
       const hueShift = p.fastMod360(hue + 120 + spark * 9);
       const size =
-        1.4 +
-        trebleIntensity * 1.6 +
-        (((spark + i) & 1) === 0 ? 0.6 : 0.1);
+        1.6 + trebleIntensity * 1.8 + (((spark + i) & 1) === 0 ? 0.6 : 0.1);
 
-      ctx.fillStyle = p.hsla(hueShift, 100, 80, 0.2 + audioIntensity * 0.24);
+      ctx.fillStyle = p.hsla(hueShift, 100, 82, 0.22 + audioIntensity * 0.24);
       ctx.fillRect(xNorm * p.width - size * 0.5, y - size * 0.5, size, size);
     }
   }

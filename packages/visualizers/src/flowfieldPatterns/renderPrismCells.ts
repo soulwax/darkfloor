@@ -11,10 +11,16 @@ export function renderPrismCells(
   trebleIntensity: number,
 ): void {
   const ctx = p.ctx;
-  const detailScale = p.detailScale * (p.isFirefox ? 0.74 : 1);
+  const detailScale = Math.max(
+    0.72,
+    p.detailScale * (p.isFirefox ? 0.68 : 1.04),
+  );
   const cols = Math.max(
     10,
-    Math.min(28, (12 + detailScale * 7 + bassIntensity * 10) | 0),
+    Math.min(
+      p.isFirefox ? 24 : 28,
+      (12 + detailScale * 7 + bassIntensity * 11) | 0,
+    ),
   );
   const rows = Math.max(
     8,
@@ -25,8 +31,9 @@ export function renderPrismCells(
   const innerW = cellW * 0.68;
   const innerH = cellH * 0.68;
   const time = p.time * 0.0018;
-  const chromaShift = 1.5 + trebleIntensity * 4.5;
-  const lineAlpha = 0.1 + audioIntensity * 0.18;
+  const chromaShift = 1.8 + trebleIntensity * 5.2 + audioIntensity * 1.4;
+  const lineAlpha = 0.12 + audioIntensity * 0.2;
+  const accentStride = p.isFirefox ? 3 : 2;
 
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -61,13 +68,13 @@ export function renderPrismCells(
       const heightScale = 0.78 + pulse * 0.32;
       const rectW = innerW * widthScale;
       const rectH = innerH * heightScale;
-      const lightness = clamp(48 + pulse * 26 - dist * 0.015, 36, 82);
+      const lightness = clamp(50 + pulse * 28 - dist * 0.012, 38, 86);
 
       ctx.fillStyle = p.hsla(
         hue,
         100,
-        lightness + 6,
-        0.12 + pulse * 0.14 + audioIntensity * 0.1,
+        lightness + 8,
+        0.14 + pulse * 0.18 + audioIntensity * 0.1,
       );
       ctx.fillRect(insetX - chromaShift, insetY, rectW, rectH);
 
@@ -75,7 +82,7 @@ export function renderPrismCells(
         p.fastMod360(hue + 34),
         100,
         lightness,
-        0.08 + pulse * 0.12 + bassIntensity * 0.08,
+        0.1 + pulse * 0.14 + bassIntensity * 0.1,
       );
       ctx.fillRect(
         insetX + chromaShift,
@@ -87,8 +94,8 @@ export function renderPrismCells(
       ctx.fillStyle = p.hsla(
         p.fastMod360(hue + 78),
         100,
-        lightness + 10,
-        0.08 + pulse * 0.14 + trebleIntensity * 0.08,
+        lightness + 12,
+        0.1 + pulse * 0.16 + trebleIntensity * 0.1,
       );
       ctx.fillRect(insetX, insetY - chromaShift * 0.35, rectW, rectH);
 
@@ -96,9 +103,9 @@ export function renderPrismCells(
         p.fastMod360(hue + 118),
         100,
         lightness + 14,
-        lineAlpha + pulse * 0.18,
+        lineAlpha + pulse * 0.22,
       );
-      ctx.lineWidth = 0.8 + pulse * 1.6;
+      ctx.lineWidth = 0.9 + pulse * 1.8 + bassIntensity * 0.4;
       ctx.beginPath();
       if (((col + row) & 1) === 0) {
         ctx.moveTo(insetX, insetY + rectH);
@@ -109,15 +116,32 @@ export function renderPrismCells(
       }
       ctx.stroke();
 
-      if (!p.isFirefox || pulse > 0.62) {
+      if (!p.isFirefox || pulse > 0.56) {
         ctx.strokeStyle = p.hsla(
           p.fastMod360(hue + 180),
           96,
           lightness + 18,
-          0.05 + pulse * 0.12,
+          0.06 + pulse * 0.14,
         );
         ctx.lineWidth = 0.7;
         ctx.strokeRect(insetX, insetY, rectW, rectH);
+      }
+
+      if (pulse > 0.52 && (!p.isFirefox || (col + row) % accentStride === 0)) {
+        const sparkW = rectW * (0.12 + pulse * 0.08);
+        const sparkH = 1.4 + pulse * 2.2 + trebleIntensity * 1.6;
+        ctx.fillStyle = p.hsla(
+          p.fastMod360(hue + 228),
+          100,
+          86,
+          0.18 + audioIntensity * 0.18,
+        );
+        ctx.fillRect(
+          insetX + rectW * 0.5 - sparkW * 0.5,
+          insetY + rectH * 0.5 - sparkH * 0.5,
+          sparkW,
+          sparkH,
+        );
       }
     }
   }

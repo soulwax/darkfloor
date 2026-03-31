@@ -7,13 +7,16 @@ export function renderNovaGlyphs(
   trebleIntensity: number,
 ): void {
   const ctx = p.ctx;
-  const detailScale = p.detailScale * (p.isFirefox ? 0.76 : 1);
+  const detailScale = Math.max(
+    0.72,
+    p.detailScale * (p.isFirefox ? 0.72 : 1.08),
+  );
   const armCount = Math.max(
     10,
-    Math.min(24, (12 + detailScale * 8 + bassIntensity * 8) | 0),
+    Math.min(28, (12 + detailScale * 8 + bassIntensity * 9) | 0),
   );
-  const ringCount = p.isFirefox ? 2 : 3;
-  const nodeCount = p.isFirefox ? 2 : 3;
+  const ringCount = p.isFirefox ? 2 : 4;
+  const nodeCount = p.isFirefox ? 2 : 4;
   const minDimension = Math.min(p.width, p.height);
   const maxRadius = minDimension * 0.46;
   const time = p.time * 0.0024;
@@ -51,10 +54,10 @@ export function renderNovaGlyphs(
       ctx.strokeStyle = p.hsla(
         hue,
         100,
-        70 + (((ring + arm) & 1) === 0 ? 0 : 6),
-        0.12 + audioIntensity * 0.2,
+        72 + (((ring + arm) & 1) === 0 ? 0 : 6),
+        0.14 + audioIntensity * 0.22,
       );
-      ctx.lineWidth = 1.1 + trebleIntensity * 1.7 + (ring & 1) * 0.45;
+      ctx.lineWidth = 1.3 + trebleIntensity * 2 + (ring & 1) * 0.5;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
@@ -72,15 +75,26 @@ export function renderNovaGlyphs(
         ctx.fillStyle = p.hsla(
           p.fastMod360(hue + node * 26),
           100,
-          80 - progress * 10,
-          0.16 + audioIntensity * 0.18,
+          82 - progress * 10,
+          0.18 + audioIntensity * 0.18,
         );
         ctx.fillRect(x - size * 0.5, y - size * 0.5, size, size);
+      }
+
+      if (!p.isFirefox || ((arm + ring) & 1) === 0) {
+        const tipSize = 1.8 + bassIntensity * 1.8 + (ring & 1) * 0.5;
+        ctx.fillStyle = p.hsla(
+          p.fastMod360(hue + 64),
+          100,
+          86,
+          0.16 + audioIntensity * 0.18,
+        );
+        ctx.fillRect(x2 - tipSize * 0.5, y2 - tipSize * 0.5, tipSize, tipSize);
       }
     }
   }
 
-  const glyphCount = Math.max(8, Math.min(18, (armCount * 0.7) | 0));
+  const glyphCount = Math.max(8, Math.min(20, (armCount * 0.72) | 0));
   const glyphStep = p.TWO_PI / glyphCount;
   const glyphRadius = maxRadius * 0.86;
 
@@ -92,22 +106,25 @@ export function renderNovaGlyphs(
     const x = p.fastCos(angle) * glyphRadius;
     const y = p.fastSin(angle) * glyphRadius;
     const size =
-      2.2 +
-      bassIntensity * 2.2 +
-      (((glyph + ringCount) & 1) === 0 ? 0.8 : 0.2);
+      2.4 + bassIntensity * 2.4 + (((glyph + ringCount) & 1) === 0 ? 0.8 : 0.2);
     const hue = p.fastMod360(p.hueBase + glyph * (360 / glyphCount) + 180);
 
-    ctx.fillStyle = p.hsla(hue, 100, 82, 0.18 + audioIntensity * 0.18);
+    ctx.fillStyle = p.hsla(hue, 100, 84, 0.2 + audioIntensity * 0.18);
     ctx.fillRect(x - size * 0.5, y - size * 0.5, size, size);
     ctx.fillRect(-x - size * 0.35, y - size * 0.35, size * 0.7, size * 0.7);
   }
 
-  const coreWidth = 12 + bassIntensity * 24;
-  const coreBar = 2 + trebleIntensity * 1.3;
-  ctx.fillStyle = p.hsla(p.fastMod360(p.hueBase + 230), 100, 86, 0.24);
+  const coreWidth = 14 + bassIntensity * 26;
+  const coreBar = 2.3 + trebleIntensity * 1.5;
+  ctx.fillStyle = p.hsla(p.fastMod360(p.hueBase + 230), 100, 88, 0.28);
   ctx.fillRect(-coreWidth * 0.5, -coreBar * 0.5, coreWidth, coreBar);
   ctx.fillRect(-coreBar * 0.5, -coreWidth * 0.5, coreBar, coreWidth);
-  ctx.fillRect(-coreWidth * 0.22, -coreWidth * 0.22, coreWidth * 0.44, coreWidth * 0.44);
+  ctx.fillRect(
+    -coreWidth * 0.22,
+    -coreWidth * 0.22,
+    coreWidth * 0.44,
+    coreWidth * 0.44,
+  );
 
   ctx.restore();
 }

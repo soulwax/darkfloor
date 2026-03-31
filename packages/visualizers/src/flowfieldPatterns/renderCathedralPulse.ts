@@ -22,10 +22,13 @@ export function renderCathedralPulse(
   midIntensity: number,
 ): void {
   const ctx = p.ctx;
-  const detailScale = p.detailScale * (p.isFirefox ? 0.72 : 1);
+  const detailScale = Math.max(
+    0.72,
+    p.detailScale * (p.isFirefox ? 0.7 : 1.05),
+  );
   const minDimension = Math.min(p.width, p.height);
   const maxRadius = minDimension * 0.48;
-  const roseRadius = minDimension * (0.16 + bassIntensity * 0.07);
+  const roseRadius = minDimension * (0.17 + bassIntensity * 0.075);
   const spokeCount = Math.max(
     12,
     Math.min(26, (12 + detailScale * 8 + bassIntensity * 10) | 0),
@@ -34,7 +37,9 @@ export function renderCathedralPulse(
     3,
     Math.min(6, (3 + detailScale * 2 + bassIntensity * 2) | 0),
   );
-  const glintCount = Math.max(8, Math.min(20, (8 + detailScale * 8) | 0));
+  const glintCount = Math.max(8, Math.min(22, (8 + detailScale * 9) | 0));
+  const useGradientAura = !p.isFirefox || detailScale >= 0.82;
+  const useInnerArch = !p.isFirefox || detailScale >= 0.78;
   const time = p.time * 0.0018;
 
   ctx.save();
@@ -43,27 +48,45 @@ export function renderCathedralPulse(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  const aura = ctx.createRadialGradient(
-    0,
-    -minDimension * 0.08,
-    roseRadius * 0.12,
-    0,
-    0,
-    maxRadius,
-  );
-  aura.addColorStop(0, p.hsla(p.fastMod360(p.hueBase + 18), 100, 76, 0.2));
-  aura.addColorStop(0.45, p.hsla(p.fastMod360(p.hueBase + 170), 92, 52, 0.09));
-  aura.addColorStop(1, p.hsla(p.fastMod360(p.hueBase + 250), 88, 22, 0));
-  ctx.fillStyle = aura;
+  if (useGradientAura) {
+    const aura = ctx.createRadialGradient(
+      0,
+      -minDimension * 0.08,
+      roseRadius * 0.12,
+      0,
+      0,
+      maxRadius,
+    );
+    aura.addColorStop(0, p.hsla(p.fastMod360(p.hueBase + 18), 100, 78, 0.22));
+    aura.addColorStop(
+      0.45,
+      p.hsla(p.fastMod360(p.hueBase + 170), 96, 56, 0.11),
+    );
+    aura.addColorStop(1, p.hsla(p.fastMod360(p.hueBase + 250), 88, 22, 0));
+    ctx.fillStyle = aura;
+  } else {
+    ctx.fillStyle = p.hsla(
+      p.fastMod360(p.hueBase + 162),
+      100,
+      52,
+      0.08 + audioIntensity * 0.08,
+    );
+  }
   ctx.beginPath();
   ctx.arc(0, 0, maxRadius, 0, p.TWO_PI);
   ctx.fill();
 
-  for (let ring = 0; ring < 4; ring++) {
+  const roseRingCount = p.isFirefox ? 4 : 5;
+  for (let ring = 0; ring < roseRingCount; ring++) {
     const radius = roseRadius * (0.44 + ring * 0.2);
     const hue = p.fastMod360(p.hueBase + 22 + ring * 38 + p.time * 0.02);
-    ctx.strokeStyle = p.hsla(hue, 100, 70 + ring * 3, 0.08 + audioIntensity * 0.12);
-    ctx.lineWidth = 1.2 + (3 - ring) * 0.55 + bassIntensity * 1.2;
+    ctx.strokeStyle = p.hsla(
+      hue,
+      100,
+      72 + ring * 3,
+      0.1 + audioIntensity * 0.14,
+    );
+    ctx.lineWidth = 1.3 + (roseRingCount - ring) * 0.5 + bassIntensity * 1.3;
     ctx.beginPath();
     ctx.arc(0, -roseRadius * 0.02, radius, 0, p.TWO_PI);
     ctx.stroke();
@@ -106,19 +129,27 @@ export function renderCathedralPulse(
       hue,
       100,
       66 + progress * 10,
-      0.11 + audioIntensity * 0.16,
+      0.12 + audioIntensity * 0.18,
     );
-    ctx.lineWidth = 1.6 + (1 - progress) * 2.4 + bassIntensity * 1.7;
+    ctx.lineWidth = 1.7 + (1 - progress) * 2.6 + bassIntensity * 1.8;
     drawArch(ctx, halfWidth, baseY, apexY, 8 + progress * 10);
 
-    ctx.strokeStyle = p.hsla(
-      p.fastMod360(hue + 90),
-      100,
-      82,
-      0.06 + midIntensity * 0.14,
-    );
-    ctx.lineWidth = 0.9 + (1 - progress) * 1.1;
-    drawArch(ctx, halfWidth * 0.72, baseY - 8, apexY * 0.72, 5 + progress * 8);
+    if (useInnerArch || progress < 0.45) {
+      ctx.strokeStyle = p.hsla(
+        p.fastMod360(hue + 90),
+        100,
+        84,
+        0.08 + midIntensity * 0.14,
+      );
+      ctx.lineWidth = 1 + (1 - progress) * 1.1;
+      drawArch(
+        ctx,
+        halfWidth * 0.72,
+        baseY - 8,
+        apexY * 0.72,
+        5 + progress * 8,
+      );
+    }
 
     const mullionOffset = halfWidth * 0.42;
     ctx.beginPath();
@@ -143,17 +174,26 @@ export function renderCathedralPulse(
   for (let glint = 0; glint < glintCount; glint++) {
     const angle = glint * 0.71 + time * 0.85;
     const radius =
-      roseRadius * (0.78 + ((glint % 3) * 0.22)) +
+      roseRadius * (0.78 + (glint % 3) * 0.22) +
       p.fastSin(glint * 0.93 + time * 1.8) * roseRadius * 0.08;
     const x = p.fastCos(angle) * radius;
     const y = p.fastSin(angle) * radius - roseRadius * 0.03;
-    const size =
-      1.6 + audioIntensity * 2 + ((glint & 1) === 0 ? 0.7 : 0.15);
+    const size = 1.6 + audioIntensity * 2 + ((glint & 1) === 0 ? 0.7 : 0.15);
     const hue = p.fastMod360(p.hueBase + 150 + glint * 16);
 
     ctx.fillStyle = p.hsla(hue, 100, 84, 0.16 + audioIntensity * 0.15);
     ctx.fillRect(x - size * 0.5, y - size * 0.5, size, size);
   }
+
+  const tracerWidth = roseRadius * (0.18 + bassIntensity * 0.08);
+  ctx.fillStyle = p.hsla(
+    p.fastMod360(p.hueBase + 228),
+    100,
+    86,
+    0.2 + audioIntensity * 0.14,
+  );
+  ctx.fillRect(-tracerWidth * 0.5, -1.4, tracerWidth, 2.8);
+  ctx.fillRect(-1.4, -tracerWidth * 0.5, 2.8, tracerWidth);
 
   ctx.restore();
 }
