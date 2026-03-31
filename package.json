@@ -256,7 +256,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "apps/web/public/emily-the-strange-linux-512.png",
+      "icon": "apps/web/public/icon.png",
       "artifactName": "${productName}.${ext}",
       "category": "AudioVideo,Audio"
     },
