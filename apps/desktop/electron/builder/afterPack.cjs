@@ -18,7 +18,13 @@ module.exports = async function afterPack(context) {
 
   if (!projectDir || !appOutDir) return;
 
-  const srcStandalone = path.join(projectDir, ".next", "standalone");
+  const srcStandalone = path.join(
+    projectDir,
+    "apps",
+    "web",
+    ".next",
+    "standalone",
+  );
   // Ship standalone next to the app (extraFiles) so NSIS installer includes it
   // including node_modules. extraResources can omit files in the installed app.
   const destStandalone = path.join(appOutDir, ".next", "standalone");

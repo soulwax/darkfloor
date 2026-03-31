@@ -61,6 +61,7 @@ try {
   // best-effort
 }
 const repoRoot = path.resolve(__dirname, "../../..");
+const webNextDir = path.join(repoRoot, "apps", "web", ".next");
 const webPublicDir = path.join(repoRoot, "apps", "web", "public");
 
 /**
@@ -326,14 +327,14 @@ try {
       ? path.join(process.resourcesPath, ".next", "standalone", ".env.local")
       : undefined,
     path.resolve(repoRoot, ".env.local"),
-    path.resolve(repoRoot, ".next/standalone/.env.local"),
+    path.join(webNextDir, "standalone", ".env.local"),
   ].filter(Boolean);
 
   const devEncryptedEnvPaths = [
     ...externalEncryptedEnvPaths,
     path.resolve(repoRoot, ".env.local.enc"),
     path.resolve(repoRoot, ".env.enc"),
-    path.resolve(repoRoot, ".next/standalone/.env.local.enc"),
+    path.join(webNextDir, "standalone", ".env.local.enc"),
   ].filter(Boolean);
 
   const devKeyPaths = [
@@ -955,7 +956,7 @@ const startServer = async () => {
       standaloneDir = exeDirStandalone;
     }
   } else {
-    standaloneDir = path.join(repoRoot, ".next", "standalone");
+    standaloneDir = path.join(webNextDir, "standalone");
   }
 
   const serverPath = resolveStandaloneServerPath(standaloneDir);

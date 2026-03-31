@@ -206,7 +206,7 @@
     ],
     "extraFiles": [
       {
-        "from": ".next/standalone",
+        "from": "apps/web/.next/standalone",
         "to": ".next/standalone",
         "filter": [
           "**/*"

@@ -24,7 +24,8 @@ const sourceEnvPath = path.resolve(
 );
 const encryptedEnvPath = path.resolve(
   repoRoot,
-  process.env.ELECTRON_ENV_ENCRYPTED_FILE || ".next/standalone/.env.local.enc",
+  process.env.ELECTRON_ENV_ENCRYPTED_FILE ||
+    "apps/web/.next/standalone/.env.local.enc",
 );
 const privateKeyPath = path.resolve(
   repoRoot,
