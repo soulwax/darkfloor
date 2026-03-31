@@ -5,6 +5,18 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.2] - 2026-03-31
+
+### Changed
+
+- **API V2 traffic is now much lazier during startup and diagnostics**: The homepage now delays its API V2 feed work until the page is visible and idle, defers heavier enrichment until the feed is near the viewport, and caps the enrichment fanout; the header health checks now fetch only when the diagnostics menu is opened.
+- **Local desktop auth flows now identify themselves more clearly to the backend**: The web auth proxy and Spotify auth client now forward an `is-electron` hint for Electron requests, and the bundled API uses much softer auth throttling for trusted `localhost:3222` and `127.0.0.1:3222` traffic, especially when that Electron hint is present.
+
+### Fixed
+
+- **Admin diagnostics no longer show false `401` responses for protected read-only cards**: The `Cache Stats` and `Auth Session` panels now fall back to the server-side Songbird proxy for admins when no browser bearer token is available, so the console remains usable without a live upstream auth token.
+- **Linux desktop identity is more consistent for GNOME and AppImage installs**: Desktop packaging and runtime metadata now align on the `Starchild` identity so Linux docks and launchers can resolve the branded icon instead of falling back to a generic cog entry.
+
 ## [1.14.1] - 2026-03-31
 
 ### Added
