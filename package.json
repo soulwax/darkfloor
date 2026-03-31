@@ -1,6 +1,6 @@
 {
   "name": "darkfloor-player",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",

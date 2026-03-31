@@ -5,6 +5,21 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-03-31
+
+### Added
+
+- **Six more modular FlowField visuals deepen the renderer's scientific and alchemic palette**: Added `solsticeBloom`, `shardCascade`, `velvetHelix`, `phyllotaxisCrucible`, `verdantRetort`, and `mycelialCatalyst` as selectable audio-reactive patterns spanning radiant petal geometry, crystalline shard falls, braided helices, phyllotaxis spirals, botanical retort forms, and mycelial network structures.
+
+### Changed
+
+- **The newest high-energy FlowField visuals now hit harder while staying bounded on Firefox**: `waveTunnel`, `laserWeave`, `prismCells`, `spectrumRibbons`, `mirrorFlux`, `glitchMosaic`, `novaGlyphs`, `cathedralPulse`, `monolithDrift`, and `silkHalo` now use stronger chroma separation, brighter accents, smarter cached sampling, and tighter adaptive detail/fade handling for heavier Linux and Firefox canvases.
+- **Fullscreen visualizer presentation is cleaner and more performant in browser-driven playback**: `FlowFieldBackground` now detects Firefox, removes noisy runtime logging, and uses a browser-specific compositing path with higher direct opacity and saturation instead of the more expensive blur/screen treatment.
+
+### Fixed
+
+- **Linux desktop packages now pick up the correct branded icon**: Electron Builder now points Linux `AppImage` and `deb` packaging at the main `apps/web/public/icon.png` asset so bundled desktop artifacts use the primary Starchild icon instead of the stray Linux-only image.
+
 ## [1.14.0] - 2026-03-30
 
 ### Added

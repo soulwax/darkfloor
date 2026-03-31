@@ -1,7 +1,7 @@
 {
   "name": "@starchild/mobile",
   "private": true,
-  "version": "1.14.0",
+  "version": "1.14.1",
   "type": "module",
   "description": "Starchild React Native Web app workspace",
   "main": "./index.ts",
