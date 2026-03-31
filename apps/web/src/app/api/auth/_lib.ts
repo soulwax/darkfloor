@@ -14,6 +14,7 @@ const REQUEST_HEADER_ALLOWLIST = new Set([
   "authorization",
   "content-type",
   "cookie",
+  "is-electron",
   "origin",
   "referer",
   "user-agent",
@@ -101,6 +102,12 @@ function getForwardHeaders(request: NextRequest | Request): Headers {
   }
   if (!headers.has("x-forwarded-proto")) {
     headers.set("x-forwarded-proto", requestUrl.protocol.replace(":", ""));
+  }
+  if (!headers.has("is-electron")) {
+    const userAgent = request.headers.get("user-agent") ?? "";
+    if (/\belectron\//i.test(userAgent)) {
+      headers.set("is-electron", "true");
+    }
   }
 
   return headers;

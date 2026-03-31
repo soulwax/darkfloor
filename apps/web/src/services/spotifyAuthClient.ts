@@ -118,6 +118,20 @@ const tokenState: TokenState = {
   spotifyExpiresAtMs: null,
 };
 
+function isElectronRuntime(): boolean {
+  return (
+    typeof window !== "undefined" && window.electron?.isElectron === true
+  );
+}
+
+function withElectronHint(headersInit?: HeadersInit): Headers {
+  const headers = new Headers(headersInit);
+  if (isElectronRuntime()) {
+    headers.set("is-electron", "true");
+  }
+  return headers;
+}
+
 let refreshPromise: Promise<string> | null = null;
 
 function logSpotifyBrowserDebug(message: string, details?: unknown): void {
@@ -918,10 +932,10 @@ export async function getCurrentUser(
 
   const response = await fetch(authMeEndpoint, {
     method: "GET",
-    headers: {
+    headers: withElectronHint({
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,
-    },
+    }),
     credentials: "include",
     cache: "no-store",
     signal: AbortSignal.timeout(AUTH_ME_TIMEOUT_MS),
@@ -1017,7 +1031,7 @@ export async function refreshAccessToken(
     bodyRefreshTokenPresent: useBodyRefreshToken,
   });
 
-  const headers = new Headers({
+  const headers = withElectronHint({
     Accept: "application/json",
   });
   let requestBody: string | undefined;
@@ -1100,10 +1114,10 @@ export async function bootstrapSpotifyAppSession(
 ): Promise<void> {
   const response = await fetch("/api/auth/spotify/session", {
     method: "POST",
-    headers: {
+    headers: withElectronHint({
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,
-    },
+    }),
     credentials: "include",
     cache: "no-store",
   });
@@ -1252,7 +1266,7 @@ export async function authFetch(
   init: RequestInit = {},
 ): Promise<Response> {
   const sendRequest = async (token: string | null) => {
-    const headers = new Headers(init.headers);
+    const headers = withElectronHint(init.headers);
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     } else {

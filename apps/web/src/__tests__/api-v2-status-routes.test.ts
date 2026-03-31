@@ -51,6 +51,14 @@ describe("API V2 proxy routes", () => {
         user: { id: "admin", admin: true },
       })),
     }));
+    vi.doMock("@/app/api/songbird/_lib", () => ({
+      proxySongbirdGet: vi.fn(async () => {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    }));
 
     const capturedCalls: Array<{
       url: string;
@@ -231,6 +239,78 @@ describe("API V2 proxy routes", () => {
 
     expect(response.status).toBe(403);
     expect(body.error).toMatch(/Admin access required/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the server-side Songbird auth proxy for admin auth diagnostics without a browser bearer", async () => {
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URL: "https://bluesixapi.com/",
+        BLUESIX_API_KEY: "test-api-key",
+      },
+    }));
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({
+        user: { id: "admin", admin: true },
+      })),
+    }));
+    const proxySongbirdGet = vi.fn(async () => {
+      return new Response(JSON.stringify({ tokenType: "service" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.doMock("@/app/api/songbird/_lib", () => ({
+      proxySongbirdGet,
+    }));
+
+    const fetchMock = vi.spyOn(global, "fetch");
+    const authMeRoute = await loadGetRoute("@/app/api/v2/auth/me/route");
+
+    const response = await authMeRoute.GET(makeRequest("/api/v2/auth/me"));
+    const body = (await response.json()) as { tokenType?: string };
+
+    expect(response.status).toBe(200);
+    expect(body.tokenType).toBe("service");
+    expect(proxySongbirdGet).toHaveBeenCalledWith("/api/auth/me");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the server-side Songbird cache proxy for admin cache diagnostics without a browser bearer", async () => {
+    vi.resetModules();
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URL: "https://bluesixapi.com/",
+        BLUESIX_API_KEY: "test-api-key",
+      },
+    }));
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({
+        user: { id: "admin", admin: true },
+      })),
+    }));
+    const proxySongbirdGet = vi.fn(async () => {
+      return new Response(JSON.stringify({ ok: true, spotify: {} }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.doMock("@/app/api/songbird/_lib", () => ({
+      proxySongbirdGet,
+    }));
+
+    const fetchMock = vi.spyOn(global, "fetch");
+    const cacheStatsRoute = await loadGetRoute("@/app/api/v2/cache/stats/route");
+
+    const response = await cacheStatsRoute.GET(
+      makeRequest("/api/v2/cache/stats"),
+    );
+    const body = (await response.json()) as { ok?: boolean };
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(proxySongbirdGet).toHaveBeenCalledWith("/cache/stats");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
