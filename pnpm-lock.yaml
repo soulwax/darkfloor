@@ -391,11 +391,11 @@ importers:
         version: 8.58.0(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
     optionalDependencies:
       '@soulwax/d-fi':
-        specifier: 1.0.6
-        version: 1.0.6
+        specifier: 1.2.0
+        version: 1.2.0
       '@soulwax/d-fi-core':
-        specifier: 2.0.0
-        version: 2.0.0
+        specifier: 2.2.0
+        version: 2.2.0
 
   apps/desktop:
     devDependencies:
@@ -3396,12 +3396,12 @@ packages:
   '@sinonjs/fake-timers@15.2.0':
     resolution: {integrity: sha512-+SM3gQi95RWZLlD+Npy/UC5mHftlXwnVJMRpMyiqjrF4yNnbvi/Ubh3x9sLw6gxWSuibOn00uiLu1CKozehWlQ==}
 
-  '@soulwax/d-fi-core@2.0.0':
-    resolution: {integrity: sha512-NkuGjOD8HPCMINt4GeRlm4q8ODu47SmyuRAtDt7+dYG7WxMda/kLBVosxwS9WiYxZ/dDwlqvk0ZKFhREPXUzAA==}
+  '@soulwax/d-fi-core@2.2.0':
+    resolution: {integrity: sha512-pHDFjrl9BViCwpmhRWl/0ADnN66E44S7Pf/iJqOUmgfHQbevOVnNj6l4TqnDRd0MtBu01AdufHiR1SK7CVa31Q==}
     engines: {node: '>=12'}
 
-  '@soulwax/d-fi@1.0.6':
-    resolution: {integrity: sha512-NLO7m6lELX2bPgDAfPh2KS1WHLkL5vcu7xfUTbqpVFd0X1oBllToTaOSWWeSb+zI+rsVl3AM2kiuk4J8RhcBJw==}
+  '@soulwax/d-fi@1.2.0':
+    resolution: {integrity: sha512-xTC0lOz8EgKPeYPvme557aAG2RirooDSRrXtv3L7x5jDU1lpBG389k1gLBck4yDzm/K+20h4C0dgf9Nqn0KDsA==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -4599,9 +4599,6 @@ packages:
     resolution: {integrity: sha512-BASOg+YwO2C+346x3LZOeoovTIoTrRqEsqMa6fmfAV0P+U9mFr9NsyOEpiYvFjbc64NMrSswhV50WdXzdb/Z5A==}
     engines: {node: '>=4'}
 
-  axios@0.26.1:
-    resolution: {integrity: sha512-fPwcX4EvnSHuInCMItEhAGnaSEXRBjtzh9fOtsE6E1G6p7vl7edEeZe11QHf18+6+9gR5PbKV/sGKNaD8YaMeA==}
-
   axios@1.13.5:
     resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
@@ -5193,10 +5190,6 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
-
-  d-fi-core@1.3.5:
-    resolution: {integrity: sha512-wlgfaFx0AKj4eymQLPKERuRG6jwLa0lfyaP6qHtJDwlpNtzbRYhHvwsQN5OXrUPdOHQE+4XSyIA/QxoBOYfQWw==}
-    engines: {node: '>=12'}
 
   damerau-levenshtein@1.0.8:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
@@ -13032,9 +13025,8 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 3.0.1
 
-  '@soulwax/d-fi-core@2.0.0':
+  '@soulwax/d-fi-core@2.2.0':
     dependencies:
-      axios: 0.26.1
       browser-id3-writer: 4.4.0
       delay: 5.0.0
       node-html-parser: 5.4.2
@@ -13042,16 +13034,15 @@ snapshots:
       spotify-uri: 2.2.2
       spotify-web-api-node: 5.0.2
     transitivePeerDependencies:
-      - debug
       - supports-color
     optional: true
 
-  '@soulwax/d-fi@1.0.6':
+  '@soulwax/d-fi@1.2.0':
     dependencies:
+      '@soulwax/d-fi-core': 2.2.0
       adm-zip: 0.5.16
       chalk: 4.1.2
       commander: 9.5.0
-      d-fi-core: 1.3.5
       dot-prop: 6.0.1
       egoroof-blowfish: 4.0.2
       got: 11.8.6
@@ -13062,7 +13053,6 @@ snapshots:
       true-case-path: 2.2.1
       update-check: 1.5.4
     transitivePeerDependencies:
-      - debug
       - supports-color
     optional: true
 
@@ -13375,7 +13365,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.2.0
       '@types/keyv': 3.1.4
-      '@types/node': 20.19.33
+      '@types/node': 22.19.15
       '@types/responselike': 1.0.3
     optional: true
 
@@ -13464,7 +13454,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 20.19.33
+      '@types/node': 22.19.15
     optional: true
 
   '@types/methods@1.1.4': {}
@@ -13525,7 +13515,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 20.19.33
+      '@types/node': 22.19.15
     optional: true
 
   '@types/send@1.2.1':
@@ -14278,13 +14268,6 @@ snapshots:
 
   axe-core@4.11.1: {}
 
-  axios@0.26.1:
-    dependencies:
-      follow-redirects: 1.15.11
-    transitivePeerDependencies:
-      - debug
-    optional: true
-
   axios@1.13.5:
     dependencies:
       follow-redirects: 1.15.11
@@ -15026,20 +15009,6 @@ snapshots:
       rrweb-cssom: 0.8.0
 
   csstype@3.2.3: {}
-
-  d-fi-core@1.3.5:
-    dependencies:
-      axios: 0.26.1
-      browser-id3-writer: 4.4.0
-      delay: 5.0.0
-      node-html-parser: 5.4.2
-      p-queue: 6.6.2
-      spotify-uri: 2.2.2
-      spotify-web-api-node: 5.0.2
-    transitivePeerDependencies:
-      - debug
-      - supports-color
-    optional: true
 
   damerau-levenshtein@1.0.8: {}
 
