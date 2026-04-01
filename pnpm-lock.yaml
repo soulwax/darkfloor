@@ -35,6 +35,12 @@ importers:
       '@rollup/plugin-node-resolve':
         specifier: ^16.0.3
         version: 16.0.3(rollup@4.57.1)
+      '@soulwax/d-fi':
+        specifier: ^1.2.0
+        version: 1.2.0
+      '@soulwax/d-fi-core':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@t3-oss/env-nextjs':
         specifier: ^0.12.0
         version: 0.12.0(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))(zod@3.25.76)
@@ -395,13 +401,13 @@ importers:
         version: 1.2.0
       '@soulwax/d-fi-core':
         specifier: ^2.2.0
-        version: ^2.2.0
+        version: 2.2.0
 
   apps/desktop:
     devDependencies:
       '@tauri-apps/cli':
         specifier: ^2.10.1
-        version: ^2.10.1
+        version: 2.10.1
 
   apps/mobile:
     dependencies:
@@ -13010,8 +13016,7 @@ snapshots:
 
   '@sinclair/typebox@0.34.49': {}
 
-  '@sindresorhus/is@4.6.0':
-    optional: true
+  '@sindresorhus/is@4.6.0': {}
 
   '@sinonjs/commons@3.0.1':
     dependencies:
@@ -13035,7 +13040,6 @@ snapshots:
       spotify-web-api-node: 5.0.2
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@soulwax/d-fi@1.2.0':
     dependencies:
@@ -13054,7 +13058,6 @@ snapshots:
       update-check: 1.5.4
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -13117,7 +13120,6 @@ snapshots:
   '@szmarczak/http-timer@4.0.6':
     dependencies:
       defer-to-connect: 2.0.1
-    optional: true
 
   '@t3-oss/env-core@0.12.0(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))(zod@3.25.76)':
     optionalDependencies:
@@ -13367,7 +13369,6 @@ snapshots:
       '@types/keyv': 3.1.4
       '@types/node': 22.19.15
       '@types/responselike': 1.0.3
-    optional: true
 
   '@types/chai@5.2.3':
     dependencies:
@@ -13423,8 +13424,7 @@ snapshots:
     dependencies:
       '@types/node': 22.19.15
 
-  '@types/http-cache-semantics@4.2.0':
-    optional: true
+  '@types/http-cache-semantics@4.2.0': {}
 
   '@types/http-errors@2.0.5': {}
 
@@ -13455,7 +13455,6 @@ snapshots:
   '@types/keyv@3.1.4':
     dependencies:
       '@types/node': 22.19.15
-    optional: true
 
   '@types/methods@1.1.4': {}
 
@@ -13516,7 +13515,6 @@ snapshots:
   '@types/responselike@1.0.3':
     dependencies:
       '@types/node': 22.19.15
-    optional: true
 
   '@types/send@1.2.1':
     dependencies:
@@ -13545,8 +13543,7 @@ snapshots:
       '@types/methods': 1.1.4
       '@types/superagent': 8.1.9
 
-  '@types/tinycolor2@1.4.6':
-    optional: true
+  '@types/tinycolor2@1.4.6': {}
 
   '@types/validator@13.15.10': {}
 
@@ -13996,8 +13993,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  adm-zip@0.5.16:
-    optional: true
+  adm-zip@0.5.16: {}
 
   agent-base@6.0.2:
     dependencies:
@@ -14232,8 +14228,7 @@ snapshots:
 
   ast-types-flow@0.0.8: {}
 
-  astral-regex@2.0.0:
-    optional: true
+  astral-regex@2.0.0: {}
 
   async-exit-hook@2.0.1:
     optional: true
@@ -14500,8 +14495,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  boolbase@1.0.0:
-    optional: true
+  boolbase@1.0.0: {}
 
   boolean@3.2.0:
     optional: true
@@ -14535,8 +14529,7 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  browser-id3-writer@4.4.0:
-    optional: true
+  browser-id3-writer@4.4.0: {}
 
   browserslist@4.28.1:
     dependencies:
@@ -14635,8 +14628,7 @@ snapshots:
       unique-filename: 4.0.0
     optional: true
 
-  cacheable-lookup@5.0.4:
-    optional: true
+  cacheable-lookup@5.0.4: {}
 
   cacheable-request@7.0.4:
     dependencies:
@@ -14647,7 +14639,6 @@ snapshots:
       lowercase-keys: 2.0.0
       normalize-url: 6.1.0
       responselike: 2.0.1
-    optional: true
 
   call-bind-apply-helpers@1.0.2:
     dependencies:
@@ -14818,7 +14809,6 @@ snapshots:
   clone-response@1.0.3:
     dependencies:
       mimic-response: 1.0.1
-    optional: true
 
   clone@1.0.4: {}
 
@@ -14857,8 +14847,7 @@ snapshots:
 
   commander@7.2.0: {}
 
-  commander@9.5.0:
-    optional: true
+  commander@9.5.0: {}
 
   comment-json@4.6.2:
     dependencies:
@@ -14996,10 +14985,8 @@ snapshots:
       domhandler: 4.3.1
       domutils: 2.8.0
       nth-check: 2.1.1
-    optional: true
 
-  css-what@6.2.2:
-    optional: true
+  css-what@6.2.2: {}
 
   css.escape@1.5.1: {}
 
@@ -15069,8 +15056,7 @@ snapshots:
     dependencies:
       clone: 1.0.4
 
-  defer-to-connect@2.0.1:
-    optional: true
+  defer-to-connect@2.0.1: {}
 
   define-data-property@1.1.4:
     dependencies:
@@ -15088,8 +15074,7 @@ snapshots:
 
   defu@6.1.4: {}
 
-  delay@5.0.0:
-    optional: true
+  delay@5.0.0: {}
 
   delayed-stream@1.0.0: {}
 
@@ -15168,27 +15153,22 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 4.3.1
       entities: 2.2.0
-    optional: true
 
-  domelementtype@2.3.0:
-    optional: true
+  domelementtype@2.3.0: {}
 
   domhandler@4.3.1:
     dependencies:
       domelementtype: 2.3.0
-    optional: true
 
   domutils@2.8.0:
     dependencies:
       dom-serializer: 1.4.1
       domelementtype: 2.3.0
       domhandler: 4.3.1
-    optional: true
 
   dot-prop@6.0.1:
     dependencies:
       is-obj: 2.0.0
-    optional: true
 
   dotenv-expand@11.0.7:
     dependencies:
@@ -15355,8 +15335,7 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.3.0
 
-  entities@2.2.0:
-    optional: true
+  entities@2.2.0: {}
 
   entities@6.0.1: {}
 
@@ -15877,8 +15856,7 @@ snapshots:
 
   event-target-shim@5.0.1: {}
 
-  eventemitter3@4.0.7:
-    optional: true
+  eventemitter3@4.0.7: {}
 
   events@3.3.0: {}
 
@@ -16216,7 +16194,6 @@ snapshots:
       es-set-tostringtag: 2.1.0
       hasown: 2.0.2
       mime-types: 2.1.35
-    optional: true
 
   form-data@4.0.5:
     dependencies:
@@ -16226,8 +16203,7 @@ snapshots:
       hasown: 2.0.2
       mime-types: 2.1.35
 
-  formidable@1.2.6:
-    optional: true
+  formidable@1.2.6: {}
 
   formidable@3.5.4:
     dependencies:
@@ -16370,7 +16346,6 @@ snapshots:
   get-stream@5.2.0:
     dependencies:
       pump: 3.0.3
-    optional: true
 
   get-stream@6.0.1: {}
 
@@ -16467,7 +16442,6 @@ snapshots:
       lowercase-keys: 2.0.0
       p-cancelable: 2.1.1
       responselike: 2.0.1
-    optional: true
 
   graceful-fs@4.2.11: {}
 
@@ -16475,7 +16449,6 @@ snapshots:
     dependencies:
       chalk: 4.1.2
       tinygradient: 1.1.5
-    optional: true
 
   grammex@3.1.12: {}
 
@@ -16516,8 +16489,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  he@1.2.0:
-    optional: true
+  he@1.2.0: {}
 
   hermes-compiler@0.14.0: {}
 
@@ -16562,8 +16534,7 @@ snapshots:
 
   html-escaper@2.0.2: {}
 
-  http-cache-semantics@4.2.0:
-    optional: true
+  http-cache-semantics@4.2.0: {}
 
   http-errors@2.0.1:
     dependencies:
@@ -16586,7 +16557,6 @@ snapshots:
     dependencies:
       quick-lru: 5.1.1
       resolve-alpn: 1.2.1
-    optional: true
 
   https-proxy-agent@5.0.1:
     dependencies:
@@ -16776,8 +16746,7 @@ snapshots:
 
   is-number@7.0.0: {}
 
-  is-obj@2.0.0:
-    optional: true
+  is-obj@2.0.0: {}
 
   is-potential-custom-element-name@1.0.1: {}
 
@@ -17565,7 +17534,6 @@ snapshots:
       cli-cursor: 3.1.0
       slice-ansi: 4.0.0
       wrap-ansi: 6.2.0
-    optional: true
 
   long@5.3.2: {}
 
@@ -17575,8 +17543,7 @@ snapshots:
 
   loupe@3.2.1: {}
 
-  lowercase-keys@2.0.0:
-    optional: true
+  lowercase-keys@2.0.0: {}
 
   lru-cache@10.4.3: {}
 
@@ -18045,8 +18012,7 @@ snapshots:
 
   mimic-fn@2.1.0: {}
 
-  mimic-response@1.0.1:
-    optional: true
+  mimic-response@1.0.1: {}
 
   mimic-response@3.1.0: {}
 
@@ -18303,7 +18269,6 @@ snapshots:
     dependencies:
       css-select: 4.3.0
       he: 1.2.0
-    optional: true
 
   node-int64@0.4.0: {}
 
@@ -18320,8 +18285,7 @@ snapshots:
 
   normalize-path@3.0.0: {}
 
-  normalize-url@6.1.0:
-    optional: true
+  normalize-url@6.1.0: {}
 
   npm-package-arg@11.0.3:
     dependencies:
@@ -18344,7 +18308,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-    optional: true
 
   nullthrows@1.1.1: {}
 
@@ -18479,11 +18442,9 @@ snapshots:
       object-keys: 1.1.1
       safe-push-apply: 1.0.0
 
-  p-cancelable@2.1.1:
-    optional: true
+  p-cancelable@2.1.1: {}
 
-  p-finally@1.0.0:
-    optional: true
+  p-finally@1.0.0: {}
 
   p-limit@2.3.0:
     dependencies:
@@ -18508,12 +18469,10 @@ snapshots:
     dependencies:
       eventemitter3: 4.0.7
       p-timeout: 3.2.0
-    optional: true
 
   p-timeout@3.2.0:
     dependencies:
       p-finally: 1.0.0
-    optional: true
 
   p-try@2.2.0: {}
 
@@ -18872,8 +18831,7 @@ snapshots:
     dependencies:
       inherits: 2.0.4
 
-  quick-lru@5.1.1:
-    optional: true
+  quick-lru@5.1.1: {}
 
   range-parser@1.2.1: {}
 
@@ -19095,12 +19053,10 @@ snapshots:
     dependencies:
       rc: 1.2.8
       safe-buffer: 5.2.1
-    optional: true
 
   registry-url@3.1.0:
     dependencies:
       rc: 1.2.8
-    optional: true
 
   regjsgen@0.8.0: {}
 
@@ -19119,8 +19075,7 @@ snapshots:
       pe-library: 0.4.1
     optional: true
 
-  resolve-alpn@1.2.1:
-    optional: true
+  resolve-alpn@1.2.1: {}
 
   resolve-cwd@3.0.0:
     dependencies:
@@ -19152,7 +19107,6 @@ snapshots:
   responselike@2.0.1:
     dependencies:
       lowercase-keys: 2.0.0
-    optional: true
 
   restore-cursor@2.0.0:
     dependencies:
@@ -19513,7 +19467,6 @@ snapshots:
       ansi-styles: 4.3.0
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
-    optional: true
 
   slugify@1.6.8: {}
 
@@ -19557,15 +19510,13 @@ snapshots:
 
   split2@4.2.0: {}
 
-  spotify-uri@2.2.2:
-    optional: true
+  spotify-uri@2.2.2: {}
 
   spotify-web-api-node@5.0.2:
     dependencies:
       superagent: 6.1.0
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   sprintf-js@1.0.3: {}
 
@@ -19763,7 +19714,6 @@ snapshots:
       semver: 7.7.4
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   superjson@2.2.6:
     dependencies:
@@ -19906,8 +19856,7 @@ snapshots:
 
   tinybench@2.9.0: {}
 
-  tinycolor2@1.6.0:
-    optional: true
+  tinycolor2@1.6.0: {}
 
   tinyexec@0.3.2: {}
 
@@ -19922,7 +19871,6 @@ snapshots:
     dependencies:
       '@types/tinycolor2': 1.4.6
       tinycolor2: 1.6.0
-    optional: true
 
   tinypool@1.1.1: {}
 
@@ -19972,8 +19920,7 @@ snapshots:
 
   tree-kill@1.2.2: {}
 
-  true-case-path@2.2.1:
-    optional: true
+  true-case-path@2.2.1: {}
 
   truncate-utf8-bytes@1.0.2:
     dependencies:
@@ -20259,7 +20206,6 @@ snapshots:
     dependencies:
       registry-auth-token: 3.3.2
       registry-url: 3.1.0
-    optional: true
 
   uri-js@4.4.1:
     dependencies:
