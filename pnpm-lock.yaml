@@ -36,8 +36,8 @@ importers:
         specifier: ^16.0.3
         version: 16.0.3(rollup@4.57.1)
       '@soulwax/d-fi':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: ^1.2.1
+        version: 1.2.1
       '@soulwax/d-fi-core':
         specifier: ^2.2.0
         version: 2.2.0
@@ -397,8 +397,8 @@ importers:
         version: 8.58.0(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
     optionalDependencies:
       '@soulwax/d-fi':
-        specifier: 1.2.0
-        version: 1.2.0
+        specifier: 1.2.1
+        version: 1.2.1
       '@soulwax/d-fi-core':
         specifier: 2.2.0
         version: 2.2.0
@@ -3406,8 +3406,8 @@ packages:
     resolution: {integrity: sha512-pHDFjrl9BViCwpmhRWl/0ADnN66E44S7Pf/iJqOUmgfHQbevOVnNj6l4TqnDRd0MtBu01AdufHiR1SK7CVa31Q==}
     engines: {node: '>=12'}
 
-  '@soulwax/d-fi@1.2.0':
-    resolution: {integrity: sha512-xTC0lOz8EgKPeYPvme557aAG2RirooDSRrXtv3L7x5jDU1lpBG389k1gLBck4yDzm/K+20h4C0dgf9Nqn0KDsA==}
+  '@soulwax/d-fi@1.2.1':
+    resolution: {integrity: sha512-wMay9RzeQkQtOlD9ABQf6vIfROa9WXKX6ZZ7hzuLfMyMXrO7zKUxyaarmmhEBqegOgvzJA6Ky6xugC7Koejrxw==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -13041,7 +13041,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@soulwax/d-fi@1.2.0':
+  '@soulwax/d-fi@1.2.1':
     dependencies:
       '@soulwax/d-fi-core': 2.2.0
       adm-zip: 0.5.16
