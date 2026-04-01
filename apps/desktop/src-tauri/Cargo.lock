@@ -3104,6 +3104,8 @@ name = "starchild-tauri-experimental"
 version = "1.15.1"
 dependencies = [
  "dotenvy",
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "url",
