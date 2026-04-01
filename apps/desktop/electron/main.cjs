@@ -571,6 +571,10 @@ let mainWindow = null;
 let createWindowPromise = null;
 /** @type {import('child_process').ChildProcess | null} */
 let serverProcess = null;
+/** @type {Promise<void> | null} */
+let serverShutdownPromise = null;
+/** @type {boolean} */
+let isQuitting = false;
 
 /**
  * @typedef {Object} ServerProcessState
@@ -639,6 +643,25 @@ const appendLogLine = (line) => {
     fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(logFile, `${line}\n`, "utf8");
   } catch {}
+};
+
+/**
+ * @param {import('child_process').ChildProcess | null} child
+ * @returns {boolean}
+ */
+const isChildProcessRunning = (child) => {
+  if (!child) return false;
+  return child.exitCode == null && child.signalCode == null;
+};
+
+/**
+ * @param {import('child_process').ChildProcess | null} child
+ * @returns {void}
+ */
+const clearServerProcessRef = (child) => {
+  if (child && serverProcess === child) {
+    serverProcess = null;
+  }
 };
 
 for (const line of bufferedLogLines) {
@@ -1167,9 +1190,12 @@ const startServer = async () => {
       rejectOnce(err);
     });
 
+    const spawnedServerProcess = serverProcess;
+
     serverProcess?.on("exit", (code, signal) => {
       log(`[Server EXIT] Code: ${code}, Signal: ${signal}`);
       serverExited = true;
+      clearServerProcessRef(spawnedServerProcess);
       if (!startupSettled) {
         rejectOnce(new Error(formatStartupFailure(code, signal)));
       }
@@ -1699,30 +1725,96 @@ app.on("second-instance", () => {
  * @returns {Promise<void>}
  */
 const shutdownServer = () => {
-  return new Promise((resolve) => {
-    if (!serverProcess) {
+  if (serverShutdownPromise) {
+    return serverShutdownPromise;
+  }
+
+  const child = serverProcess;
+  if (!child) {
+    return Promise.resolve();
+  }
+
+  if (!isChildProcessRunning(child)) {
+    clearServerProcessRef(child);
+    return Promise.resolve();
+  }
+
+  serverShutdownPromise = new Promise((resolve) => {
+    let settled = false;
+    let killTimeout = null;
+
+    /**
+     * @returns {void}
+     */
+    const finalize = () => {
+      if (settled) return;
+      settled = true;
+      if (killTimeout) {
+        clearTimeout(killTimeout);
+        killTimeout = null;
+      }
+      child.removeListener("exit", handleExit);
+      child.removeListener("error", handleError);
+      clearServerProcessRef(child);
+      log("Server process terminated");
+      serverShutdownPromise = null;
       resolve();
-      return;
-    }
+    };
+
+    /**
+     * @param {number | null} code
+     * @param {NodeJS.Signals | null} signal
+     * @returns {void}
+     */
+    const handleExit = (code, signal) => {
+      log(`[Server shutdown exit] Code: ${code}, Signal: ${signal}`);
+      finalize();
+    };
+
+    /**
+     * @param {Error} err
+     * @returns {void}
+     */
+    const handleError = (err) => {
+      log("Server shutdown error:", err);
+      finalize();
+    };
 
     log("Shutting down server gracefully...");
 
-    serverProcess.kill("SIGTERM");
+    child.once("exit", handleExit);
+    child.once("error", handleError);
 
-    const killTimeout = setTimeout(() => {
-      if (serverProcess) {
-        log("Force killing server process");
-        serverProcess.kill("SIGKILL");
+    if (!isChildProcessRunning(child)) {
+      finalize();
+      return;
+    }
+
+    try {
+      child.kill("SIGTERM");
+    } catch (err) {
+      log("Error sending SIGTERM to server process:", err);
+      finalize();
+      return;
+    }
+
+    killTimeout = setTimeout(() => {
+      if (!isChildProcessRunning(child)) {
+        finalize();
+        return;
+      }
+
+      log("Force killing server process");
+      try {
+        child.kill("SIGKILL");
+      } catch (err) {
+        log("Error sending SIGKILL to server process:", err);
+        finalize();
       }
     }, 5000);
-
-    serverProcess.on("exit", () => {
-      clearTimeout(killTimeout);
-      log("Server process terminated");
-      serverProcess = null;
-      resolve();
-    });
   });
+
+  return serverShutdownPromise;
 };
 
 app.on("window-all-closed", async () => {
@@ -1734,6 +1826,11 @@ app.on("window-all-closed", async () => {
 });
 
 app.on("will-quit", async (/** @type {import('electron').Event} */ event) => {
+  if (isQuitting) {
+    return;
+  }
+
+  isQuitting = true;
   log("App will quit");
   event.preventDefault();
 
