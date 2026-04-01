@@ -395,13 +395,13 @@ importers:
         version: 1.2.0
       '@soulwax/d-fi-core':
         specifier: ^2.2.0
-        version: 2.2.0
+        version: ^2.2.0
 
   apps/desktop:
     devDependencies:
       '@tauri-apps/cli':
         specifier: ^2.10.1
-        version: 2.10.1
+        version: ^2.10.1
 
   apps/mobile:
     dependencies:
