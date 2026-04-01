@@ -8,7 +8,9 @@
     "tauri:dev": "tauri dev --config src-tauri/tauri.conf.json",
     "tauri:dev:server": "pnpm --dir ../.. run dev",
     "tauri:prepare": "node ./scripts/prepare-tauri-bundle.cjs",
+    "tauri:prepare:no-build": "node ./scripts/prepare-tauri-bundle-no-build.cjs",
     "tauri:build": "tauri build --config src-tauri/tauri.conf.json",
+    "tauri:build:no-prepare": "node ./scripts/run-tauri-build-no-prepare.cjs",
     "tauri:build:debug": "tauri build --debug --config src-tauri/tauri.conf.json"
   },
   "devDependencies": {

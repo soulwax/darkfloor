@@ -127,7 +127,9 @@
     "electron:build:linux": "pnpm run electron:clean && pnpm run electron:download-node && node apps/desktop/scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true pnpm run build\" && pnpm run electron:prepare && node apps/desktop/scripts/load-env-build.js \"electron-builder --linux\"",
     "tauri:dev": "pnpm --dir apps/desktop run tauri:dev",
     "tauri:prepare": "pnpm --dir apps/desktop run tauri:prepare",
+    "tauri:prepare:no-build": "pnpm --dir apps/desktop run tauri:prepare:no-build",
     "tauri:build": "pnpm --dir apps/desktop run tauri:build",
+    "tauri:build:no-prepare": "pnpm --dir apps/desktop run tauri:build:no-prepare",
     "tauri:build:debug": "pnpm --dir apps/desktop run tauri:build:debug"
   },
   "dependencies": {
