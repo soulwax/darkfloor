@@ -6,7 +6,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const desktopDir = path.resolve(__dirname, "..");
-const bundleRoot = path.join(desktopDir, ".tauri-bundle");
+const bundleRoot = path.join(desktopDir, "src-tauri", "b");
 const standaloneDir = path.join(bundleRoot, "standalone");
 const nodeDir = path.join(bundleRoot, "node");
 const tauriCliPath = path.join(

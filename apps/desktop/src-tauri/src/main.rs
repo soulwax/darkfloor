@@ -10,10 +10,18 @@ use std::{
   time::{Duration, Instant},
 };
 
+use serde::Deserialize;
 use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 #[derive(Default)]
 struct ServerState(Mutex<Option<Child>>);
+
+#[derive(Debug, Deserialize)]
+struct RuntimeEnvResolution {
+  source: Option<String>,
+  mode: String,
+  values: std::collections::BTreeMap<String, String>,
+}
 
 fn main() {
   tauri::Builder::default()
@@ -45,8 +53,6 @@ fn main() {
 
 fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
   let resource_dir = app.path().resource_dir()?;
-  load_runtime_env(app, &resource_dir);
-
   let standalone_dir = resource_dir.join("standalone");
   let server_path = resolve_standalone_server(&standalone_dir).ok_or_else(|| {
     io::Error::other(format!(
@@ -60,6 +66,7 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
       resource_dir.display()
     ))
   })?;
+  let runtime_env = load_runtime_env(app, &resource_dir, &node_path)?;
 
   let server_port = reserve_loopback_port()?;
   let runtime_origin = format!("http://127.0.0.1:{server_port}");
@@ -69,6 +76,11 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
   command.stdin(Stdio::null());
   command.stdout(Stdio::null());
   command.stderr(Stdio::null());
+  command.envs(runtime_env.values);
+  command.env("STARCHILD_RUNTIME_ENV_MODE", &runtime_env.mode);
+  if let Some(source) = runtime_env.source.as_ref() {
+    command.env("STARCHILD_RUNTIME_ENV_SOURCE", source);
+  }
   command.env("PORT", server_port.to_string());
   command.env("HOSTNAME", "127.0.0.1");
   command.env("AUTH_URL", &runtime_origin);
@@ -158,37 +170,48 @@ fn resolve_bundled_node(resource_dir: &Path) -> Option<PathBuf> {
   .find(|candidate| candidate.exists())
 }
 
-fn load_runtime_env(app: &AppHandle, resource_dir: &Path) {
-  if let Some(explicit_env_path) = env::var_os("STARCHILD_ENV_FILE") {
-    let explicit_env_path = PathBuf::from(explicit_env_path);
-    if explicit_env_path.is_file() {
-      let _ = dotenvy::from_path_override(explicit_env_path);
-      return;
-    }
-  }
-
+fn load_runtime_env(
+  app: &AppHandle,
+  resource_dir: &Path,
+  node_path: &Path,
+) -> Result<RuntimeEnvResolution, Box<dyn Error>> {
   let exe_dir = env::current_exe()
     .ok()
     .and_then(|path| path.parent().map(Path::to_path_buf));
   let current_dir = env::current_dir().ok();
   let app_config_dir = app.path().app_config_dir().ok();
-  let resource_standalone_dir = resource_dir.join("standalone");
+  let resolver_script = resource_dir.join("runtime").join("resolve-runtime-env.cjs");
 
-  for candidate in [
-    exe_dir.as_ref().map(|dir| dir.join(".env")),
-    exe_dir.as_ref().map(|dir| dir.join(".env.local")),
-    app_config_dir.as_ref().map(|dir| dir.join(".env")),
-    app_config_dir.as_ref().map(|dir| dir.join(".env.local")),
-    current_dir.as_ref().map(|dir| dir.join(".env")),
-    current_dir.as_ref().map(|dir| dir.join(".env.local")),
-    Some(resource_standalone_dir.join(".env")),
-    Some(resource_standalone_dir.join(".env.local")),
-  ]
-  .into_iter()
-  .flatten()
-  {
-    if candidate.is_file() {
-      let _ = dotenvy::from_path_override(candidate);
-    }
+  if !resolver_script.is_file() {
+    return Ok(RuntimeEnvResolution {
+      source: None,
+      mode: String::from("none"),
+      values: std::collections::BTreeMap::new(),
+    });
   }
+
+  let output = Command::new(node_path)
+    .env("STARCHILD_RUNTIME_ENV_OUTPUT", "json")
+    .arg(&resolver_script)
+    .arg(resource_dir)
+    .arg(exe_dir.as_deref().unwrap_or_else(|| Path::new("")))
+    .arg(app_config_dir.as_deref().unwrap_or_else(|| Path::new("")))
+    .arg(current_dir.as_deref().unwrap_or_else(|| Path::new("")))
+    .stdin(Stdio::null())
+    .stderr(Stdio::piped())
+    .stdout(Stdio::piped())
+    .output()?;
+
+  if !output.status.success() {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    return Err(io::Error::other(format!(
+      "Failed to resolve runtime env: {}",
+      stderr.trim()
+    ))
+    .into());
+  }
+
+  let stdout = String::from_utf8(output.stdout)?;
+  let resolution: RuntimeEnvResolution = serde_json::from_str(stdout.trim())?;
+  Ok(resolution)
 }

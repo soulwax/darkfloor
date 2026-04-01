@@ -130,7 +130,21 @@
     "tauri:prepare:no-build": "pnpm --dir apps/desktop run tauri:prepare:no-build",
     "tauri:build": "pnpm --dir apps/desktop run tauri:build",
     "tauri:build:no-prepare": "pnpm --dir apps/desktop run tauri:build:no-prepare",
-    "tauri:build:debug": "pnpm --dir apps/desktop run tauri:build:debug"
+    "tauri:build:debug": "pnpm --dir apps/desktop run tauri:build:debug",
+    "tauri:stage": "pnpm --dir apps/desktop run tauri:stage",
+    "tauri:stage:no-build": "pnpm --dir apps/desktop run tauri:stage:no-build",
+    "tauri:bundle": "pnpm --dir apps/desktop run tauri:bundle",
+    "tauri:bundle:debug": "pnpm --dir apps/desktop run tauri:bundle:debug",
+    "tauri:bundle:nsis": "pnpm --dir apps/desktop run tauri:bundle:nsis",
+    "tauri:bundle:msi": "pnpm --dir apps/desktop run tauri:bundle:msi",
+    "tauri:bundle:no-prepare": "pnpm --dir apps/desktop run tauri:bundle:no-prepare",
+    "tauri:bundle:no-prepare:nsis": "pnpm --dir apps/desktop run tauri:bundle:no-prepare:nsis",
+    "tauri:bundle:no-prepare:msi": "pnpm --dir apps/desktop run tauri:bundle:no-prepare:msi",
+    "tauri:release": "pnpm --dir apps/desktop run tauri:release",
+    "tauri:release:nsis": "pnpm --dir apps/desktop run tauri:release:nsis",
+    "tauri:release:no-build": "pnpm --dir apps/desktop run tauri:release:no-build",
+    "tauri:release:no-build:nsis": "pnpm --dir apps/desktop run tauri:release:no-build:nsis",
+    "tauri:all": "pnpm --dir apps/desktop run tauri:all"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",

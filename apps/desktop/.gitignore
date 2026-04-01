@@ -1,0 +1,16 @@
+# Workspace dependencies
+node_modules/
+
+# Tauri staging outputs
+.tauri-bundle/
+.tb/
+src-tauri/b/
+
+# Tauri generated files
+src-tauri/gen/
+src-tauri/target/
+src-tauri/tauri.no-prepare.generated.json
+
+# OS-generated noise
+.DS_Store
+Thumbs.db

@@ -26,8 +26,9 @@
       "../../web/public/icon-512.png"
     ],
     "resources": {
-      "../.tauri-bundle/node/": "node",
-      "../.tauri-bundle/standalone/": "standalone"
+      "./b/node/": "node",
+      "./b/runtime/": "runtime",
+      "./b/standalone/": "standalone"
     }
   }
 }

@@ -7,7 +7,7 @@ const { spawnSync } = require("child_process");
 
 const desktopDir = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(desktopDir, "../..");
-const bundleRoot = path.join(desktopDir, ".tauri-bundle");
+const bundleRoot = path.join(desktopDir, "src-tauri", "b");
 const standaloneSource = path.join(repoRoot, ".next", "standalone");
 const standaloneStaticSource = path.join(repoRoot, ".next", "static");
 const publicSource = path.join(repoRoot, "apps", "web", "public");
@@ -18,6 +18,14 @@ const staticDest = path.join(standaloneDest, ".next", "static");
 const publicDest = path.join(standaloneDest, "public");
 const certsDest = path.join(standaloneDest, "certs");
 const nodeDest = path.join(bundleRoot, "node");
+const runtimeSource = path.join(
+  repoRoot,
+  "apps",
+  "desktop",
+  "scripts",
+  "resolve-runtime-env.cjs",
+);
+const runtimeDest = path.join(bundleRoot, "runtime", "resolve-runtime-env.cjs");
 
 function runNodeScript(label, scriptPath, args = []) {
   console.log(`[tauri:prepare] ${label}...`);
@@ -59,6 +67,11 @@ function resolveBundledNode(nodeDir) {
 }
 
 runNodeScript(
+  "Preparing encrypted desktop env payload",
+  path.join(repoRoot, "apps", "desktop", "scripts", "prepare-electron-env.cjs"),
+);
+
+runNodeScript(
   "Building standalone web bundle for Tauri",
   path.join(repoRoot, "apps", "desktop", "scripts", "load-env-build.js"),
   ["cross-env ELECTRON_BUILD=true pnpm run build:web"],
@@ -97,6 +110,7 @@ fs.mkdirSync(bundleRoot, { recursive: true });
 
 copyDir(standaloneSource, standaloneDest);
 copyDir(nodeSource, nodeDest);
+copyDir(runtimeSource, runtimeDest);
 
 if (!copyDir(standaloneStaticSource, staticDest)) {
   console.warn(
@@ -127,5 +141,5 @@ console.log("[tauri:prepare] Bundle staged successfully.");
 console.log("[tauri:prepare] Standalone server:", standaloneServer);
 console.log("[tauri:prepare] Bundled resources:", bundleRoot);
 console.log(
-  "[tauri:prepare] Note: no plaintext env file is bundled; use STARCHILD_ENV_FILE or place .env.local next to the packaged app.",
+  "[tauri:prepare] Note: packaged builds prefer the bundled encrypted env payload when available. You can still override with STARCHILD_ENV_FILE or a sidecar .env.local.",
 );

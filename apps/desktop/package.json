@@ -11,7 +11,21 @@
     "tauri:prepare:no-build": "node ./scripts/prepare-tauri-bundle-no-build.cjs",
     "tauri:build": "tauri build --config src-tauri/tauri.conf.json",
     "tauri:build:no-prepare": "node ./scripts/run-tauri-build-no-prepare.cjs",
-    "tauri:build:debug": "tauri build --debug --config src-tauri/tauri.conf.json"
+    "tauri:build:debug": "tauri build --debug --config src-tauri/tauri.conf.json",
+    "tauri:stage": "pnpm run tauri:prepare",
+    "tauri:stage:no-build": "pnpm run tauri:prepare:no-build",
+    "tauri:bundle": "pnpm run tauri:build",
+    "tauri:bundle:debug": "pnpm run tauri:build:debug",
+    "tauri:bundle:nsis": "tauri build --config src-tauri/tauri.conf.json --bundles nsis",
+    "tauri:bundle:msi": "tauri build --config src-tauri/tauri.conf.json --bundles msi",
+    "tauri:bundle:no-prepare": "pnpm run tauri:build:no-prepare",
+    "tauri:bundle:no-prepare:nsis": "node ./scripts/run-tauri-build-no-prepare.cjs --bundles nsis",
+    "tauri:bundle:no-prepare:msi": "node ./scripts/run-tauri-build-no-prepare.cjs --bundles msi",
+    "tauri:release": "pnpm run tauri:stage && pnpm run tauri:bundle",
+    "tauri:release:nsis": "pnpm run tauri:stage && pnpm run tauri:bundle:nsis",
+    "tauri:release:no-build": "pnpm run tauri:stage:no-build && pnpm run tauri:bundle:no-prepare",
+    "tauri:release:no-build:nsis": "pnpm run tauri:stage:no-build && pnpm run tauri:bundle:no-prepare:nsis",
+    "tauri:all": "pnpm run tauri:release:nsis"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.1"
