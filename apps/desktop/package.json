@@ -16,7 +16,7 @@
     "tauri:stage:no-build": "pnpm run tauri:prepare:no-build",
     "tauri:bundle": "pnpm run tauri:build",
     "tauri:bundle:debug": "pnpm run tauri:build:debug",
-    "tauri:bundle:nsis": "tauri build --config src-tauri/tauri.conf.json --bundles nsis --no-sign && node ./scripts/sign-tauri-artifacts.cjs nsis",
+    "tauri:bundle:nsis": "node ./scripts/run-tauri-bundle-nsis.cjs && node ./scripts/sign-tauri-artifacts.cjs nsis",
     "tauri:bundle:msi": "tauri build --config src-tauri/tauri.conf.json --bundles msi",
     "tauri:bundle:no-prepare": "pnpm run tauri:build:no-prepare",
     "tauri:bundle:no-prepare:nsis": "node ./scripts/run-tauri-build-no-prepare.cjs --bundles nsis --no-sign && node ./scripts/sign-tauri-artifacts.cjs nsis",

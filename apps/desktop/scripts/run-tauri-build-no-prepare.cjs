@@ -111,12 +111,26 @@ if (fs.existsSync(runtimeSource)) {
 
 const baseConfig = JSON.parse(fs.readFileSync(baseConfigPath, "utf8"));
 const buildConfig = { ...(baseConfig.build ?? {}) };
-delete buildConfig.beforeBuildCommand;
+// Tauri merges --config files into the base config, so omitting the hook is
+// not enough. Set it to an empty string to suppress the base prepare command.
+buildConfig.beforeBuildCommand = "";
 
 const generatedConfig = {
   ...baseConfig,
   build: buildConfig,
 };
+
+if (process.argv.includes("--no-sign")) {
+  generatedConfig.bundle = {
+    ...(baseConfig.bundle ?? {}),
+    windows: {
+      ...(baseConfig.bundle?.windows ?? {}),
+      // Tauri's NSIS/resource signing logic can still reach signtool-based
+      // verification when signCommand is configured, even with --no-sign.
+      signCommand: null,
+    },
+  };
+}
 
 console.log("[tauri:build:no-prepare] Reusing existing staged Tauri bundle.");
 console.log("[tauri:build:no-prepare] Standalone server:", standaloneServer);

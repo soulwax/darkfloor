@@ -28,9 +28,11 @@ Notes:
 - Packaged Tauri builds prefer the bundled encrypted runtime env payload staged
   from `.env.local`. External overrides still work via `STARCHILD_ENV_FILE` or
   `STARCHILD_ENC_ENV_FILE`.
-- On Windows, `pnpm tauri:all` now builds the NSIS bundle with `--no-sign` and
-  then self-signs the generated Tauri executable and installer with a local
-  code-signing leaf certificate issued from `certs/ca.pem` and `certs/ca.key`.
+- On Windows, `pnpm tauri:all` now builds the NSIS bundle with internal Tauri
+  signing disabled, temporarily suppresses Tauri's `signCommand` hook for that
+  bundle pass, and then self-signs the generated Tauri executable and installer
+  with a local code-signing leaf certificate issued from `certs/ca.pem` and
+  `certs/ca.key`.
 - This Windows signing path is free and useful for local or internal
   distribution, but it is not publicly trusted like a commercial code-signing
   certificate. Other machines would need to trust the local CA manually.
