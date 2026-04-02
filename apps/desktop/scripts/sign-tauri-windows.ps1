@@ -3,6 +3,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string[]]$FilePath,
+    [string]$FilePathJson,
     [switch]$AutoDiscover,
     [string]$CertDirectory,
     [string]$LeafCommonName = "Starchild Tauri Experimental Local Code Signing",
@@ -100,6 +101,7 @@ function Get-ResolvedTargets {
     param(
         [string]$DesktopDirectory,
         [string[]]$RequestedPaths,
+        [string]$RequestedPathsJson,
         [switch]$Discover
     )
 
@@ -132,6 +134,21 @@ function Get-ResolvedTargets {
         }
 
         $targets.Add((Resolve-Path -LiteralPath $candidate).Path)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($RequestedPathsJson)) {
+        $decoded = $RequestedPathsJson | ConvertFrom-Json
+        foreach ($candidate in @($decoded)) {
+            if ([string]::IsNullOrWhiteSpace($candidate)) {
+                continue
+            }
+
+            if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+                throw "Signing target was not found: $candidate"
+            }
+
+            $targets.Add((Resolve-Path -LiteralPath $candidate).Path)
+        }
     }
 
     return @($targets | Select-Object -Unique)
@@ -335,7 +352,7 @@ if (-not $IsWindows) {
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $desktopDirectory = Resolve-Path (Join-Path $scriptDirectory "..")
 $repoRoot = Resolve-Path (Join-Path $desktopDirectory "..\..")
-$resolvedTargets = @(Get-ResolvedTargets -DesktopDirectory $desktopDirectory -RequestedPaths $FilePath -Discover:$AutoDiscover)
+$resolvedTargets = @(Get-ResolvedTargets -DesktopDirectory $desktopDirectory -RequestedPaths $FilePath -RequestedPathsJson $FilePathJson -Discover:$AutoDiscover)
 if ($resolvedTargets.Length -eq 0) {
     throw "No Tauri Windows artifacts were found to sign."
 }

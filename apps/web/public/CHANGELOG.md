@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Experimental Tauri Windows bundles can now self-sign for free during `pnpm tauri:all`**: The Tauri Windows config now uses a custom `signCommand` that issues a local code-signing leaf certificate from `certs/ca.pem` and `certs/ca.key`, trusts it for the current user, and signs the generated executable and installer artifacts without changing the Electron packaging flow.
+- **Experimental Tauri Windows bundles can now self-sign for free during `pnpm tauri:all`**: The Tauri Windows release lane now builds the NSIS bundle unsigned, then issues a local code-signing leaf certificate from `certs/ca.pem` and `certs/ca.key`, trusts it for the current user, and signs the generated executable and installer artifacts without changing the Electron packaging flow or requiring `signtool.exe`.
 
 ### Changed
 
