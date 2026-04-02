@@ -26,6 +26,11 @@ const runtimeSource = path.join(
   "resolve-runtime-env.cjs",
 );
 const runtimeDest = path.join(bundleRoot, "runtime", "resolve-runtime-env.cjs");
+const runtimeBundleDest = path.join(
+  bundleRoot,
+  "runtime",
+  "tauri-runtime-env.json",
+);
 
 function runNodeScript(label, scriptPath, args = []) {
   console.log(`[tauri:prepare] ${label}...`);
@@ -50,6 +55,25 @@ function copyDir(src, dest) {
   return true;
 }
 
+/**
+ * @returns {void}
+ */
+function stripBundledTauriEnvSecrets() {
+  for (const bundledPath of [
+    path.join(standaloneDest, ".env"),
+    path.join(standaloneDest, ".env.local"),
+    path.join(standaloneDest, ".env.enc"),
+    path.join(standaloneDest, ".env.local.enc"),
+    path.join(certsDest, "ca.key"),
+    path.join(certsDest, "starchild-env-private.key"),
+    path.join(certsDest, "starchild-env-public.pem"),
+  ]) {
+    if (fs.existsSync(bundledPath)) {
+      fs.rmSync(bundledPath, { force: true });
+    }
+  }
+}
+
 function resolveStandaloneServer(standaloneDir) {
   const candidates = [
     path.join(standaloneDir, "server.js"),
@@ -65,11 +89,6 @@ function resolveBundledNode(nodeDir) {
   ];
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
-
-runNodeScript(
-  "Preparing encrypted desktop env payload",
-  path.join(repoRoot, "apps", "desktop", "scripts", "prepare-electron-env.cjs"),
-);
 
 runNodeScript(
   "Building standalone web bundle for Tauri",
@@ -111,6 +130,17 @@ fs.mkdirSync(bundleRoot, { recursive: true });
 copyDir(standaloneSource, standaloneDest);
 copyDir(nodeSource, nodeDest);
 copyDir(runtimeSource, runtimeDest);
+runNodeScript(
+  "Preparing obfuscated Tauri runtime env bundle",
+  path.join(
+    repoRoot,
+    "apps",
+    "desktop",
+    "scripts",
+    "prepare-tauri-runtime-env.cjs",
+  ),
+  [],
+);
 
 if (!copyDir(standaloneStaticSource, staticDest)) {
   console.warn(
@@ -128,18 +158,12 @@ if (fs.existsSync(certsSource)) {
   copyDir(certsSource, certsDest);
 }
 
-for (const bundledEnvPath of [
-  path.join(standaloneDest, ".env"),
-  path.join(standaloneDest, ".env.local"),
-]) {
-  if (fs.existsSync(bundledEnvPath)) {
-    fs.rmSync(bundledEnvPath, { force: true });
-  }
-}
+stripBundledTauriEnvSecrets();
 
 console.log("[tauri:prepare] Bundle staged successfully.");
 console.log("[tauri:prepare] Standalone server:", standaloneServer);
 console.log("[tauri:prepare] Bundled resources:", bundleRoot);
+console.log("[tauri:prepare] Runtime env bundle:", runtimeBundleDest);
 console.log(
-  "[tauri:prepare] Note: packaged builds prefer the bundled encrypted env payload when available. You can still override with STARCHILD_ENV_FILE or a sidecar .env.local.",
+  "[tauri:prepare] Note: packaged builds prefer the bundled encrypted env payload plus the obfuscated key bundle. You can still override with STARCHILD_ENV_FILE or STARCHILD_ENC_ENV_FILE.",
 );

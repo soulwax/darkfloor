@@ -9,6 +9,17 @@ const desktopDir = path.resolve(__dirname, "..");
 const bundleRoot = path.join(desktopDir, "src-tauri", "b");
 const standaloneDir = path.join(bundleRoot, "standalone");
 const nodeDir = path.join(bundleRoot, "node");
+const runtimeSource = path.join(
+  desktopDir,
+  "scripts",
+  "resolve-runtime-env.cjs",
+);
+const runtimeStaged = path.join(bundleRoot, "runtime", "resolve-runtime-env.cjs");
+const runtimeBundleStaged = path.join(
+  bundleRoot,
+  "runtime",
+  "tauri-runtime-env.json",
+);
 const tauriCliPath = path.join(
   desktopDir,
   "node_modules",
@@ -44,6 +55,10 @@ function fail(message) {
   process.exit(1);
 }
 
+function fileContent(pathname) {
+  return fs.readFileSync(pathname, "utf8");
+}
+
 if (!fs.existsSync(baseConfigPath)) {
   fail(`Missing Tauri config: ${baseConfigPath}`);
 }
@@ -70,6 +85,28 @@ if (!bundledNode) {
 
 if (!fs.existsSync(tauriCliPath)) {
   fail(`Tauri CLI entrypoint not found: ${tauriCliPath}`);
+}
+
+if (!fs.existsSync(runtimeStaged)) {
+  fail(
+    `Missing staged runtime helper at ${runtimeStaged}. Run "pnpm tauri:prepare:no-build" to restage the existing bundle, or "pnpm tauri:prepare" to rebuild it first.`,
+  );
+}
+
+if (!fs.existsSync(runtimeBundleStaged)) {
+  fail(
+    `Missing staged runtime env bundle at ${runtimeBundleStaged}. Run "pnpm tauri:prepare:no-build" to restage the existing bundle, or "pnpm tauri:prepare" to rebuild it first.`,
+  );
+}
+
+if (fs.existsSync(runtimeSource)) {
+  const sourceRuntime = fileContent(runtimeSource);
+  const stagedRuntime = fileContent(runtimeStaged);
+  if (sourceRuntime !== stagedRuntime) {
+    fail(
+      `The staged runtime helper is stale (${runtimeStaged}). Re-run "pnpm tauri:prepare:no-build" or "pnpm tauri:prepare" before using tauri:build:no-prepare.`,
+    );
+  }
 }
 
 const baseConfig = JSON.parse(fs.readFileSync(baseConfigPath, "utf8"));
