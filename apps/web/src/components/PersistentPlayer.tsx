@@ -58,6 +58,8 @@ const DESKTOP_QUEUE_WIDTH = "min(100vw, 28rem)";
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
+  const isTauriDesktop =
+    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
   const tq = useTranslations("queue");
   const tt = useTranslations("trackMenu");
 
@@ -292,8 +294,8 @@ export default function PersistentPlayer() {
             className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-l-lg border border-r-0 px-1.5 py-2 text-[var(--color-muted)] shadow-none transition-colors hover:bg-white/4 hover:text-[var(--color-text)] md:flex"
             style={{
               right: showQueue
-                ? "calc(var(--desktop-right-rail-width, 0px) + 0.35rem)"
-                : "0.35rem",
+                ? "calc(var(--desktop-right-rail-width, 0px) + var(--desktop-window-edge-offset, 0px) + 0.35rem)"
+                : "calc(var(--desktop-window-edge-offset, 0px) + 0.35rem)",
             }}
             aria-label={showQueue ? tq("closeQueue") : tt("queue")}
             title={showQueue ? tq("closeQueue") : tt("queue")}
@@ -316,7 +318,9 @@ export default function PersistentPlayer() {
           </button>
 
           <div
-            className="pointer-events-none fixed bottom-0 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem]"
+            className={`pointer-events-none fixed bottom-0 z-50 w-[calc(100vw-2rem)] max-w-[56rem] -translate-x-1/2 px-4 pb-4 xl:max-w-[60rem] ${
+              isTauriDesktop ? "tauri-player-dock" : ""
+            }`}
             style={{
               left: "50%",
             }}

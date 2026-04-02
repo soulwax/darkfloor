@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.3] - 2026-04-02
+
+### Changed
+
+- **Experimental Tauri builds now have their own rounded desktop chrome**: The Tauri shell now boots with a transparent undecorated window, a custom tab-style top bar, native minimize/maximize/close controls, and a more coherent rounded frame around the desktop content and player without changing the existing Electron Windows/Linux build flow.
+
 ## [1.15.2] - 2026-04-02
 
 ### Added

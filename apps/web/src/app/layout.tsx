@@ -26,6 +26,7 @@ import PersistentPlayer from "@/components/PersistentPlayer";
 import { PlaylistContextMenu } from "@/components/PlaylistContextMenu";
 import { SessionProvider } from "@/components/SessionProvider";
 import SuppressExtensionErrors from "@/components/SuppressExtensionErrors";
+import { TauriTitlebar } from "@/components/TauriTitlebar";
 import { TrackContextMenu } from "@/components/TrackContextMenu";
 import { UIWrapper } from "@/components/UIWrapper";
 import CookieConsent from "@/components/CookieConsent";
@@ -132,72 +133,73 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>
-        <LinuxTitlebar />
-        <SuppressExtensionErrors />
-        <ElectronStorageInit />
-        <RegisterServiceWorker />
-        <CookieConsent />
-        <ErrorBoundary>
-          <SessionProvider>
-            <TRPCReactProvider>
-              <ThemeProvider>
-                <AuthModalProvider>
-                  <ElectronChromeSync />
-                  <ToastProvider>
-                    <AudioPlayerProvider>
-                      <KeyboardShortcutsProvider>
-                        {}
-                        <DynamicTitle />
-                        <MenuProvider>
-                          <TrackContextMenuProvider>
-                            <PlaylistContextMenuProvider>
-                              <AuthGate>
-                                {}
-                                <UIWrapper>
+          <LinuxTitlebar />
+          <TauriTitlebar />
+          <SuppressExtensionErrors />
+          <ElectronStorageInit />
+          <RegisterServiceWorker />
+          <CookieConsent />
+          <ErrorBoundary>
+            <SessionProvider>
+              <TRPCReactProvider>
+                <ThemeProvider>
+                  <AuthModalProvider>
+                    <ElectronChromeSync />
+                    <ToastProvider>
+                      <AudioPlayerProvider>
+                        <KeyboardShortcutsProvider>
+                          {}
+                          <DynamicTitle />
+                          <MenuProvider>
+                            <TrackContextMenuProvider>
+                              <PlaylistContextMenuProvider>
+                                <AuthGate>
                                   {}
-                                  <div suppressHydrationWarning>
-                                    <Suspense fallback={null}>
-                                      <Header />
-                                    </Suspense>
-                                  </div>
-                                  {}
-                                  <DesktopShell>
-                                    <Suspense fallback={null}>
-                                      <MobileHeader />
-                                    </Suspense>
+                                  <UIWrapper>
                                     {}
-                                    <HamburgerMenu />
+                                    <div suppressHydrationWarning>
+                                      <Suspense fallback={null}>
+                                        <Header />
+                                      </Suspense>
+                                    </div>
                                     {}
-                                    <MobileContentWrapper>
+                                    <DesktopShell>
+                                      <Suspense fallback={null}>
+                                        <MobileHeader />
+                                      </Suspense>
                                       {}
-                                      <div className="pt-16 pb-36 md:pt-0 md:pb-24">
-                                        {children}
-                                      </div>
-                                    </MobileContentWrapper>
-                                  </DesktopShell>
-                                </UIWrapper>
-                                {}
-                                <PersistentPlayer />
-                                {}
-                                <Suspense fallback={null}>
-                                  <MobileFooterWrapper />
-                                </Suspense>
-                                {}
-                                <TrackContextMenu />
-                                {}
-                                <PlaylistContextMenu />
-                              </AuthGate>
-                            </PlaylistContextMenuProvider>
-                          </TrackContextMenuProvider>
-                        </MenuProvider>
-                      </KeyboardShortcutsProvider>
-                    </AudioPlayerProvider>
-                  </ToastProvider>
-                </AuthModalProvider>
-              </ThemeProvider>
-            </TRPCReactProvider>
-          </SessionProvider>
-        </ErrorBoundary>
+                                      <HamburgerMenu />
+                                      {}
+                                      <MobileContentWrapper>
+                                        {}
+                                        <div className="pt-16 pb-36 md:pt-0 md:pb-24">
+                                          {children}
+                                        </div>
+                                      </MobileContentWrapper>
+                                    </DesktopShell>
+                                  </UIWrapper>
+                                  {}
+                                  <PersistentPlayer />
+                                  {}
+                                  <Suspense fallback={null}>
+                                    <MobileFooterWrapper />
+                                  </Suspense>
+                                  {}
+                                  <TrackContextMenu />
+                                  {}
+                                  <PlaylistContextMenu />
+                                </AuthGate>
+                              </PlaylistContextMenuProvider>
+                            </TrackContextMenuProvider>
+                          </MenuProvider>
+                        </KeyboardShortcutsProvider>
+                      </AudioPlayerProvider>
+                    </ToastProvider>
+                  </AuthModalProvider>
+                </ThemeProvider>
+              </TRPCReactProvider>
+            </SessionProvider>
+          </ErrorBoundary>
         </NextIntlClientProvider>
         <Analytics />
         <SpeedInsights />

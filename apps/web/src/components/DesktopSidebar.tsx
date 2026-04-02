@@ -280,7 +280,9 @@ export function DesktopSidebar() {
       <button
         className="theme-panel pointer-events-auto fixed top-1/2 z-[61] hidden -translate-y-1/2 items-center rounded-r-lg border border-l-0 px-1.5 py-2 text-[var(--color-muted)] transition-colors hover:bg-white/4 hover:text-[var(--color-text)] md:flex"
         style={{
-          left: isOpen ? `calc(${width}px + 0.35rem)` : "0.35rem",
+          left: isOpen
+            ? `calc(var(--desktop-window-edge-offset, 0px) + ${width}px + 0.35rem)`
+            : "calc(var(--desktop-window-edge-offset, 0px) + 0.35rem)",
         }}
         onClick={() => {
           const next = !collapsed;

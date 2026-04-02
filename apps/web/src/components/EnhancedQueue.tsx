@@ -644,7 +644,7 @@ export function EnhancedQueue({
     <div
       className={`theme-chrome-drawer fixed right-0 z-[60] flex w-full max-w-md flex-col border-l ${
         dockBelowDesktopHeader
-          ? "top-[var(--electron-header-height,0px)] h-[calc(100vh-var(--electron-header-height,0px))]"
+          ? "top-[calc(var(--desktop-top-chrome-offset,0px)+var(--electron-header-height,0px))] h-[calc(100vh-var(--desktop-top-chrome-offset,0px)-var(--electron-header-height,0px))]"
           : "inset-y-0"
       }`}
     >

@@ -96,6 +96,19 @@
   --electron-sidebar-width: 0px;
   --desktop-right-rail-width: 0px;
   --electron-sidebar-bottom-padding: 0.75rem;
+  --desktop-top-chrome-offset: 0px;
+  --desktop-window-edge-offset: 0px;
+  --desktop-window-frame-gap: 0px;
+  --desktop-window-radius: 1.45rem;
+  --tauri-titlebar-height: 3.85rem;
+  --tauri-frame-border: rgba(244, 178, 102, 0.14);
+  --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02) 38%,
+    rgba(42, 170, 150, 0.09) 100%
+  );
 }
 
 /* ------------------------------------------------------------
@@ -235,6 +248,32 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-overflow-scrolling: touch;
   min-height: 100vh;
+}
+
+html.is-tauri {
+  --desktop-window-edge-offset: var(--desktop-window-frame-gap);
+  --desktop-window-frame-gap: 14px;
+  --desktop-window-radius: 1.6rem;
+  --desktop-top-chrome-offset: calc(
+    var(--tauri-titlebar-height) + var(--desktop-window-frame-gap)
+  );
+  background: transparent;
+}
+
+html.is-tauri body {
+  background: transparent;
+}
+
+html.is-tauri::before,
+html.is-tauri::after,
+html.is-tauri body::before,
+html.is-tauri body::after {
+  content: none;
+}
+
+html.is-tauri.is-tauri-maximized {
+  --desktop-window-frame-gap: 0px;
+  --desktop-window-radius: 0rem;
 }
 
 /* Dark theme only: floating energy particles */
@@ -793,6 +832,34 @@ html.theme-light .chip {
   margin: 0 auto;
   width: min(1180px, 100%);
   padding: var(--space-3) var(--space-4);
+}
+
+html.is-tauri .player-backdrop {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(9, 13, 21, 0.88), rgba(7, 10, 16, 0.8)),
+    rgba(9, 13, 21, 0.82);
+  box-shadow: 0 18px 34px rgba(1, 4, 8, 0.28);
+}
+
+html.is-tauri .tauri-player-dock {
+  bottom: var(--desktop-window-frame-gap);
+  width: calc(
+    100vw - var(--desktop-window-edge-offset) -
+      var(--desktop-window-edge-offset) - 2rem
+  );
+}
+
+html.is-tauri .tauri-player-dock .player-backdrop {
+  border-radius: calc(var(--desktop-window-radius) - 0.15rem);
+}
+
+html.is-tauri.is-tauri-maximized .desktop-shell,
+html.is-tauri.is-tauri-maximized .desktop-shell::before,
+html.is-tauri.is-tauri-maximized .desktop-surface,
+html.is-tauri.is-tauri-maximized .player-backdrop,
+html.is-tauri.is-tauri-maximized .tauri-titlebar-shell {
+  border-radius: 0;
 }
 
 html.theme-light .player-backdrop::before {
@@ -2020,11 +2087,28 @@ html.is-electron .electron-header-main {
   padding-right: max(0.75rem, var(--electron-titlebar-inset-right));
 }
 
+html.is-tauri .electron-header-main {
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+}
+
 .electron-header-main {
   min-height: 46px;
   padding-left: 0.75rem;
   padding-right: 0.75rem;
   align-items: center;
+}
+
+html.is-tauri .tauri-app-header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html.is-tauri .tauri-header-main {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(9, 14, 22, 0.52);
+  box-shadow: 0 16px 36px rgba(3, 8, 15, 0.26);
+  backdrop-filter: blur(18px);
 }
 
 .electron-header-search {
@@ -2070,8 +2154,137 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   }
 }
 
+.tauri-titlebar {
+  pointer-events: none;
+}
+
+.tauri-titlebar-shell {
+  pointer-events: auto;
+  min-height: var(--tauri-titlebar-height);
+  border-color: var(--tauri-frame-border);
+  background:
+    var(--tauri-frame-sheen),
+    linear-gradient(135deg, rgba(10, 16, 24, 0.86), rgba(20, 28, 39, 0.72));
+  box-shadow: var(--tauri-frame-shadow);
+  backdrop-filter: blur(24px);
+}
+
+.tauri-drag-region {
+  user-select: none;
+}
+
+.tauri-tabbar {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.tauri-tab {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.tauri-tab::after {
+  content: "";
+  position: absolute;
+  inset: auto 0.7rem 0.22rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f4b266, #58c6b1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tauri-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tauri-tab.is-active {
+  border-color: rgba(244, 178, 102, 0.16);
+  background: rgba(244, 178, 102, 0.1);
+}
+
+.tauri-tab.is-active::after {
+  opacity: 1;
+}
+
+.tauri-window-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.tauri-window-controls-shell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tauri-window-control {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 246, 250, 0.86);
+  transition:
+    transform 100ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.tauri-window-control:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.tauri-window-control:active {
+  transform: scale(0.96);
+}
+
+.tauri-window-control-close:hover {
+  background: #dc5c64;
+  border-color: #dc5c64;
+}
+
 .desktop-main {
   background: transparent;
+  padding-top: var(--electron-header-height);
+}
+
+html.is-tauri .desktop-shell {
+  position: relative;
+  padding: var(--desktop-top-chrome-offset) var(--desktop-window-frame-gap)
+    calc(var(--desktop-window-frame-gap) + 5.9rem)
+    var(--desktop-window-frame-gap);
+  border-radius: var(--desktop-window-radius);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(244, 178, 102, 0.12),
+      transparent 32%
+    ),
+    linear-gradient(180deg, rgba(4, 8, 14, 0.92), rgba(8, 11, 18, 0.86));
+  border: 1px solid var(--tauri-frame-border);
+  box-shadow: var(--tauri-frame-shadow);
+  backdrop-filter: blur(18px);
+}
+
+html.is-tauri .desktop-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+html.is-tauri .desktop-main {
   padding-top: var(--electron-header-height);
 }
 
@@ -2087,6 +2300,37 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   background: rgba(11, 11, 11, 0.28);
   box-shadow: var(--shell-shadow-soft);
   backdrop-filter: blur(14px);
+}
+
+html.is-tauri .desktop-surface {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 26, 0.76),
+    rgba(8, 12, 19, 0.68)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 28px rgba(2, 6, 10, 0.18);
+}
+
+html.is-tauri .electron-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+html.is-tauri .theme-chrome-drawer {
+  right: var(--desktop-window-edge-offset);
+  border-left-color: rgba(255, 255, 255, 0.08);
+  border-top-left-radius: calc(var(--desktop-window-radius) - 0.2rem);
+  border-bottom-left-radius: calc(var(--desktop-window-radius) - 0.2rem);
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 13, 21, 0.9),
+    rgba(6, 10, 15, 0.86)
+  );
+  box-shadow: -16px 0 34px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(16px);
 }
 
 html.desktop-compact-mode .electron-header-main {
@@ -2347,6 +2591,68 @@ html.is-electron .electron-window-control-close:hover {
   border-color: #dc5c64;
   color: #ffffff;
   opacity: 1;
+}
+
+html.theme-light.is-tauri .tauri-titlebar-shell {
+  background:
+    linear-gradient(
+      140deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(241, 244, 249, 0.88)
+    ),
+    rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 20, 25, 0.08);
+}
+
+html.theme-light.is-tauri .tauri-tabbar {
+  border-color: rgba(15, 20, 25, 0.08);
+  background: rgba(15, 20, 25, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+html.theme-light.is-tauri .tauri-header-main,
+html.theme-light.is-tauri .desktop-shell {
+  border-color: rgba(15, 20, 25, 0.08);
+}
+
+html.theme-light.is-tauri .desktop-shell {
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(212, 147, 61, 0.12),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(237, 241, 246, 0.9));
+}
+
+html.theme-light.is-tauri .desktop-surface {
+  border-color: rgba(15, 20, 25, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(245, 247, 250, 0.7)
+  );
+}
+
+html.theme-light.is-tauri .theme-chrome-drawer {
+  border-left-color: rgba(15, 20, 25, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94),
+    rgba(242, 245, 249, 0.92)
+  );
+  box-shadow: -14px 0 28px rgba(15, 20, 25, 0.08);
+}
+
+html.theme-light.is-tauri .tauri-window-control {
+  border-color: rgba(15, 20, 25, 0.12);
+  background: rgba(15, 20, 25, 0.06);
+  color: rgba(15, 20, 25, 0.84);
+}
+
+html.theme-light.is-tauri .tauri-window-control:hover {
+  background: rgba(15, 20, 25, 0.12);
+  color: rgba(15, 20, 25, 0.96);
 }
 
 html.is-electron .electron-window-control-close:active {

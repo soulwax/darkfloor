@@ -52,6 +52,8 @@ export default function Header() {
     typeof window !== "undefined" &&
     window.electron?.isElectron === true &&
     window.electron?.platform === "linux";
+  const isTauriDesktop =
+    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
   const lastHealthErrorLogRef = useRef(0);
   const headerSearchInputRef = useRef<HTMLInputElement>(null);
   const desktopHeaderRef = useRef<HTMLElement>(null);
@@ -314,17 +316,26 @@ export default function Header() {
   return (
     <header
       ref={desktopHeaderRef}
-      className="electron-app-header fixed right-0 z-30 hidden px-2 pb-1 md:block"
+      className={`electron-app-header fixed right-0 z-30 hidden px-2 pb-1 md:block ${
+        isTauriDesktop ? "tauri-app-header" : ""
+      }`}
       style={{
-        top: isLinuxElectron ? "36px" : "0",
+        top: isLinuxElectron
+          ? "36px"
+          : isTauriDesktop
+            ? "var(--desktop-top-chrome-offset, 0px)"
+            : "0",
         paddingTop: "0.5rem",
-        left: "var(--electron-sidebar-width, 0px)",
-        right: "var(--desktop-right-rail-width, 0px)",
+        left: "calc(var(--electron-sidebar-width, 0px) + var(--desktop-window-edge-offset, 0px))",
+        right:
+          "calc(var(--desktop-right-rail-width, 0px) + var(--desktop-window-edge-offset, 0px))",
       }}
       suppressHydrationWarning
     >
       <div
-        className="theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[1.15rem] border py-2"
+        className={`theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[1.15rem] border py-2 ${
+          isTauriDesktop ? "tauri-header-main" : ""
+        }`}
       >
         <div className="electron-no-drag relative flex min-w-0 flex-1 items-center">
           <div className="relative min-w-0 flex-1">
@@ -384,23 +395,27 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="electron-no-drag flex shrink-0 flex-nowrap items-center justify-end gap-2 pl-2 pr-2 whitespace-nowrap sm:pr-3">
-          <Link
-            href="/"
-            className={primaryActionClass}
-            aria-current={isHomeActive ? "page" : undefined}
-          >
-            <Home className="h-3.5 w-3.5" />
-            <span className="hidden xl:inline">{tc("home")}</span>
-          </Link>
-          <Link
-            href="/library"
-            className={primaryActionClass}
-            aria-current={isLibraryActive ? "page" : undefined}
-          >
-            <Library className="h-3.5 w-3.5" />
-            <span className="hidden xl:inline">{tc("library")}</span>
-          </Link>
+        <div className="electron-no-drag flex shrink-0 flex-nowrap items-center justify-end gap-2 pr-2 pl-2 whitespace-nowrap sm:pr-3">
+          {!isTauriDesktop ? (
+            <>
+              <Link
+                href="/"
+                className={primaryActionClass}
+                aria-current={isHomeActive ? "page" : undefined}
+              >
+                <Home className="h-3.5 w-3.5" />
+                <span className="hidden xl:inline">{tc("home")}</span>
+              </Link>
+              <Link
+                href="/library"
+                className={primaryActionClass}
+                aria-current={isLibraryActive ? "page" : undefined}
+              >
+                <Library className="h-3.5 w-3.5" />
+                <span className="hidden xl:inline">{tc("library")}</span>
+              </Link>
+            </>
+          ) : null}
           <DropdownMenu open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
