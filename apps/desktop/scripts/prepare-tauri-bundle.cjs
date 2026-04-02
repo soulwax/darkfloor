@@ -55,6 +55,25 @@ function copyDir(src, dest) {
   return true;
 }
 
+function removeDirWithRetries(targetDir, attempts = 8) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (attempt === attempts) {
+        throw error;
+      }
+
+      const waitUntil = Date.now() + attempt * 250;
+      while (Date.now() < waitUntil) {
+        // Busy wait is acceptable here because this is a short-lived build script
+        // and Windows occasionally needs a moment to release packaged binaries.
+      }
+    }
+  }
+}
+
 function materializeLinkedEntries(sourceDir, destDir) {
   const queue = [[sourceDir, destDir]];
 
@@ -87,6 +106,66 @@ function materializeLinkedEntries(sourceDir, destDir) {
       if (sourceStats.isDirectory()) {
         queue.push([sourcePath, destPath]);
       }
+    }
+  }
+}
+
+function hoistStandaloneNodeModules(standaloneDir) {
+  const topLevelNodeModules = path.join(standaloneDir, "node_modules");
+  const pnpmStoreDir = path.join(topLevelNodeModules, ".pnpm");
+  if (!fs.existsSync(pnpmStoreDir)) {
+    return;
+  }
+
+  /**
+   * @param {string} sourcePath
+   * @param {string} destPath
+   */
+  function ensurePackageVisible(sourcePath, destPath) {
+    if (fs.existsSync(destPath)) {
+      return;
+    }
+
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.cpSync(sourcePath, destPath, {
+      recursive: true,
+      force: true,
+      dereference: true,
+    });
+  }
+
+  for (const storeEntry of fs.readdirSync(pnpmStoreDir, { withFileTypes: true })) {
+    if (!storeEntry.isDirectory()) {
+      continue;
+    }
+
+    const packageNodeModules = path.join(
+      pnpmStoreDir,
+      storeEntry.name,
+      "node_modules",
+    );
+    if (!fs.existsSync(packageNodeModules)) {
+      continue;
+    }
+
+    for (const packageEntry of fs.readdirSync(packageNodeModules, { withFileTypes: true })) {
+      const packageSourcePath = path.join(packageNodeModules, packageEntry.name);
+
+      if (packageEntry.name.startsWith("@")) {
+        for (const scopedEntry of fs.readdirSync(packageSourcePath, { withFileTypes: true })) {
+          const scopedSourcePath = path.join(packageSourcePath, scopedEntry.name);
+          const scopedDestPath = path.join(
+            topLevelNodeModules,
+            packageEntry.name,
+            scopedEntry.name,
+          );
+          ensurePackageVisible(scopedSourcePath, scopedDestPath);
+        }
+        continue;
+      }
+
+      const packageDestPath = path.join(topLevelNodeModules, packageEntry.name);
+      ensurePackageVisible(packageSourcePath, packageDestPath);
     }
   }
 }
@@ -160,11 +239,12 @@ if (!resolveBundledNode(nodeSource)) {
 }
 
 console.log("[tauri:prepare] Staging Tauri bundle resources...");
-fs.rmSync(bundleRoot, { recursive: true, force: true });
+removeDirWithRetries(bundleRoot);
 fs.mkdirSync(bundleRoot, { recursive: true });
 
 copyDir(standaloneSource, standaloneDest);
 materializeLinkedEntries(standaloneSource, standaloneDest);
+hoistStandaloneNodeModules(standaloneDest);
 copyDir(nodeSource, nodeDest);
 copyDir(runtimeSource, runtimeDest);
 runNodeScript(

@@ -407,7 +407,7 @@ const bundledRuntimeEnvPath = path.join(
 const privateKeyPassphrase =
   process.env.STARCHILD_ENV_PRIVATE_KEY_PASSPHRASE || undefined;
 
-const explicitSearchRoots = compactPaths([exeDir, appConfigDir, currentDir]);
+const explicitSearchRoots = compactPaths([exeDir, appConfigDir]);
 const explicitPlaintextEnv = resolveExplicitPath(
   process.env.STARCHILD_ENV_FILE,
   explicitSearchRoots,
@@ -426,8 +426,6 @@ const plaintextEnvPaths = compactPaths([
   exeDir ? path.join(exeDir, ".env") : undefined,
   appConfigDir ? path.join(appConfigDir, ".env.local") : undefined,
   appConfigDir ? path.join(appConfigDir, ".env") : undefined,
-  currentDir ? path.join(currentDir, ".env.local") : undefined,
-  currentDir ? path.join(currentDir, ".env") : undefined,
   path.join(resourceStandaloneDir, ".env.local"),
   path.join(resourceStandaloneDir, ".env"),
 ]);
@@ -437,8 +435,6 @@ const encryptedEnvPaths = compactPaths([
   exeDir ? path.join(exeDir, ".env.enc") : undefined,
   appConfigDir ? path.join(appConfigDir, ".env.local.enc") : undefined,
   appConfigDir ? path.join(appConfigDir, ".env.enc") : undefined,
-  currentDir ? path.join(currentDir, ".env.local.enc") : undefined,
-  currentDir ? path.join(currentDir, ".env.enc") : undefined,
   path.join(resourceStandaloneDir, ".env.local.enc"),
   path.join(resourceStandaloneDir, ".env.enc"),
 ]);
@@ -451,9 +447,6 @@ const privateKeyPaths = compactPaths([
   appConfigDir ? path.join(appConfigDir, ".env.private.key") : undefined,
   appConfigDir ? path.join(appConfigDir, "ca.key") : undefined,
   appConfigDir ? path.join(appConfigDir, "starchild-env-private.key") : undefined,
-  currentDir ? path.join(currentDir, ".env.private.key") : undefined,
-  currentDir ? path.join(currentDir, "ca.key") : undefined,
-  currentDir ? path.join(currentDir, "starchild-env-private.key") : undefined,
   path.join(resourceStandaloneDir, "certs", "ca.key"),
   path.join(resourceStandaloneDir, "certs", "starchild-env-private.key"),
   path.join(resourceStandaloneDir, ".env.private.key"),
