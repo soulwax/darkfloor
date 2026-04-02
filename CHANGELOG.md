@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.2] - 2026-04-02
+
+### Added
+
+- **Experimental Tauri Windows bundles can now self-sign for free during `pnpm tauri:all`**: The Tauri Windows config now uses a custom `signCommand` that issues a local code-signing leaf certificate from `certs/ca.pem` and `certs/ca.key`, trusts it for the current user, and signs the generated executable and installer artifacts without changing the Electron packaging flow.
+
+### Changed
+
+- **Packaged Tauri env loading is now CA-backed and self-contained**: The Tauri runtime env bundle now encrypts `.env.local` with the configured CA pair, ships only `certs/ca.pem` plus an obfuscated runtime key bundle, and prefers that encrypted payload at startup before any sidecar env files.
+
 ## [1.15.1] - 2026-04-01
 
 ### Fixed

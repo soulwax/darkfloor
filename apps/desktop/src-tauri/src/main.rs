@@ -41,11 +41,11 @@ fn main() {
 
       if cfg!(debug_assertions) {
         let window_url = "http://127.0.0.1:3222".parse()?;
-        return build_main_window(&handle, window_url);
+        return Ok(build_main_window(&handle, window_url)?);
       }
 
       match start_packaged_server(&handle) {
-        Ok(window_url) => build_main_window(&handle, window_url),
+        Ok(window_url) => Ok(build_main_window(&handle, window_url)?),
         Err(error) => {
           log_startup(
             &handle,

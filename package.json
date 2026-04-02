@@ -1,7 +1,7 @@
 {
   "name": "darkfloor-player",
   "desktopName": "Starchild.desktop",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
@@ -143,6 +143,7 @@
     "tauri:bundle:no-prepare": "pnpm --dir apps/desktop run tauri:bundle:no-prepare",
     "tauri:bundle:no-prepare:nsis": "pnpm --dir apps/desktop run tauri:bundle:no-prepare:nsis",
     "tauri:bundle:no-prepare:msi": "pnpm --dir apps/desktop run tauri:bundle:no-prepare:msi",
+    "tauri:sign:win:self": "pnpm --dir apps/desktop run tauri:sign:win:self",
     "tauri:release": "pnpm --dir apps/desktop run tauri:release",
     "tauri:release:nsis": "pnpm --dir apps/desktop run tauri:release:nsis",
     "tauri:release:no-build": "pnpm --dir apps/desktop run tauri:release:no-build",

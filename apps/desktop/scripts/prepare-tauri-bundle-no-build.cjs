@@ -55,6 +55,42 @@ function copyDir(src, dest) {
   return true;
 }
 
+function materializeLinkedEntries(sourceDir, destDir) {
+  const queue = [[sourceDir, destDir]];
+
+  while (queue.length > 0) {
+    const [currentSource, currentDest] = queue.shift();
+    if (!fs.existsSync(currentSource) || !fs.existsSync(currentDest)) {
+      continue;
+    }
+
+    for (const entry of fs.readdirSync(currentSource, { withFileTypes: true })) {
+      const sourcePath = path.join(currentSource, entry.name);
+      const destPath = path.join(currentDest, entry.name);
+      const sourceStats = fs.lstatSync(sourcePath);
+
+      if (sourceStats.isSymbolicLink()) {
+        const realSourcePath = fs.realpathSync(sourcePath);
+        fs.rmSync(destPath, { recursive: true, force: true });
+        fs.cpSync(realSourcePath, destPath, {
+          recursive: true,
+          force: true,
+          dereference: true,
+        });
+
+        if (fs.statSync(realSourcePath).isDirectory()) {
+          queue.push([realSourcePath, destPath]);
+        }
+        continue;
+      }
+
+      if (sourceStats.isDirectory()) {
+        queue.push([sourcePath, destPath]);
+      }
+    }
+  }
+}
+
 /**
  * @returns {void}
  */
@@ -125,6 +161,7 @@ fs.rmSync(bundleRoot, { recursive: true, force: true });
 fs.mkdirSync(bundleRoot, { recursive: true });
 
 copyDir(standaloneSource, standaloneDest);
+materializeLinkedEntries(standaloneSource, standaloneDest);
 copyDir(nodeSource, nodeDest);
 copyDir(runtimeSource, runtimeDest);
 runNodeScript(

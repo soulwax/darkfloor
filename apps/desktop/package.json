@@ -21,6 +21,7 @@
     "tauri:bundle:no-prepare": "pnpm run tauri:build:no-prepare",
     "tauri:bundle:no-prepare:nsis": "node ./scripts/run-tauri-build-no-prepare.cjs --bundles nsis",
     "tauri:bundle:no-prepare:msi": "node ./scripts/run-tauri-build-no-prepare.cjs --bundles msi",
+    "tauri:sign:win:self": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/sign-tauri-windows.ps1 -AutoDiscover",
     "tauri:release": "pnpm run tauri:stage && pnpm run tauri:bundle",
     "tauri:release:nsis": "pnpm run tauri:stage && pnpm run tauri:bundle:nsis",
     "tauri:release:no-build": "pnpm run tauri:stage:no-build && pnpm run tauri:bundle:no-prepare",

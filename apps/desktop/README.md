@@ -23,8 +23,15 @@ The Tauri setup is intentionally parallel and opt-in:
 Notes:
 
 - The Tauri build reuses the existing Next standalone output and bundled Node
-  runtime, but stages them into `apps/desktop/.tauri-bundle/` instead of
-  touching Electron packaging assets.
-- Packaged Tauri builds load env values from `STARCHILD_ENV_FILE`, then from
-  `.env` / `.env.local` next to the executable or current working directory.
+  runtime, but stages them into `apps/desktop/src-tauri/b/` instead of touching
+  Electron packaging assets.
+- Packaged Tauri builds prefer the bundled encrypted runtime env payload staged
+  from `.env.local`. External overrides still work via `STARCHILD_ENV_FILE` or
+  `STARCHILD_ENC_ENV_FILE`.
+- On Windows, `pnpm tauri:all` now uses Tauri's `signCommand` hook to
+  self-sign the Tauri executables with a local code-signing leaf certificate
+  issued from `certs/ca.pem` and `certs/ca.key`.
+- This Windows signing path is free and useful for local or internal
+  distribution, but it is not publicly trusted like a commercial code-signing
+  certificate. Other machines would need to trust the local CA manually.
 - Rust is required for Tauri builds. This repo does not auto-install Rust.
