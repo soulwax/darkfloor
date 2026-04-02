@@ -5,11 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.3] - 2026-04-02
+
+### Changed
+
+- **Experimental Tauri builds now have their own rounded desktop chrome**: The Tauri shell now boots with a transparent undecorated window, a custom tab-style top bar, native minimize/maximize/close controls, and a more coherent rounded frame around the desktop content and player without changing the existing Electron Windows/Linux build flow.
+
 ## [1.15.2] - 2026-04-02
 
 ### Added
 
-- **Experimental Tauri Windows bundles can now self-sign for free during `pnpm tauri:all`**: The Tauri Windows release lane now builds the NSIS bundle unsigned, then issues a local code-signing leaf certificate from `certs/ca.pem` and `certs/ca.key`, trusts it for the current user, and signs the generated executable and installer artifacts without changing the Electron packaging flow or requiring `signtool.exe`.
+- **Experimental Tauri Windows bundles can now self-sign for free during `pnpm tauri:all`**: The Tauri Windows release lane now builds the NSIS bundle unsigned, suppresses Tauri's internal `signCommand` hook for that unsigned pass so the NSIS bundler does not fall back to `signtool.exe`, then issues a local code-signing leaf certificate from `certs/ca.pem` and `certs/ca.key`, trusts it for the current user, and signs the generated executable and installer artifacts without changing the Electron packaging flow.
 
 ### Changed
 
