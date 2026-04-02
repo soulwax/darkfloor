@@ -122,7 +122,11 @@ warn()    { echo -e "${YELLOW}WARNING: $*${NC}"; }
 error()   { echo -e "${RED}ERROR: $*${NC}" >&2; }
 
 usage() {
-    sed -n '/^# WHAT THIS DOES/,/^# ===*/p' "$0" | sed 's/^# \{0,1\}//'
+    # Print the full header comment block (all lines starting with # after the shebang),
+    # stripping the leading '# ' so it reads like plain prose.
+    awk 'NR == 1 { next }
+         /^[^#]/ { exit }
+         { sub(/^# ?/, ""); print }' "$0"
 }
 
 check_openssl() {
@@ -173,7 +177,7 @@ resolve_default_dir() {
 check_overwrite() {
     local file="$1"
     if [[ -f "$file" ]] && [[ "$FORCE" == false ]]; then
-        read -rp "File '$file' already exists. Overwrite? [y/N]: " ow
+        read -rp "File '$file' already exists. Overwrite? [y/N]: " ow || true
         [[ ! "$ow" =~ ^[Yy]$ ]] && { error "Aborted — '$file' not overwritten."; exit 1; }
     fi
 }
@@ -182,7 +186,7 @@ install_trust_store() {
     local cert_path="$1"
     local cert_name="$2"
     echo
-    read -rp "Install '${cert_name}.pem' into the system trust store? [y/N]: " answer
+    read -rp "Install '${cert_name}.pem' into the system trust store? [y/N]: " answer || true
     [[ ! "$answer" =~ ^[Yy]$ ]] && return 0
 
     local os
@@ -233,7 +237,7 @@ while [[ $# -gt 0 ]]; do
         -s|--ca-subject)   CA_SUBJECT="$2";       shift 2 ;;
         -l|--lifespan)     CA_LIFESPAN_DAYS="$2"; shift 2 ;;
         -k|--key-size)     KEY_SIZE="$2";         shift 2 ;;
-           --algo)         ALGO="${2,,}";          shift 2 ;;
+           --algo)         ALGO="$(tr '[:upper:]' '[:lower:]' <<< "$2")"; shift 2 ;;
            --curve)        CURVE="$2";            shift 2 ;;
            --pathlen)      PATHLEN="$2";          shift 2 ;;
            --no-password)  NO_PASSWORD=true;      shift ;;
@@ -291,7 +295,7 @@ main() {
             info "Using subject: $CA_SUBJECT"
         else
             local default_subject="C=US, ST=State, L=City, O=My Organization, OU=MyOrg CA, CN=MyOrg Root CA"
-            read -rp "Enter CA Subject (e.g., $default_subject): " CA_SUBJECT
+            read -rp "Enter CA Subject (e.g., $default_subject): " CA_SUBJECT || true
             if [[ -z "$CA_SUBJECT" ]]; then
                 CA_SUBJECT="$default_subject"
                 warn "Using default CA Subject: $CA_SUBJECT"
@@ -303,7 +307,7 @@ main() {
     local CA_PASSWORD=""
     if [[ "$NO_PASSWORD" == false ]]; then
         echo -n "Enter a password for the CA private key (blank = no password, NOT RECOMMENDED for production): "
-        read -rs CA_PASSWORD
+        read -rs CA_PASSWORD || true
         echo
     fi
 

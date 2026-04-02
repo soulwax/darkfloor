@@ -113,7 +113,8 @@ param(
     [string]$Curve         = 'prime256v1',
     [int]$PathLen          = 0,
     [switch]$NoPassword,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$Help
 )
 
 Set-StrictMode -Version Latest
@@ -137,6 +138,9 @@ $gnuMap = @{
 }
 foreach ($paramName in @('Path','CADirectory','Name','CN','Org','Country','CASubject','Algo','Curve')) {
     $current = (Get-Variable -Name $paramName -ErrorAction SilentlyContinue).Value
+    if ([string]::IsNullOrWhiteSpace($current)) { continue }
+
+    # --flag=value
     if ($current -match '^--([a-z-]+)=(.+)$') {
         $flagKey = $Matches[1]; $flagVal = $Matches[2]
         if ($gnuMap.ContainsKey($flagKey)) {
@@ -144,19 +148,26 @@ foreach ($paramName in @('Path','CADirectory','Name','CN','Org','Country','CASub
             if ($paramName -ne $gnuMap[$flagKey]) { Set-Variable -Name $paramName -Value '' }
         }
     }
-    # Boolean switches passed as --no-password or --force (no value)
-    if ($current -match '^--(no-password|force)$') {
+    # --no-password | --force | --help  (bare boolean flags, no =value)
+    if ($current -match '^--(no-password|force|help)$') {
         switch ($Matches[1]) {
             'no-password' { $NoPassword = $true }
             'force'       { $Force      = $true }
+            'help'        { $Help       = $true }
         }
         Set-Variable -Name $paramName -Value ''
     }
-    # --pathlen=N landed in a string param
+    # --pathlen=N
     if ($current -match '^--pathlen=(-?\d+)$') {
         $PathLen = [int]$Matches[1]
         Set-Variable -Name $paramName -Value ''
     }
+}
+
+# Show help and exit — must happen after GNU parsing so --help is resolved
+if ($Help) {
+    Get-Help $MyInvocation.MyCommand.Path -Detailed
+    exit 0
 }
 
 # ---------------------------------------------------------------------------
