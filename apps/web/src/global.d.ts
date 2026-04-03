@@ -31,6 +31,7 @@ interface StarchildTauriAPI {
   minimize: () => Promise<void>;
   toggleMaximize: () => Promise<TauriWindowState>;
   close: () => Promise<void>;
+  startDragging: () => Promise<void>;
   syncWindowState: () => Promise<TauriWindowState>;
 }
 

@@ -177,6 +177,18 @@ export default function Header() {
       return;
     }
 
+    if (isTauriDesktop) {
+      document.documentElement.style.setProperty(
+        "--electron-header-height",
+        "0px",
+      );
+      return () => {
+        document.documentElement.style.removeProperty(
+          "--electron-header-height",
+        );
+      };
+    }
+
     const updateHeaderHeight = () => {
       const headerHeight = Math.max(
         0,
@@ -207,7 +219,7 @@ export default function Header() {
       resizeObserver?.disconnect();
       document.documentElement.style.removeProperty("--electron-header-height");
     };
-  }, [isMobile]);
+  }, [isMobile, isTauriDesktop]);
 
   const headerSearchQuery = searchParams.get("q") ?? "";
   const isHomeActive = pathname === "/";
@@ -305,7 +317,7 @@ export default function Header() {
   const isElectronRuntime =
     typeof window !== "undefined" && Boolean(window.electron?.isElectron);
 
-  if (isMobile && isElectronRuntime) {
+  if (isTauriDesktop || (isMobile && isElectronRuntime)) {
     return null;
   }
 

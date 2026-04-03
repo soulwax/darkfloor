@@ -14,7 +14,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 #[cfg(windows)]
@@ -27,21 +27,19 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
 (() => {
   const internals = window.__TAURI_INTERNALS__;
   const invoke = internals?.invoke;
-  const label = internals?.metadata?.currentWindow?.label;
 
-  if (!invoke || !label) {
+  if (!invoke) {
     return;
   }
 
   const syncWindowState = async () => {
     try {
-      const isMaximized = await invoke("plugin:window|is_maximized", { label });
-      const detail = { isMaximized: Boolean(isMaximized) };
+      const detail = await invoke("tauri_window_state");
 
       document.documentElement.classList.add("is-tauri");
       document.documentElement.classList.toggle(
         "is-tauri-maximized",
-        detail.isMaximized,
+        Boolean(detail?.isMaximized),
       );
       window.dispatchEvent(
         new CustomEvent("starchild:tauri-window-state", { detail }),
@@ -62,17 +60,15 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
     }
   };
 
-  const invokeWindow = (command) =>
-    invoke(`plugin:window|${command}`, { label });
-
   Object.defineProperty(window, "starchildTauri", {
     configurable: true,
     value: {
       isTauri: true,
-      minimize: () => invokeWindow("minimize"),
-      close: () => invokeWindow("close"),
+      minimize: () => invoke("tauri_window_minimize"),
+      close: () => invoke("tauri_window_close"),
+      startDragging: () => invoke("tauri_window_start_dragging"),
       toggleMaximize: async () => {
-        await invokeWindow("toggle_maximize");
+        await invoke("tauri_window_toggle_maximize");
         return syncWindowState();
       },
       syncWindowState,
@@ -102,9 +98,52 @@ struct RuntimeEnvResolution {
     values: std::collections::BTreeMap<String, String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriWindowState {
+    is_maximized: bool,
+}
+
+#[tauri::command]
+fn tauri_window_minimize(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.minimize().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn tauri_window_toggle_maximize(window: tauri::WebviewWindow) -> Result<(), String> {
+    if window.is_maximized().map_err(|error| error.to_string())? {
+        window.unmaximize().map_err(|error| error.to_string())
+    } else {
+        window.maximize().map_err(|error| error.to_string())
+    }
+}
+
+#[tauri::command]
+fn tauri_window_close(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.close().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn tauri_window_start_dragging(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.start_dragging().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn tauri_window_state(window: tauri::WebviewWindow) -> Result<TauriWindowState, String> {
+    let is_maximized = window.is_maximized().map_err(|error| error.to_string())?;
+    Ok(TauriWindowState { is_maximized })
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .manage(ServerState::default())
+        .invoke_handler(tauri::generate_handler![
+            tauri_window_minimize,
+            tauri_window_toggle_maximize,
+            tauri_window_close,
+            tauri_window_start_dragging,
+            tauri_window_state
+        ])
         .setup(|app| {
             let handle = app.handle();
 

@@ -100,7 +100,7 @@
   --desktop-window-edge-offset: 0px;
   --desktop-window-frame-gap: 0px;
   --desktop-window-radius: 1.45rem;
-  --tauri-titlebar-height: 3.85rem;
+  --tauri-titlebar-height: 3rem;
   --tauri-frame-border: rgba(244, 178, 102, 0.14);
   --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
   --tauri-frame-sheen: linear-gradient(
@@ -251,9 +251,10 @@ body {
 }
 
 html.is-tauri {
+  --electron-header-height: 0px;
   --desktop-window-edge-offset: var(--desktop-window-frame-gap);
-  --desktop-window-frame-gap: 14px;
-  --desktop-window-radius: 1.6rem;
+  --desktop-window-frame-gap: 8px;
+  --desktop-window-radius: 12px;
   --desktop-top-chrome-offset: calc(
     var(--tauri-titlebar-height) + var(--desktop-window-frame-gap)
   );
@@ -2163,19 +2164,24 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   min-height: var(--tauri-titlebar-height);
   border-color: var(--tauri-frame-border);
   background:
-    var(--tauri-frame-sheen),
-    linear-gradient(135deg, rgba(10, 16, 24, 0.86), rgba(20, 28, 39, 0.72));
-  box-shadow: var(--tauri-frame-shadow);
-  backdrop-filter: blur(24px);
+    linear-gradient(180deg, rgba(12, 18, 27, 0.9), rgba(11, 17, 25, 0.78)),
+    var(--tauri-frame-sheen);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px);
 }
 
-.tauri-drag-region {
+.tauri-titlebar-inner {
   user-select: none;
+  min-height: calc(var(--tauri-titlebar-height) - 1rem);
+}
+
+.tauri-titlebar-search {
+  min-width: 0;
 }
 
 .tauri-tabbar {
   border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.035);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -2201,11 +2207,27 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 
 .tauri-tab.is-active {
   border-color: rgba(244, 178, 102, 0.16);
-  background: rgba(244, 178, 102, 0.1);
+  background: rgba(244, 178, 102, 0.12);
 }
 
 .tauri-tab.is-active::after {
   opacity: 1;
+}
+
+.tauri-search-shell {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(6, 11, 18, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tauri-search-submit {
+  color: var(--color-text);
+  background: rgba(244, 178, 102, 0.12);
+  border: 1px solid rgba(244, 178, 102, 0.18);
+}
+
+.tauri-search-submit:hover {
+  background: rgba(244, 178, 102, 0.18);
 }
 
 .tauri-window-controls {
@@ -2221,14 +2243,14 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .tauri-window-control {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   color: rgba(245, 246, 250, 0.86);
   transition:
     transform 100ms ease,
@@ -2260,19 +2282,19 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 html.is-tauri .desktop-shell {
   position: relative;
   padding: var(--desktop-top-chrome-offset) var(--desktop-window-frame-gap)
-    calc(var(--desktop-window-frame-gap) + 5.9rem)
+    calc(var(--desktop-window-frame-gap) + 5.55rem)
     var(--desktop-window-frame-gap);
   border-radius: var(--desktop-window-radius);
   background:
     radial-gradient(
       circle at top left,
-      rgba(244, 178, 102, 0.12),
-      transparent 32%
+      rgba(244, 178, 102, 0.09),
+      transparent 28%
     ),
-    linear-gradient(180deg, rgba(4, 8, 14, 0.92), rgba(8, 11, 18, 0.86));
+    linear-gradient(180deg, rgba(6, 10, 16, 0.94), rgba(8, 12, 19, 0.88));
   border: 1px solid var(--tauri-frame-border);
-  box-shadow: var(--tauri-frame-shadow);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
 }
 
 html.is-tauri .desktop-shell::before {
@@ -2280,7 +2302,7 @@ html.is-tauri .desktop-shell::before {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   pointer-events: none;
 }
 
@@ -2306,12 +2328,12 @@ html.is-tauri .desktop-surface {
   border-color: rgba(255, 255, 255, 0.07);
   background: linear-gradient(
     180deg,
-    rgba(12, 17, 26, 0.76),
-    rgba(8, 12, 19, 0.68)
+    rgba(11, 16, 24, 0.78),
+    rgba(8, 12, 19, 0.7)
   );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 14px 28px rgba(2, 6, 10, 0.18);
+    0 10px 22px rgba(2, 6, 10, 0.14);
 }
 
 html.is-tauri .electron-sidebar {
@@ -2596,9 +2618,9 @@ html.is-electron .electron-window-control-close:hover {
 html.theme-light.is-tauri .tauri-titlebar-shell {
   background:
     linear-gradient(
-      140deg,
-      rgba(255, 255, 255, 0.92),
-      rgba(241, 244, 249, 0.88)
+      180deg,
+      rgba(255, 255, 255, 0.94),
+      rgba(242, 245, 249, 0.9)
     ),
     rgba(255, 255, 255, 0.9);
   border-color: rgba(15, 20, 25, 0.08);
@@ -2653,6 +2675,16 @@ html.theme-light.is-tauri .tauri-window-control {
 html.theme-light.is-tauri .tauri-window-control:hover {
   background: rgba(15, 20, 25, 0.12);
   color: rgba(15, 20, 25, 0.96);
+}
+
+html.theme-light.is-tauri .tauri-search-shell {
+  border-color: rgba(15, 20, 25, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+html.theme-light.is-tauri .tauri-search-submit {
+  background: rgba(212, 147, 61, 0.12);
+  border-color: rgba(212, 147, 61, 0.16);
 }
 
 html.is-electron .electron-window-control-close:active {
