@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.4] - 2026-04-03
+
+### Changed
+
+- **Experimental Tauri chrome now behaves more like a real desktop window**: The Tauri shell now uses a slimmer Windows 11-style rounded frame, a draggable custom titlebar with integrated search, working minimize/maximize/close actions, and double-click maximize/restore behavior without changing the Electron build flow.
+
+### Removed
+
+- **Cookie consent is now hidden for desktop shells**: Electron and Tauri builds no longer show the website-only cookie banner inside the packaged app.
+
 ## [1.15.3] - 2026-04-02
 
 ### Changed
