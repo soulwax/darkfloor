@@ -58,8 +58,11 @@ const DESKTOP_QUEUE_WIDTH = "min(100vw, 28rem)";
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
+  const isElectronRuntime =
+    typeof window !== "undefined" && window.electron?.isElectron === true;
   const isTauriDesktop =
     typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
+  const shouldDockQueueBelowDesktopHeader = isElectronRuntime || isTauriDesktop;
   const tq = useTranslations("queue");
   const tt = useTranslations("trackMenu");
 
@@ -348,7 +351,7 @@ export default function PersistentPlayer() {
               onAddSmartTracks={player.addSmartTracks}
               onRefreshSmartTracks={player.refreshSmartTracks}
               onClearSmartTracks={player.clearSmartTracks}
-              dockBelowDesktopHeader={true}
+              dockBelowDesktopHeader={shouldDockQueueBelowDesktopHeader}
             />
           )}
         </>
