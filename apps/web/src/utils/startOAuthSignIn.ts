@@ -15,7 +15,7 @@ function createHiddenInput(name: string, value: string): HTMLInputElement {
   return input;
 }
 
-async function fetchCsrfToken(): Promise<string> {
+export async function prefetchOAuthCsrfToken(): Promise<string> {
   const response = await fetch("/api/auth/csrf", {
     method: "GET",
     credentials: "same-origin",
@@ -42,6 +42,7 @@ async function fetchCsrfToken(): Promise<string> {
 export async function startOAuthSignIn(
   providerId: string,
   callbackUrl: string,
+  prefetchedCsrfToken?: string | null,
 ): Promise<void> {
   const redirectUrl = buildAuthCallbackUrl(callbackUrl, providerId);
 
@@ -51,7 +52,11 @@ export async function startOAuthSignIn(
     redirectUrl,
   });
 
-  const csrfToken = await fetchCsrfToken();
+  const trimmedPrefetchedCsrfToken = prefetchedCsrfToken?.trim();
+  const csrfToken =
+    trimmedPrefetchedCsrfToken && trimmedPrefetchedCsrfToken.length > 0
+      ? trimmedPrefetchedCsrfToken
+      : await prefetchOAuthCsrfToken();
   const form = document.createElement("form");
   form.method = "POST";
   form.action = `/api/auth/signin/${providerId}`;

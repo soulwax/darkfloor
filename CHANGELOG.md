@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.7] - 2026-04-05
+
+### Fixed
+
+- **Mobile browser OAuth sign-in is more reliable**: The web auth UI now prefetches the Auth.js CSRF token before the user taps a provider button, so mobile browsers no longer have to complete the CSRF cookie fetch and the provider form post in the same gesture.
+
 ## [1.15.6] - 2026-04-05
 
 ### Changed

@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/dialog";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
-import { startOAuthSignIn } from "@/utils/startOAuthSignIn";
+import {
+  prefetchOAuthCsrfToken,
+  startOAuthSignIn,
+} from "@/utils/startOAuthSignIn";
 import { getProviders } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
@@ -41,6 +44,9 @@ export function AuthModal({
   const ta = useTranslations("auth");
   const tc = useTranslations("common");
   const [providers, setProviders] = useState<ProvidersResponse>(null);
+  const [prefetchedCsrfToken, setPrefetchedCsrfToken] = useState<string | null>(
+    null,
+  );
   const [submittingProviderId, setSubmittingProviderId] = useState<
     string | null
   >(null);
@@ -100,6 +106,34 @@ export function AuthModal({
     };
   }, [callbackUrl, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let cancelled = false;
+
+    void prefetchOAuthCsrfToken()
+      .then((csrfToken) => {
+        if (cancelled) return;
+        setPrefetchedCsrfToken(csrfToken);
+        logAuthClientDebug("AuthModal prefetched CSRF token", {
+          callbackUrl,
+          tokenLength: csrfToken.length,
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setPrefetchedCsrfToken(null);
+        logAuthClientDebug("AuthModal failed to prefetch CSRF token", {
+          callbackUrl,
+          error,
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [callbackUrl, isOpen]);
+
   const oauthProviders = useMemo(() => {
     return getEnabledOAuthUiProviders(providers);
   }, [providers]);
@@ -138,10 +172,11 @@ export function AuthModal({
     });
 
     try {
-      await startOAuthSignIn(providerId, callbackUrl);
+      await startOAuthSignIn(providerId, callbackUrl, prefetchedCsrfToken);
       logAuthClientDebug("AuthModal signIn call resolved", { providerId });
     } catch (error: unknown) {
       logAuthClientDebug("AuthModal signIn call failed", { providerId, error });
+      setPrefetchedCsrfToken(null);
       setSubmittingProviderId(null);
       throw error;
     }

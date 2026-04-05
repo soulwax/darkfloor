@@ -9,7 +9,10 @@ import {
 } from "@/config/oauthProviders";
 import { localStorage as appStorage } from "@/services/storage";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
-import { startOAuthSignIn } from "@/utils/startOAuthSignIn";
+import {
+  prefetchOAuthCsrfToken,
+  startOAuthSignIn,
+} from "@/utils/startOAuthSignIn";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { parsePreferredGenreId } from "@/utils/genre";
@@ -28,6 +31,9 @@ function SignInContent() {
   const isBanned = error === "Banned";
   const [providers, setProviders] =
     useState<Awaited<ReturnType<typeof getProviders>>>(null);
+  const [prefetchedCsrfToken, setPrefetchedCsrfToken] = useState<string | null>(
+    null,
+  );
   const [genres, setGenres] = useState<GenreListItem[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
   const [submittingProviderId, setSubmittingProviderId] = useState<
@@ -120,6 +126,32 @@ function SignInContent() {
       clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void prefetchOAuthCsrfToken()
+      .then((csrfToken) => {
+        if (!isMounted) return;
+        setPrefetchedCsrfToken(csrfToken);
+        logAuthClientDebug("Prefetched CSRF token on sign-in page", {
+          callbackUrl,
+          tokenLength: csrfToken.length,
+        });
+      })
+      .catch((error: unknown) => {
+        if (!isMounted) return;
+        setPrefetchedCsrfToken(null);
+        logAuthClientDebug("Failed to prefetch CSRF token on sign-in page", {
+          callbackUrl,
+          error,
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [callbackUrl]);
 
   useEffect(() => {
     let isMounted = true;
@@ -319,7 +351,11 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        await startOAuthSignIn(provider.id, callbackUrl);
+                        await startOAuthSignIn(
+                          provider.id,
+                          callbackUrl,
+                          prefetchedCsrfToken,
+                        );
                       } catch (error) {
                         logAuthClientDebug(
                           "OAuth sign-in from page failed before navigation",
@@ -329,6 +365,7 @@ function SignInContent() {
                             error,
                           },
                         );
+                        setPrefetchedCsrfToken(null);
                         setSubmittingProviderId(null);
                       }
                     }}
