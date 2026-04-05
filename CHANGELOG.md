@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.8] - 2026-04-05
+
+### Fixed
+
+- **Discord and GitHub mobile OAuth now start on the configured auth host**: The shared OAuth launch helper now uses `NEXT_PUBLIC_AUTH_API_BASE` when present instead of always starting on the current renderer origin, so mobile sign-in hands off through the canonical auth host and keeps the launch route, CSRF cookie, and provider redirect on the same side of the flow.
+
 ## [1.15.7] - 2026-04-05
 
 ### Fixed
