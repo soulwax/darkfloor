@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Mobile browser OAuth sign-in is more reliable**: The web auth UI now prefetches the Auth.js CSRF token before the user taps a provider button, so mobile browsers no longer have to complete the CSRF cookie fetch and the provider form post in the same gesture.
+- **Mobile browser OAuth sign-in is more reliable**: OAuth sign-in now launches through a first-party handoff route that issues the Auth.js CSRF cookie and then auto-posts to the provider flow, avoiding the mobile timing edge between a client-side CSRF fetch and the sign-in form submission.
 
 ## [1.15.6] - 2026-04-05
 
