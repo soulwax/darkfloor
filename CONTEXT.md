@@ -1,18 +1,17 @@
 # Context (songbird-frontend / Starchild Music)
 
-Last updated: 2026-03-28
+Last updated: 2026-04-05
 
 ## What This Repo Is
 
 - Turborepo-style monorepo with a Next.js web runtime and an Electron desktop wrapper.
-- The Darkfloor API V2 backend is also present in this workspace as the Git submodule `api/`.
 - Primary product: `apps/web` (App Router + tRPC + NextAuth + Drizzle/Postgres).
 - Desktop runtime: `apps/desktop/electron` (legacy compatibility wrappers also exist under root `electron/`).
 - Mobile runtime: `apps/mobile` Expo-based React Native Web app with a persisted shell controller under `src/mobile-shell/*`.
 - API model:
   - Internal app data: tRPC at `/api/trpc`.
   - External integrations: Next.js route handlers under `apps/web/src/app/api/**` (Songbird/Bluesix V2 + Deezer).
-  - Backend source implementation for the proxied contract: `api/` NestJS service.
+  - Backend contract target: external Darkfloor API V2 service via `API_V2_URL`.
 
 ## Read First
 
@@ -21,7 +20,7 @@ Last updated: 2026-03-28
 3. `README.md`
 4. `AI_TOOLING.md`
 5. `apps/mobile/README.md` for mobile-facing work
-6. `api/AGENTS.md` and `api/CONTEXT.md` for backend-facing work
+6. External Darkfloor API V2 repo or contract docs for backend-facing work
 7. `CHANGELOG.md` for user-visible change context
 
 ## Workspace Map
@@ -51,12 +50,6 @@ Last updated: 2026-03-28
   - `api-client`, `types`, `config`, `auth`
   - `player-core`, `player-react`, `audio-adapters`
   - `ui`, `visualizers`
-- `api/` Git submodule for Darkfloor API V2
-  - `api/src/main.ts`, `api/src/app.module.ts`
-  - `api/src/modules/*` Nest feature modules
-  - `api/prisma/schema.prisma`
-  - `api/README.md`, `api/AGENTS.md`, `api/CONTEXT.md`, `api/CODEX.md`
-
 Player internals live in shared packages:
 
 - `packages/player-react/src/AudioPlayerContext.tsx`
@@ -67,7 +60,7 @@ Player internals live in shared packages:
 
 - UI -> `@starchild/api-client/trpc/react` -> `/api/trpc` -> `apps/web/src/server/api/*` -> Postgres (Drizzle).
 - UI -> `/api/*` proxy routes -> Songbird/Bluesix V2 and Deezer.
-- Proxy contract/debugging work may require tracing into `api/` because the backend implementation now lives alongside the frontend.
+- Proxy contract/debugging work may require consulting the external backend repo or contract docs.
 - Auth -> `/api/auth/*` -> NextAuth -> DB-backed sessions.
 - Electron -> loads the local web server (default `http://localhost:3222` in dev).
 
@@ -110,12 +103,10 @@ Player internals live in shared packages:
   - `@/` for app-local imports
   - `@starchild/*` for shared package imports (resolved via `apps/web/tsconfig.json` path aliases into `../../packages/*/src`)
 - In `packages/*`, do not import from `apps/web`; keep package boundaries clean.
-- In root/frontend tasks, `api/` remains a separate repository boundary but is intentionally editable when the user asks for backend-aware changes.
 - Boundary checks: `pnpm check:boundaries`.
 
 ## Notes
 
-- Upstream Swagger files (`docs/API_V2_SWAGGER.yaml` / `.json`) describe the service configured via `API_V2_URL`; that service's source now lives in the `api/` submodule.
+- Upstream Swagger files (`docs/API_V2_SWAGGER.yaml` / `.json`) describe the service configured via `API_V2_URL`.
 - Verify the live filesystem before trusting older repo maps such as `tree.txt`; optional docs and tool-specific files may differ across checkouts.
 - Vercel config (`vercel.json`) uses pnpm commands (`pnpm install --frozen-lockfile`, `pnpm run build`).
-- The pnpm workspace includes `apps/*`, `packages/*`, and `api/`, so root `pnpm install --frozen-lockfile` also installs the backend submodule when present.

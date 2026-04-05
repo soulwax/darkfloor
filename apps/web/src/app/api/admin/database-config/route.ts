@@ -9,7 +9,7 @@ import { z } from "zod";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type DatabaseTargetKey = "frontend" | "api";
+type DatabaseTargetKey = "frontend";
 
 type DatabaseSummary = {
   scheme: string | null;
@@ -32,7 +32,7 @@ type DatabaseTargetPayload = {
 };
 
 const updateDatabaseConfigSchema = z.object({
-  target: z.enum(["frontend", "api"]),
+  target: z.enum(["frontend"]),
   databaseUrl: z.string().trim().min(1, "databaseUrl is required."),
 });
 
@@ -60,13 +60,6 @@ const TARGET_CONFIG: Record<
     reloadHint:
       readOptionalEnvValue("ADMIN_DB_CONFIG_FRONTEND_RELOAD_HINT") ??
       "Restart or reload the frontend service after saving.",
-  },
-  api: {
-    label: "API",
-    relativePath: "api/.env.local",
-    reloadHint:
-      readOptionalEnvValue("ADMIN_DB_CONFIG_API_RELOAD_HINT") ??
-      "Restart or reload the API service after saving.",
   },
 };
 
@@ -221,8 +214,7 @@ async function buildTargetPayload(
   const targetConfig = TARGET_CONFIG[target];
   const absolutePath = path.join(repoRoot, targetConfig.relativePath);
   const databaseUrl = await readEnvVariable(absolutePath, "DATABASE_URL");
-  const runtimeDatabaseUrl =
-    target === "frontend" ? readOptionalEnvValue("DATABASE_URL") : null;
+  const runtimeDatabaseUrl = readOptionalEnvValue("DATABASE_URL");
 
   return {
     key: target,
@@ -254,7 +246,6 @@ export async function GET() {
       ok: true,
       fetchedAt: new Date().toISOString(),
       frontend: await buildTargetPayload(repoRoot, "frontend"),
-      api: await buildTargetPayload(repoRoot, "api"),
     },
     {
       status: 200,
@@ -309,7 +300,6 @@ export async function POST(request: Request) {
       savedAt: new Date().toISOString(),
       target,
       frontend: await buildTargetPayload(repoRoot, "frontend"),
-      api: await buildTargetPayload(repoRoot, "api"),
     },
     {
       status: 200,

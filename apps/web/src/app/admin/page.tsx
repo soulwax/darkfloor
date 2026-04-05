@@ -129,7 +129,7 @@ type SpotifyAdminTrackSummary = {
   raw: unknown;
 };
 
-type DatabaseConfigTargetKey = "frontend" | "api";
+type DatabaseConfigTargetKey = "frontend";
 
 type DatabaseConfigSummary = {
   scheme: string | null;
@@ -155,7 +155,6 @@ type DatabaseConfigResponse = {
   ok: boolean;
   fetchedAt: string;
   frontend: DatabaseConfigTarget;
-  api: DatabaseConfigTarget;
   error?: string;
 };
 
@@ -767,7 +766,6 @@ export default function AdminPage() {
     Record<DatabaseConfigTargetKey, string>
   >({
     frontend: "",
-    api: "",
   });
 
   const handleToggleAdmin = (userId: string, admin: boolean) => {
@@ -806,7 +804,6 @@ export default function AdminPage() {
       setDatabaseConfig(payload);
       setDatabaseDrafts({
         frontend: payload.frontend.databaseUrl ?? "",
-        api: payload.api.databaseUrl ?? "",
       });
     } catch (error) {
       const message =
@@ -862,7 +859,6 @@ export default function AdminPage() {
         setDatabaseConfig(payload);
         setDatabaseDrafts({
           frontend: payload.frontend.databaseUrl ?? "",
-          api: payload.api.databaseUrl ?? "",
         });
         setDatabaseConfigError(null);
         const updatedTarget = payload[target];
@@ -1119,7 +1115,7 @@ export default function AdminPage() {
     [spotifyPlaylistsData?.payload],
   );
   const databaseTargets = useMemo(
-    () => (databaseConfig ? [databaseConfig.frontend, databaseConfig.api] : []),
+    () => (databaseConfig ? [databaseConfig.frontend] : []),
     [databaseConfig],
   );
   const selectedSpotifyPlaylistTracks = useMemo(
@@ -1570,11 +1566,11 @@ export default function AdminPage() {
               Database Config
             </p>
             <p className="mt-1 text-sm text-[var(--color-subtext)]">
-              Small local editor for the frontend and API
+              Small local editor for the frontend
               <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
                 DATABASE_URL
               </code>
-              values.
+              value.
             </p>
           </div>
           <button
@@ -1596,12 +1592,7 @@ export default function AdminPage() {
           <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
             .env.local
           </code>
-          for the frontend and
-          <code className="mx-1 rounded bg-[var(--color-surface)] px-1 py-0.5 text-[11px] text-[var(--color-text)]">
-            api/.env.local
-          </code>
-          for the API. PM2 processes still need a reload to pick up the new
-          values.
+          for the frontend. PM2 still needs a reload to pick up the new value.
         </div>
 
         {databaseConfigError ? (
@@ -1611,8 +1602,8 @@ export default function AdminPage() {
         ) : null}
 
         {databaseTargets.length === 0 && isDatabaseConfigLoading ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {[1, 2].map((item) => (
+          <div className="grid gap-4">
+            {[1].map((item) => (
               <div
                 key={item}
                 className="h-64 animate-pulse rounded-2xl bg-[var(--color-surface)]/70"
@@ -1624,7 +1615,7 @@ export default function AdminPage() {
             Database config has not been loaded yet.
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             {databaseTargets.map((target) => {
               const isSaving = savingDatabaseTarget === target.key;
               const currentDraft = databaseDrafts[target.key];

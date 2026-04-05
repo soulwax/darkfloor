@@ -1,7 +1,7 @@
 # Starchild Music Frontend
 
 Starchild Music is a monorepo for a Next.js music application with shared playback libraries and an Electron desktop runtime.
-The backend API now also lives in this workspace as the Git submodule at `./api`, so frontend and API work can be reasoned about together from one checkout.
+The backend API is consumed as an external service via `API_V2_URL`; it is not vendored in this repository.
 This README is intentionally concise; use `AGENTS.md`, `CONTEXT.md`, and `AI_TOOLING.md` for the current repo map.
 
 ## Repository Overview
@@ -18,10 +18,6 @@ This repository is organized as app runtimes plus shared packages:
   - `api-client`, `auth`, `config`, `types`
   - `player-core`, `player-react`, `audio-adapters`
   - `ui`, `visualizers`
-- `api/`: Darkfloor API V2 NestJS backend as a Git submodule
-  - independently versioned backend repository
-  - intentionally editable from this workspace when a task spans frontend and backend
-  - has its own local guidance in `api/AGENTS.md`, `api/CONTEXT.md`, and `api/CODEX.md`
 
 ## Architecture Snapshot
 
@@ -30,7 +26,7 @@ This repository is organized as app runtimes plus shared packages:
 - Auth/session: NextAuth + Drizzle adapter (`apps/web/src/server/auth`)
 - Database: Postgres + Drizzle (`apps/web/src/server/db`, `apps/web/drizzle`)
 - Upstream integrations and backend contract consumption: route handlers under `apps/web/src/app/api/**`
-- Source backend implementation for that contract: `api/` NestJS service
+- Backend contract target: external Darkfloor API V2 service via `API_V2_URL`
 - Player internals:
   - `packages/player-react/src/AudioPlayerContext.tsx`
   - `packages/player-react/src/useAudioPlayer.ts`
@@ -64,13 +60,7 @@ Commands below are run from the repo root.
 pnpm install --frozen-lockfile
 ```
 
-That root install also covers the checked-out `api/` submodule through the pnpm workspace.
-
-If you also need the backend submodule locally, initialize it after cloning:
-
-```bash
-git submodule update --init --recursive
-```
+This checkout does not include the backend source; point `API_V2_URL` at a running Darkfloor API V2 instance.
 
 1. Create local environment file:
 
@@ -137,15 +127,13 @@ Notes:
 | ------------------- | ----------------------------------------------------- |
 | `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
 | `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
-| `pnpm dev:api`      | Start the NestJS API in watch mode from `api/`        |
 | `pnpm dev:mobile`   | Start the Expo React Native Web app                   |
 | `pnpm dev:mobile:native` | Start Expo for native targets                    |
 | `pnpm dev:mobile:ios` | Start the Expo iOS target                           |
 | `pnpm dev:mobile:android` | Start the Expo Android target                   |
-| `pnpm build`        | Build both the web app and the `api/` submodule       |
+| `pnpm build`        | Build the web app                                     |
 | `pnpm mobile:build` | Export the mobile app for web to `apps/mobile/dist`   |
 | `pnpm start`        | Start production server via custom wrapper            |
-| `pnpm start:api`    | Start the built API from `api/dist`                   |
 | `pnpm check`        | Boundary check + lint + typecheck                     |
 | `pnpm mobile:check` | Type-check the Expo mobile app                        |
 | `pnpm test`         | Run Vitest suite in `apps/web`                        |
@@ -180,12 +168,6 @@ Notes:
   - `packages/player-react/src`
   - `packages/player-core/src`
   - `packages/types/src`
-- Backend submodule:
-  - `api/src`
-  - `api/src/modules`
-  - `api/prisma/schema.prisma`
-  - `api/README.md`
-  - `api/AGENTS.md`
 
 ## API Surface Summary
 
@@ -198,7 +180,7 @@ Notes:
 | Music proxy routes | `apps/web/src/app/api/music/**/route.ts`           | Discovery/search/playlists proxy endpoints |
 | Songbird routes    | `apps/web/src/app/api/songbird/**/route.ts`        | Token-authenticated Songbird endpoints     |
 
-For route-level behavior, inspect the route handlers under `apps/web/src/app/api/**` and the backend implementation in `api/src/modules/**`.
+For route-level behavior, inspect the route handlers under `apps/web/src/app/api/**` and the upstream contract targeted by `API_V2_URL`.
 
 ## Runtime and Env Loading Behavior
 
@@ -212,9 +194,6 @@ For route-level behavior, inspect the route handlers under `apps/web/src/app/api
 - `AGENTS.md` is the canonical repository workflow guide for coding agents.
 - `AI_TOOLING.md` is the tool-neutral quick-start for Codex, Claude Code, Cursor, Copilot, and similar assistants.
 - `apps/mobile/README.md` covers the current mobile shell architecture and validation flow.
-- Tool-specific compatibility files stay thin:
-  - `CLAUDE.md`
-  - `.github/copilot-instructions.md`
 - Verify the live filesystem before trusting older repo snapshots like `tree.txt`.
 
 ## Deployment Modes
@@ -236,10 +215,6 @@ For deployment behavior, inspect `vercel.json`, `Dockerfile`, `docker-compose.ym
 - `AGENTS.md` (agent workflow and repository conventions)
 - `CONTEXT.md` (fast technical map)
 - `apps/mobile/README.md` (mobile runtime architecture and validation flow)
-- `CLAUDE.md` (thin compatibility file that points back to the canonical docs)
-- `.github/copilot-instructions.md` (Copilot compatibility wrapper around the same guidance)
-- `api/README.md` (backend overview and runtime usage)
-- `api/AGENTS.md` / `api/CONTEXT.md` / `api/CODEX.md` (backend agent guidance)
 - `CHANGELOG.md` (release history and user-visible milestones)
 - `tree.txt` (rough repository snapshot; verify against the live filesystem before relying on it)
 

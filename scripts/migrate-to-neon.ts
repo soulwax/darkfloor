@@ -17,8 +17,6 @@ function loadEnvFiles() {
   const envFiles = [
     path.join(repoRoot, ".env.local"),
     path.join(repoRoot, ".env"),
-    path.join(repoRoot, "api/.env.local"),
-    path.join(repoRoot, "api/.env"),
   ];
 
   for (const envFile of envFiles) {
@@ -784,7 +782,7 @@ async function main() {
 
   if (sourceUrl === targetUrl) {
     throw new Error(
-      `Source and target resolve to the same database URL (${source.key} -> ${target.key}). Set OLD_DATABASE_URL/NEW_DATABASE_URL in the root env or api/.env.local, or pass distinct env values before running the migration.`,
+      `Source and target resolve to the same database URL (${source.key} -> ${target.key}). Set OLD_DATABASE_URL/NEW_DATABASE_URL in the root env, or pass distinct env values before running the migration.`,
     );
   }
 

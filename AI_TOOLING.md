@@ -1,6 +1,6 @@
 # AI Tooling Guide
 
-Last updated: 2026-03-30
+Last updated: 2026-04-05
 
 This is the tool-neutral companion to `AGENTS.md`.
 
@@ -13,7 +13,7 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 3. `README.md`
 4. `AI_TOOLING.md`
 5. `apps/mobile/README.md` when the task touches mobile
-6. `api/AGENTS.md`, `api/CONTEXT.md`, and `api/CODEX.md` when the task touches backend behavior
+6. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
 7. `CHANGELOG.md` when the task is user-visible and release notes matter
 
 ## Reality checks
@@ -54,10 +54,6 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
   - `packages/player-core/src`
   - `packages/player-react/src`
   - `packages/visualizers/src`
-- Backend:
-  - `api/src`
-  - `api/prisma`
-
 ## Working rules
 
 - Keep package boundaries clean: `packages/*` must not import app code.
@@ -78,6 +74,4 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 
 ## Compatibility files
 
-- `CLAUDE.md` exists only to point Claude-style tooling at the canonical repo docs.
-- `.github/copilot-instructions.md` exists only to give Copilot the same starting assumptions.
-- If you add more tool-specific files later, keep them short and route them back to `AGENTS.md` plus this file.
+If you add tool-specific compatibility files later, keep them short and route them back to `AGENTS.md` plus this file.

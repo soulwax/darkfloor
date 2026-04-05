@@ -78,7 +78,7 @@ This roadmap focuses on the highest-leverage work for `apps/web` as the primary 
 - [ ] Add regression tests around settings persistence and auth/session restoration.
 - [ ] Add a release verification checklist before tagging:
   - web build
-  - API build
+  - upstream API smoke test
   - Electron Windows build
   - Electron Linux build
   - optional Tauri experimental build
@@ -92,7 +92,7 @@ This roadmap focuses on the highest-leverage work for `apps/web` as the primary 
   - Tauri staged builds
   - Tauri no-prepare builds
 - [ ] Decide whether package metadata should keep the legacy `darkfloor-player` name or be renamed consistently to `darkfloor`.
-- [ ] Add a short onboarding doc for the `api/` submodule so frontend work that depends on backend contracts is easier to reason about.
+- [ ] Add a short onboarding doc for the external Darkfloor API repo / contract docs so frontend work that depends on backend contracts is easier to reason about.
 - [ ] Keep `TODO.md` scoped to current product work and move one-off feature experiments into issue-specific notes or branch-local docs.
 
 ## Nice to have

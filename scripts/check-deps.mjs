@@ -72,7 +72,6 @@ function readJson(relPath) {
 function isExcluded(relPath) {
   const normalized = relPath.split(path.sep).join("/");
   if (
-    normalized.startsWith("api/") ||
     normalized.startsWith("apps/desktop/src-tauri/b/") ||
     normalized.startsWith("apps/desktop/src-tauri/gen/") ||
     normalized.startsWith("apps/desktop/src-tauri/target/") ||

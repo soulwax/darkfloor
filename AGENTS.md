@@ -1,6 +1,6 @@
 # Agent Guide (songbird-frontend / Starchild Monorepo)
 
-Last updated: 2026-03-30
+Last updated: 2026-04-05
 
 This is the primary project context for coding agents in this repository. Read this file before making changes.
 
@@ -11,7 +11,7 @@ This is the primary project context for coding agents in this repository. Read t
 3. `README.md`
 4. `AI_TOOLING.md`
 5. `apps/mobile/README.md` when the task touches the mobile runtime
-6. `api/AGENTS.md`, `api/CONTEXT.md`, and `api/CODEX.md` when the task touches the backend submodule
+6. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
 7. `CHANGELOG.md` when the task is user-visible or release-sensitive
 8. `tree.txt` only as a rough snapshot; verify the live filesystem before trusting it
 
@@ -33,7 +33,7 @@ Contributors and coding agents should demonstrate:
 
 ## High-Level Architecture
 
-This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`, shared code under `packages/`, and the Darkfloor API V2 backend checked in as the Git submodule `api/`.
+This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/` and shared code under `packages/`. The Darkfloor API V2 backend is consumed as an external service via `API_V2_URL`; it is no longer vendored in this repository.
 
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
@@ -48,16 +48,11 @@ This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/`
 - Infra and runtime config:
   - Root runtime/build config in `package.json`, `turbo.json`, `vercel.json`, `Dockerfile`, `ecosystem*.cjs`
   - DB migrations in `apps/web/drizzle`
-- Backend submodule:
-  - `api/`: NestJS + Prisma backend repository with its own README and agent guidance
-  - Treat it as part of the working picture for tasks that span frontend proxies/contracts and backend implementation
-  - Editing `api/` is explicitly permitted when the user asks for backend-facing changes
-
 Note on upstream APIs:
 
 - The frontend still consumes the backend through route handlers under `apps/web/src/app/api/**`.
-- The source implementation for that backend now lives in-repo as the `api/` submodule.
-- `docs/API_V2_SWAGGER.yaml` may exist as a vendored contract copy in some checkouts, but behavior-level backend work should inspect `api/` directly.
+- The backend source is maintained outside this repo; consult the external backend repository or contract docs when behavior-level backend work is required.
+- `docs/API_V2_SWAGGER.yaml` may exist as a vendored contract copy in some checkouts.
 
 ## Where Core Logic Lives
 
@@ -96,12 +91,6 @@ Note on upstream APIs:
   - Config/constants/storage keys: `packages/config/src/*`
   - Auth helpers/logging/provider factories: `packages/auth/src/*`
   - App-local utilities: `apps/web/src/utils/*`
-- Backend implementation:
-  - Nest bootstrap/module wiring: `api/src/main.ts`, `api/src/app.module.ts`
-  - Feature modules/controllers/services: `api/src/modules/*`
-  - Prisma schema/migrations: `api/prisma/*`
-  - Backend-specific guidance: `api/AGENTS.md`, `api/CONTEXT.md`, `api/CODEX.md`
-
 ## Routing, tRPC, and API Module Conventions
 
 - Next.js routing:
@@ -135,7 +124,6 @@ Note on upstream APIs:
 - Package manager:
   - `pnpm-lock.yaml` is the canonical lockfile; default install flow is `pnpm install --frozen-lockfile`.
   - Root scripts may call `npm --prefix ...` internally; preserve script behavior unless explicitly changing it.
-  - The pnpm workspace includes `apps/*`, `packages/*`, and `api/`, so root `pnpm install --frozen-lockfile` also installs the backend submodule when present.
 
 ## Navigation and Indexing Expectations
 
@@ -143,7 +131,7 @@ Note on upstream APIs:
 - Prefer cross-file navigation and existing implementations over duplication.
 - Before multi-module edits, identify key files and each file's role.
 - Search for existing patterns first (router style, proxy style, error/logging style, DB handling) and follow them.
-- If a task spans frontend and backend behavior, inspect both root docs and the `api/` submodule docs before editing.
+- If a task spans frontend and backend behavior, inspect the root docs first and then consult the external backend repository or contract docs as needed.
 
 ## Repo-Specific Patterns to Reuse
 
@@ -160,7 +148,7 @@ Note on upstream APIs:
 - Before implementation, summarize:
   - files to touch
   - existing patterns being followed
-- If touching `api/`, say so explicitly and treat backend changes as in-scope, not off-limits.
+- If a task also requires backend changes, call out that the implementation lives in a separate repository/service.
 - Keep changes minimal and localized.
 - Avoid global architecture/config changes unless explicitly requested.
 - Add concise comments only where logic is non-obvious.
