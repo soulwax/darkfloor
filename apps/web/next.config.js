@@ -11,17 +11,23 @@ const repoRoot = resolve(__dirname, "../..");
 const nodeEnv = process.env.NODE_ENV ?? "development";
 
 // When running Next from apps/web, load env vars from the repo root.
-dotenvConfig({ path: join(repoRoot, ".env.local"), override: false, quiet: true });
+dotenvConfig({
+  path: join(repoRoot, ".env.local"),
+  override: false,
+  quiet: true,
+});
 if (nodeEnv === "production") {
-  dotenvConfig({ path: join(repoRoot, ".env.production"), override: false, quiet: true });
+  dotenvConfig({
+    path: join(repoRoot, ".env.production"),
+    override: false,
+    quiet: true,
+  });
 }
 dotenvConfig({ path: join(repoRoot, ".env"), override: false, quiet: true });
 
 await import("./src/env.js");
 
-const pkg = JSON.parse(
-  readFileSync(join(repoRoot, "package.json"), "utf-8"),
-);
+const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf-8"));
 const appVersion = typeof pkg.version === "string" ? pkg.version : "0.0.0";
 
 if (typeof process !== "undefined") {
@@ -82,7 +88,7 @@ const config = {
     NEXT_PUBLIC_APP_VERSION: appVersion,
   },
   reactStrictMode: true,
-  allowedDevOrigins: ['darkfloor.org'],
+  allowedDevOrigins: ["darkfloor.org", "127.0.0.1", "localhost"],
   output: "standalone",
   distDir: "../../.next",
 
@@ -102,8 +108,8 @@ const config = {
     removeConsole:
       process.env.NODE_ENV === "production"
         ? {
-          exclude: ["error", "warn"],
-        }
+            exclude: ["error", "warn"],
+          }
         : false,
   },
 

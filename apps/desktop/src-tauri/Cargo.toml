@@ -1,6 +1,6 @@
 [package]
 name = "starchild-tauri-experimental"
-version = "1.15.4"
+version = "1.15.5"
 description = "Experimental Tauri shell for Starchild Music"
 authors = ["Christian <soulwax@cock.li>"]
 license = "GPL-3.0-only"

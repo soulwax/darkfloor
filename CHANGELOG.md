@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.5] - 2026-04-04
+
+### Fixed
+
+- **Experimental Tauri dev boots cleanly again**: The Tauri titlebar now mounts inside the session and tRPC provider tree, so `pnpm tauri:dev` no longer crashes on `useSession` before the app renders.
+- **Tauri dev no longer loses Next.js HMR on loopback**: The web runtime now allows `127.0.0.1` and `localhost` as development origins, which avoids blocked cross-origin requests to `/_next/webpack-hmr` when the experimental Tauri shell opens the app through a loopback host.
+
 ## [1.15.4] - 2026-04-03
 
 ### Changed

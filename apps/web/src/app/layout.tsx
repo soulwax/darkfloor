@@ -134,7 +134,6 @@ export default async function RootLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <LinuxTitlebar />
-          <TauriTitlebar />
           <SuppressExtensionErrors />
           <ElectronStorageInit />
           <RegisterServiceWorker />
@@ -142,6 +141,7 @@ export default async function RootLayout({
           <ErrorBoundary>
             <SessionProvider>
               <TRPCReactProvider>
+                <TauriTitlebar />
                 <ThemeProvider>
                   <AuthModalProvider>
                     <ElectronChromeSync />
