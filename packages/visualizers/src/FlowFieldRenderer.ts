@@ -23,6 +23,18 @@ import { renderVelvetHelix } from "./flowfieldPatterns/renderVelvetHelix";
 import { renderPhyllotaxisCrucible } from "./flowfieldPatterns/renderPhyllotaxisCrucible";
 import { renderVerdantRetort } from "./flowfieldPatterns/renderVerdantRetort";
 import { renderMycelialCatalyst } from "./flowfieldPatterns/renderMycelialCatalyst";
+import { renderNeonRippleGarden } from "./flowfieldPatterns/renderNeonRippleGarden";
+import { renderChromaticSuperburst } from "./flowfieldPatterns/renderChromaticSuperburst";
+import { renderVoltaicPetalStorm } from "./flowfieldPatterns/renderVoltaicPetalStorm";
+import { renderPrismaticLatticeDrift } from "./flowfieldPatterns/renderPrismaticLatticeDrift";
+import { renderSolarRibbonDance } from "./flowfieldPatterns/renderSolarRibbonDance";
+import { renderMirrorButterflyFlux } from "./flowfieldPatterns/renderMirrorButterflyFlux";
+import { renderRetroArcCascade } from "./flowfieldPatterns/renderRetroArcCascade";
+import { renderPulseLoomWeave } from "./flowfieldPatterns/renderPulseLoomWeave";
+import { renderCitrusStellarMist } from "./flowfieldPatterns/renderCitrusStellarMist";
+import { renderScarabGeometryPulse } from "./flowfieldPatterns/renderScarabGeometryPulse";
+import { renderSynthwaveShoreline } from "./flowfieldPatterns/renderSynthwaveShoreline";
+import { renderIridescentShatterField } from "./flowfieldPatterns/renderIridescentShatterField";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -260,6 +272,18 @@ export class FlowFieldRenderer {
     "phyllotaxisCrucible",
     "verdantRetort",
     "mycelialCatalyst",
+    "neonRippleGarden",
+    "chromaticSuperburst",
+    "voltaicPetalStorm",
+    "prismaticLatticeDrift",
+    "solarRibbonDance",
+    "mirrorButterflyFlux",
+    "retroArcCascade",
+    "pulseLoomWeave",
+    "citrusStellarMist",
+    "scarabGeometryPulse",
+    "synthwaveShoreline",
+    "iridescentShatterField",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -428,6 +452,18 @@ export class FlowFieldRenderer {
     "phyllotaxisCrucible",
     "verdantRetort",
     "mycelialCatalyst",
+    "neonRippleGarden",
+    "chromaticSuperburst",
+    "voltaicPetalStorm",
+    "prismaticLatticeDrift",
+    "solarRibbonDance",
+    "mirrorButterflyFlux",
+    "retroArcCascade",
+    "pulseLoomWeave",
+    "citrusStellarMist",
+    "scarabGeometryPulse",
+    "synthwaveShoreline",
+    "iridescentShatterField",
   ]);
   private static readonly MYSTICAL_HUES = [
     270, 280, 290, 240, 250, 0, 330, 340, 180, 200, 310, 350,
@@ -3193,6 +3229,9 @@ export class FlowFieldRenderer {
       case "laserWeave":
       case "novaGlyphs":
       case "cathedralPulse":
+      case "chromaticSuperburst":
+      case "citrusStellarMist":
+      case "iridescentShatterField":
         return 0;
       case "rings":
       case "mandala":
@@ -3205,6 +3244,10 @@ export class FlowFieldRenderer {
       case "chakras":
       case "solsticeBloom":
       case "phyllotaxisCrucible":
+      case "neonRippleGarden":
+      case "mirrorButterflyFlux":
+      case "retroArcCascade":
+      case "scarabGeometryPulse":
         return 1;
       case "matrix":
       case "hexgrid":
@@ -3220,6 +3263,9 @@ export class FlowFieldRenderer {
       case "monolithDrift":
       case "shardCascade":
       case "verdantRetort":
+      case "prismaticLatticeDrift":
+      case "pulseLoomWeave":
+      case "synthwaveShoreline":
         return 2;
       case "waves":
       case "dna":
@@ -3233,6 +3279,8 @@ export class FlowFieldRenderer {
       case "silkHalo":
       case "velvetHelix":
       case "mycelialCatalyst":
+      case "voltaicPetalStorm":
+      case "solarRibbonDance":
         return 3;
       default:
         return 4;
@@ -4214,6 +4262,102 @@ export class FlowFieldRenderer {
         break;
       case "mycelialCatalyst":
         renderMycelialCatalyst(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "neonRippleGarden":
+        renderNeonRippleGarden(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "chromaticSuperburst":
+        renderChromaticSuperburst(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "voltaicPetalStorm":
+        renderVoltaicPetalStorm(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "prismaticLatticeDrift":
+        renderPrismaticLatticeDrift(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "solarRibbonDance":
+        renderSolarRibbonDance(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "mirrorButterflyFlux":
+        renderMirrorButterflyFlux(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "retroArcCascade":
+        renderRetroArcCascade(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "pulseLoomWeave":
+        renderPulseLoomWeave(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "citrusStellarMist":
+        renderCitrusStellarMist(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "scarabGeometryPulse":
+        renderScarabGeometryPulse(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "synthwaveShoreline":
+        renderSynthwaveShoreline(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "iridescentShatterField":
+        renderIridescentShatterField(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,
