@@ -18,7 +18,7 @@ import type {
 import type { Track } from "@starchild/types";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -52,6 +52,7 @@ export type SpotifyImportDiagnostics = {
 };
 
 type SpotifyImportUnmatchedTrack = SpotifyImportResult["importReport"]["unmatched"][number];
+type SpotifyImportWizardStep = "review" | "destination" | "confirm";
 
 type AlternativeSearchState = {
   query: string;
@@ -72,6 +73,28 @@ interface SpotifyImportDialogProps {
   onClose: () => void;
   onSubmit: (input: SpotifyImportRequest) => void;
 }
+
+const IMPORT_WIZARD_STEPS: Array<{
+  id: SpotifyImportWizardStep;
+  titleKey: string;
+  descriptionKey: string;
+}> = [
+  {
+    id: "review",
+    titleKey: "importWizardStepReview",
+    descriptionKey: "importWizardStepReviewDescription",
+  },
+  {
+    id: "destination",
+    titleKey: "importWizardStepDestination",
+    descriptionKey: "importWizardStepDestinationDescription",
+  },
+  {
+    id: "confirm",
+    titleKey: "importWizardStepConfirm",
+    descriptionKey: "importWizardStepConfirmDescription",
+  },
+];
 
 function getReasonBadgeClasses(reason: string): string {
   switch (reason) {
@@ -182,6 +205,8 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
   const tp = useTranslations("playlists");
   const [playlistName, setPlaylistName] = useState(() => playlist?.name ?? "");
   const [isPublic, setIsPublic] = useState(false);
+  const [activeWizardStep, setActiveWizardStep] =
+    useState<SpotifyImportWizardStep>("review");
   const [expandedAmbiguousTracks, setExpandedAmbiguousTracks] = useState<
     Record<string, boolean>
   >({});
@@ -218,11 +243,19 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
       ? tc("tracks", { count: playlist.trackCount })
       : t("trackCountUnknown");
   }, [playlist, t, tc]);
-
-  useEffect(() => {
-    setExpandedAmbiguousTracks({});
-    setAlternativeSearchState({});
-  }, [importResult, isOpen]);
+  const activeWizardStepIndex = useMemo(
+    () =>
+      IMPORT_WIZARD_STEPS.findIndex((step) => step.id === activeWizardStep),
+    [activeWizardStep],
+  );
+  const canAdvanceFromDestination =
+    playlistName.trim().length > 0 && !isSubmitting;
+  const canContinue =
+    activeWizardStep === "review"
+      ? true
+      : activeWizardStep === "destination"
+        ? canAdvanceFromDestination
+        : canSubmit;
 
   const handleSubmit = () => {
     if (!playlist || !playlistName.trim()) {
@@ -235,6 +268,31 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
         playlistName.trim() !== playlist.name ? playlistName.trim() : undefined,
       isPublic,
     });
+  };
+
+  const goToWizardStep = (stepId: SpotifyImportWizardStep) => {
+    const nextIndex = IMPORT_WIZARD_STEPS.findIndex((step) => step.id === stepId);
+    if (nextIndex === -1) return;
+    if (nextIndex > activeWizardStepIndex) return;
+    setActiveWizardStep(stepId);
+  };
+
+  const handleContinue = () => {
+    if (activeWizardStep === "confirm") {
+      handleSubmit();
+      return;
+    }
+
+    const nextStep = IMPORT_WIZARD_STEPS[activeWizardStepIndex + 1];
+    if (!nextStep) return;
+    setActiveWizardStep(nextStep.id);
+  };
+
+  const handleBack = () => {
+    if (activeWizardStepIndex <= 0) return;
+    const previousStep = IMPORT_WIZARD_STEPS[activeWizardStepIndex - 1];
+    if (!previousStep) return;
+    setActiveWizardStep(previousStep.id);
   };
 
   const toggleAmbiguousTrack = (trackKey: string) => {
@@ -337,7 +395,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
         }
       }}
     >
-      <DialogContent className="flex w-[calc(100%-1.5rem)] max-w-3xl flex-col rounded-[1.75rem] p-0">
+      <DialogContent className="flex max-h-[90vh] w-[calc(100%-1rem)] max-w-3xl flex-col rounded-[1.75rem] p-0 sm:w-[calc(100%-1.5rem)]">
         {playlist ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.75rem]">
             <DialogHeader className="shrink-0 border-b border-[var(--color-border)] px-6 py-5">
@@ -353,34 +411,63 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                     })
                   : t("importPlaylistDescription")}
               </DialogDescription>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {t("importStageSource")}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase ${
-                    isSubmitting
-                      ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[#1DB954]"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
-                  }`}
-                >
-                  <Disc3
-                    className={`h-3.5 w-3.5 ${isSubmitting ? "animate-spin" : ""}`}
-                  />
-                  {t("importStageMatch")}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase ${
-                    importResult
-                      ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[#1DB954]"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-subtext)]"
-                  }`}
-                >
-                  <CircleCheck className="h-3.5 w-3.5" />
-                  {t("importStageResult")}
-                </span>
-              </div>
+              {!importResult ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  {IMPORT_WIZARD_STEPS.map((step, index) => {
+                    const isCurrent = step.id === activeWizardStep;
+                    const isComplete = index < activeWizardStepIndex;
+
+                    return (
+                      <button
+                        key={step.id}
+                        type="button"
+                        onClick={() => goToWizardStep(step.id)}
+                        disabled={!isComplete}
+                        className={`rounded-2xl border px-3 py-3 text-left transition ${
+                          isCurrent
+                            ? "border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] text-[var(--color-text)]"
+                            : isComplete
+                              ? "border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 text-[var(--color-text)] hover:border-[rgba(29,185,84,0.22)]"
+                              : "border-[var(--color-border)] bg-[var(--color-surface-hover)]/45 text-[var(--color-subtext)]"
+                        } ${!isComplete ? "cursor-default" : ""}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${
+                              isCurrent || isComplete
+                                ? "bg-[#1DB954] text-white"
+                                : "bg-white/8 text-[var(--color-subtext)]"
+                            }`}
+                          >
+                            {isComplete ? <CircleCheck className="h-3.5 w-3.5" /> : index + 1}
+                          </span>
+                          <span className="text-xs font-semibold tracking-[0.14em] uppercase">
+                            {t(step.titleKey)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-[var(--color-subtext)]">
+                          {t(step.descriptionKey)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {t("importStageSource")}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                    <Disc3 className="h-3.5 w-3.5" />
+                    {t("importStageMatch")}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(29,185,84,0.35)] bg-[rgba(29,185,84,0.14)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                    <CircleCheck className="h-3.5 w-3.5" />
+                    {t("importStageResult")}
+                  </span>
+                </div>
+              )}
             </DialogHeader>
 
             {!importResult ? (
@@ -388,200 +475,335 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                 <div className="min-h-0 overflow-y-auto">
                   <div className="relative overflow-hidden px-6 py-6">
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_55%)]" />
-                    <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
-                      <div className="space-y-4">
-                        <div className="rounded-[1.75rem] border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.16),rgba(15,23,42,0.84))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)]">
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                            <SpotifyImportCover
-                              imageUrl={playlist.imageUrl}
-                              alt={playlist.name}
-                            />
-                            <div className="min-w-0 flex-1">
-                              <span className="inline-flex rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
-                                {t("importSourceLabel")}
-                              </span>
-                              <p className="mt-3 truncate text-xl font-semibold text-[var(--color-text)]">
-                                {playlist.name}
+                    <div className="relative">
+                      {isSubmitting ? (
+                        <div className="mx-auto max-w-2xl rounded-[1.75rem] border border-[rgba(29,185,84,0.24)] bg-[linear-gradient(160deg,rgba(29,185,84,0.14),rgba(15,23,42,0.8))] p-5 sm:p-6">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(29,185,84,0.28)] bg-[rgba(29,185,84,0.14)]">
+                              <Loader2 className="h-5 w-5 animate-spin text-[#1DB954]" />
+                            </div>
+                            <div>
+                              <p className="text-base font-semibold text-[var(--color-text)]">
+                                {t("importProgressTitle")}
                               </p>
-                              <p className="mt-1 text-sm text-[var(--color-subtext)]">
-                                {t("byOwner", {
-                                  owner: playlist.ownerName ?? "Spotify",
-                                })}
+                              <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
+                                {t("importProgressDescription")}
                               </p>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[var(--color-text)]">
-                                  {sourceTrackCountLabel}
-                                </span>
-                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[var(--color-text)]">
-                                  {isPublic ? tc("public") : tc("private")}
-                                </span>
-                              </div>
                             </div>
                           </div>
-                          {playlist.description ? (
-                            <p className="mt-4 line-clamp-3 text-sm leading-6 text-[var(--color-subtext)]">
-                              {playlist.description}
-                            </p>
-                          ) : null}
+                          <div className="mt-5 space-y-3">
+                            {[
+                              t("importStageSource"),
+                              t("importStageMatch"),
+                              t("importStageResult"),
+                            ].map((label, index) => (
+                              <div
+                                key={label}
+                                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-3"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-sm font-medium text-[var(--color-text)]">
+                                    {label}
+                                  </span>
+                                  <Loader2
+                                    className="h-4 w-4 animate-spin text-[#1DB954]"
+                                    style={{
+                                      animationDelay: `${index * 150}ms`,
+                                    }}
+                                  />
+                                </div>
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/8">
+                                  <div
+                                    className="h-full w-2/3 animate-pulse rounded-full bg-[linear-gradient(90deg,rgba(29,185,84,0.28),#1DB954,rgba(29,185,84,0.28))]"
+                                    style={{
+                                      animationDelay: `${index * 180}ms`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-
-                        {isSubmitting ? (
-                          <div className="rounded-[1.75rem] border border-[rgba(29,185,84,0.24)] bg-[linear-gradient(160deg,rgba(29,185,84,0.14),rgba(15,23,42,0.8))] p-5">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(29,185,84,0.28)] bg-[rgba(29,185,84,0.14)]">
-                                <Loader2 className="h-5 w-5 animate-spin text-[#1DB954]" />
-                              </div>
-                              <div>
-                                <p className="text-base font-semibold text-[var(--color-text)]">
-                                  {t("importProgressTitle")}
-                                </p>
-                                <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
-                                  {t("importProgressDescription")}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mt-5 space-y-3">
-                              {[
-                                t("importStageSource"),
-                                t("importStageMatch"),
-                                t("importStageResult"),
-                              ].map((label, index) => (
-                                <div
-                                  key={label}
-                                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-3"
-                                >
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-sm font-medium text-[var(--color-text)]">
-                                      {label}
-                                    </span>
-                                    <Loader2
-                                      className="h-4 w-4 animate-spin text-[#1DB954]"
-                                      style={{
-                                        animationDelay: `${index * 150}ms`,
-                                      }}
+                      ) : (
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr),minmax(0,0.85fr)]">
+                          <div className="space-y-4">
+                            {activeWizardStep === "review" ? (
+                              <>
+                                <div className="rounded-[1.75rem] border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.16),rgba(15,23,42,0.84))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)]">
+                                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                    <SpotifyImportCover
+                                      imageUrl={playlist.imageUrl}
+                                      alt={playlist.name}
                                     />
+                                    <div className="min-w-0 flex-1">
+                                      <span className="inline-flex rounded-full border border-[rgba(29,185,84,0.3)] bg-[rgba(29,185,84,0.12)] px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                                        {t("importSourceLabel")}
+                                      </span>
+                                      <p className="mt-3 truncate text-xl font-semibold text-[var(--color-text)]">
+                                        {playlist.name}
+                                      </p>
+                                      <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                                        {t("byOwner", {
+                                          owner: playlist.ownerName ?? "Spotify",
+                                        })}
+                                      </p>
+                                      <div className="mt-3 flex flex-wrap gap-2">
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[var(--color-text)]">
+                                          {sourceTrackCountLabel}
+                                        </span>
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[var(--color-text)]">
+                                          {t("importWizardSpotifySource")}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/8">
-                                    <div
-                                      className="h-full w-2/3 animate-pulse rounded-full bg-[linear-gradient(90deg,rgba(29,185,84,0.28),#1DB954,rgba(29,185,84,0.28))]"
-                                      style={{
-                                        animationDelay: `${index * 180}ms`,
-                                      }}
-                                    />
+                                  {playlist.description ? (
+                                    <p className="mt-4 line-clamp-3 text-sm leading-6 text-[var(--color-subtext)]">
+                                      {playlist.description}
+                                    </p>
+                                  ) : (
+                                    <p className="mt-4 text-sm leading-6 text-[var(--color-subtext)]">
+                                      {t("importWizardReviewFallbackDescription")}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                                  <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                    {t("importWizardWhatHappensTitle")}
+                                  </p>
+                                  <div className="mt-4 space-y-3">
+                                    {[
+                                      {
+                                        title: t("importWizardWhatHappensKeepOrderTitle"),
+                                        body: t("importWizardWhatHappensKeepOrderBody"),
+                                      },
+                                      {
+                                        title: t("importWizardWhatHappensMatchTitle"),
+                                        body: t("importWizardWhatHappensMatchBody"),
+                                      },
+                                      {
+                                        title: t("importWizardWhatHappensReviewTitle"),
+                                        body: t("importWizardWhatHappensReviewBody"),
+                                      },
+                                    ].map((item) => (
+                                      <div
+                                        key={item.title}
+                                        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4"
+                                      >
+                                        <p className="text-sm font-semibold text-[var(--color-text)]">
+                                          {item.title}
+                                        </p>
+                                        <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
+                                          {item.body}
+                                        </p>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
+                              </>
+                            ) : activeWizardStep === "destination" ? (
+                              <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                    {t("importDestinationLabel")}
+                                  </span>
+                                </div>
 
-                      <div className="space-y-4">
-                        {importError ? (
-                          <div className="flex items-start gap-3 rounded-2xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] p-4 text-sm leading-6 text-red-200">
-                            <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                            <p>{importError}</p>
-                          </div>
-                        ) : null}
+                                <div className="mt-5">
+                                  <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                                    {tp("playlistNameRequired")}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={playlistName}
+                                    onChange={(event) =>
+                                      setPlaylistName(event.target.value)
+                                    }
+                                    placeholder={tp("playlistNamePlaceholder")}
+                                    disabled={isSubmitting}
+                                    className="theme-input w-full rounded-xl px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                                  />
+                                  <p className="mt-2 text-xs leading-5 text-[var(--color-subtext)]">
+                                    {t("importWizardDestinationHint")}
+                                  </p>
+                                </div>
 
-                        {importDiagnostics ? (
-                          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
-                            <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                              {t("importDiagnosticsTitle")}
-                            </p>
-                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                              {importDiagnostics.status ? (
-                                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
-                                  <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                                    {t("importDiagnosticsStatus")}
+                                <label className="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-4 py-3 text-sm text-[var(--color-subtext)]">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPublic}
+                                    onChange={(event) =>
+                                      setIsPublic(event.target.checked)
+                                    }
+                                    disabled={isSubmitting}
+                                    className="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25"
+                                  />
+                                  {tp("makePublic")}
+                                </label>
+
+                                <div className="mt-4 rounded-2xl border border-[rgba(29,185,84,0.2)] bg-[rgba(29,185,84,0.08)] p-4">
+                                  <p className="text-xs font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                                    {t("playlistMigration")}
                                   </p>
-                                  <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                                    {importDiagnostics.status}
-                                  </p>
-                                </div>
-                              ) : null}
-                              {importDiagnostics.errorCode ? (
-                                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
-                                  <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                                    {t("importDiagnosticsCode")}
-                                  </p>
-                                  <p className="mt-1 truncate text-sm font-medium text-[var(--color-text)]">
-                                    {importDiagnostics.errorCode}
+                                  <p className="mt-2 text-sm leading-6 text-[var(--color-subtext)]">
+                                    {t("importReadyHint")}
                                   </p>
                                 </div>
-                              ) : null}
-                              {importDiagnostics.playlistId ? (
-                                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2 sm:col-span-2">
-                                  <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                                    {t("importDiagnosticsPlaylistId")}
-                                  </p>
-                                  <p className="mt-1 truncate font-mono text-sm text-[var(--color-text)]">
-                                    {importDiagnostics.playlistId}
-                                  </p>
-                                </div>
-                              ) : null}
-                            </div>
-                            {importDiagnostics.backendMessage ? (
-                              <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
-                                <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                                  {t("importDiagnosticsBackendMessage")}
+                              </div>
+                            ) : (
+                              <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                                <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                  {t("importWizardConfirmTitle")}
                                 </p>
-                                <div className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/10 p-3">
-                                  <p className="font-mono text-xs leading-5 break-all whitespace-pre-wrap text-[var(--color-text)]/90">
-                                    {importDiagnostics.backendMessage}
-                                  </p>
+                                <div className="mt-4 grid gap-3">
+                                  <div className="rounded-2xl border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.14),rgba(15,23,42,0.75))] p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div>
+                                        <p className="text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                                          {t("importSourceLabel")}
+                                        </p>
+                                        <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                                          {playlist.name}
+                                        </p>
+                                        <p className="mt-1 text-xs text-[var(--color-subtext)]">
+                                          {sourceTrackCountLabel}
+                                        </p>
+                                      </div>
+                                      <ArrowRight className="h-4 w-4 text-[var(--color-subtext)]" />
+                                      <div className="text-right">
+                                        <p className="text-[11px] font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
+                                          {t("importDestinationLabel")}
+                                        </p>
+                                        <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                                          {playlistName.trim()}
+                                        </p>
+                                        <p className="mt-1 text-xs text-[var(--color-subtext)]">
+                                          {isPublic ? tc("public") : tc("private")}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
+                                      <p className="text-sm font-semibold text-[var(--color-text)]">
+                                        {t("importWizardReadyTitle")}
+                                      </p>
+                                      <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
+                                        {t("importWizardReadyBody")}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
+                                      <p className="text-sm font-semibold text-[var(--color-text)]">
+                                        {t("importWizardAfterImportTitle")}
+                                      </p>
+                                      <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
+                                        {t("importWizardAfterImportBody")}
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-4">
+                            {importError ? (
+                              <div className="flex items-start gap-3 rounded-2xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] p-4 text-sm leading-6 text-red-200">
+                                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                                <p>{importError}</p>
                               </div>
                             ) : null}
-                          </div>
-                        ) : null}
 
-                        <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-                              {t("importDestinationLabel")}
-                            </span>
-                          </div>
+                            {importDiagnostics ? (
+                              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4">
+                                <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                  {t("importDiagnosticsTitle")}
+                                </p>
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                  {importDiagnostics.status ? (
+                                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                                      <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                        {t("importDiagnosticsStatus")}
+                                      </p>
+                                      <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
+                                        {importDiagnostics.status}
+                                      </p>
+                                    </div>
+                                  ) : null}
+                                  {importDiagnostics.errorCode ? (
+                                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                                      <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                        {t("importDiagnosticsCode")}
+                                      </p>
+                                      <p className="mt-1 truncate text-sm font-medium text-[var(--color-text)]">
+                                        {importDiagnostics.errorCode}
+                                      </p>
+                                    </div>
+                                  ) : null}
+                                  {importDiagnostics.playlistId ? (
+                                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2 sm:col-span-2">
+                                      <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                        {t("importDiagnosticsPlaylistId")}
+                                      </p>
+                                      <p className="mt-1 truncate font-mono text-sm text-[var(--color-text)]">
+                                        {importDiagnostics.playlistId}
+                                      </p>
+                                    </div>
+                                  ) : null}
+                                </div>
+                                {importDiagnostics.backendMessage ? (
+                                  <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)]/70 px-3 py-2">
+                                    <p className="text-[11px] tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                      {t("importDiagnosticsBackendMessage")}
+                                    </p>
+                                    <div className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/10 p-3">
+                                      <p className="font-mono text-xs leading-5 break-all whitespace-pre-wrap text-[var(--color-text)]/90">
+                                        {importDiagnostics.backendMessage}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
 
-                          <div className="mt-5">
-                            <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
-                              {tp("playlistNameRequired")}
-                            </label>
-                            <input
-                              type="text"
-                              value={playlistName}
-                              onChange={(event) =>
-                                setPlaylistName(event.target.value)
-                              }
-                              placeholder={tp("playlistNamePlaceholder")}
-                              disabled={isSubmitting}
-                              className="theme-input w-full rounded-xl px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-muted)] transition-all hover:border-[var(--color-accent)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
-                            />
-                          </div>
-
-                          <label className="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-4 py-3 text-sm text-[var(--color-subtext)]">
-                            <input
-                              type="checkbox"
-                              checked={isPublic}
-                              onChange={(event) =>
-                                setIsPublic(event.target.checked)
-                              }
-                              disabled={isSubmitting}
-                              className="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25"
-                            />
-                            {tp("makePublic")}
-                          </label>
-
-                          <div className="mt-4 rounded-2xl border border-[rgba(29,185,84,0.2)] bg-[rgba(29,185,84,0.08)] p-4">
-                            <p className="text-xs font-semibold tracking-[0.14em] text-[#1DB954] uppercase">
-                              {t("playlistMigration")}
-                            </p>
-                            <p className="mt-2 text-sm leading-6 text-[var(--color-subtext)]">
-                              {t("importReadyHint")}
-                            </p>
+                            <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                              <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                                {t("importWizardSidebarTitle")}
+                              </p>
+                              <div className="mt-4 space-y-3">
+                                {[
+                                  {
+                                    title: t("importWizardSidebarReviewTitle"),
+                                    body: t("importWizardSidebarReviewBody"),
+                                  },
+                                  {
+                                    title: t("importWizardSidebarNameTitle"),
+                                    body: t("importWizardSidebarNameBody"),
+                                  },
+                                  {
+                                    title: t("importWizardSidebarResultTitle"),
+                                    body: t("importWizardSidebarResultBody"),
+                                  },
+                                ].map((item) => (
+                                  <div
+                                    key={item.title}
+                                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4"
+                                  >
+                                    <p className="text-sm font-semibold text-[var(--color-text)]">
+                                      {item.title}
+                                    </p>
+                                    <p className="mt-1 text-sm leading-6 text-[var(--color-subtext)]">
+                                      {item.body}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -595,21 +817,40 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                   >
                     {tc("cancel")}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!canSubmit}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t("importingToStarchild")}
-                      </>
-                    ) : (
-                      t("importToStarchild")
-                    )}
-                  </button>
+                  <div className="flex flex-1 flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    {activeWizardStep !== "review" ? (
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        disabled={isSubmitting}
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-hover)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {t("importWizardBack")}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={handleContinue}
+                      disabled={!canContinue}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1DB954] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {activeWizardStep === "confirm" ? (
+                        isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {t("importingToStarchild")}
+                          </>
+                        ) : (
+                          t("importToStarchild")
+                        )
+                      ) : (
+                        <>
+                          {t("importWizardContinue")}
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </DialogFooter>
               </>
             ) : (

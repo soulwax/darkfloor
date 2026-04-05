@@ -11,6 +11,12 @@ const { searchTracksMock } = vi.hoisted(() => ({
   searchTracksMock: vi.fn(),
 }));
 
+function toDisplayString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return "";
+}
+
 vi.mock("@starchild/api-client/rest", () => ({
   searchTracks: searchTracksMock,
 }));
@@ -20,20 +26,47 @@ vi.mock("next-intl", () => ({
     (namespace: string) =>
     (key: string, values?: Record<string, unknown>) => {
       if (namespace === "spotify") {
+        if (key === "importWizardContinue") {
+          return "Continue";
+        }
+        if (key === "importWizardBack") {
+          return "Back";
+        }
+        if (key === "importWizardStepReview") {
+          return "Review source";
+        }
+        if (key === "importWizardStepReviewDescription") {
+          return "Check the Spotify playlist you're about to convert.";
+        }
+        if (key === "importWizardStepDestination") {
+          return "Set destination";
+        }
+        if (key === "importWizardStepDestinationDescription") {
+          return "Choose the Starchild playlist name and visibility.";
+        }
+        if (key === "importWizardStepConfirm") {
+          return "Convert";
+        }
+        if (key === "importWizardStepConfirmDescription") {
+          return "Review the conversion summary, then start the import.";
+        }
+        if (key === "importWizardConfirmTitle") {
+          return "Ready to create your Starchild playlist";
+        }
         if (key === "importAmbiguousCandidatesTitle") {
           return "Deezer suggestions";
         }
         if (key === "importAmbiguousCandidatesShow") {
-          return `Show ${String(values?.count ?? 0)} similar Deezer tracks`;
+          return `Show ${toDisplayString(values?.count ?? 0)} similar Deezer tracks`;
         }
         if (key === "importAmbiguousCandidatesHide") {
-          return `Hide ${String(values?.count ?? 0)} similar Deezer tracks`;
+          return `Hide ${toDisplayString(values?.count ?? 0)} similar Deezer tracks`;
         }
         if (key === "importCandidateMatchScore") {
-          return `${String(values?.score ?? 0)}% match`;
+          return `${toDisplayString(values?.score ?? 0)}% match`;
         }
         if (key === "openTrackOnDeezer") {
-          return `Open ${String(values?.title ?? "")} on Deezer`;
+          return `Open ${toDisplayString(values?.title ?? "")} on Deezer`;
         }
         if (key === "importAlternativeSearchTitle") {
           return "Search alternatives";
@@ -57,7 +90,7 @@ vi.mock("next-intl", () => ({
           return "Try a different title, featured artist, or album version if the first results miss.";
         }
         if (key === "importAlternativeSearchResultsTitle") {
-          return `${String(values?.count ?? 0)} alternatives found`;
+          return `${toDisplayString(values?.count ?? 0)} alternatives found`;
         }
         if (key === "importAlternativeSearchNoResults") {
           return "No Deezer alternatives matched that search yet.";
@@ -69,7 +102,7 @@ vi.mock("next-intl", () => ({
           return "We couldn't search Deezer right now. Try again in a moment.";
         }
         if (key === "openTrackInStarchild") {
-          return `Open ${String(values?.title ?? "")} in Starchild`;
+          return `Open ${toDisplayString(values?.title ?? "")} in Starchild`;
         }
       }
 
@@ -287,5 +320,63 @@ describe("SpotifyImportDialog ambiguous candidates", () => {
     expect(
       screen.getByRole("link", { name: /Open Midnight City on Deezer/i }),
     ).toHaveAttribute("href", "https://www.deezer.com/track/601");
+  });
+
+  it("guides the user through the wizard before submitting the import", () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <SpotifyImportDialog
+        isOpen
+        isSubmitting={false}
+        playlist={{
+          id: "spotify-playlist-wizard",
+          name: "Night Drive",
+          description: "Late-night synths",
+          ownerName: "starchild",
+          trackCount: 14,
+          imageUrl: null,
+        }}
+        importError={null}
+        importDiagnostics={null}
+        importResult={null}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Continue/i,
+      }),
+    );
+
+    const playlistNameInput = screen.getByDisplayValue("Night Drive");
+    fireEvent.change(playlistNameInput, {
+      target: { value: "Night Drive Converted" },
+    });
+
+    fireEvent.click(screen.getByLabelText("makePublic"));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Continue/i,
+      }),
+    );
+
+    expect(
+      screen.getByText("Ready to create your Starchild playlist"),
+    ).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /importToStarchild/i,
+      }),
+    );
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      spotifyPlaylistId: "spotify-playlist-wizard",
+      nameOverride: "Night Drive Converted",
+      isPublic: true,
+    });
   });
 });

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.5] - 2026-04-04
 
+### Changed
+
+- **Spotify playlist conversion now uses a guided frontend wizard**: The import dialog now walks listeners through reviewing the Spotify source, choosing the Starchild destination, and confirming the conversion before the import starts, with clearer progress and next-step guidance that fits smaller screens better.
+
 ### Fixed
 
 - **Experimental Tauri dev boots cleanly again**: The Tauri titlebar now mounts inside the session and tRPC provider tree, so `pnpm tauri:dev` no longer crashes on `useSession` before the app renders.
