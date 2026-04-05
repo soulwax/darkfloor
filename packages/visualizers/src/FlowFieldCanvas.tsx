@@ -166,6 +166,18 @@ const VALID_PATTERNS = new Set<string>([
   "phyllotaxisCrucible",
   "verdantRetort",
   "mycelialCatalyst",
+  "neonRippleGarden",
+  "chromaticSuperburst",
+  "voltaicPetalStorm",
+  "prismaticLatticeDrift",
+  "solarRibbonDance",
+  "mirrorButterflyFlux",
+  "retroArcCascade",
+  "pulseLoomWeave",
+  "citrusStellarMist",
+  "scarabGeometryPulse",
+  "synthwaveShoreline",
+  "iridescentShatterField",
 ]);
 
 export function FlowFieldCanvas({

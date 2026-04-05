@@ -146,4 +146,16 @@ export type Pattern =
   | "velvetHelix"
   | "phyllotaxisCrucible"
   | "verdantRetort"
-  | "mycelialCatalyst";
+  | "mycelialCatalyst"
+  | "neonRippleGarden"
+  | "chromaticSuperburst"
+  | "voltaicPetalStorm"
+  | "prismaticLatticeDrift"
+  | "solarRibbonDance"
+  | "mirrorButterflyFlux"
+  | "retroArcCascade"
+  | "pulseLoomWeave"
+  | "citrusStellarMist"
+  | "scarabGeometryPulse"
+  | "synthwaveShoreline"
+  | "iridescentShatterField";
