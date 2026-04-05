@@ -9,12 +9,12 @@ import {
 } from "@/config/oauthProviders";
 import { localStorage as appStorage } from "@/services/storage";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
-import { buildAuthCallbackUrl } from "@/utils/authRedirect";
+import { startOAuthSignIn } from "@/utils/startOAuthSignIn";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
 import { parsePreferredGenreId } from "@/utils/genre";
 import { useTranslations } from "next-intl";
-import { getProviders, signIn } from "next-auth/react";
+import { getProviders } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
@@ -33,27 +33,36 @@ function SignInContent() {
   const [submittingProviderId, setSubmittingProviderId] = useState<
     string | null
   >(null);
-  const [preferredGenreId, setPreferredGenreId] = useState<number | null>(null);
-  const [preferredGenreName, setPreferredGenreName] = useState("");
-
-  useEffect(() => {
-    setPreferredGenreId(
-      parsePreferredGenreId(
-        appStorage.getOrDefault<number | string | null>(
-          STORAGE_KEYS.PREFERRED_GENRE_ID,
-          null,
-        ),
+  const [preferredGenreId, setPreferredGenreId] = useState<number | null>(() =>
+    parsePreferredGenreId(
+      appStorage.getOrDefault<number | string | null>(
+        STORAGE_KEYS.PREFERRED_GENRE_ID,
+        null,
       ),
-    );
-
+    ),
+  );
+  const [preferredGenreName, setPreferredGenreName] = useState(() => {
     const storedName = appStorage.getOrDefault<string>(
       STORAGE_KEYS.PREFERRED_GENRE_NAME,
       "",
     );
-    setPreferredGenreName(
-      typeof storedName === "string" ? storedName.trim() : "",
-    );
-  }, []);
+
+    return typeof storedName === "string" ? storedName.trim() : "";
+  });
+
+  const resetGenrePreference = () => {
+    setPreferredGenreId(null);
+    setPreferredGenreName("");
+    appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_ID);
+    appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_NAME);
+  };
+
+  const saveGenrePreference = (genre: GenreListItem) => {
+    setPreferredGenreId(genre.id);
+    setPreferredGenreName(genre.name);
+    appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_ID, genre.id);
+    appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_NAME, genre.name);
+  };
 
   useEffect(() => {
     if (!error) return;
@@ -171,17 +180,11 @@ function SignInContent() {
 
   const setGenrePreference = (genre: GenreListItem | null) => {
     if (!genre) {
-      setPreferredGenreId(null);
-      setPreferredGenreName("");
-      appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_ID);
-      appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_NAME);
+      resetGenrePreference();
       return;
     }
 
-    setPreferredGenreId(genre.id);
-    setPreferredGenreName(genre.name);
-    appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_ID, genre.id);
-    appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_NAME, genre.name);
+    saveGenrePreference(genre);
   };
 
   return (
@@ -316,13 +319,16 @@ function SignInContent() {
                         callbackUrl,
                       });
                       try {
-                        await signIn(provider.id, {
-                          callbackUrl: buildAuthCallbackUrl(
+                        await startOAuthSignIn(provider.id, callbackUrl);
+                      } catch (error) {
+                        logAuthClientDebug(
+                          "OAuth sign-in from page failed before navigation",
+                          {
+                            providerId: provider.id,
                             callbackUrl,
-                            provider.id,
-                          ),
-                        });
-                      } finally {
+                            error,
+                          },
+                        );
                         setSubmittingProviderId(null);
                       }
                     }}

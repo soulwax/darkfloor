@@ -13,9 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { logAuthClientDebug } from "@/utils/authDebugClient";
-import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 import { OAUTH_PROVIDERS_FALLBACK } from "@/utils/authProvidersFallback";
-import { getProviders, signIn } from "next-auth/react";
+import { startOAuthSignIn } from "@/utils/startOAuthSignIn";
+import { getProviders } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
@@ -138,15 +138,12 @@ export function AuthModal({
     });
 
     try {
-      await signIn(providerId, {
-        callbackUrl: buildAuthCallbackUrl(callbackUrl, providerId),
-      });
+      await startOAuthSignIn(providerId, callbackUrl);
       logAuthClientDebug("AuthModal signIn call resolved", { providerId });
     } catch (error: unknown) {
       logAuthClientDebug("AuthModal signIn call failed", { providerId, error });
-      throw error;
-    } finally {
       setSubmittingProviderId(null);
+      throw error;
     }
   };
 

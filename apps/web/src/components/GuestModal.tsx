@@ -26,7 +26,7 @@ import {
 } from "@/utils/visualizerPreference";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
 import { STORAGE_KEYS } from "@starchild/config/storage";
-import { ChevronDown, Music2, X } from "lucide-react";
+import { ChevronDown, Music2, Play, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -137,6 +137,7 @@ export function GuestModal({
 }: GuestModalProps) {
   const { openAuthModal } = useAuthModal();
   const t = useTranslations("guest");
+  const tWelcome = useTranslations("welcome");
   const {
     isPending: isLocaleSwitchPending,
     locale,
@@ -542,19 +543,35 @@ export function GuestModal({
             </div>
           ) : null}
 
-          <DialogHeader className="border-b border-white/12 px-3 py-3 sm:px-5 sm:py-4">
+          <DialogHeader className="border-b border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_52%)] px-3 py-3 sm:px-5 sm:py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/35 bg-[#1DB954]/12 sm:h-11 sm:w-11">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/35 bg-[#1DB954]/12 shadow-[0_10px_24px_rgba(29,185,84,0.16)] sm:h-11 sm:w-11">
                   <Music2 className="h-5 w-5 text-[#1DB954]" />
                 </div>
-                <div>
-                  <DialogTitle className="text-[15px] leading-5 text-white sm:text-lg sm:leading-6">
+                <div className="min-w-0">
+                  <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold tracking-[0.12em] text-white/72 uppercase sm:text-[11px]">
+                    <Sparkles
+                      aria-hidden="true"
+                      className="h-3 w-3 shrink-0 text-[#1DB954]"
+                    />
+                    <span className="truncate">{tWelcome("title")}</span>
+                  </div>
+                  <DialogTitle className="mt-2 text-[15px] leading-5 text-white sm:text-lg sm:leading-6">
                     {t("title")}
                   </DialogTitle>
-                  <DialogDescription className="mt-1 text-xs leading-relaxed text-white/72 sm:text-sm">
-                    {t("description")}
+                  <DialogDescription className="mt-1 text-xs leading-relaxed text-white/80 sm:text-sm">
+                    {tWelcome("subtitle")}
                   </DialogDescription>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/62 sm:text-xs">
+                    {t("description")}
+                  </p>
+                  <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/72 sm:text-xs">
+                    <Play aria-hidden="true" className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {tWelcome("startPlayingHint")}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -573,7 +590,7 @@ export function GuestModal({
           <div
             className={cn(
               "guest-modal-content-scroll min-h-0 flex-1 touch-pan-y overflow-y-auto",
-              "space-y-3 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]",
+              "space-y-3 px-3 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pt-3",
               "text-sm sm:px-5",
             )}
           >

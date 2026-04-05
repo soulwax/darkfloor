@@ -160,6 +160,33 @@ function appendExpiredSessionCookies(response: Response): void {
   }
 }
 
+function applyNoStoreAuthHeaders(response: Response): void {
+  // Auth.js routes set and validate short-lived cookies (csrf/state/pkce/session).
+  // Any intermediary/browser caching can break sign-in flows with MissingCSRF.
+  response.headers.set(
+    "cache-control",
+    "no-store, no-cache, must-revalidate, max-age=0",
+  );
+  response.headers.set("pragma", "no-cache");
+  response.headers.set("expires", "0");
+  response.headers.set("surrogate-control", "no-store");
+
+  const vary = response.headers.get("vary");
+  if (!vary) {
+    response.headers.set("vary", "Cookie");
+    return;
+  }
+
+  const varyValues = new Set(
+    vary
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  varyValues.add("Cookie");
+  response.headers.set("vary", Array.from(varyValues).join(", "));
+}
+
 function logAuthRequest(request: Request): void {
   try {
     const url = new URL(request.url);
@@ -292,6 +319,7 @@ export async function GET(
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
     const response = await handlers.GET(request);
+    applyNoStoreAuthHeaders(response);
     if (shouldExpireSessionCookies(route)) {
       appendExpiredSessionCookies(response);
     }
@@ -324,6 +352,7 @@ export async function POST(
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
     const response = await handlers.POST(request);
+    applyNoStoreAuthHeaders(response);
     if (shouldExpireSessionCookies(route)) {
       appendExpiredSessionCookies(response);
     }
