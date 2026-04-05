@@ -1123,7 +1123,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={springPresets.gentle}
-              className="mb-5 overflow-hidden rounded-[1.35rem] border border-[color:var(--shell-border)] bg-[linear-gradient(180deg,rgba(244,178,102,0.16)_0%,rgba(20,24,30,0.9)_38%,rgba(14,17,22,0.94)_100%)] px-5 py-5 md:px-6 md:py-6"
+              className="mb-5 overflow-hidden rounded-[1.05rem] border border-[color:var(--shell-border)] bg-[linear-gradient(180deg,rgba(244,178,102,0.16)_0%,rgba(20,24,30,0.9)_38%,rgba(14,17,22,0.94)_100%)] px-5 py-5 md:px-6 md:py-6"
             >
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -1139,7 +1139,7 @@ export default function HomePageClient({ apiHostname }: HomePageClientProps) {
                       ? ` ${t("poweredBy", { host: apiHostname })}`
                       : ""}
                   </p>
-                  <div className="mt-4 max-w-2xl rounded-[1.1rem] border border-white/8 bg-black/12 px-4 py-4">
+                  <div className="mt-4 max-w-2xl rounded-[0.9rem] border border-white/8 bg-black/12 px-4 py-4">
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-(--color-accent)" />
                       <p className="text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase">

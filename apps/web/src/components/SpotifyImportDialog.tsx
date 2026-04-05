@@ -116,7 +116,7 @@ function SpotifyImportCover(props: { imageUrl: string | null; alt: string }) {
     imageUrl && failedImageUrl !== imageUrl ? imageUrl : null;
 
   return (
-    <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/10 bg-[var(--color-muted)]/20 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
+    <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-white/10 bg-[var(--color-muted)]/20 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
       {resolvedImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -395,9 +395,9 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
         }
       }}
     >
-      <DialogContent className="flex max-h-[90vh] w-[calc(100%-1rem)] max-w-3xl flex-col rounded-[1.75rem] p-0 sm:w-[calc(100%-1.5rem)]">
+      <DialogContent className="flex max-h-[90vh] w-[calc(100%-1rem)] max-w-3xl flex-col rounded-[1.25rem] p-0 sm:w-[calc(100%-1.5rem)]">
         {playlist ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.75rem]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.25rem]">
             <DialogHeader className="shrink-0 border-b border-[var(--color-border)] px-6 py-5">
               <DialogTitle className="text-xl text-[var(--color-text)]">
                 {importResult
@@ -477,7 +477,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_55%)]" />
                     <div className="relative">
                       {isSubmitting ? (
-                        <div className="mx-auto max-w-2xl rounded-[1.75rem] border border-[rgba(29,185,84,0.24)] bg-[linear-gradient(160deg,rgba(29,185,84,0.14),rgba(15,23,42,0.8))] p-5 sm:p-6">
+                        <div className="mx-auto max-w-2xl rounded-[1.25rem] border border-[rgba(29,185,84,0.24)] bg-[linear-gradient(160deg,rgba(29,185,84,0.14),rgba(15,23,42,0.8))] p-5 sm:p-6">
                           <div className="flex items-center gap-3">
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(29,185,84,0.28)] bg-[rgba(29,185,84,0.14)]">
                               <Loader2 className="h-5 w-5 animate-spin text-[#1DB954]" />
@@ -529,7 +529,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                           <div className="space-y-4">
                             {activeWizardStep === "review" ? (
                               <>
-                                <div className="rounded-[1.75rem] border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.16),rgba(15,23,42,0.84))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)]">
+                                <div className="rounded-[1.25rem] border border-[rgba(29,185,84,0.18)] bg-[linear-gradient(145deg,rgba(29,185,84,0.16),rgba(15,23,42,0.84))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.24)]">
                                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                                     <SpotifyImportCover
                                       imageUrl={playlist.imageUrl}
@@ -568,7 +568,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                                   )}
                                 </div>
 
-                                <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                                <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
                                   <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                                     {t("importWizardWhatHappensTitle")}
                                   </p>
@@ -603,7 +603,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                                 </div>
                               </>
                             ) : activeWizardStep === "destination" ? (
-                              <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                              <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
                                 <div className="flex items-center gap-2">
                                   <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                                     {t("importDestinationLabel")}
@@ -652,7 +652,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                                 </div>
                               </div>
                             ) : (
-                              <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                              <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
                                 <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                                   {t("importWizardConfirmTitle")}
                                 </p>
@@ -768,7 +768,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                               </div>
                             ) : null}
 
-                            <div className="rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
+                            <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/55 p-5">
                               <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
                                 {t("importWizardSidebarTitle")}
                               </p>
@@ -857,7 +857,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
               <>
                 <div className="min-h-0 overflow-y-auto">
                   <div className="space-y-6 px-6 py-6">
-                    <div className="relative overflow-hidden rounded-[1.75rem] border border-[rgba(29,185,84,0.3)] bg-[linear-gradient(155deg,rgba(29,185,84,0.18),rgba(15,23,42,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+                    <div className="relative overflow-hidden rounded-[1.25rem] border border-[rgba(29,185,84,0.3)] bg-[linear-gradient(155deg,rgba(29,185,84,0.18),rgba(15,23,42,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
                       <div className="pointer-events-none absolute right-0 bottom-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(29,185,84,0.2),transparent_70%)]" />
                       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-start gap-4">
@@ -913,7 +913,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                       </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/45">
+                    <div className="overflow-hidden rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/45">
                       <div className="grid gap-0 md:grid-cols-[minmax(0,1fr),96px,minmax(0,1fr)]">
                         <div className="p-5">
                           <p className="text-[11px] font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
@@ -983,7 +983,7 @@ export function SpotifyImportDialog(props: SpotifyImportDialogProps) {
                     </div>
 
                     {hasPartialImport ? (
-                      <div className="rounded-[1.5rem] border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4">
+                      <div className="rounded-[1.1rem] border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.12)] p-4">
                         <div className="flex items-start gap-3">
                           <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-200" />
                           <div>

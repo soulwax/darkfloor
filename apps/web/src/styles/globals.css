@@ -34,9 +34,12 @@
   --space-3: 1rem;
   --space-4: 1.5rem;
 
-  --radius-lg: 0.75rem;
-  --radius-md: 0.5rem;
-  --radius-sm: 0.25rem;
+  --radius-3xl: 1rem;
+  --radius-2xl: 0.875rem;
+  --radius-xl: 0.75rem;
+  --radius-lg: 0.625rem;
+  --radius-md: 0.425rem;
+  --radius-sm: 0.2rem;
 
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.24);
   --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.3);
@@ -46,8 +49,8 @@
   --accent-btn-shadow-hover: none;
   --shell-gap: var(--space-2);
   --shell-gap-compact: var(--space-1);
-  --shell-radius: 1rem;
-  --shell-radius-compact: 0.75rem;
+  --shell-radius: 0.85rem;
+  --shell-radius-compact: 0.625rem;
   --shell-border: rgba(255, 255, 255, 0.06);
   --shell-divider: rgba(255, 255, 255, 0.08);
   --shell-muted-bg: rgba(255, 255, 255, 0.04);
@@ -99,7 +102,7 @@
   --desktop-top-chrome-offset: 0px;
   --desktop-window-edge-offset: 0px;
   --desktop-window-frame-gap: 0px;
-  --desktop-window-radius: 1.45rem;
+  --desktop-window-radius: 1.1rem;
   --tauri-titlebar-height: 3rem;
   --tauri-frame-border: rgba(244, 178, 102, 0.14);
   --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
@@ -717,7 +720,7 @@ html.theme-light .surface-muted {
 .shell-panel-muted {
   background: var(--shell-muted-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 1rem;
+  border-radius: var(--shell-radius);
 }
 
 .shell-section-label {

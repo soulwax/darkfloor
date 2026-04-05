@@ -49,7 +49,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
     >
       <DesktopSidebar />
       <div className="desktop-main flex min-h-0 min-w-0 flex-1 flex-col p-2 md:p-2.5">
-        <div className="desktop-surface flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.2rem] border">
+        <div className="desktop-surface flex min-h-0 flex-1 flex-col overflow-hidden rounded-[0.95rem] border">
           <div className="desktop-scroll min-h-0 flex-1 overflow-y-auto">
             <div className="desktop-stage flex min-h-full flex-col">
               {children}

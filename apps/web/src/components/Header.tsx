@@ -345,7 +345,7 @@ export default function Header() {
       suppressHydrationWarning
     >
       <div
-        className={`theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[1.15rem] border py-2 ${
+        className={`theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[0.95rem] border py-2 ${
           isTauriDesktop ? "tauri-header-main" : ""
         }`}
       >

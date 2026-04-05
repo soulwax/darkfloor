@@ -532,7 +532,7 @@ export function GuestModal({
           "max-h-[90vh] overflow-hidden border-white/12 bg-[#0F1528]/95 p-0 text-white shadow-[0_30px_90px_rgba(0,0,0,0.6)] focus:outline-none",
           isMobile
             ? "!top-auto !right-0 !bottom-0 !left-0 !m-0 !h-[90vh] !w-full !max-w-full !translate-x-0 !translate-y-0 rounded-t-3xl rounded-b-none border-b-0 data-[state=closed]:!translate-y-full data-[state=open]:!translate-y-0"
-            : "w-[min(40rem,calc(100%-2rem))] rounded-3xl data-[state=closed]:translate-y-3 data-[state=closed]:scale-[0.98] data-[state=open]:translate-y-0 data-[state=open]:scale-100",
+            : "w-[min(40rem,calc(100%-2rem))] rounded-2xl data-[state=closed]:translate-y-3 data-[state=closed]:scale-[0.98] data-[state=open]:translate-y-0 data-[state=open]:scale-100",
         )}
         style={isMobile ? { height: "90dvh", maxHeight: "90dvh" } : undefined}
       >

@@ -328,7 +328,7 @@ export default function PersistentPlayer() {
               left: "50%",
             }}
           >
-            <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.35rem]">
+            <div className="player-backdrop pointer-events-auto overflow-hidden rounded-[1.05rem]">
               <div className="player-backdrop-inner">
                 <MaturePlayer {...playerProps} />
               </div>

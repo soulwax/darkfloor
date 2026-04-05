@@ -713,7 +713,7 @@ export default function SpotifyPage() {
     return (
       <div className="container mx-auto flex min-h-screen flex-col px-4 py-8 md:px-6 md:py-10">
         <div className="mb-8 h-12 w-48 animate-pulse rounded bg-(--color-muted)/20" />
-        <div className="h-80 animate-pulse rounded-3xl border border-(--color-border) bg-(--color-surface)/60" />
+        <div className="h-80 animate-pulse rounded-2xl border border-(--color-border) bg-(--color-surface)/60" />
       </div>
     );
   }
@@ -751,7 +751,7 @@ export default function SpotifyPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={springPresets.gentle}
-        className="relative overflow-hidden rounded-3xl border border-(--color-border) bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+        className="relative overflow-hidden rounded-2xl border border-(--color-border) bg-[linear-gradient(135deg,rgba(29,185,84,0.14),rgba(17,24,39,0.84))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.22),transparent_58%)]" />
         <div className="pointer-events-none absolute right-0 bottom-0 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(29,185,84,0.14),transparent_72%)]" />
@@ -789,7 +789,7 @@ export default function SpotifyPage() {
           </div>
 
           <div className="mt-4 grid gap-2.5 md:grid-cols-3">
-            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+            <div className="rounded-[1.05rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
               <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
                 {tc("playlists")}
               </p>
@@ -800,7 +800,7 @@ export default function SpotifyPage() {
                 {t("playlistMigration")}
               </p>
             </div>
-            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+            <div className="rounded-[1.05rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
               <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
                 {t("playlistDetail")}
               </p>
@@ -813,7 +813,7 @@ export default function SpotifyPage() {
                   : t("trackCountUnknown")}
               </p>
             </div>
-            <div className="rounded-[1.35rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
+            <div className="rounded-[1.05rem] border border-white/10 bg-white/6 p-3.5 backdrop-blur-sm">
               <p className="text-[11px] font-semibold tracking-[0.16em] text-(--color-subtext) uppercase">
                 {t("savedAppProfile")}
               </p>
@@ -833,7 +833,7 @@ export default function SpotifyPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springPresets.gentle, delay: 0.04 }}
-          className="rounded-3xl border border-(--color-border) bg-(--color-surface)/80 p-4"
+          className="rounded-2xl border border-(--color-border) bg-(--color-surface)/80 p-4"
         >
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
@@ -938,7 +938,7 @@ export default function SpotifyPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springPresets.gentle, delay: 0.08 }}
-          className="min-w-0 rounded-3xl border border-(--color-border) bg-(--color-surface)/80 p-5"
+          className="min-w-0 rounded-2xl border border-(--color-border) bg-(--color-surface)/80 p-5"
         >
           <div className="flex flex-col gap-3 border-b border-(--color-border) pb-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -998,7 +998,7 @@ export default function SpotifyPage() {
                   return (
                     <div
                       key={playlist.id}
-                      className={`group relative w-full overflow-hidden rounded-[1.35rem] border p-3.5 text-left transition duration-300 ${
+                      className={`group relative w-full overflow-hidden rounded-[1.05rem] border p-3.5 text-left transition duration-300 ${
                         isSelected
                           ? "translate-y-[-2px] border-[rgba(29,185,84,0.35)] bg-[linear-gradient(145deg,rgba(29,185,84,0.18),rgba(15,23,42,0.84))] shadow-[0_24px_64px_rgba(0,0,0,0.24)]"
                           : "border-(--color-border) bg-(--color-surface-hover)/55 hover:-translate-y-0.5 hover:border-white/10 hover:bg-(--color-surface-hover)/90 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)]"
@@ -1030,7 +1030,7 @@ export default function SpotifyPage() {
                           <PlaylistCover
                             imageUrl={playlist.imageUrl}
                             alt={playlist.name}
-                            className="h-14 w-14 rounded-[1.1rem] shadow-[0_10px_28px_rgba(0,0,0,0.2)]"
+                            className="h-14 w-14 rounded-[0.9rem] shadow-[0_10px_28px_rgba(0,0,0,0.2)]"
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-(--color-text)">
@@ -1073,10 +1073,10 @@ export default function SpotifyPage() {
                 })}
               </div>
 
-              <div className="min-w-0 rounded-[1.5rem] border border-(--color-border) bg-(--color-surface-hover)/45 p-4">
+              <div className="min-w-0 rounded-[1.1rem] border border-(--color-border) bg-(--color-surface-hover)/45 p-4">
                 {selectedPlaylistFromList ? (
                   <>
-                    <div className="relative overflow-hidden rounded-3xl border border-(--color-border) bg-(--color-surface)/75">
+                    <div className="relative overflow-hidden rounded-2xl border border-(--color-border) bg-(--color-surface)/75">
                       {selectedPlaylistImageUrl ? (
                         <div className="pointer-events-none absolute inset-0 opacity-20">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1094,7 +1094,7 @@ export default function SpotifyPage() {
                             selectedPlaylistDetail?.name ??
                             selectedPlaylistFromList.name
                           }
-                          className="h-24 w-24 rounded-[1.4rem] border border-white/10 shadow-[0_18px_48px_rgba(0,0,0,0.28)]"
+                          className="h-24 w-24 rounded-[1.05rem] border border-white/10 shadow-[0_18px_48px_rgba(0,0,0,0.28)]"
                           iconClassName="h-6 w-6"
                         />
                         <div className="min-w-0 flex-1">
@@ -1192,7 +1192,7 @@ export default function SpotifyPage() {
                         {t("noTrackRows")}
                       </div>
                     ) : (
-                      <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-(--color-border) bg-(--color-surface)/50">
+                      <div className="mt-4 overflow-hidden rounded-[1.05rem] border border-(--color-border) bg-(--color-surface)/50">
                         <div className="flex items-center justify-between gap-3 border-b border-(--color-border) px-4 py-3">
                           <div>
                             <p className="text-sm font-semibold text-(--color-text)">
@@ -1216,7 +1216,7 @@ export default function SpotifyPage() {
                             .map((track, index) => (
                               <div
                                 key={track.id ?? `${track.name}-${index}`}
-                                className="group flex items-center gap-3 rounded-[1.1rem] border border-(--color-border) bg-(--color-surface)/65 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-white/10 hover:bg-(--color-surface)/80"
+                                className="group flex items-center gap-3 rounded-[0.9rem] border border-(--color-border) bg-(--color-surface)/65 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-white/10 hover:bg-(--color-surface)/80"
                               >
                                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-(--color-border) bg-(--color-surface-hover) text-[11px] font-semibold text-(--color-subtext)">
                                   {index + 1}
