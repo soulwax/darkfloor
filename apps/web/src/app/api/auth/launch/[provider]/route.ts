@@ -1,10 +1,5 @@
-import { handlers } from "@/server/auth";
 import { isEnabledOAuthProviderId } from "@/config/oauthProviders";
 import { type NextRequest, NextResponse } from "next/server";
-
-type CsrfResponse = {
-  csrfToken?: string;
-};
 
 function resolveRequestOrigin(request: Request): string | null {
   try {
@@ -20,35 +15,6 @@ function resolveRequestOrigin(request: Request): string | null {
   } catch {
     return null;
   }
-}
-
-function applyDynamicAuthOrigin(request: Request): void {
-  const requestOrigin = resolveRequestOrigin(request);
-  if (!requestOrigin) return;
-
-  process.env.AUTH_URL = requestOrigin;
-  process.env.NEXTAUTH_URL = requestOrigin;
-  process.env.NEXTAUTH_URL_INTERNAL = requestOrigin;
-}
-
-function splitSetCookieHeader(value: string): string[] {
-  return value
-    .split(/,(?=\s*[^;,=\s]+=)/g)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-function getSetCookieHeaders(headers: Headers): string[] {
-  const headersWithSetCookie = headers as Headers & {
-    getSetCookie?: () => string[];
-  };
-
-  if (typeof headersWithSetCookie.getSetCookie === "function") {
-    return headersWithSetCookie.getSetCookie().filter(Boolean);
-  }
-
-  const raw = headers.get("set-cookie");
-  return raw ? splitSetCookieHeader(raw) : [];
 }
 
 function escapeHtml(value: string): string {
@@ -73,10 +39,11 @@ function normalizeCallbackUrl(callbackUrl: string | null, origin: string): strin
   }
 }
 
-function buildLaunchHtml(provider: string, csrfToken: string, callbackUrl: string): string {
+function buildLaunchHtml(provider: string, callbackUrl: string, fallbackUrl: string): string {
   const escapedProvider = escapeHtml(provider);
-  const escapedCsrfToken = escapeHtml(csrfToken);
-  const escapedCallbackUrl = escapeHtml(callbackUrl);
+  const escapedFallbackUrl = escapeHtml(fallbackUrl);
+  const escapedCsrfEndpoint = escapeHtml("/api/auth/csrf");
+  const escapedSignInAction = escapeHtml(`/api/auth/signin/${provider}`);
 
   return `<!doctype html>
 <html lang="en">
@@ -105,6 +72,10 @@ function buildLaunchHtml(provider: string, csrfToken: string, callbackUrl: strin
         text-align: center;
       }
       p { margin: 0; color: rgba(255,255,255,0.72); }
+      a {
+        color: #dbeafe;
+        text-underline-offset: 0.2em;
+      }
       button {
         margin-top: 1rem;
         padding: 0.75rem 1rem;
@@ -120,44 +91,66 @@ function buildLaunchHtml(provider: string, csrfToken: string, callbackUrl: strin
   <body>
     <main>
       <p>Continuing to ${escapedProvider} sign-in…</p>
-      <form id="oauth-launch" method="POST" action="/api/auth/signin/${escapedProvider}">
-        <input type="hidden" name="csrfToken" value="${escapedCsrfToken}" />
-        <input type="hidden" name="callbackUrl" value="${escapedCallbackUrl}" />
-        <noscript><button type="submit">Continue</button></noscript>
-      </form>
+      <p id="oauth-status" hidden>Preparing secure sign-in…</p>
+      <noscript>
+        <p>JavaScript is required to continue with OAuth on this device.</p>
+        <p><a href="${escapedFallbackUrl}">Return to sign-in</a></p>
+      </noscript>
     </main>
-    <script>document.getElementById("oauth-launch")?.submit();</script>
+    <script>
+      const callbackUrl = ${JSON.stringify(callbackUrl)};
+      const fallbackUrl = ${JSON.stringify(fallbackUrl)};
+      const statusNode = document.getElementById("oauth-status");
+
+      function createHiddenInput(name, value) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        return input;
+      }
+
+      async function continueOAuth() {
+        statusNode?.removeAttribute("hidden");
+
+        const response = await fetch("${escapedCsrfEndpoint}", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("csrf request failed");
+        }
+
+        const payload = await response.json();
+        const csrfToken =
+          typeof payload?.csrfToken === "string" ? payload.csrfToken.trim() : "";
+
+        if (!csrfToken) {
+          throw new Error("csrf token missing");
+        }
+
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "${escapedSignInAction}";
+        form.style.display = "none";
+        form.appendChild(createHiddenInput("csrfToken", csrfToken));
+        form.appendChild(createHiddenInput("callbackUrl", callbackUrl));
+        document.body.appendChild(form);
+        form.submit();
+      }
+
+      continueOAuth().catch(() => {
+        window.location.replace(fallbackUrl);
+      });
+    </script>
   </body>
 </html>`;
 }
-
-export const authLaunchInternals = {
-  async getCsrfResponse(request: NextRequest): Promise<Response> {
-    applyDynamicAuthOrigin(request);
-
-    const csrfUrl = new URL("/api/auth/csrf", request.url);
-    const csrfHeaders = new Headers();
-    csrfHeaders.set("accept", "application/json");
-    csrfHeaders.set("cookie", request.headers.get("cookie") ?? "");
-    csrfHeaders.set("user-agent", request.headers.get("user-agent") ?? "");
-    csrfHeaders.set(
-      "x-forwarded-host",
-      request.headers.get("x-forwarded-host") ?? request.nextUrl.host,
-    );
-    csrfHeaders.set(
-      "x-forwarded-proto",
-      request.headers.get("x-forwarded-proto") ??
-        request.nextUrl.protocol.replace(":", ""),
-    );
-
-    const csrfRequest = new NextRequest(csrfUrl.toString(), {
-      method: "GET",
-      headers: csrfHeaders,
-    });
-
-    return handlers.GET(csrfRequest);
-  },
-};
 
 export async function GET(
   request: NextRequest,
@@ -172,47 +165,18 @@ export async function GET(
     );
   }
 
-  const origin = request.nextUrl.origin;
+  const origin = resolveRequestOrigin(request) ?? request.nextUrl.origin;
   const callbackUrl = normalizeCallbackUrl(
     request.nextUrl.searchParams.get("callbackUrl"),
     origin,
   );
-
-  let csrfResponse: Response;
-  try {
-    csrfResponse = await authLaunchInternals.getCsrfResponse(request);
-  } catch {
-    return NextResponse.redirect(
-      new URL(
-        `/signin?error=AuthFailed&callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        origin,
-      ),
-    );
-  }
-
-  if (!csrfResponse.ok) {
-    return NextResponse.redirect(
-      new URL(
-        `/signin?error=AuthFailed&callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        origin,
-      ),
-    );
-  }
-
-  const payload = (await csrfResponse.json()) as CsrfResponse;
-  const csrfToken = payload.csrfToken?.trim();
-
-  if (!csrfToken) {
-    return NextResponse.redirect(
-      new URL(
-        `/signin?error=AuthFailed&callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        origin,
-      ),
-    );
-  }
+  const fallbackUrl = new URL(
+    `/signin?error=AuthFailed&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+    origin,
+  ).toString();
 
   const response = new NextResponse(
-    buildLaunchHtml(provider, csrfToken, callbackUrl),
+    buildLaunchHtml(provider, callbackUrl, fallbackUrl),
     {
       status: 200,
       headers: {
@@ -224,10 +188,6 @@ export async function GET(
       },
     },
   );
-
-  for (const cookie of getSetCookieHeaders(csrfResponse.headers)) {
-    response.headers.append("set-cookie", cookie);
-  }
 
   return response;
 }
