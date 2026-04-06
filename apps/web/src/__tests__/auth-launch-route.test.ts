@@ -4,6 +4,9 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 type LaunchRouteModule = {
+  authLaunchInternals: {
+    getCsrfResponse: (request: NextRequest) => Promise<Response>;
+  };
   GET: (
     request: NextRequest,
     context: { params: Promise<{ provider: string }> },
@@ -34,28 +37,30 @@ describe("auth launch route", () => {
   });
 
   it("renders the auto-submit handoff form using an internally resolved csrf token", async () => {
-    const handlerGet = vi.fn(async (request: NextRequest) => {
-      expect(new URL(request.url).pathname).toBe("/api/auth/csrf");
-      expect(request.headers.get("x-forwarded-host")).toBe("darkfloor.org");
-      expect(request.headers.get("x-forwarded-proto")).toBe("https");
-      return new Response(JSON.stringify({ csrfToken: "csrf-token-1" }), {
-        status: 200,
-        headers: {
-          "content-type": "application/json",
-          "set-cookie":
-            "__Host-authjs.csrf-token=csrf-cookie; Path=/; HttpOnly; Secure; SameSite=Lax",
-        },
-      });
-    });
-
     vi.doMock("@/server/auth", () => ({
       handlers: {
-        GET: handlerGet,
+        GET: vi.fn(),
         POST: vi.fn(),
       },
     }));
 
     const route = await loadRoute();
+    const handlerGet = vi
+      .spyOn(route.authLaunchInternals, "getCsrfResponse")
+      .mockImplementation(async (request: NextRequest) => {
+        expect(new URL(request.url).pathname).toBe("/api/auth/launch/discord");
+        expect(request.headers.get("x-forwarded-host")).toBe("darkfloor.org");
+        expect(request.headers.get("x-forwarded-proto")).toBe("https");
+        return new Response(JSON.stringify({ csrfToken: "csrf-token-1" }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "set-cookie":
+              "__Host-authjs.csrf-token=csrf-cookie; Path=/; HttpOnly; Secure; SameSite=Lax",
+          },
+        });
+      });
+
     const response = await route.GET(
       makeRequest(
         "/api/auth/launch/discord?callbackUrl=%2Fauth%2Fcallback%3Fnext%3D%252F%26provider%3Ddiscord",
@@ -80,18 +85,20 @@ describe("auth launch route", () => {
   });
 
   it("redirects back to sign-in when csrf resolution throws", async () => {
-    const handlerGet = vi.fn(async () => {
-      throw new Error("csrf failed");
-    });
-
     vi.doMock("@/server/auth", () => ({
       handlers: {
-        GET: handlerGet,
+        GET: vi.fn(),
         POST: vi.fn(),
       },
     }));
 
     const route = await loadRoute();
+    const handlerGet = vi
+      .spyOn(route.authLaunchInternals, "getCsrfResponse")
+      .mockImplementation(async () => {
+        throw new Error("csrf failed");
+      });
+
     const response = await route.GET(makeRequest("/api/auth/launch/discord"), {
       params: Promise.resolve({ provider: "discord" }),
     });

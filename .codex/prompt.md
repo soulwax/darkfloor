@@ -4,6 +4,14 @@ Last updated: 2026-04-06
 
 This repository is frontend-first.
 
+Local instance notes:
+
+- Frontend web runtime: `http://127.0.0.1:3222`
+- Backend API runtime: `http://127.0.0.1:3333`
+- Host OS: Ubuntu 24.04
+- Production process model: PM2, not Vercel
+- These deployment details help debugging, but frontend OAuth/auth ownership rules should not depend on Vercel-specific assumptions.
+
 ## Primary Ownership
 
 - `apps/web` owns Next.js routing, Auth.js/NextAuth, Discord/GitHub OAuth, browser cookies, redirect flows, and user-facing auth UX.

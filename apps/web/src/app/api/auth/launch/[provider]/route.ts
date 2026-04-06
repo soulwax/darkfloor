@@ -131,31 +131,33 @@ function buildLaunchHtml(provider: string, csrfToken: string, callbackUrl: strin
 </html>`;
 }
 
-async function getCsrfResponse(request: NextRequest): Promise<Response> {
-  applyDynamicAuthOrigin(request);
+export const authLaunchInternals = {
+  async getCsrfResponse(request: NextRequest): Promise<Response> {
+    applyDynamicAuthOrigin(request);
 
-  const csrfUrl = new URL("/api/auth/csrf", request.url);
-  const csrfHeaders = new Headers();
-  csrfHeaders.set("accept", "application/json");
-  csrfHeaders.set("cookie", request.headers.get("cookie") ?? "");
-  csrfHeaders.set("user-agent", request.headers.get("user-agent") ?? "");
-  csrfHeaders.set(
-    "x-forwarded-host",
-    request.headers.get("x-forwarded-host") ?? request.nextUrl.host,
-  );
-  csrfHeaders.set(
-    "x-forwarded-proto",
-    request.headers.get("x-forwarded-proto") ??
-      request.nextUrl.protocol.replace(":", ""),
-  );
+    const csrfUrl = new URL("/api/auth/csrf", request.url);
+    const csrfHeaders = new Headers();
+    csrfHeaders.set("accept", "application/json");
+    csrfHeaders.set("cookie", request.headers.get("cookie") ?? "");
+    csrfHeaders.set("user-agent", request.headers.get("user-agent") ?? "");
+    csrfHeaders.set(
+      "x-forwarded-host",
+      request.headers.get("x-forwarded-host") ?? request.nextUrl.host,
+    );
+    csrfHeaders.set(
+      "x-forwarded-proto",
+      request.headers.get("x-forwarded-proto") ??
+        request.nextUrl.protocol.replace(":", ""),
+    );
 
-  const csrfRequest = new NextRequest(csrfUrl.toString(), {
-    method: "GET",
-    headers: csrfHeaders,
-  });
+    const csrfRequest = new NextRequest(csrfUrl.toString(), {
+      method: "GET",
+      headers: csrfHeaders,
+    });
 
-  return handlers.GET(csrfRequest);
-}
+    return handlers.GET(csrfRequest);
+  },
+};
 
 export async function GET(
   request: NextRequest,
@@ -178,7 +180,7 @@ export async function GET(
 
   let csrfResponse: Response;
   try {
-    csrfResponse = await getCsrfResponse(request);
+    csrfResponse = await authLaunchInternals.getCsrfResponse(request);
   } catch {
     return NextResponse.redirect(
       new URL(
