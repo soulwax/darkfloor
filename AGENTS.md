@@ -1,6 +1,6 @@
 # Agent Guide (songbird-frontend / Starchild Monorepo)
 
-Last updated: 2026-04-05
+Last updated: 2026-04-06
 
 This is the primary project context for coding agents in this repository. Read this file before making changes.
 
@@ -11,9 +11,13 @@ This is the primary project context for coding agents in this repository. Read t
 3. `README.md`
 4. `AI_TOOLING.md`
 5. `apps/mobile/README.md` when the task touches the mobile runtime
-6. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
-7. `CHANGELOG.md` when the task is user-visible or release-sensitive
-8. `tree.txt` only as a rough snapshot; verify the live filesystem before trusting it
+6. `.codex/prompt.md` for current workspace state and boundary reminders
+7. `.codex/tasks.md` for recurring task checklists and auth/frontend ownership rules
+8. `.codex/acceptance.md` for definition-of-done guidance
+9. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
+10. `api/AGENTS.md` and `api/.codex` only when full-stack/backend work is explicitly required
+11. `CHANGELOG.md` when the task is user-visible or release-sensitive
+12. `tree.txt` only as a rough snapshot; verify the live filesystem before trusting it
 
 ## Required Engineering Standards
 
@@ -34,6 +38,12 @@ Contributors and coding agents should demonstrate:
 ## High-Level Architecture
 
 This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/` and shared code under `packages/`. The Darkfloor API V2 backend is consumed as an external service via `API_V2_URL`; it is no longer vendored in this repository.
+
+Important boundary:
+
+- Treat this repository as frontend-first. Normal auth, OAuth, routing, cookie, tRPC, and Next.js work should stay in `apps/web` unless the user explicitly asks for coordinated full-stack changes.
+- The `api/` directory is a Git submodule for the external backend service. Do not treat it as part of the normal frontend implementation path.
+- Do not infer frontend auth behavior from backend auth env vars. Frontend Auth.js/NextAuth behavior is owned by the web runtime unless a task explicitly spans both systems.
 
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
@@ -131,6 +141,7 @@ Note on upstream APIs:
 - Prefer cross-file navigation and existing implementations over duplication.
 - Before multi-module edits, identify key files and each file's role.
 - Search for existing patterns first (router style, proxy style, error/logging style, DB handling) and follow them.
+- Default to the frontend workspace first. Only inspect `api/` when the task explicitly requires backend behavior, contracts, or coordinated full-stack changes.
 - If a task spans frontend and backend behavior, inspect the root docs first and then consult the external backend repository or contract docs as needed.
 
 ## Repo-Specific Patterns to Reuse
@@ -148,6 +159,10 @@ Note on upstream APIs:
 - Before implementation, summarize:
   - files to touch
   - existing patterns being followed
+- For auth/OAuth work, explicitly state whether the change is:
+  - frontend Auth.js / Next.js behavior in `apps/web`
+  - backend API/submodule behavior in `api/`
+  - coordinated full-stack behavior across both
 - If a task also requires backend changes, call out that the implementation lives in a separate repository/service.
 - Keep changes minimal and localized.
 - Avoid global architecture/config changes unless explicitly requested.

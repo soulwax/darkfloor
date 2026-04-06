@@ -1,9 +1,35 @@
+import { handlers } from "@/server/auth";
 import { isEnabledOAuthProviderId } from "@/config/oauthProviders";
 import { type NextRequest, NextResponse } from "next/server";
 
 type CsrfResponse = {
   csrfToken?: string;
 };
+
+function resolveRequestOrigin(request: Request): string | null {
+  try {
+    const fallback = new URL(request.url);
+    const hostHeader =
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const protoHeader =
+      request.headers.get("x-forwarded-proto") ??
+      fallback.protocol.replace(":", "");
+
+    if (!hostHeader) return fallback.origin;
+    return new URL(`${protoHeader}://${hostHeader}`).origin;
+  } catch {
+    return null;
+  }
+}
+
+function applyDynamicAuthOrigin(request: Request): void {
+  const requestOrigin = resolveRequestOrigin(request);
+  if (!requestOrigin) return;
+
+  process.env.AUTH_URL = requestOrigin;
+  process.env.NEXTAUTH_URL = requestOrigin;
+  process.env.NEXTAUTH_URL_INTERNAL = requestOrigin;
+}
 
 function splitSetCookieHeader(value: string): string[] {
   return value
@@ -105,6 +131,32 @@ function buildLaunchHtml(provider: string, csrfToken: string, callbackUrl: strin
 </html>`;
 }
 
+async function getCsrfResponse(request: NextRequest): Promise<Response> {
+  applyDynamicAuthOrigin(request);
+
+  const csrfUrl = new URL("/api/auth/csrf", request.url);
+  const csrfHeaders = new Headers();
+  csrfHeaders.set("accept", "application/json");
+  csrfHeaders.set("cookie", request.headers.get("cookie") ?? "");
+  csrfHeaders.set("user-agent", request.headers.get("user-agent") ?? "");
+  csrfHeaders.set(
+    "x-forwarded-host",
+    request.headers.get("x-forwarded-host") ?? request.nextUrl.host,
+  );
+  csrfHeaders.set(
+    "x-forwarded-proto",
+    request.headers.get("x-forwarded-proto") ??
+      request.nextUrl.protocol.replace(":", ""),
+  );
+
+  const csrfRequest = new NextRequest(csrfUrl.toString(), {
+    method: "GET",
+    headers: csrfHeaders,
+  });
+
+  return handlers.GET(csrfRequest);
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ provider: string }> },
@@ -124,19 +176,17 @@ export async function GET(
     origin,
   );
 
-  const csrfResponse = await fetch(new URL("/api/auth/csrf", request.url), {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      cookie: request.headers.get("cookie") ?? "",
-      "user-agent": request.headers.get("user-agent") ?? "",
-      "x-forwarded-host":
-        request.headers.get("x-forwarded-host") ?? request.nextUrl.host,
-      "x-forwarded-proto":
-        request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", ""),
-    },
-    cache: "no-store",
-  });
+  let csrfResponse: Response;
+  try {
+    csrfResponse = await getCsrfResponse(request);
+  } catch {
+    return NextResponse.redirect(
+      new URL(
+        `/signin?error=AuthFailed&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        origin,
+      ),
+    );
+  }
 
   if (!csrfResponse.ok) {
     return NextResponse.redirect(
