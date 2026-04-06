@@ -18,15 +18,14 @@ describe("buildOAuthLaunchUrl", () => {
     );
   });
 
-  it("launches OAuth on the configured canonical auth origin", () => {
+  it("keeps Auth.js OAuth on the current origin even when an API auth base exists", () => {
     const parsed = buildOAuthLaunchUrl({
       providerId: "github",
       callbackUrl: "/playlists",
       currentOrigin: "https://m.darkfloor.one",
-      configuredAuthApiBase: "https://darkfloor.one/",
     });
 
-    expect(parsed.origin).toBe("https://www.darkfloor.one");
+    expect(parsed.origin).toBe("https://m.darkfloor.one");
     expect(parsed.pathname).toBe("/api/auth/launch/github");
     expect(parsed.searchParams.get("callbackUrl")).toBe(
       "/auth/callback?next=%2Fplaylists&provider=github",
