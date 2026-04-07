@@ -44,6 +44,7 @@ Important boundary:
 - Treat this repository as frontend-first. Normal auth, OAuth, routing, cookie, tRPC, and Next.js work should stay in `apps/web` unless the user explicitly asks for coordinated full-stack changes.
 - The `api/` directory is a Git submodule for the external backend service. Do not treat it as part of the normal frontend implementation path.
 - Do not infer frontend auth behavior from backend auth env vars. Frontend Auth.js/NextAuth behavior is owned by the web runtime unless a task explicitly spans both systems.
+- Frontend production hosting is PM2 on Ubuntu, not Vercel. Do not assume Vercel deployment, Vercel runtime logs, or Vercel-specific debugging paths for the main frontend unless the task explicitly targets one of the separate Vercel-hosted API replicas.
 
 - Apps:
   - `apps/web`: primary Next.js App Router runtime (tRPC + NextAuth + Drizzle/Postgres)
@@ -130,10 +131,14 @@ Note on upstream APIs:
 - Server wrapper/env loading:
   - Root `scripts/server.js` delegates to `apps/web/scripts/server.js`.
   - Dev mode loads `.env`, then `.env.local` with override so local machine settings win.
-  - Production loads `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env so stale PM2/shell variables do not win.
+- Production loads `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env so stale PM2/shell variables do not win.
 - Package manager:
   - `pnpm-lock.yaml` is the canonical lockfile; default install flow is `pnpm install --frozen-lockfile`.
   - Root scripts may call `npm --prefix ...` internally; preserve script behavior unless explicitly changing it.
+- Deployment/runtime reminder:
+  - The primary frontend process is `bluesix-frontend-prod` under PM2.
+  - Use PM2 logs/process state and local Linux service context for frontend production debugging.
+  - Do not default to Vercel deployment assumptions for the frontend runtime.
 
 ## Navigation and Indexing Expectations
 

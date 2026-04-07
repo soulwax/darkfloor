@@ -11,6 +11,7 @@ Last updated: 2026-04-06
    - coordinated full-stack work
 3. Follow existing patterns before inventing a new flow.
 4. Keep changes localized and validate the touched path.
+5. For frontend production debugging, start with PM2 and local Ubuntu runtime checks, not Vercel deployment tooling.
 
 ## For Auth/OAuth/Cookie Work
 
@@ -33,3 +34,4 @@ Last updated: 2026-04-06
 - Do not treat “auth” as automatically backend.
 - Do not treat the `api/` submodule as part of the default implementation path.
 - Do not mix Next.js/Auth.js assumptions with backend service assumptions.
+- Do not assume the frontend is deployed on Vercel; the main frontend runtime is PM2-hosted.

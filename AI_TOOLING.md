@@ -28,6 +28,7 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 - Treat `apps/web` as the default home for auth, OAuth, cookies, redirects, and Next.js behavior.
 - Treat `api/` as an opt-in backend submodule. Do not enter it unless the task clearly requires backend or coordinated full-stack work.
 - Do not use backend/API env vars as the source of truth for frontend Auth.js provider behavior unless the code path explicitly consumes them.
+- Treat the frontend production runtime as PM2-hosted on Ubuntu, not Vercel. For frontend incidents, default to PM2 logs and local process/runtime inspection before any Vercel-specific tooling.
 
 ## Quick commands
 

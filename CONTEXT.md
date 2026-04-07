@@ -6,6 +6,7 @@ Last updated: 2026-04-05
 
 - Turborepo-style monorepo with a Next.js web runtime and an Electron desktop wrapper.
 - Primary product: `apps/web` (App Router + tRPC + NextAuth + Drizzle/Postgres).
+- Frontend production deployment model: PM2 on Ubuntu for the main web runtime, not Vercel.
 - Desktop runtime: `apps/desktop/electron` (legacy compatibility wrappers also exist under root `electron/`).
 - Mobile runtime: `apps/mobile` Expo-based React Native Web app with a persisted shell controller under `src/mobile-shell/*`.
 - API model:
@@ -87,6 +88,7 @@ Player internals live in shared packages:
   - `NODE_ENV=development`: load `.env`, then `.env.local` with override so local machine settings win.
   - production: load `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env.
 - Root `scripts/server.js` is a thin wrapper that imports `apps/web/scripts/server.js`.
+- Frontend production process name under PM2: `bluesix-frontend-prod`.
 
 ## Change Guide (Where To Edit)
 
@@ -110,3 +112,4 @@ Player internals live in shared packages:
 - Upstream Swagger files (`docs/API_V2_SWAGGER.yaml` / `.json`) describe the service configured via `API_V2_URL`.
 - Verify the live filesystem before trusting older repo maps such as `tree.txt`; optional docs and tool-specific files may differ across checkouts.
 - Vercel config (`vercel.json`) uses pnpm commands (`pnpm install --frozen-lockfile`, `pnpm run build`).
+- The existence of `vercel.json` does not mean the main frontend production runtime is on Vercel; treat PM2 as the default frontend deployment/debug context.

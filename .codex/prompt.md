@@ -10,6 +10,8 @@ Local instance notes:
 - Backend API runtime: `http://127.0.0.1:3333`
 - Host OS: Ubuntu 24.04
 - Production process model: PM2, not Vercel
+- Frontend production is served by the PM2 process `bluesix-frontend-prod`
+- Do not use Vercel deployment/log assumptions for the frontend unless a task explicitly concerns separate Vercel-hosted API replicas
 - These deployment details help debugging, but frontend OAuth/auth ownership rules should not depend on Vercel-specific assumptions.
 
 ## Primary Ownership
