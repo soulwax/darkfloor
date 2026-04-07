@@ -1,6 +1,10 @@
 // File: apps/web/src/app/api/v2/_lib.ts
 
 import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { type NextRequest, NextResponse } from "next/server";
 
 const REQUEST_TIMEOUT_MS = 8000;
@@ -39,36 +43,6 @@ type ProxyApiV2Options = {
   timeoutMs?: number;
   requireAdmin?: boolean;
 };
-
-function getApiV2BaseUrl(): string | null {
-  if (!env.API_V2_URL) return null;
-  return env.API_V2_URL.replace(/\/+$/, "");
-}
-
-function getRequestUrl(request: NextRequest | Request): URL {
-  if ("nextUrl" in request && request.nextUrl instanceof URL) {
-    return request.nextUrl;
-  }
-  return new URL(request.url);
-}
-
-function getUpstreamUrl(
-  pathname: string,
-  request?: NextRequest | Request,
-): string | null {
-  const baseUrl = getApiV2BaseUrl();
-  if (!baseUrl) return null;
-
-  const upstreamUrl = new URL(pathname, `${baseUrl}/`);
-  if (request) {
-    const requestUrl = getRequestUrl(request);
-    for (const [key, value] of requestUrl.searchParams.entries()) {
-      upstreamUrl.searchParams.append(key, value);
-    }
-  }
-
-  return upstreamUrl.toString();
-}
 
 function getForwardHeaders(request?: NextRequest | Request): Headers {
   const headers = new Headers();
@@ -118,8 +92,7 @@ export async function proxyApiV2(
     }
   }
 
-  const upstreamUrl = getUpstreamUrl(options.pathname, options.request);
-  if (!upstreamUrl) {
+  if (getApiV2BaseUrls().length === 0) {
     return NextResponse.json(
       { ok: false, error: "API_V2_URL is not configured" },
       { status: 500 },
@@ -142,12 +115,16 @@ export async function proxyApiV2(
   }
 
   try {
-    const response = await fetch(upstreamUrl, {
-      method,
-      headers,
-      ...(body !== undefined ? { body } : {}),
-      cache: "no-store",
-      signal: AbortSignal.timeout(timeoutMs),
+    const { response } = await fetchApiV2WithFailover({
+      pathname: options.pathname,
+      request: options.request,
+      timeoutMs,
+      init: {
+        method,
+        headers,
+        ...(body !== undefined ? { body } : {}),
+        cache: "no-store",
+      },
     });
     const payload = await response.arrayBuffer();
 

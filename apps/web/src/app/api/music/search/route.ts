@@ -1,6 +1,10 @@
 // File: apps/web/src/app/api/music/search/route.ts
 
 import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { type SearchResponse } from "@starchild/types";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -20,7 +24,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const bluesixApiUrl = env.API_V2_URL;
     const bluesixApiKey = env.BLUESIX_API_KEY;
 
     const parseSearchResponse = (data: unknown): SearchResponse | null => {
@@ -48,15 +51,14 @@ export async function GET(req: NextRequest) {
       return null;
     };
 
-    if (!bluesixApiUrl || !bluesixApiKey) {
+    if (getApiV2BaseUrls().length === 0 || !bluesixApiKey) {
       return NextResponse.json(
         { error: "API_V2_URL or BLUESIX_API_KEY not configured" },
         { status: 500 },
       );
     }
 
-    const normalizedBluesixUrl = bluesixApiUrl.replace(/\/+$/, "");
-    const url = new URL("music/search", normalizedBluesixUrl);
+    const url = new URL("music/search", "http://api-v2.local");
     url.searchParams.set("key", bluesixApiKey);
     url.searchParams.set(
       "kbps",
@@ -72,12 +74,14 @@ export async function GET(req: NextRequest) {
       url.toString().replace(bluesixApiKey, "***"),
     );
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        "Content-Type": "application/json",
+    const { response } = await fetchApiV2WithFailover({
+      pathname: `${url.pathname}${url.search}`,
+      timeoutMs: 30000,
+      init: {
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-
-      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {

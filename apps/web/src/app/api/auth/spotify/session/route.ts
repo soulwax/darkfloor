@@ -1,6 +1,9 @@
 // File: apps/web/src/app/api/auth/spotify/session/route.ts
 
-import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { db } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -119,12 +122,6 @@ function getBearerToken(request: NextRequest): string | null {
   return token.trim();
 }
 
-function getAuthApiBaseUrl(): string | null {
-  const apiUrl = env.API_V2_URL?.trim();
-  if (!apiUrl) return null;
-  return apiUrl.replace(/\/+$/, "");
-}
-
 function normalizeBootstrapProfile(
   payload: unknown,
   accessToken: string,
@@ -190,26 +187,28 @@ function normalizeBootstrapProfile(
 async function fetchBootstrapProfile(
   accessToken: string,
 ): Promise<BootstrapUserProfile> {
-  const apiBaseUrl = getAuthApiBaseUrl();
-  if (!apiBaseUrl) {
+  if (getApiV2BaseUrls().length === 0) {
     throw new Error("API_V2_URL is not configured");
   }
 
-  const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
+  const { response, upstreamUrl } = await fetchApiV2WithFailover({
+    pathname: "/api/auth/me",
+    timeoutMs: AUTH_ME_TIMEOUT_MS,
+    init: {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
     },
-    cache: "no-store",
-    signal: AbortSignal.timeout(AUTH_ME_TIMEOUT_MS),
   });
 
   const body = await parseResponseBody(response);
   if (!response.ok) {
     const message =
       getMessageFromBody(body) ??
-      `GET ${apiBaseUrl}/api/auth/me failed with status ${response.status}`;
+      `GET ${upstreamUrl} failed with status ${response.status}`;
     throw new Error(message);
   }
 

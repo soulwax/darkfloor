@@ -1,6 +1,10 @@
 // File: apps/web/src/app/api/stream/route.ts
 
 import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +13,11 @@ export const maxDuration = 60;
 
 const DEFAULT_GUEST_STREAM_KBPS = "128";
 const VERCEL_ENV_KEYS = ["VERCEL", "VERCEL_ENV", "VERCEL_URL"] as const;
+
+function getConfiguredApiV2Label(): string {
+  const baseUrls = getApiV2BaseUrls();
+  return baseUrls.length > 0 ? baseUrls.join(", ") : "API_V2_URL not configured";
+}
 
 function redactKeyFromUrl(rawUrl: string): string {
   try {
@@ -52,11 +61,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const bluesixApiUrl = env.API_V2_URL?.trim();
     const bluesixApiKey = env.BLUESIX_API_KEY?.trim();
     const missingEnvVars: string[] = [];
 
-    if (!bluesixApiUrl) {
+    if (getApiV2BaseUrls().length === 0) {
       missingEnvVars.push("API_V2_URL");
     }
     if (!bluesixApiKey) {
@@ -75,42 +83,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const configuredBluesixApiUrl = bluesixApiUrl!;
     const configuredBluesixApiKey = bluesixApiKey!;
-
-    let parsedBluesixUrl: URL;
-    try {
-      parsedBluesixUrl = new URL(configuredBluesixApiUrl);
-    } catch {
-      const message = "Invalid API_V2_URL. Expected a valid absolute URL.";
-      console.error(`[Stream API] ${message}`, {
-        configuredValue: configuredBluesixApiUrl,
-      });
-      return NextResponse.json(
-        { error: message },
-        { status: 500 },
-      );
-    }
-
-    if (
-      parsedBluesixUrl.protocol !== "http:" &&
-      parsedBluesixUrl.protocol !== "https:"
-    ) {
-      const message =
-        "Invalid API_V2_URL protocol. Only http:// and https:// are supported.";
-      console.error(`[Stream API] ${message}`, {
-        protocol: parsedBluesixUrl.protocol,
-      });
-      return NextResponse.json(
-        { error: message },
-        { status: 500 },
-      );
-    }
-
-    const normalizedBluesixUrl = parsedBluesixUrl.toString().replace(/\/+$/, "");
-    console.info(
-      `[Stream API] Using API_V2_URL host: ${parsedBluesixUrl.host}`,
-    );
 
     const rangeHeader = req.headers.get("range");
     const effectiveRange = rangeHeader ?? "bytes=0-";
@@ -146,7 +119,7 @@ export async function GET(req: NextRequest) {
     const upstreamPath = useDirectStreamRoute
       ? "music/stream/direct"
       : "music/stream";
-    const url = new URL(upstreamPath, `${normalizedBluesixUrl}/`);
+    const url = new URL(upstreamPath, "http://api-v2.local");
     url.searchParams.set("key", configuredBluesixApiKey);
     if (format === "flac") {
       url.searchParams.set("format", "flac");
@@ -178,11 +151,22 @@ export async function GET(req: NextRequest) {
     );
 
     let response: Response;
+    let resolvedUpstreamUrl = redactedRequestUrl;
+    let resolvedBackendBaseUrl = getConfiguredApiV2Label();
     try {
-      response = await fetch(requestUrl, {
-        headers: fetchHeaders,
-        signal: AbortSignal.timeout(30000),
+      const upstreamResult = await fetchApiV2WithFailover({
+        pathname: `${url.pathname}${url.search}`,
+        timeoutMs: 30000,
+        init: {
+          headers: fetchHeaders,
+        },
       });
+      response = upstreamResult.response;
+      resolvedUpstreamUrl = redactKeyFromUrl(upstreamResult.upstreamUrl);
+      resolvedBackendBaseUrl = upstreamResult.baseUrl;
+      console.info(
+        `[Stream API] Using API_V2_URL host: ${new URL(upstreamResult.upstreamUrl).host}`,
+      );
     } catch (fetchError) {
       console.error("[Stream API] Fetch failed:", fetchError);
       if (fetchError instanceof Error) {
@@ -199,7 +183,7 @@ export async function GET(req: NextRequest) {
               message:
                 "The backend server did not respond in time. Check if the backend is running and accessible.",
               type: "timeout",
-              backendUrl: normalizedBluesixUrl,
+              backendUrl: getConfiguredApiV2Label(),
             },
             { status: 504 },
           );
@@ -216,9 +200,10 @@ export async function GET(req: NextRequest) {
           return NextResponse.json(
             {
               error: "Cannot connect to backend",
-              message: `Failed to connect to backend at ${normalizedBluesixUrl}. Check if the backend is running and API_V2_URL is correct.`,
+              message:
+                "Failed to connect to any configured backend. Check if the backend nodes are running and API_V2_URL/API_V2_URLS are correct.",
               type: "connection_error",
-              backendUrl: normalizedBluesixUrl,
+              backendUrl: getConfiguredApiV2Label(),
             },
             { status: 502 },
           );
@@ -258,7 +243,7 @@ export async function GET(req: NextRequest) {
         "[Stream API] Response headers:",
         Object.fromEntries(response.headers.entries()),
       );
-      console.error("[Stream API] Request URL:", redactedRequestUrl);
+      console.error("[Stream API] Request URL:", resolvedUpstreamUrl);
 
       const isUpstreamError =
         statusCode === 502 ||
@@ -282,12 +267,12 @@ export async function GET(req: NextRequest) {
           message: errorData.message ?? errorText,
           details: errorData,
           status: statusCode,
-          backendUrl: redactedRequestUrl,
+          backendUrl: resolvedUpstreamUrl,
           type: isUpstreamError ? "upstream_error" : "stream_error",
           diagnostics: {
             trackId: id ?? null,
             query: query ?? null,
-            backendBaseUrl: normalizedBluesixUrl,
+            backendBaseUrl: resolvedBackendBaseUrl,
             hasApiKey: !!configuredBluesixApiKey,
           },
         },
@@ -319,7 +304,7 @@ export async function GET(req: NextRequest) {
           type: "invalid_upstream_payload",
           status: 502,
           contentType: upstreamContentType,
-          backendUrl: redactedRequestUrl,
+          backendUrl: resolvedUpstreamUrl,
         },
         { status: 502 },
       );
@@ -341,7 +326,7 @@ export async function GET(req: NextRequest) {
             message:
               "The backend server did not respond in time. Check if the backend is running and accessible.",
             type: "timeout",
-            backendUrl: env.API_V2_URL,
+            backendUrl: getConfiguredApiV2Label(),
           },
           { status: 504 },
         );
@@ -358,9 +343,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(
           {
             error: "Cannot connect to backend",
-            message: `Failed to connect to backend at ${env.API_V2_URL}. Check if the backend is running and API_V2_URL is correct.`,
+            message:
+              "Failed to connect to any configured backend. Check if the backend nodes are running and API_V2_URL/API_V2_URLS are correct.",
             type: "connection_error",
-            backendUrl: env.API_V2_URL,
+            backendUrl: getConfiguredApiV2Label(),
           },
           { status: 502 },
         );
@@ -372,7 +358,7 @@ export async function GET(req: NextRequest) {
         error: "Failed to fetch stream",
         message: error instanceof Error ? error.message : "Unknown error",
         type: "unknown_error",
-        backendUrl: env.API_V2_URL,
+        backendUrl: getConfiguredApiV2Label(),
       },
       { status: 500 },
     );

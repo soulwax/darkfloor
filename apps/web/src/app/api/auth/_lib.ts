@@ -1,6 +1,9 @@
 // File: apps/web/src/app/api/auth/_lib.ts
 
-import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   logAuthDebug,
@@ -62,29 +65,11 @@ function summarizeSetCookieNames(headers: Headers): string[] {
     .filter(Boolean);
 }
 
-function getApiBaseUrl(): string | null {
-  if (!env.API_V2_URL) return null;
-  return env.API_V2_URL.replace(/\/+$/, "");
-}
-
 function getRequestUrl(request: NextRequest | Request): URL {
   if ("nextUrl" in request && request.nextUrl instanceof URL) {
     return request.nextUrl;
   }
   return new URL(request.url);
-}
-
-function getUpstreamUrl(pathname: string, request: NextRequest | Request): string | null {
-  const baseUrl = getApiBaseUrl();
-  if (!baseUrl) return null;
-
-  const upstreamUrl = new URL(pathname, `${baseUrl}/`);
-  const requestUrl = getRequestUrl(request);
-  requestUrl.searchParams.forEach((value, key) => {
-    upstreamUrl.searchParams.append(key, value);
-  });
-
-  return upstreamUrl.toString();
 }
 
 function getForwardHeaders(request: NextRequest | Request): Headers {
@@ -155,8 +140,7 @@ function mapResponseHeaders(response: Response): Headers {
 }
 
 export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextResponse> {
-  const upstreamUrl = getUpstreamUrl(options.pathname, options.request);
-  if (!upstreamUrl) {
+  if (getApiV2BaseUrls().length === 0) {
     return NextResponse.json(
       { ok: false, error: "API_V2_URL is not configured" },
       { status: 500 },
@@ -193,7 +177,8 @@ export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextR
       method,
       followRedirects: Boolean(options.followRedirects),
       incomingUrl: summarizeUrlForLog(requestUrl.toString()),
-      upstreamUrl: summarizeUrlForLog(upstreamUrl),
+      upstreamPath: options.pathname,
+      upstreamTargetCount: getApiV2BaseUrls().length,
       hasBody: Boolean(body),
       bodyLength: body?.length ?? 0,
       headerKeys: summarizeHeaderKeys(headers),
@@ -201,13 +186,17 @@ export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextR
   });
 
   try {
-    const upstreamResponse = await fetch(upstreamUrl, {
-      method,
-      headers,
-      ...(body ? { body } : {}),
-      redirect: options.followRedirects ? "follow" : "manual",
-      cache: "no-store",
-      signal: AbortSignal.timeout(AUTH_PROXY_TIMEOUT_MS),
+    const { response: upstreamResponse } = await fetchApiV2WithFailover({
+      pathname: options.pathname,
+      request: options.request,
+      timeoutMs: AUTH_PROXY_TIMEOUT_MS,
+      init: {
+        method,
+        headers,
+        ...(body ? { body } : {}),
+        redirect: options.followRedirects ? "follow" : "manual",
+        cache: "no-store",
+      },
     });
 
     const elapsedMs = Date.now() - requestStart;
@@ -247,7 +236,7 @@ export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextR
       details: {
         method,
         elapsedMs,
-        upstreamUrl: summarizeUrlForLog(upstreamUrl),
+        upstreamPath: options.pathname,
         error,
       },
     });

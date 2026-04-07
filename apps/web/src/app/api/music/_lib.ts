@@ -1,6 +1,10 @@
 // File: apps/web/src/app/api/music/_lib.ts
 
 import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 import { NextResponse } from "next/server";
 
 type IntegerOptions = {
@@ -47,16 +51,14 @@ export async function proxyApiV2Json(
   upstreamPath: string,
   query?: Record<string, string | number | undefined>,
 ): Promise<NextResponse> {
-  const apiV2Url = env.API_V2_URL;
-  if (!apiV2Url) {
+  if (getApiV2BaseUrls().length === 0) {
     return NextResponse.json(
       { error: "API_V2_URL is not configured" },
       { status: 500 },
     );
   }
 
-  const normalizedBaseUrl = apiV2Url.replace(/\/+$/, "");
-  const url = new URL(upstreamPath, `${normalizedBaseUrl}/`);
+  const url = new URL(upstreamPath, "http://api-v2.local");
 
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -66,9 +68,12 @@ export async function proxyApiV2Json(
   }
 
   try {
-    const response = await fetch(url.toString(), {
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    const { response } = await fetchApiV2WithFailover({
+      pathname: `${url.pathname}${url.search}`,
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      init: {
+        cache: "no-store",
+      },
     });
 
     if (!response.ok) {

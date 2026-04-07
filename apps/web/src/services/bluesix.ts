@@ -1,18 +1,18 @@
 // File: apps/web/src/services/bluesix.ts
 
 import { env } from "@/env";
+import {
+  fetchApiV2WithFailover,
+  getApiV2BaseUrls,
+} from "@/lib/server/api-v2-upstream";
 
-const rawBluesixUrl = env.API_V2_URL;
-const BLUESIX_API_URL = rawBluesixUrl
-  ? rawBluesixUrl.replace(/\/+$/, "")
-  : undefined;
 const BLUESIX_API_KEY = env.BLUESIX_API_KEY;
 
 async function bluesixRequest<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!BLUESIX_API_URL) {
+  if (getApiV2BaseUrls().length === 0) {
     throw new Error("Bluesix API URL is not configured. Set API_V2_URL.");
   }
 
@@ -25,14 +25,17 @@ async function bluesixRequest<T>(
   const normalizedEndpoint = endpoint.startsWith("/")
     ? endpoint
     : `/${endpoint}`;
-  const url = `${BLUESIX_API_URL}${normalizedEndpoint}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": BLUESIX_API_KEY,
-      ...options.headers,
+  const { response } = await fetchApiV2WithFailover({
+    pathname: normalizedEndpoint,
+    retryNonIdempotent: false,
+    init: {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": BLUESIX_API_KEY,
+        ...options.headers,
+      },
     },
   });
 
