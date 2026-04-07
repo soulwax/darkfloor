@@ -24,6 +24,7 @@ const spotifyImportSourceTrackSchema = z.object({
   albumName: z.string().trim().min(1).nullable().optional(),
   durationMs: z.number().int().nonnegative().nullable().optional(),
   externalUrl: z.string().trim().min(1).nullable().optional(),
+  manualDeezerTrackId: z.string().trim().min(1).nullable().optional(),
 });
 
 const spotifyImportSourcePlaylistSchema = z.object({
@@ -42,6 +43,7 @@ const spotifyImportRequestSchema = z.object({
   descriptionOverride: z.string().trim().min(1).optional(),
   isPublic: z.boolean().optional(),
   sourcePlaylist: spotifyImportSourcePlaylistSchema.optional(),
+  createLocalPlaylist: z.boolean().optional(),
 });
 
 type PostgresConstraintError = {
@@ -260,7 +262,7 @@ function toLocalTrack(
     title: matchedTrack.deezerTrack.title,
     title_short:
       matchedTrack.deezerTrack.title_short ?? matchedTrack.deezerTrack.title,
-    title_version: matchedTrack.deezerTrack.title_version,
+    title_version: coalesceString(matchedTrack.deezerTrack.title_version),
     link:
       coalesceString(matchedTrack.deezerTrack.link) ??
       `https://www.deezer.com/track/${deezerTrackId}`,
@@ -448,6 +450,7 @@ export async function POST(request: NextRequest) {
           albumName: track.albumName ?? null,
           durationMs: track.durationMs ?? null,
           externalUrl: track.externalUrl ?? null,
+          manualDeezerTrackId: track.manualDeezerTrackId ?? null,
         })),
       }
     : undefined;
@@ -513,6 +516,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (payload.createLocalPlaylist === false) {
+    return NextResponse.json({
+      ok: true,
+      playlistCreated: false,
+      playlist: null,
+      importReport: parsedTranslation.data.importReport,
+    });
+  }
+
   try {
     const playlist = await createLocalPlaylistFromSpotifyImport({
       userId: session.user.id,
@@ -522,6 +534,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      playlistCreated: true,
       playlist: {
         id: String(playlist.id),
         name: playlist.name,

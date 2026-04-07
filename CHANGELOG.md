@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.10] - 2026-04-07
+
+### Changed
+
+- **Spotify playlist import now pauses for a simple match review when tracks are unresolved**: The frontend runs Spotify translation first, then shows a checklist-style review with first-result Deezer suggestions preselected, optional manual Deezer search per track, and a final create step once the listener accepts or adjusts the unresolved matches.
+
+### Fixed
+
+- **Spotify-to-Deezer matching is now laxer and returns more useful fallback proposals**: The backend resolver now tries broader title variants, accepts partial-title fuzzy matches more readily when artist and duration still line up, and returns candidate suggestions even for `not_found` tracks so the frontend has better options to present.
+
 ## [1.15.9] - 2026-04-07
 
 ### Added

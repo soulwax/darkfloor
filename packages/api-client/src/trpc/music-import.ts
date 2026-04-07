@@ -36,6 +36,7 @@ const spotifyImportSourceTrackSchema = z.object({
   albumName: z.string().trim().min(1).nullable().optional(),
   durationMs: z.number().int().nonnegative().nullable().optional(),
   externalUrl: z.string().trim().min(1).nullable().optional(),
+  manualDeezerTrackId: z.string().trim().min(1).nullable().optional(),
 });
 
 const spotifyImportSourcePlaylistSchema = z.object({
@@ -54,14 +55,19 @@ const importSpotifyPlaylistInputSchema = z.object({
   descriptionOverride: z.string().trim().min(1).optional(),
   isPublic: z.boolean().optional(),
   sourcePlaylist: spotifyImportSourcePlaylistSchema.optional(),
+  createLocalPlaylist: z.boolean().optional(),
 });
 
 const importSpotifyPlaylistResponseSchema = z.object({
   ok: z.literal(true),
-  playlist: z.object({
-    id: z.string().trim().min(1),
-    name: z.string().trim().min(1),
-  }),
+  playlistCreated: z.boolean().optional(),
+  playlist: z
+    .object({
+      id: z.string().trim().min(1),
+      name: z.string().trim().min(1),
+    })
+    .nullable()
+    .optional(),
   importReport: z.object({
     sourcePlaylistId: z.string().trim().min(1),
     sourcePlaylistName: z.string().trim().min(1),
@@ -176,6 +182,7 @@ function normalizeImportSpotifyPlaylistInput(
     nameOverride: parsedInput.nameOverride?.trim() ?? undefined,
     descriptionOverride: parsedInput.descriptionOverride?.trim() ?? undefined,
     isPublic: parsedInput.isPublic,
+    createLocalPlaylist: parsedInput.createLocalPlaylist,
     sourcePlaylist: parsedInput.sourcePlaylist
       ? {
           id: parsedInput.sourcePlaylist.id.trim(),
@@ -196,6 +203,7 @@ function normalizeImportSpotifyPlaylistInput(
             albumName: track.albumName?.trim() ?? null,
             durationMs: track.durationMs,
             externalUrl: track.externalUrl?.trim() ?? null,
+            manualDeezerTrackId: track.manualDeezerTrackId?.trim() ?? null,
           })),
         }
       : undefined,

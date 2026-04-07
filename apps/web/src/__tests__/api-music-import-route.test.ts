@@ -230,6 +230,7 @@ describe("Spotify music import route", () => {
     expect(response.status).toBe(200);
     expect(body).toEqual({
       ok: true,
+      playlistCreated: true,
       playlist: {
         id: "321",
         name: "Imported playlist",
@@ -285,6 +286,7 @@ describe("Spotify music import route", () => {
             albumName: "Album One",
             durationMs: 180000,
             externalUrl: "https://open.spotify.com/track/spotify-track-1",
+            manualDeezerTrackId: null,
           },
         ],
       },
@@ -305,6 +307,7 @@ describe("Spotify music import route", () => {
             albumName: "Album One",
             durationMs: 180000,
             externalUrl: "https://open.spotify.com/track/spotify-track-1",
+            manualDeezerTrackId: null,
           },
         ],
       },
@@ -429,6 +432,75 @@ describe("Spotify music import route", () => {
     expect(proxyArgs?.request?.headers.get("authorization")).toBe(
       "Bearer app-token-1",
     );
+  });
+
+  it("returns translation-only results without creating a local playlist when requested", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn(
+      async () => NextResponse.json(makeBackendTranslationResponse()),
+    );
+    const transaction = vi.fn();
+
+    vi.doMock("@/server/auth", () => ({
+      auth: vi.fn(async () => ({
+        user: { id: "user-1", email: "listener@example.com" },
+      })),
+    }));
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+    vi.doMock("@/lib/server/songbird-token", () => ({
+      getSongbirdAccessToken: vi.fn(async () => ({
+        accessToken: "service-token-1",
+        tokenType: "Bearer",
+        expiresIn: 300,
+        expiresAt: Date.now() + 300_000,
+        scopes: ["spotify.playlists.import:write"],
+      })),
+    }));
+    vi.doMock("@/server/db", () => ({
+      db: {
+        transaction,
+      },
+    }));
+
+    const route = await loadPostRoute(
+      "@/app/api/music/playlists/import/spotify/route",
+    );
+    const response = await route.POST(
+      makeRequest("/api/music/playlists/import/spotify", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+          createLocalPlaylist: false,
+        }),
+      }),
+    );
+    const body = (await response.json()) as {
+      ok?: boolean;
+      playlistCreated?: boolean;
+      playlist?: { id: string; name: string } | null;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      ok: true,
+      playlistCreated: false,
+      playlist: null,
+      importReport: {
+        sourcePlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
+        sourcePlaylistName: "Today’s Top Hits",
+        totalTracks: 4,
+        matchedCount: 1,
+        unmatchedCount: 0,
+        skippedCount: 0,
+        unmatched: [],
+      },
+    });
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it("fails clearly when the backend has not deployed the translation payload contract", async () => {

@@ -14,6 +14,7 @@ describe("importSpotifyPlaylist client", () => {
       new Response(
         JSON.stringify({
           ok: true,
+          playlistCreated: true,
           playlist: {
             id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
             name: "Imported playlist",
@@ -115,14 +116,15 @@ describe("importSpotifyPlaylist client", () => {
                 albumName: "Album One",
                 durationMs: 180000,
                 externalUrl: "https://open.spotify.com/track/spotify-track-1",
+                manualDeezerTrackId: null,
               },
             ],
           },
         }),
       },
     );
-    expect(result.playlist.id).toBe("3fa85f64-5717-4562-b3fc-2c963f66afa6");
-    expect(typeof result.playlist.id).toBe("string");
+    expect(result.playlist?.id).toBe("3fa85f64-5717-4562-b3fc-2c963f66afa6");
+    expect(typeof result.playlist?.id).toBe("string");
     expect(result.importReport.unmatched[0]?.index).toBe(2);
     expect(result.importReport.unmatched[0]?.candidates?.[0]?.title).toBe(
       "Midnight City",
@@ -160,6 +162,7 @@ describe("importSpotifyPlaylist client", () => {
       new Response(
         JSON.stringify({
           ok: true,
+          playlistCreated: true,
           playlist: {
             id: "playlist-1",
             name: "Imported playlist",
@@ -209,10 +212,15 @@ describe("importSpotifyPlaylist client", () => {
     const fetchCall = fetchMock.mock.calls[0];
     const options = fetchCall?.[1];
     expect(options).toBeDefined();
-    const body =
-      options && typeof options === "object" && "body" in options
-        ? JSON.parse(String(options.body))
-        : null;
+    let body: unknown = null;
+    if (
+      options &&
+      typeof options === "object" &&
+      "body" in options &&
+      typeof options.body === "string"
+    ) {
+      body = JSON.parse(options.body) as unknown;
+    }
 
     expect(body).toEqual({
       spotifyPlaylistId: "37i9dQZF1DXcBWIGoYBM5M",
@@ -232,6 +240,7 @@ describe("importSpotifyPlaylist client", () => {
             albumName: "Album One",
             durationMs: 180000,
             externalUrl: "https://open.spotify.com/track/spotify-track-1",
+            manualDeezerTrackId: null,
           },
         ],
       },
@@ -243,6 +252,7 @@ describe("importSpotifyPlaylist client", () => {
       new Response(
         JSON.stringify({
           ok: true,
+          playlistCreated: true,
           playlist: {
             id: "playlist-1",
             name: "Imported playlist",

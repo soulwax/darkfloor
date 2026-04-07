@@ -341,6 +341,8 @@ export default function SpotifyPage() {
   const [importResult, setImportResult] = useState<SpotifyImportResult | null>(
     null,
   );
+  const [preparedImportRequest, setPreparedImportRequest] =
+    useState<SpotifyImportRequest | null>(null);
   const [isPreparingImportPayload, setIsPreparingImportPayload] =
     useState(false);
 
@@ -580,14 +582,30 @@ export default function SpotifyPage() {
     api.music.importSpotifyPlaylist.useMutation({
       fetchImpl: authFetch,
       onSuccess: async (result) => {
-        setImportResult(result);
         setImportDiagnostics(null);
+        if (!result.playlistCreated) {
+          if (
+            result.importReport.unmatchedCount === 0 &&
+            preparedImportRequest?.sourcePlaylist
+          ) {
+            importSpotifyPlaylistMutation.mutate({
+              ...preparedImportRequest,
+              createLocalPlaylist: true,
+            });
+            return;
+          }
+
+          setImportResult(result);
+          return;
+        }
+
+        setImportResult(result);
         await utils.music.getPlaylists.invalidate();
         showToast(
           t("importCompletedToast", {
             importedCount: result.importReport.matchedCount,
             totalCount: result.importReport.totalTracks,
-            name: result.playlist.name,
+            name: result.playlist?.name ?? t("importToStarchild"),
           }),
           "success",
         );
@@ -612,6 +630,7 @@ export default function SpotifyPage() {
       setImportError(null);
       setImportDiagnostics(null);
       setImportResult(null);
+      setPreparedImportRequest(null);
       importSpotifyPlaylistMutation.reset();
       setIsImportDialogOpen(true);
     },
@@ -623,6 +642,7 @@ export default function SpotifyPage() {
     setImportError(null);
     setImportDiagnostics(null);
     setImportResult(null);
+    setPreparedImportRequest(null);
     setIsPreparingImportPayload(false);
     importSpotifyPlaylistMutation.reset();
   }, [importSpotifyPlaylistMutation]);
@@ -640,11 +660,14 @@ export default function SpotifyPage() {
         const sourcePlaylist =
           input.sourcePlaylist ??
           (await buildSpotifyImportSourcePlaylist(importPlaylist));
-
-        importSpotifyPlaylistMutation.mutate({
+        const requestPayload = {
           ...input,
+          createLocalPlaylist: input.createLocalPlaylist ?? false,
           sourcePlaylist,
-        });
+        } satisfies SpotifyImportRequest;
+
+        setPreparedImportRequest(requestPayload);
+        importSpotifyPlaylistMutation.mutate(requestPayload);
       } catch (error) {
         const message = normalizeSpotifyError(
           error instanceof Error
@@ -1278,6 +1301,7 @@ export default function SpotifyPage() {
         importError={importError}
         importDiagnostics={importDiagnostics}
         importResult={importResult}
+        sourcePlaylistSnapshot={preparedImportRequest?.sourcePlaylist ?? null}
         onClose={closeImportDialog}
         onSubmit={(input) => void handleSpotifyPlaylistImport(input)}
       />
