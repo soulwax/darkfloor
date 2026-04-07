@@ -12,7 +12,13 @@ async function bluesixRequest<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (getApiV2BaseUrls().length === 0) {
+  const method = (options.method ?? "GET").toUpperCase();
+  const pool =
+    method === "GET" || method === "HEAD" || method === "OPTIONS"
+      ? "read"
+      : "write";
+
+  if (getApiV2BaseUrls(pool).length === 0) {
     throw new Error("Bluesix API URL is not configured. Set API_V2_URL.");
   }
 
@@ -28,6 +34,7 @@ async function bluesixRequest<T>(
 
   const { response } = await fetchApiV2WithFailover({
     pathname: normalizedEndpoint,
+    pool,
     retryNonIdempotent: false,
     init: {
       ...options,

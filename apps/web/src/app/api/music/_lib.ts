@@ -51,7 +51,7 @@ export async function proxyApiV2Json(
   upstreamPath: string,
   query?: Record<string, string | number | undefined>,
 ): Promise<NextResponse> {
-  if (getApiV2BaseUrls().length === 0) {
+  if (getApiV2BaseUrls("read").length === 0) {
     return NextResponse.json(
       { error: "API_V2_URL is not configured" },
       { status: 500 },
@@ -70,6 +70,7 @@ export async function proxyApiV2Json(
   try {
     const { response } = await fetchApiV2WithFailover({
       pathname: `${url.pathname}${url.search}`,
+      pool: "read",
       timeoutMs: REQUEST_TIMEOUT_MS,
       init: {
         cache: "no-store",

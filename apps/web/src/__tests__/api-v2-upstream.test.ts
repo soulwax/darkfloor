@@ -37,6 +37,40 @@ describe("api-v2-upstream", () => {
     ]);
   });
 
+  it("prefers pool-specific urls and falls back to the default pool", async () => {
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URLS: "https://api-default-a.example.com,https://api-default-b.example.com",
+        API_V2_READ_URLS: "https://api-read.example.com",
+        API_V2_WRITE_URLS: "https://api-write.example.com",
+        API_V2_STREAM_URLS: "https://api-stream.example.com",
+        API_V2_URL: "https://api-fallback.example.com/",
+      },
+    }));
+
+    const upstream = await loadModule();
+    upstream.apiV2UpstreamInternals.clearState();
+
+    expect(upstream.getApiV2BaseUrls("read")).toEqual([
+      "https://api-read.example.com",
+      "https://api-default-a.example.com",
+      "https://api-default-b.example.com",
+      "https://api-fallback.example.com",
+    ]);
+    expect(upstream.getApiV2BaseUrls("write")).toEqual([
+      "https://api-write.example.com",
+      "https://api-default-a.example.com",
+      "https://api-default-b.example.com",
+      "https://api-fallback.example.com",
+    ]);
+    expect(upstream.getApiV2BaseUrls("stream")).toEqual([
+      "https://api-stream.example.com",
+      "https://api-default-a.example.com",
+      "https://api-default-b.example.com",
+      "https://api-fallback.example.com",
+    ]);
+  });
+
   it("fails over GET requests to the next configured origin", async () => {
     vi.doMock("@/env", () => ({
       env: {
@@ -103,6 +137,43 @@ describe("api-v2-upstream", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(getFetchUrl(fetchMock.mock.calls[0]![0])).toBe(
       "https://api-a.example.com/cache/clear",
+    );
+  });
+
+  it("uses the configured write pool for write requests", async () => {
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_URLS: "https://api-default.example.com",
+        API_V2_WRITE_URLS: "https://api-write.example.com",
+        API_V2_URL: undefined,
+      },
+    }));
+
+    const upstream = await loadModule();
+    upstream.apiV2UpstreamInternals.clearState();
+
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    await upstream.fetchApiV2WithFailover({
+      pathname: "/auth/me",
+      pool: "write",
+      init: {
+        method: "POST",
+        body: JSON.stringify({ ping: true }),
+      },
+      timeoutMs: 1000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getFetchUrl(fetchMock.mock.calls[0]![0])).toBe(
+      "https://api-write.example.com/auth/me",
     );
   });
 });

@@ -8,10 +8,11 @@ const API_V2_RETRYABLE_RESPONSE_STATUSES = new Set([502, 503, 504]);
 const API_V2_RETRYABLE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 type UpstreamRequest = NextRequest | Request;
+export type ApiV2UpstreamPool = "default" | "read" | "write" | "stream";
 
 type ApiV2UpstreamState = {
   cooldowns: Map<string, number>;
-  nextCursor: number;
+  nextCursorByPool: Partial<Record<ApiV2UpstreamPool, number>>;
 };
 
 type FetchApiV2WithFailoverOptions = {
@@ -20,6 +21,7 @@ type FetchApiV2WithFailoverOptions = {
   init?: RequestInit;
   timeoutMs?: number;
   retryNonIdempotent?: boolean;
+  pool?: ApiV2UpstreamPool;
 };
 
 type FetchApiV2WithFailoverResult = {
@@ -36,7 +38,7 @@ function getState(): ApiV2UpstreamState {
 
   globalState.__darkfloorApiV2UpstreamState ??= {
     cooldowns: new Map<string, number>(),
-    nextCursor: 0,
+    nextCursorByPool: {},
   };
 
   return globalState.__darkfloorApiV2UpstreamState;
@@ -82,8 +84,16 @@ function getRequestUrl(request: UpstreamRequest): URL {
   return new URL(request.url);
 }
 
-function buildOrderedApiV2BaseUrls(): string[] {
-  const baseUrls = getApiV2BaseUrls();
+function getPoolCursor(pool: ApiV2UpstreamPool): number {
+  return getState().nextCursorByPool[pool] ?? 0;
+}
+
+function setPoolCursor(pool: ApiV2UpstreamPool, value: number): void {
+  getState().nextCursorByPool[pool] = value;
+}
+
+function buildOrderedApiV2BaseUrls(pool: ApiV2UpstreamPool): string[] {
+  const baseUrls = getApiV2BaseUrls(pool);
   if (baseUrls.length <= 1) return baseUrls;
 
   const state = getState();
@@ -106,11 +116,11 @@ function buildOrderedApiV2BaseUrls(): string[] {
     healthy.length === 0
       ? []
       : healthy
-          .slice(state.nextCursor % healthy.length)
-          .concat(healthy.slice(0, state.nextCursor % healthy.length));
+          .slice(getPoolCursor(pool) % healthy.length)
+          .concat(healthy.slice(0, getPoolCursor(pool) % healthy.length));
 
   if (healthy.length > 0) {
-    state.nextCursor = (state.nextCursor + 1) % healthy.length;
+    setPoolCursor(pool, (getPoolCursor(pool) + 1) % healthy.length);
   }
 
   cooling.sort((left, right) => left.until - right.until);
@@ -136,8 +146,29 @@ function shouldRetryRequest(
   return API_V2_RETRYABLE_METHODS.has(method);
 }
 
-export function getApiV2BaseUrls(): string[] {
-  const parsedList = parseConfiguredApiV2Urls(env.API_V2_URLS);
+function getConfiguredPoolUrls(pool: ApiV2UpstreamPool): string[] {
+  switch (pool) {
+    case "read":
+      return parseConfiguredApiV2Urls(env.API_V2_READ_URLS);
+    case "write":
+      return parseConfiguredApiV2Urls(env.API_V2_WRITE_URLS);
+    case "stream":
+      return parseConfiguredApiV2Urls(env.API_V2_STREAM_URLS);
+    default:
+      return parseConfiguredApiV2Urls(env.API_V2_URLS);
+  }
+}
+
+export function getApiV2BaseUrls(pool: ApiV2UpstreamPool = "default"): string[] {
+  const parsedList = getConfiguredPoolUrls(pool);
+  if (pool !== "default") {
+    for (const baseUrl of getConfiguredPoolUrls("default")) {
+      if (!parsedList.includes(baseUrl)) {
+        parsedList.push(baseUrl);
+      }
+    }
+  }
+
   const fallbackSingle = env.API_V2_URL
     ? normalizeApiV2BaseUrl(env.API_V2_URL)
     : null;
@@ -149,8 +180,10 @@ export function getApiV2BaseUrls(): string[] {
   return parsedList;
 }
 
-export function getPreferredApiV2BaseUrl(): string | null {
-  return buildOrderedApiV2BaseUrls()[0] ?? null;
+export function getPreferredApiV2BaseUrl(
+  pool: ApiV2UpstreamPool = "default",
+): string | null {
+  return buildOrderedApiV2BaseUrls(pool)[0] ?? null;
 }
 
 export function buildApiV2UpstreamUrl(options: {
@@ -173,7 +206,8 @@ export function buildApiV2UpstreamUrl(options: {
 export async function fetchApiV2WithFailover(
   options: FetchApiV2WithFailoverOptions,
 ): Promise<FetchApiV2WithFailoverResult> {
-  const baseUrls = buildOrderedApiV2BaseUrls();
+  const pool = options.pool ?? "default";
+  const baseUrls = buildOrderedApiV2BaseUrls(pool);
   if (baseUrls.length === 0) {
     throw new Error("API_V2_URL is not configured");
   }
@@ -245,13 +279,16 @@ export const apiV2UpstreamInternals = {
   clearState(): void {
     const state = getState();
     state.cooldowns.clear();
-    state.nextCursor = 0;
+    state.nextCursorByPool = {};
   },
-  getStateSnapshot(): { cooldowns: Record<string, number>; nextCursor: number } {
+  getStateSnapshot(): {
+    cooldowns: Record<string, number>;
+    nextCursorByPool: Partial<Record<ApiV2UpstreamPool, number>>;
+  } {
     const state = getState();
     return {
       cooldowns: Object.fromEntries(state.cooldowns.entries()),
-      nextCursor: state.nextCursor,
+      nextCursorByPool: { ...state.nextCursorByPool },
     };
   },
 };

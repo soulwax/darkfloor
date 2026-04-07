@@ -140,7 +140,7 @@ function mapResponseHeaders(response: Response): Headers {
 }
 
 export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextResponse> {
-  if (getApiV2BaseUrls().length === 0) {
+  if (getApiV2BaseUrls("write").length === 0) {
     return NextResponse.json(
       { ok: false, error: "API_V2_URL is not configured" },
       { status: 500 },
@@ -178,7 +178,7 @@ export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextR
       followRedirects: Boolean(options.followRedirects),
       incomingUrl: summarizeUrlForLog(requestUrl.toString()),
       upstreamPath: options.pathname,
-      upstreamTargetCount: getApiV2BaseUrls().length,
+      upstreamTargetCount: getApiV2BaseUrls("write").length,
       hasBody: Boolean(body),
       bodyLength: body?.length ?? 0,
       headerKeys: summarizeHeaderKeys(headers),
@@ -188,6 +188,7 @@ export async function proxyAuthRequest(options: ProxyAuthOptions): Promise<NextR
   try {
     const { response: upstreamResponse } = await fetchApiV2WithFailover({
       pathname: options.pathname,
+      pool: "write",
       request: options.request,
       timeoutMs: AUTH_PROXY_TIMEOUT_MS,
       init: {

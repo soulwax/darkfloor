@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       return null;
     };
 
-    if (getApiV2BaseUrls().length === 0 || !bluesixApiKey) {
+    if (getApiV2BaseUrls("read").length === 0 || !bluesixApiKey) {
       return NextResponse.json(
         { error: "API_V2_URL or BLUESIX_API_KEY not configured" },
         { status: 500 },
@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
 
     const { response } = await fetchApiV2WithFailover({
       pathname: `${url.pathname}${url.search}`,
+      pool: "read",
       timeoutMs: 30000,
       init: {
         headers: {

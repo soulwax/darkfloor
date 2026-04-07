@@ -187,12 +187,13 @@ function normalizeBootstrapProfile(
 async function fetchBootstrapProfile(
   accessToken: string,
 ): Promise<BootstrapUserProfile> {
-  if (getApiV2BaseUrls().length === 0) {
+  if (getApiV2BaseUrls("write").length === 0) {
     throw new Error("API_V2_URL is not configured");
   }
 
   const { response, upstreamUrl } = await fetchApiV2WithFailover({
     pathname: "/api/auth/me",
+    pool: "write",
     timeoutMs: AUTH_ME_TIMEOUT_MS,
     init: {
       method: "GET",

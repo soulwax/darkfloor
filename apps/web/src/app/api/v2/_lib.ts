@@ -81,6 +81,12 @@ function getResponseHeaders(response: Response): Headers {
 export async function proxyApiV2(
   options: ProxyApiV2Options,
 ): Promise<NextResponse> {
+  const method = options.method ?? options.request?.method ?? "GET";
+  const pool =
+    method === "GET" || method === "HEAD" || method === "OPTIONS"
+      ? "read"
+      : "write";
+
   if (options.requireAdmin) {
     const { auth } = await import("@/server/auth");
     const session = await auth();
@@ -92,14 +98,13 @@ export async function proxyApiV2(
     }
   }
 
-  if (getApiV2BaseUrls().length === 0) {
+  if (getApiV2BaseUrls(pool).length === 0) {
     return NextResponse.json(
       { ok: false, error: "API_V2_URL is not configured" },
       { status: 500 },
     );
   }
 
-  const method = options.method ?? options.request?.method ?? "GET";
   const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
   const headers = getForwardHeaders(options.request);
   let body: string | undefined;
@@ -117,6 +122,7 @@ export async function proxyApiV2(
   try {
     const { response } = await fetchApiV2WithFailover({
       pathname: options.pathname,
+      pool,
       request: options.request,
       timeoutMs,
       init: {

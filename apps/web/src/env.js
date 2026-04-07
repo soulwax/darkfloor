@@ -41,6 +41,9 @@ export const env = createEnv({
     BLUESIX_API_KEY: z.string().optional(),
     API_V2_URL: z.string().url().optional(),
     API_V2_URLS: z.string().optional(),
+    API_V2_READ_URLS: z.string().optional(),
+    API_V2_WRITE_URLS: z.string().optional(),
+    API_V2_STREAM_URLS: z.string().optional(),
     ELECTRON_BUILD: z
       .string()
       .optional()
@@ -95,6 +98,9 @@ export const env = createEnv({
     UNIVERSAL_KEY: process.env.UNIVERSAL_KEY,
     API_V2_URL: process.env.API_V2_URL ?? process.env.SONGBIRD_API_URL,
     API_V2_URLS: process.env.API_V2_URLS,
+    API_V2_READ_URLS: process.env.API_V2_READ_URLS,
+    API_V2_WRITE_URLS: process.env.API_V2_WRITE_URLS,
+    API_V2_STREAM_URLS: process.env.API_V2_STREAM_URLS,
     NEXT_PUBLIC_AUTH_API_BASE:
       process.env.NEXT_PUBLIC_AUTH_API_BASE ??
       process.env.API_V2_URL ??

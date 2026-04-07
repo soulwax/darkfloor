@@ -15,7 +15,7 @@ const DEFAULT_GUEST_STREAM_KBPS = "128";
 const VERCEL_ENV_KEYS = ["VERCEL", "VERCEL_ENV", "VERCEL_URL"] as const;
 
 function getConfiguredApiV2Label(): string {
-  const baseUrls = getApiV2BaseUrls();
+  const baseUrls = getApiV2BaseUrls("stream");
   return baseUrls.length > 0 ? baseUrls.join(", ") : "API_V2_URL not configured";
 }
 
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     const bluesixApiKey = env.BLUESIX_API_KEY?.trim();
     const missingEnvVars: string[] = [];
 
-    if (getApiV2BaseUrls().length === 0) {
+    if (getApiV2BaseUrls("stream").length === 0) {
       missingEnvVars.push("API_V2_URL");
     }
     if (!bluesixApiKey) {
@@ -156,6 +156,7 @@ export async function GET(req: NextRequest) {
     try {
       const upstreamResult = await fetchApiV2WithFailover({
         pathname: `${url.pathname}${url.search}`,
+        pool: "stream",
         timeoutMs: 30000,
         init: {
           headers: fetchHeaders,
