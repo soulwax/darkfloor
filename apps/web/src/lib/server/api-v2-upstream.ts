@@ -9,6 +9,10 @@ const API_V2_RETRYABLE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 type UpstreamRequest = NextRequest | Request;
 export type ApiV2UpstreamPool = "default" | "read" | "write" | "stream";
+export type ApiV2ConfiguredUpstream = {
+  url: string;
+  pools: ApiV2UpstreamPool[];
+};
 
 type ApiV2UpstreamState = {
   cooldowns: Map<string, number>;
@@ -186,6 +190,24 @@ export function getPreferredApiV2BaseUrl(
   return buildOrderedApiV2BaseUrls(pool)[0] ?? null;
 }
 
+export function listConfiguredApiV2Upstreams(): ApiV2ConfiguredUpstream[] {
+  const orderedPools: ApiV2UpstreamPool[] = ["default", "read", "write", "stream"];
+  const poolMembership = new Map<string, Set<ApiV2UpstreamPool>>();
+
+  for (const pool of orderedPools) {
+    for (const url of getApiV2BaseUrls(pool)) {
+      const current = poolMembership.get(url) ?? new Set<ApiV2UpstreamPool>();
+      current.add(pool);
+      poolMembership.set(url, current);
+    }
+  }
+
+  return Array.from(poolMembership.entries()).map(([url, pools]) => ({
+    url,
+    pools: orderedPools.filter((pool) => pools.has(pool)),
+  }));
+}
+
 export function buildApiV2UpstreamUrl(options: {
   baseUrl: string;
   pathname: string;
@@ -291,4 +313,5 @@ export const apiV2UpstreamInternals = {
       nextCursorByPool: { ...state.nextCursorByPool },
     };
   },
+  listConfiguredApiV2Upstreams,
 };

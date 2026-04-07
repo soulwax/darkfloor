@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.9] - 2026-04-07
+
+### Added
+
+- **Admin now shows every configured API instance directly**: The admin dashboard includes a new API Instances section that lists each configured upstream URL once, shows which pools it belongs to (`generic`, `read`, `write`, `stream`), and probes its direct liveness, version, and readiness endpoints without going through the frontend failover layer.
+
 ## [1.15.8] - 2026-04-05
 
 ### Fixed

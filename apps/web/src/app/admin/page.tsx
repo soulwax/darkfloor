@@ -48,6 +48,35 @@ type ApiDiagnosticResult = {
   error?: string;
 };
 
+type ApiUpstreamPool = "default" | "read" | "write" | "stream";
+
+type ApiUpstreamProbeResult = {
+  key: string;
+  label: string;
+  pathname: string;
+  status: number | null;
+  ok: boolean;
+  state: "healthy" | "degraded" | "down";
+  payloadPreview: string;
+  error?: string;
+};
+
+type ApiUpstreamDiagnosticsEntry = {
+  url: string;
+  pools: ApiUpstreamPool[];
+  state: "healthy" | "degraded" | "down";
+  fetchedAt: string;
+  probes: ApiUpstreamProbeResult[];
+};
+
+type ApiUpstreamDiagnosticsResponse = {
+  ok: boolean;
+  fetchedAt: string;
+  count: number;
+  items: ApiUpstreamDiagnosticsEntry[];
+  error?: string;
+};
+
 type OAuthDumpFetchEntry = {
   timestamp: string;
   label: string;
@@ -623,6 +652,27 @@ function getResultState(
   return "healthy";
 }
 
+function getApiUpstreamHostLabel(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
+
+function getApiUpstreamPoolLabel(pool: ApiUpstreamPool): string {
+  switch (pool) {
+    case "default":
+      return "Generic";
+    case "read":
+      return "Read";
+    case "write":
+      return "Write";
+    case "stream":
+      return "Stream";
+  }
+}
+
 async function probeApiTarget(
   target: ApiDiagnosticTarget,
   accessToken: string | null,
@@ -722,6 +772,11 @@ export default function AdminPage() {
     ApiDiagnosticResult[]
   >([]);
   const [isDiagnosticsLoading, setIsDiagnosticsLoading] = useState(false);
+  const [apiUpstreamDiagnostics, setApiUpstreamDiagnostics] = useState<
+    ApiUpstreamDiagnosticsEntry[]
+  >([]);
+  const [isApiUpstreamDiagnosticsLoading, setIsApiUpstreamDiagnosticsLoading] =
+    useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [isRefreshingUpstreamAuth, setIsRefreshingUpstreamAuth] =
     useState(false);
@@ -894,6 +949,34 @@ export default function AdminPage() {
       setIsDiagnosticsLoading(false);
     }
   }, []);
+
+  const refreshApiUpstreamDiagnostics = useCallback(async () => {
+    setIsApiUpstreamDiagnosticsLoading(true);
+    try {
+      const response = await fetch("/api/admin/api-upstreams", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as ApiUpstreamDiagnosticsResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error ??
+            `API upstream diagnostics request failed (${response.status})`,
+        );
+      }
+
+      setApiUpstreamDiagnostics(payload.items);
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to load API upstream diagnostics",
+        "error",
+      );
+    } finally {
+      setIsApiUpstreamDiagnosticsLoading(false);
+    }
+  }, [showToast]);
 
   const handleRefreshUpstreamAuth = useCallback(async () => {
     setIsRefreshingUpstreamAuth(true);
@@ -1333,11 +1416,13 @@ export default function AdminPage() {
     if (!isAuthorized) return;
 
     void refreshDiagnostics();
+    void refreshApiUpstreamDiagnostics();
     void refreshOAuthDump();
     void refreshUpstreamOAuthDump();
     void refreshSpotifyAdminProfileData();
     const intervalId = window.setInterval(() => {
       void refreshDiagnostics();
+      void refreshApiUpstreamDiagnostics();
       void refreshOAuthDump();
       void refreshUpstreamOAuthDump();
     }, 60_000);
@@ -1347,6 +1432,7 @@ export default function AdminPage() {
     };
   }, [
     isAuthorized,
+    refreshApiUpstreamDiagnostics,
     refreshDiagnostics,
     refreshOAuthDump,
     refreshSpotifyAdminProfileData,
@@ -1552,6 +1638,129 @@ export default function AdminPage() {
                     ? `${item.error}\n${item.payloadPreview}`
                     : item.payloadPreview}
                 </pre>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)]/90 via-[var(--color-surface-2)]/85 to-[rgba(88,198,177,0.12)] p-6 shadow-[var(--shadow-lg)]">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="flex items-center gap-2 text-sm tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+              <Link2 className="h-4 w-4 text-[var(--color-accent)]" />
+              API Instances
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-subtext)]">
+              Direct probes for every configured upstream URL and its pool membership.
+            </p>
+          </div>
+          <button
+            onClick={() => void refreshApiUpstreamDiagnostics()}
+            disabled={isApiUpstreamDiagnosticsLoading}
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
+          >
+            {isApiUpstreamDiagnosticsLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
+            Refresh instances
+          </button>
+        </div>
+
+        {apiUpstreamDiagnostics.length === 0 && isApiUpstreamDiagnosticsLoading ? (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {[1, 2].map((item) => (
+              <div
+                key={item}
+                className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface)]/70"
+              />
+            ))}
+          </div>
+        ) : apiUpstreamDiagnostics.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-subtext)]">
+            <CircleAlert className="h-4 w-4 text-[var(--color-warning)]" />
+            No API upstreams are configured yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {apiUpstreamDiagnostics.map((item) => (
+              <div
+                key={item.url}
+                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold text-[var(--color-text)]">
+                      {getApiUpstreamHostLabel(item.url)}
+                    </p>
+                    <p className="break-all font-mono text-[11px] text-[var(--color-muted)]">
+                      {item.url}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] uppercase ${
+                      item.state === "healthy"
+                        ? "bg-[rgba(88,198,177,0.15)] text-[var(--color-success)]"
+                        : item.state === "degraded"
+                          ? "bg-[rgba(242,199,97,0.15)] text-[var(--color-warning)]"
+                          : "bg-[rgba(242,139,130,0.15)] text-[var(--color-danger)]"
+                    }`}
+                  >
+                    {item.state === "healthy" ? (
+                      <CircleCheck className="h-3 w-3" />
+                    ) : (
+                      <CircleAlert className="h-3 w-3" />
+                    )}
+                    {item.state}
+                  </span>
+                </div>
+
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {item.pools.map((pool) => (
+                    <span
+                      key={`${item.url}-${pool}`}
+                      className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase"
+                    >
+                      {getApiUpstreamPoolLabel(pool)}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {item.probes.map((probe) => (
+                    <div
+                      key={`${item.url}-${probe.key}`}
+                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold text-[var(--color-text)]">
+                          {probe.label}
+                        </p>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] uppercase ${
+                            probe.state === "healthy"
+                              ? "bg-[rgba(88,198,177,0.15)] text-[var(--color-success)]"
+                              : probe.state === "degraded"
+                                ? "bg-[rgba(242,199,97,0.15)] text-[var(--color-warning)]"
+                                : "bg-[rgba(242,139,130,0.15)] text-[var(--color-danger)]"
+                          }`}
+                        >
+                          {probe.status ?? "ERR"}
+                        </span>
+                      </div>
+                      <p className="mb-2 font-mono text-[10px] text-[var(--color-muted)]">
+                        {probe.pathname}
+                      </p>
+                      <pre className="max-h-24 overflow-auto rounded-lg bg-[var(--color-surface)]/80 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
+                        {probe.error
+                          ? `${probe.error}\n${probe.payloadPreview}`
+                          : probe.payloadPreview}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
