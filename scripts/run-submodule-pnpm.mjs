@@ -19,11 +19,22 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const submoduleDir = path.resolve(repoRoot, submoduleName);
 const submodulePackageJson = path.join(submoduleDir, "package.json");
+const isVercel =
+  process.env.VERCEL === "1" || process.env.VERCEL_ENV !== undefined;
+const allowMissingSubmodule =
+  isVercel || process.env.ALLOW_MISSING_SUBMODULE === "1";
 
 if (!fs.existsSync(submodulePackageJson)) {
-  console.error(
-    `Missing ${submoduleName}/package.json. Ensure the submodule is checked out before running this command.`,
-  );
+  const message = `Missing ${submoduleName}/package.json. Ensure the submodule is checked out before running this command.`;
+
+  if (allowMissingSubmodule) {
+    console.warn(
+      `${message} Skipping because missing submodules are allowed in this environment.`,
+    );
+    process.exit(0);
+  }
+
+  console.error(message);
   process.exit(1);
 }
 
