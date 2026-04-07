@@ -237,6 +237,30 @@ describe("musicRouter tRPC operations", () => {
     );
   });
 
+  it("persists color scheme preferences for signed-in users", async () => {
+    const db = createMockDb(null);
+
+    const context = createCallerContext(db);
+
+    const caller = musicRouter.createCaller(context);
+
+    const result = await caller.updatePreferences({
+      colorScheme: "tokyo-night",
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        colorScheme: "tokyo-night",
+      }),
+    );
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        colorScheme: "tokyo-night",
+      }),
+    );
+  });
+
   it("persists spotify feature settings per user and auto-enables complete profiles", async () => {
     const db = createMockDb(null);
 
@@ -325,6 +349,7 @@ describe("musicRouter tRPC operations", () => {
       visualizerMode: "random",
       compactMode: false,
       theme: "dark",
+      colorScheme: "starchild",
       language: "en",
       spotifyFeaturesEnabled: true,
       spotifyClientId: "client-id",
@@ -347,5 +372,6 @@ describe("musicRouter tRPC operations", () => {
 
     expect(result.spotifyClientSecret).toBe("");
     expect(result.spotifyClientSecretConfigured).toBe(true);
+    expect(result.colorScheme).toBe("starchild");
   });
 });

@@ -1,5 +1,32 @@
 // File: packages/types/src/settings.ts
 
+export const COLOR_SCHEME_IDS = [
+  "starchild",
+  "tokyo-night",
+  "dracula",
+  "nord",
+  "gruvbox",
+  "catppuccin",
+  "monokai",
+  "solarized-dark",
+  "one-dark",
+  "rose-pine",
+] as const;
+
+export type ColorSchemeId = (typeof COLOR_SCHEME_IDS)[number];
+export const DEFAULT_COLOR_SCHEME: ColorSchemeId = "starchild";
+
+export function isColorSchemeId(value: unknown): value is ColorSchemeId {
+  return (
+    typeof value === "string" &&
+    (COLOR_SCHEME_IDS as readonly string[]).includes(value)
+  );
+}
+
+export function normalizeColorSchemeId(value: unknown): ColorSchemeId {
+  return isColorSchemeId(value) ? value : DEFAULT_COLOR_SCHEME;
+}
+
 export interface UserSettings {
   volume: number;
   repeatMode: "none" | "one" | "all";
@@ -13,6 +40,7 @@ export interface UserSettings {
   showFpsCounter: boolean;
   compactMode: boolean;
   theme: "light" | "dark";
+  colorScheme: ColorSchemeId;
   autoQueueEnabled: boolean;
   autoQueueThreshold: number;
   autoQueueCount: number;
@@ -44,6 +72,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   showFpsCounter: false,
   compactMode: false,
   theme: "dark",
+  colorScheme: DEFAULT_COLOR_SCHEME,
   autoQueueEnabled: false,
   autoQueueThreshold: 3,
   autoQueueCount: 5,

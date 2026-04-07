@@ -115,6 +115,566 @@
 }
 
 /* ------------------------------------------------------------
+   🌒 Dark Colour Schemes
+------------------------------------------------------------- */
+
+html[data-color-scheme="starchild"] {
+  --color-bg: #0b0b0b;
+  --color-surface: #111111;
+  --color-surface-hover: #171717;
+  --color-surface-2: #1c1c1c;
+  --color-accent: #ff3b3b;
+  --color-accent-light: #ff6b6b;
+  --color-accent-strong: #ff3b3b;
+  --color-secondary-accent: #ff3b3b;
+  --color-secondary-accent-strong: #ff3b3b;
+  --color-text: #f5f5f5;
+  --color-subtext: #8b8b8b;
+  --color-muted: #666666;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-on-accent: #ffffff;
+  --color-success: #58c6b1;
+  --color-danger: #f28b82;
+  --color-warning: #f2c761;
+  --color-slider-track: rgba(255, 255, 255, 0.12);
+  --color-slider-fill: var(--color-accent);
+  --color-slider-thumb: var(--color-accent);
+  --ring: 0 0 0 3px rgba(255, 59, 59, 0.2);
+  --shell-border: rgba(255, 255, 255, 0.06);
+  --shell-divider: rgba(255, 255, 255, 0.08);
+  --shell-muted-bg: rgba(255, 255, 255, 0.04);
+  --shell-popover-bg: rgba(17, 17, 17, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #fbbf5a 0%,
+    #f4a843 22%,
+    #2aaa96 52%,
+    #58c6b1 76%,
+    #a8f0e2 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ffd17a 0%,
+    #ffb84d 24%,
+    #3ec9b4 52%,
+    #72d9c9 76%,
+    #c2f5ea 100%
+  );
+  --scrollbar-thumb-solid: #4ab8a3;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #070c13 0%,
+    #0f141d 50%,
+    #070c13 100%
+  );
+  --color-chrome-solid: #0a1018;
+  --color-chrome-symbol: #f5f1e8;
+  --tauri-frame-border: rgba(244, 178, 102, 0.14);
+  --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02) 38%,
+    rgba(42, 170, 150, 0.09) 100%
+  );
+}
+
+html[data-color-scheme="tokyo-night"] {
+  --color-bg: #16161e;
+  --color-surface: #1a1b26;
+  --color-surface-hover: #202437;
+  --color-surface-2: #24283b;
+  --color-accent: #7aa2f7;
+  --color-accent-light: #8cb6ff;
+  --color-accent-strong: #7dcfff;
+  --color-secondary-accent: #bb9af7;
+  --color-secondary-accent-strong: #c8a8ff;
+  --color-text: #c0caf5;
+  --color-subtext: #9aa5ce;
+  --color-muted: #6d7aa6;
+  --color-border: rgba(122, 162, 247, 0.16);
+  --color-on-accent: #0b1020;
+  --color-success: #9ece6a;
+  --color-danger: #f7768e;
+  --color-warning: #e0af68;
+  --color-slider-track: rgba(192, 202, 245, 0.12);
+  --ring: 0 0 0 3px rgba(122, 162, 247, 0.22);
+  --shell-border: rgba(122, 162, 247, 0.12);
+  --shell-divider: rgba(192, 202, 245, 0.08);
+  --shell-muted-bg: rgba(122, 162, 247, 0.06);
+  --shell-popover-bg: rgba(26, 27, 38, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #7aa2f7 0%,
+    #7dcfff 50%,
+    #bb9af7 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #8cb6ff 0%,
+    #92ddff 50%,
+    #ccb0ff 100%
+  );
+  --scrollbar-thumb-solid: #7aa2f7;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #141824 0%,
+    #1d2231 50%,
+    #141824 100%
+  );
+  --color-chrome-solid: #151823;
+  --color-chrome-symbol: #c0caf5;
+  --tauri-frame-border: rgba(122, 162, 247, 0.18);
+  --tauri-frame-shadow: 0 22px 56px rgba(8, 11, 20, 0.48);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(122, 162, 247, 0.12),
+    rgba(17, 24, 39, 0.02) 42%,
+    rgba(187, 154, 247, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="dracula"] {
+  --color-bg: #0f1020;
+  --color-surface: #151728;
+  --color-surface-hover: #1c2034;
+  --color-surface-2: #22263b;
+  --color-accent: #ff79c6;
+  --color-accent-light: #ff92d0;
+  --color-accent-strong: #ff79c6;
+  --color-secondary-accent: #8be9fd;
+  --color-secondary-accent-strong: #a4f0ff;
+  --color-text: #f8f8f2;
+  --color-subtext: #c2c1dc;
+  --color-muted: #8e8aac;
+  --color-border: rgba(255, 121, 198, 0.16);
+  --color-on-accent: #1a1024;
+  --color-success: #50fa7b;
+  --color-danger: #ff5555;
+  --color-warning: #f1fa8c;
+  --color-slider-track: rgba(248, 248, 242, 0.12);
+  --ring: 0 0 0 3px rgba(255, 121, 198, 0.24);
+  --shell-border: rgba(255, 121, 198, 0.12);
+  --shell-divider: rgba(248, 248, 242, 0.08);
+  --shell-muted-bg: rgba(139, 233, 253, 0.06);
+  --shell-popover-bg: rgba(21, 23, 40, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #ff79c6 0%,
+    #bd93f9 48%,
+    #8be9fd 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ff93d1 0%,
+    #c8a6ff 48%,
+    #a8f0ff 100%
+  );
+  --scrollbar-thumb-solid: #bd93f9;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #111320 0%,
+    #171a29 50%,
+    #111320 100%
+  );
+  --color-chrome-solid: #121423;
+  --color-chrome-symbol: #f8f8f2;
+  --tauri-frame-border: rgba(189, 147, 249, 0.18);
+  --tauri-frame-shadow: 0 22px 58px rgba(8, 8, 16, 0.5);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(255, 121, 198, 0.12),
+    rgba(248, 248, 242, 0.02) 38%,
+    rgba(139, 233, 253, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="nord"] {
+  --color-bg: #2b303b;
+  --color-surface: #313743;
+  --color-surface-hover: #39414f;
+  --color-surface-2: #434c5e;
+  --color-accent: #88c0d0;
+  --color-accent-light: #96d2df;
+  --color-accent-strong: #81a1c1;
+  --color-secondary-accent: #81a1c1;
+  --color-secondary-accent-strong: #8caed1;
+  --color-text: #eceff4;
+  --color-subtext: #d8dee9;
+  --color-muted: #a3adbf;
+  --color-border: rgba(136, 192, 208, 0.16);
+  --color-on-accent: #132028;
+  --color-success: #a3be8c;
+  --color-danger: #bf616a;
+  --color-warning: #ebcb8b;
+  --color-slider-track: rgba(236, 239, 244, 0.13);
+  --ring: 0 0 0 3px rgba(136, 192, 208, 0.24);
+  --shell-border: rgba(216, 222, 233, 0.1);
+  --shell-divider: rgba(216, 222, 233, 0.08);
+  --shell-muted-bg: rgba(136, 192, 208, 0.08);
+  --shell-popover-bg: rgba(49, 55, 67, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #88c0d0 0%,
+    #81a1c1 55%,
+    #5e81ac 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #9ed0dd 0%,
+    #90b4d7 55%,
+    #6d93c0 100%
+  );
+  --scrollbar-thumb-solid: #81a1c1;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #252a33 0%,
+    #2d333e 50%,
+    #252a33 100%
+  );
+  --color-chrome-solid: #2a303b;
+  --color-chrome-symbol: #eceff4;
+  --tauri-frame-border: rgba(136, 192, 208, 0.18);
+  --tauri-frame-shadow: 0 22px 54px rgba(21, 25, 31, 0.42);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(236, 239, 244, 0.07),
+    rgba(136, 192, 208, 0.06) 38%,
+    rgba(94, 129, 172, 0.1) 100%
+  );
+}
+
+html[data-color-scheme="gruvbox"] {
+  --color-bg: #1d2021;
+  --color-surface: #282828;
+  --color-surface-hover: #32302f;
+  --color-surface-2: #3c3836;
+  --color-accent: #fe8019;
+  --color-accent-light: #ff9a3c;
+  --color-accent-strong: #fabd2f;
+  --color-secondary-accent: #b8bb26;
+  --color-secondary-accent-strong: #d0d45a;
+  --color-text: #ebdbb2;
+  --color-subtext: #d5c4a1;
+  --color-muted: #a89984;
+  --color-border: rgba(254, 128, 25, 0.16);
+  --color-on-accent: #2c190b;
+  --color-success: #8ec07c;
+  --color-danger: #fb4934;
+  --color-warning: #fabd2f;
+  --color-slider-track: rgba(235, 219, 178, 0.12);
+  --ring: 0 0 0 3px rgba(254, 128, 25, 0.22);
+  --shell-border: rgba(235, 219, 178, 0.09);
+  --shell-divider: rgba(235, 219, 178, 0.08);
+  --shell-muted-bg: rgba(184, 187, 38, 0.08);
+  --shell-popover-bg: rgba(40, 40, 40, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #fe8019 0%,
+    #fabd2f 42%,
+    #b8bb26 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ff9839 0%,
+    #ffd453 42%,
+    #d2d74d 100%
+  );
+  --scrollbar-thumb-solid: #d79921;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #141617 0%,
+    #1f2223 50%,
+    #141617 100%
+  );
+  --color-chrome-solid: #1e2021;
+  --color-chrome-symbol: #ebdbb2;
+  --tauri-frame-border: rgba(250, 189, 47, 0.16);
+  --tauri-frame-shadow: 0 22px 54px rgba(14, 12, 10, 0.46);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(250, 189, 47, 0.1),
+    rgba(235, 219, 178, 0.02) 36%,
+    rgba(184, 187, 38, 0.1) 100%
+  );
+}
+
+html[data-color-scheme="catppuccin"] {
+  --color-bg: #11111b;
+  --color-surface: #181825;
+  --color-surface-hover: #1f2130;
+  --color-surface-2: #26283b;
+  --color-accent: #cba6f7;
+  --color-accent-light: #d8b8ff;
+  --color-accent-strong: #f5c2e7;
+  --color-secondary-accent: #89b4fa;
+  --color-secondary-accent-strong: #a4c7ff;
+  --color-text: #cdd6f4;
+  --color-subtext: #bac2de;
+  --color-muted: #9399b2;
+  --color-border: rgba(203, 166, 247, 0.16);
+  --color-on-accent: #1f1633;
+  --color-success: #a6e3a1;
+  --color-danger: #f38ba8;
+  --color-warning: #f9e2af;
+  --color-slider-track: rgba(205, 214, 244, 0.12);
+  --ring: 0 0 0 3px rgba(203, 166, 247, 0.22);
+  --shell-border: rgba(205, 214, 244, 0.09);
+  --shell-divider: rgba(205, 214, 244, 0.08);
+  --shell-muted-bg: rgba(137, 180, 250, 0.08);
+  --shell-popover-bg: rgba(24, 24, 37, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #cba6f7 0%,
+    #f5c2e7 48%,
+    #89b4fa 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #dbc0ff 0%,
+    #ffd3ef 48%,
+    #a3c6ff 100%
+  );
+  --scrollbar-thumb-solid: #cba6f7;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #0d0d16 0%,
+    #161823 50%,
+    #0d0d16 100%
+  );
+  --color-chrome-solid: #131320;
+  --color-chrome-symbol: #cdd6f4;
+  --tauri-frame-border: rgba(203, 166, 247, 0.18);
+  --tauri-frame-shadow: 0 22px 56px rgba(9, 9, 16, 0.48);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(203, 166, 247, 0.12),
+    rgba(245, 194, 231, 0.04) 42%,
+    rgba(137, 180, 250, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="monokai"] {
+  --color-bg: #141517;
+  --color-surface: #1c1d22;
+  --color-surface-hover: #23252c;
+  --color-surface-2: #2d3038;
+  --color-accent: #f92672;
+  --color-accent-light: #ff4b8d;
+  --color-accent-strong: #fd971f;
+  --color-secondary-accent: #66d9ef;
+  --color-secondary-accent-strong: #87e5f6;
+  --color-text: #f8f8f2;
+  --color-subtext: #d8d8ca;
+  --color-muted: #9b9c93;
+  --color-border: rgba(249, 38, 114, 0.16);
+  --color-on-accent: #250913;
+  --color-success: #a6e22e;
+  --color-danger: #ff6188;
+  --color-warning: #fd971f;
+  --color-slider-track: rgba(248, 248, 242, 0.12);
+  --ring: 0 0 0 3px rgba(249, 38, 114, 0.22);
+  --shell-border: rgba(248, 248, 242, 0.09);
+  --shell-divider: rgba(248, 248, 242, 0.08);
+  --shell-muted-bg: rgba(102, 217, 239, 0.08);
+  --shell-popover-bg: rgba(28, 29, 34, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #f92672 0%,
+    #fd971f 45%,
+    #66d9ef 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #ff4d8f 0%,
+    #ffac4e 45%,
+    #84e6f5 100%
+  );
+  --scrollbar-thumb-solid: #fd971f;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #101114 0%,
+    #17191d 50%,
+    #101114 100%
+  );
+  --color-chrome-solid: #15161b;
+  --color-chrome-symbol: #f8f8f2;
+  --tauri-frame-border: rgba(253, 151, 31, 0.18);
+  --tauri-frame-shadow: 0 22px 58px rgba(9, 9, 11, 0.48);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(249, 38, 114, 0.12),
+    rgba(253, 151, 31, 0.05) 40%,
+    rgba(102, 217, 239, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="solarized-dark"] {
+  --color-bg: #002b36;
+  --color-surface: #073642;
+  --color-surface-hover: #0b4554;
+  --color-surface-2: #114e5e;
+  --color-accent: #268bd2;
+  --color-accent-light: #3ca0e7;
+  --color-accent-strong: #6c71c4;
+  --color-secondary-accent: #2aa198;
+  --color-secondary-accent-strong: #46b8af;
+  --color-text: #eee8d5;
+  --color-subtext: #d8d2bf;
+  --color-muted: #93a1a1;
+  --color-border: rgba(38, 139, 210, 0.16);
+  --color-on-accent: #031d24;
+  --color-success: #859900;
+  --color-danger: #dc322f;
+  --color-warning: #b58900;
+  --color-slider-track: rgba(238, 232, 213, 0.12);
+  --ring: 0 0 0 3px rgba(38, 139, 210, 0.22);
+  --shell-border: rgba(238, 232, 213, 0.09);
+  --shell-divider: rgba(238, 232, 213, 0.08);
+  --shell-muted-bg: rgba(42, 161, 152, 0.08);
+  --shell-popover-bg: rgba(7, 54, 66, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #268bd2 0%,
+    #2aa198 50%,
+    #6c71c4 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #42a2ea 0%,
+    #42bbb1 50%,
+    #8488d3 100%
+  );
+  --scrollbar-thumb-solid: #2aa198;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #001f27 0%,
+    #052c36 50%,
+    #001f27 100%
+  );
+  --color-chrome-solid: #042a33;
+  --color-chrome-symbol: #eee8d5;
+  --tauri-frame-border: rgba(42, 161, 152, 0.18);
+  --tauri-frame-shadow: 0 22px 56px rgba(0, 18, 23, 0.5);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(38, 139, 210, 0.12),
+    rgba(238, 232, 213, 0.03) 42%,
+    rgba(42, 161, 152, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="one-dark"] {
+  --color-bg: #12161d;
+  --color-surface: #1b212b;
+  --color-surface-hover: #232a35;
+  --color-surface-2: #2c3442;
+  --color-accent: #61afef;
+  --color-accent-light: #7ec1fb;
+  --color-accent-strong: #c678dd;
+  --color-secondary-accent: #98c379;
+  --color-secondary-accent-strong: #abd28f;
+  --color-text: #abb2bf;
+  --color-subtext: #c8ced8;
+  --color-muted: #7f8794;
+  --color-border: rgba(97, 175, 239, 0.16);
+  --color-on-accent: #09131d;
+  --color-success: #98c379;
+  --color-danger: #e06c75;
+  --color-warning: #e5c07b;
+  --color-slider-track: rgba(171, 178, 191, 0.12);
+  --ring: 0 0 0 3px rgba(97, 175, 239, 0.22);
+  --shell-border: rgba(171, 178, 191, 0.09);
+  --shell-divider: rgba(171, 178, 191, 0.08);
+  --shell-muted-bg: rgba(97, 175, 239, 0.08);
+  --shell-popover-bg: rgba(27, 33, 43, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #61afef 0%,
+    #c678dd 48%,
+    #98c379 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #7dc1fa 0%,
+    #d893eb 48%,
+    #add38f 100%
+  );
+  --scrollbar-thumb-solid: #61afef;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #0f1319 0%,
+    #171c24 50%,
+    #0f1319 100%
+  );
+  --color-chrome-solid: #171b23;
+  --color-chrome-symbol: #abb2bf;
+  --tauri-frame-border: rgba(97, 175, 239, 0.18);
+  --tauri-frame-shadow: 0 22px 56px rgba(10, 13, 18, 0.48);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(97, 175, 239, 0.12),
+    rgba(171, 178, 191, 0.03) 38%,
+    rgba(198, 120, 221, 0.12) 100%
+  );
+}
+
+html[data-color-scheme="rose-pine"] {
+  --color-bg: #191724;
+  --color-surface: #1f1d2e;
+  --color-surface-hover: #26233a;
+  --color-surface-2: #312f44;
+  --color-accent: #eb6f92;
+  --color-accent-light: #f08bab;
+  --color-accent-strong: #f6c177;
+  --color-secondary-accent: #9ccfd8;
+  --color-secondary-accent-strong: #b0dbe3;
+  --color-text: #e0def4;
+  --color-subtext: #c4c1dd;
+  --color-muted: #908caa;
+  --color-border: rgba(235, 111, 146, 0.16);
+  --color-on-accent: #27101a;
+  --color-success: #31748f;
+  --color-danger: #eb6f92;
+  --color-warning: #f6c177;
+  --color-slider-track: rgba(224, 222, 244, 0.12);
+  --ring: 0 0 0 3px rgba(235, 111, 146, 0.22);
+  --shell-border: rgba(224, 222, 244, 0.09);
+  --shell-divider: rgba(224, 222, 244, 0.08);
+  --shell-muted-bg: rgba(156, 207, 216, 0.08);
+  --shell-popover-bg: rgba(31, 29, 46, 0.96);
+  --scrollbar-thumb-gradient: linear-gradient(
+    180deg,
+    #eb6f92 0%,
+    #f6c177 48%,
+    #9ccfd8 100%
+  );
+  --scrollbar-thumb-gradient-hover: linear-gradient(
+    180deg,
+    #f089a8 0%,
+    #f8cf91 48%,
+    #b1dbe3 100%
+  );
+  --scrollbar-thumb-solid: #eb6f92;
+  --scrollbar-track-gradient: linear-gradient(
+    180deg,
+    #151320 0%,
+    #1d1a2c 50%,
+    #151320 100%
+  );
+  --color-chrome-solid: #1b1928;
+  --color-chrome-symbol: #e0def4;
+  --tauri-frame-border: rgba(235, 111, 146, 0.18);
+  --tauri-frame-shadow: 0 22px 58px rgba(10, 8, 16, 0.5);
+  --tauri-frame-sheen: linear-gradient(
+    140deg,
+    rgba(235, 111, 146, 0.12),
+    rgba(246, 193, 119, 0.05) 40%,
+    rgba(156, 207, 216, 0.12) 100%
+  );
+}
+
+/* ------------------------------------------------------------
    ☀️ Light Theme Variables & Base
 ------------------------------------------------------------- */
 

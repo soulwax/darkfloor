@@ -53,6 +53,7 @@ export type UserPreferencesUiRecord = Pick<
   | "visualizerMode"
   | "compactMode"
   | "theme"
+  | "colorScheme"
   | "language"
   | "spotifyFeaturesEnabled"
   | "spotifyClientId"

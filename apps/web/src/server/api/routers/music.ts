@@ -37,7 +37,11 @@ import {
 } from "@/server/services/recommendations";
 import { bluesix } from "@/services/bluesix";
 import { isTrack, type Track } from "@starchild/types";
-import { STREAM_QUALITY_OPTIONS } from "@starchild/types/settings";
+import {
+  COLOR_SCHEME_IDS,
+  normalizeColorSchemeId,
+  STREAM_QUALITY_OPTIONS,
+} from "@starchild/types/settings";
 
 const trackSchema = z.object({
   id: z.number(),
@@ -1607,9 +1611,16 @@ export const musicRouter = createTRPCRouter({
       ctx.session.user.id,
     );
 
-    if (prefs.theme === "light") {
+    const normalizedTheme = "dark" as const;
+    const normalizedColorScheme = normalizeColorSchemeId(prefs.colorScheme);
+
+    if (
+      prefs.theme !== normalizedTheme ||
+      prefs.colorScheme !== normalizedColorScheme
+    ) {
       await ctx.dataStore.userPreferences.upsert(ctx.session.user.id, {
-        theme: "dark",
+        theme: normalizedTheme,
+        colorScheme: normalizedColorScheme,
       });
 
       const refreshedPrefs = await ctx.dataStore.userPreferences.getUiByUserId(
@@ -1641,6 +1652,7 @@ export const musicRouter = createTRPCRouter({
         visualizerMode: z.enum(["random", "off", "specific"]).optional(),
         compactMode: z.boolean().optional(),
         theme: z.enum(["dark", "light"]).optional(),
+        colorScheme: z.enum(COLOR_SCHEME_IDS).optional(),
         language: z.enum(["en", "de", "sv", "ja"]).optional(),
         spotifyFeaturesEnabled: z.boolean().optional(),
         spotifyClientId: z.string().trim().max(255).optional(),
@@ -1659,6 +1671,9 @@ export const musicRouter = createTRPCRouter({
       const normalizedInput: Partial<typeof userPreferences.$inferInsert> = {
         ...input,
         ...(input.theme !== undefined ? { theme: "dark" as const } : {}),
+        ...(input.colorScheme !== undefined
+          ? { colorScheme: normalizeColorSchemeId(input.colorScheme) }
+          : {}),
       };
 
       const existing = await ctx.dataStore.userPreferences.getByUserId(

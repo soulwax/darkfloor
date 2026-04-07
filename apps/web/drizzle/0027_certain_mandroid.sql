@@ -1,0 +1,1 @@
+ALTER TABLE "hexmusic-stream_user_preferences" ADD COLUMN "colorScheme" varchar(40) DEFAULT 'starchild' NOT NULL;

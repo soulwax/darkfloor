@@ -3,6 +3,10 @@
 "use client";
 
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import {
+  applyColorSchemeToDocument,
+  COLOR_SCHEME_TRANSLATION_KEYS,
+} from "@/config/colorSchemes";
 import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -22,7 +26,10 @@ import {
   type RouterOutputs,
 } from "@starchild/api-client/trpc/react";
 import {
+  COLOR_SCHEME_IDS,
+  DEFAULT_COLOR_SCHEME,
   DEFAULT_STREAM_QUALITY,
+  normalizeColorSchemeId,
   type SettingsKey,
   type StreamQuality,
 } from "@starchild/types/settings";
@@ -133,8 +140,9 @@ function pickPreferenceKeys(
 
   const next: Partial<UserPreferencesRecord> = {};
   for (const key of keys) {
-    if (preferences[key] !== undefined) {
-      next[key] = preferences[key];
+    const value = preferences[key];
+    if (value !== undefined) {
+      Object.assign(next, { [key]: value });
     }
   }
   return next;
@@ -222,6 +230,10 @@ export default function SettingsPage() {
     { label: t("similarityBalanced"), value: "balanced" },
     { label: t("similarityDiverse"), value: "diverse" },
   ];
+  const colorSchemeOptions = COLOR_SCHEME_IDS.map((colorScheme) => ({
+    label: t(COLOR_SCHEME_TRANSLATION_KEYS[colorScheme]),
+    value: colorScheme,
+  }));
   const streamQualityOptions = [
     { label: t("streamQuality128"), value: "128" },
     { label: t("streamQuality192"), value: "192" },
@@ -321,12 +333,31 @@ export default function SettingsPage() {
 
   const handleSelect = (key: string, value: string) => {
     hapticToggle();
+    if (key === "colorScheme") {
+      const colorScheme = normalizeColorSchemeId(value);
+      settingsStorage.set("colorScheme", colorScheme);
+      setLocalSettings((prev) => ({ ...prev, colorScheme }));
+      applyColorSchemeToDocument(colorScheme);
+      if (session) {
+        void persistServerPreference(
+          { colorScheme },
+          buildPreferencePatch("colorScheme", colorScheme),
+        );
+      } else {
+        showToast(t("savedLocally"), "success");
+      }
+      return;
+    }
     if (key === "theme") {
       const themeValue = "dark" as const;
       settingsStorage.set("theme", themeValue);
-      const html = document.documentElement;
-      html.classList.add("theme-dark");
-      html.classList.remove("theme-light");
+      applyColorSchemeToDocument(
+        normalizeColorSchemeId(
+          session
+            ? preferences?.colorScheme ?? localSettings.colorScheme
+            : localSettings.colorScheme,
+        ),
+      );
       if (session) {
         void persistServerPreference(
           { theme: themeValue },
@@ -359,6 +390,9 @@ export default function SettingsPage() {
           } as Partial<UserPreferencesRecord>)
         : localSettings,
     [localSettings, optimisticPreferences, preferences, session],
+  );
+  const currentColorScheme = normalizeColorSchemeId(
+    effectivePreferences?.colorScheme ?? DEFAULT_COLOR_SCHEME,
   );
 
   const handleSignOut = () => {
@@ -714,13 +748,17 @@ export default function SettingsPage() {
     icon: <Eye className="h-5 w-5" />,
     items: [
       {
-        id: "theme",
-        label: t("theme"),
-        description: t("themeDark"),
+        id: "colorScheme",
+        label: t("colorScheme"),
+        description: getOptionLabel(
+          colorSchemeOptions,
+          currentColorScheme,
+          t("colorSchemeStarchild"),
+        ),
         type: "select",
-        value: "dark",
-        options: [{ label: t("themeDark"), value: "dark" }],
-        onChange: (value) => handleSelect("theme", value as string),
+        value: currentColorScheme,
+        options: colorSchemeOptions,
+        onChange: (value) => handleSelect("colorScheme", value as string),
       },
       {
         id: "language",

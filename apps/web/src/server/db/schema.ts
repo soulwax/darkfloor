@@ -9,6 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { Track } from "@starchild/types";
+import { DEFAULT_COLOR_SCHEME } from "@starchild/types/settings";
 
 export const createTable = pgTableCreator((name) => `hexmusic-stream_${name}`);
 
@@ -251,6 +252,10 @@ export const userPreferences = createTable(
     visualizerMode: d.varchar({ length: 20 }).default("random"),
     compactMode: d.boolean().default(false).notNull(),
     theme: d.varchar({ length: 20 }).default("dark"),
+    colorScheme: d
+      .varchar({ length: 40 })
+      .default(DEFAULT_COLOR_SCHEME)
+      .notNull(),
     language: d.varchar({ length: 8 }).default("en").notNull(),
     spotifyFeaturesEnabled: d.boolean().default(false).notNull(),
     spotifyClientId: d.varchar({ length: 255 }).default("").notNull(),

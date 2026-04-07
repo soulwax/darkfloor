@@ -3,15 +3,30 @@
 "use client";
 
 import { api } from "@starchild/api-client/trpc/react";
-import { settingsStorage } from "@/utils/settingsStorage";
+import {
+  applyColorSchemeToDocument,
+} from "@/config/colorSchemes";
+import {
+  SETTINGS_UPDATED_EVENT,
+  settingsStorage,
+} from "@/utils/settingsStorage";
+import {
+  DEFAULT_COLOR_SCHEME,
+  normalizeColorSchemeId,
+  type ColorSchemeId,
+} from "@starchild/types/settings";
 import { useSession } from "next-auth/react";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface ThemeContextValue {
   theme: "light" | "dark";
+  colorScheme: ColorSchemeId;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({ theme: "dark" });
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: "dark",
+  colorScheme: DEFAULT_COLOR_SCHEME,
+});
 
 export function useTheme() {
   return useContext(ThemeContext);
@@ -19,6 +34,11 @@ export function useTheme() {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
+  const [localColorScheme, setLocalColorScheme] = useState<ColorSchemeId>(() =>
+    normalizeColorSchemeId(
+      settingsStorage.getSetting("colorScheme", DEFAULT_COLOR_SCHEME),
+    ),
+  );
 
   const { data: preferences } = api.music.getUserPreferences.useQuery(
     undefined,
@@ -29,21 +49,60 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     },
   );
 
-  const effectiveTheme: "dark" = "dark";
+  const effectiveTheme = "dark" as const;
+  const effectiveColorScheme = normalizeColorSchemeId(
+    session ? preferences?.colorScheme ?? localColorScheme : localColorScheme,
+  );
 
   useEffect(() => {
-    const htmlElement = document.documentElement;
-    htmlElement.classList.add("theme-dark");
-    htmlElement.classList.remove("theme-light");
+    const handleSettingsUpdated = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          key?: string;
+          value?: unknown;
+        }>
+      ).detail;
+
+      if (detail?.key !== "colorScheme") {
+        return;
+      }
+
+      setLocalColorScheme(normalizeColorSchemeId(detail.value));
+    };
+
+    window.addEventListener(
+      SETTINGS_UPDATED_EVENT,
+      handleSettingsUpdated as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        SETTINGS_UPDATED_EVENT,
+        handleSettingsUpdated as EventListener,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    applyColorSchemeToDocument(effectiveColorScheme);
 
     const localTheme = settingsStorage.getSetting("theme", "dark");
     if (localTheme !== "dark") {
       settingsStorage.set("theme", "dark");
     }
-  }, [session?.user?.id, preferences?.theme]);
+
+    const storedColorScheme = normalizeColorSchemeId(
+      settingsStorage.getSetting("colorScheme", DEFAULT_COLOR_SCHEME),
+    );
+    if (storedColorScheme !== effectiveColorScheme) {
+      settingsStorage.set("colorScheme", effectiveColorScheme);
+    }
+  }, [effectiveColorScheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme: effectiveTheme }}>
+    <ThemeContext.Provider
+      value={{ theme: effectiveTheme, colorScheme: effectiveColorScheme }}
+    >
       {children}
     </ThemeContext.Provider>
   );

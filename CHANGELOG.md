@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.14] - 2026-04-07
+
+### Added
+
+- **Settings now include ten persistent dark colour schemes**: The web runtime now ships Starchild plus nine additional dark palettes inspired by widely used developer themes, and the selected scheme is applied immediately across the app shell, player chrome, and Electron titlebar colors.
+
+### Changed
+
+- **Colour scheme preference now persists in the database**: Signed-in listeners now save their chosen palette in `user_preferences`, guests still keep a local fallback, and the settings page reflects the saved scheme instead of only forcing a single dark theme.
+
 ## [1.15.13] - 2026-04-07
 
 ### Added

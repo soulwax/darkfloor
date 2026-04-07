@@ -24,7 +24,7 @@ const setRootVar = (name: string, value: string) => {
 };
 
 export function ElectronChromeSync() {
-  const { theme } = useTheme();
+  const { theme, colorScheme } = useTheme();
 
   useEffect(() => {
     if (!window.electron?.isElectron) return;
@@ -117,7 +117,7 @@ export function ElectronChromeSync() {
     };
 
     window.electron.send?.("toMain", message);
-  }, [theme]);
+  }, [colorScheme, theme]);
 
   return null;
 }

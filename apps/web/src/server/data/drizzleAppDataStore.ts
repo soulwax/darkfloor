@@ -41,6 +41,7 @@ const userPreferencesUiColumns = {
   visualizerMode: true,
   compactMode: true,
   theme: true,
+  colorScheme: true,
   language: true,
   spotifyFeaturesEnabled: true,
   spotifyClientId: true,
