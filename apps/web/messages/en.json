@@ -1127,7 +1127,8 @@
   },
   "cookie": {
     "message": "We use functional cookies to ensure the best possible experience on our platform. These are necessary for the website to function properly. We do not use trackers, third-party cookies, advertising, invasive analytics, or anything similar. By clicking \"Accept\", you agree to the use of these functional cookies. You can find more information in our privacy policy.",
-    "accept": "Got it"
+    "accept": "Got it",
+    "inlineNotice": "Functional cookies only. No trackers, ads, or third-party profiling. Continuing to use Starchild means the app can store the minimal cookies it needs to work."
   },
   "error": {
     "somethingWentWrong": "Oops! Something went wrong",

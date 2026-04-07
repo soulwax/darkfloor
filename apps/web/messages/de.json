@@ -1113,7 +1113,8 @@
   },
   "cookie": {
     "message": "Wir verwenden funktionale Cookies, um die bestmögliche Erfahrung auf unserer Plattform zu gewährleisten. Diese sind notwendig, damit die Website korrekt funktioniert. Wir verwenden keine Tracker, Cookies von Drittanbietern, Werbung, invasive Analysen oder ähnliches. Indem du auf \"Akzeptieren\" klickst, stimmst du der Verwendung dieser funktionalen Cookies zu. Weitere Informationen findest du in unserer Datenschutzerklärung.",
-    "accept": "Got it"
+    "accept": "Got it",
+    "inlineNotice": "Nur funktionale Cookies. Keine Tracker, keine Werbung und kein Drittanbieter-Profiling. Wenn du Starchild weiter nutzt, darf die App die minimalen Cookies speichern, die für den Betrieb notwendig sind."
   },
   "error": {
     "somethingWentWrong": "Oops! Something went wrong",

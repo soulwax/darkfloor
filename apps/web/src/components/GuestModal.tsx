@@ -138,6 +138,7 @@ export function GuestModal({
   const { openAuthModal } = useAuthModal();
   const t = useTranslations("guest");
   const tWelcome = useTranslations("welcome");
+  const tCookie = useTranslations("cookie");
   const {
     isPending: isLocaleSwitchPending,
     locale,
@@ -145,7 +146,6 @@ export function GuestModal({
     setLocale,
   } = useLocaleSwitcher();
   const isMobile = useMediaQuery("(max-width: 767px)");
-  const [isOpen, setIsOpen] = useState(true);
   const [genres, setGenres] = useState<GenreListItem[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
   const [preferredGenreId, setPreferredGenreId] = useState<number | null>(() =>
@@ -516,10 +516,8 @@ export function GuestModal({
 
   return (
     <Dialog
-      modal={false}
-      open={isOpen}
+      open
       onOpenChange={(open: boolean) => {
-        setIsOpen(open);
         if (!open) {
           setIsGenreMenuOpen(false);
           onContinueAsGuest?.();
@@ -755,6 +753,10 @@ export function GuestModal({
                   )}
                 </div>
               )}
+
+              <p className="px-1 text-[10px] leading-relaxed text-white/45">
+                {tCookie("inlineNotice")}
+              </p>
             </div>
           </div>
         </div>

@@ -51,6 +51,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setManualGuestModalOpen(true);
   }, []);
 
+  const closeGuestModal = useCallback(() => {
+    setManualGuestModalOpen(false);
+  }, []);
+
   const dismissGuestModal = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(GUEST_MODAL_DISMISSED_STORAGE_KEY, "true");
@@ -67,6 +71,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     !guestModalDismissed &&
     pathname === "/";
   const showGuestModal = showGuestModalFromGate || manualGuestModalOpen;
+  const handleGuestModalClose = showGuestModalFromGate
+    ? dismissGuestModal
+    : closeGuestModal;
 
   const guestModalContextValue = useMemo<GuestModalContextValue>(
     () => ({
@@ -80,7 +87,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     <GuestModalProvider value={guestModalContextValue}>
       {children}
       {showGuestModal ? (
-        <GuestModal onContinueAsGuest={dismissGuestModal} />
+        <GuestModal onContinueAsGuest={handleGuestModalClose} />
       ) : null}
     </GuestModalProvider>
   );

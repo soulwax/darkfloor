@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.11] - 2026-04-07
+
+### Changed
+
+- **The greeter now carries the cookie policy inline instead of showing a separate popup**: The standalone cookie banner has been removed from the web shell, and the guest greeter now shows the functional-cookie notice in small inline copy so the first-run experience stays in one place.
+
+### Fixed
+
+- **Reopening the greeter now stays open reliably for returning or signed-in listeners**: Manual greeter opens no longer reuse the permanent first-run dismissal path, so opening it from the header works even after the initial gate was dismissed or after a user signs in.
+
 ## [1.15.10] - 2026-04-07
 
 ### Changed

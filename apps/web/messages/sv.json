@@ -1113,7 +1113,8 @@
   },
   "cookie": {
     "message": "Vi använder funktionella cookies för att ge bästa möjliga upplevelse på vår plattform. Dessa är nödvändiga för att webbplatsen ska fungera korrekt. Vi använder inga spårare, tredjepartscookies, annonsering, invasiv analys eller något liknande. Genom att klicka på \"Acceptera\" samtycker du till användningen av dessa funktionella cookies. Mer information finns i vår integritetspolicy.",
-    "accept": "Jag förstår"
+    "accept": "Jag förstår",
+    "inlineNotice": "Endast funktionella cookies. Inga spårare, ingen annonsering och ingen tredjepartsprofilering. Om du fortsätter använda Starchild får appen spara de minimala cookies som krävs för att fungera."
   },
   "error": {
     "somethingWentWrong": "Hoppsan! Något gick fel",

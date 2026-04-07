@@ -29,7 +29,6 @@ import SuppressExtensionErrors from "@/components/SuppressExtensionErrors";
 import { TauriTitlebar } from "@/components/TauriTitlebar";
 import { TrackContextMenu } from "@/components/TrackContextMenu";
 import { UIWrapper } from "@/components/UIWrapper";
-import CookieConsent from "@/components/CookieConsent";
 import { AudioPlayerProvider } from "@starchild/player-react/AudioPlayerContext";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
 import { KeyboardShortcutsProvider } from "@/contexts/KeyboardShortcutsProvider";
@@ -137,7 +136,6 @@ export default async function RootLayout({
           <SuppressExtensionErrors />
           <ElectronStorageInit />
           <RegisterServiceWorker />
-          <CookieConsent />
           <ErrorBoundary>
             <SessionProvider>
               <TRPCReactProvider>
