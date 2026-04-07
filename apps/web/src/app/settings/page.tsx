@@ -75,6 +75,7 @@ interface SettingsItem {
 
 type ServerPreferenceInput = RouterInputs["music"]["updatePreferences"];
 type UserPreferencesData = RouterOutputs["music"]["getUserPreferences"] | undefined;
+type UserPreferencesRecord = NonNullable<UserPreferencesData>;
 
 type SpotifyCredentialTestDiagnostics = {
   enabled: boolean;
@@ -106,6 +107,39 @@ function getOptionLabel(
   return options.find((option) => option.value === value)?.label ?? fallback;
 }
 
+function buildPreferencePatch<K extends keyof UserPreferencesRecord>(
+  key: K,
+  value: UserPreferencesRecord[K],
+): Pick<UserPreferencesRecord, K> {
+  return { [key]: value } as Pick<UserPreferencesRecord, K>;
+}
+
+function omitPreferenceKeys(
+  preferences: Partial<UserPreferencesRecord>,
+  keys: Array<keyof UserPreferencesRecord>,
+): Partial<UserPreferencesRecord> {
+  const next = { ...preferences };
+  for (const key of keys) {
+    delete next[key];
+  }
+  return next;
+}
+
+function pickPreferenceKeys(
+  preferences: UserPreferencesData,
+  keys: Array<keyof UserPreferencesRecord>,
+): Partial<UserPreferencesRecord> {
+  if (!preferences) return {};
+
+  const next: Partial<UserPreferencesRecord> = {};
+  for (const key of keys) {
+    if (preferences[key] !== undefined) {
+      next[key] = preferences[key];
+    }
+  }
+  return next;
+}
+
 export default function SettingsPage() {
   const t = useTranslations("settings");
   const ts = useTranslations("settingsSpotify");
@@ -133,6 +167,9 @@ export default function SettingsPage() {
     useState(false);
   const [spotifyCredentialTest, setSpotifyCredentialTest] =
     useState<SpotifyCredentialTestResponse | null>(null);
+  const [optimisticPreferences, setOptimisticPreferences] = useState<
+    Partial<UserPreferencesRecord>
+  >({});
 
   const {
     data: preferences,
@@ -201,25 +238,44 @@ export default function SettingsPage() {
 
   const persistServerPreference = async (
     input: ServerPreferenceInput,
-    optimisticUpdate?: (previous: UserPreferencesData) => UserPreferencesData,
+    optimisticPatch: Partial<UserPreferencesRecord>,
   ) => {
+    const optimisticKeys = Object.keys(optimisticPatch) as Array<
+      keyof UserPreferencesRecord
+    >;
     const previousPreferences = utils.music.getUserPreferences.getData(undefined);
 
-    if (optimisticUpdate) {
-      utils.music.getUserPreferences.setData(
-        undefined,
-        optimisticUpdate(previousPreferences),
-      );
-    }
+    setOptimisticPreferences((prev) => ({ ...prev, ...optimisticPatch }));
+    utils.music.getUserPreferences.setData(undefined, (previous) =>
+      previous ? { ...previous, ...optimisticPatch } : previous,
+    );
 
     try {
-      await updatePreferences.mutateAsync(input);
+      const savedPreferences = await updatePreferences.mutateAsync(input);
+      setOptimisticPreferences((prev) =>
+        omitPreferenceKeys(prev, optimisticKeys),
+      );
+      utils.music.getUserPreferences.setData(undefined, savedPreferences);
       showToast(t("settingsSaved"), "success");
+      return savedPreferences;
     } catch {
-      utils.music.getUserPreferences.setData(undefined, previousPreferences);
+      setOptimisticPreferences((prev) =>
+        omitPreferenceKeys(prev, optimisticKeys),
+      );
+      const revertedPatch = pickPreferenceKeys(
+        previousPreferences,
+        optimisticKeys,
+      );
+      utils.music.getUserPreferences.setData(undefined, (current) =>
+        current
+          ? {
+              ...current,
+              ...revertedPatch,
+            }
+          : previousPreferences,
+      );
       showToast(t("failedToSave"), "error");
-    } finally {
-      await utils.music.getUserPreferences.invalidate();
+      return null;
     }
   };
 
@@ -235,7 +291,7 @@ export default function SettingsPage() {
     if (session) {
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
-        (previous) => (previous ? { ...previous, [key]: value } : previous),
+        { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
       settingsStorage.set(key as SettingsKey, value);
@@ -249,7 +305,7 @@ export default function SettingsPage() {
     if (session) {
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
-        (previous) => (previous ? { ...previous, [key]: value } : previous),
+        { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
       settingsStorage.set(key as SettingsKey, value);
@@ -274,8 +330,7 @@ export default function SettingsPage() {
       if (session) {
         void persistServerPreference(
           { theme: themeValue },
-          (previous) =>
-            previous ? { ...previous, theme: themeValue } : previous,
+          buildPreferencePatch("theme", themeValue),
         );
       } else {
         setLocalSettings((prev) => ({ ...prev, theme: themeValue }));
@@ -286,7 +341,7 @@ export default function SettingsPage() {
     if (session) {
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
-        (previous) => (previous ? { ...previous, [key]: value } : previous),
+        { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
       settingsStorage.set(key as SettingsKey, value);
@@ -295,7 +350,16 @@ export default function SettingsPage() {
     }
   };
 
-  const effectivePreferences = session ? preferences : localSettings;
+  const effectivePreferences = useMemo(
+    () =>
+      session
+        ? ({
+            ...(preferences ?? {}),
+            ...optimisticPreferences,
+          } as Partial<UserPreferencesRecord>)
+        : localSettings,
+    [localSettings, optimisticPreferences, preferences, session],
+  );
 
   const handleSignOut = () => {
     hapticLight();
@@ -408,20 +472,9 @@ export default function SettingsPage() {
     const savedClientSecretConfigured = includeClientSecret
       ? normalizedDraft.clientSecret.trim().length > 0
       : spotifySettings.clientSecretConfigured;
-    const savedAt = new Date().toISOString();
-    const savedSettings = normalizeSpotifyFeatureSettings({
-      ...normalizedDraft,
-      enabled: hasCompleteSpotifyFeatureSettings({
-        ...normalizedDraft,
-        clientSecretConfigured: savedClientSecretConfigured,
-      }),
-      clientSecret: "",
-      clientSecretConfigured: savedClientSecretConfigured,
-      updatedAt: savedAt,
-    });
 
     try {
-      await updatePreferences.mutateAsync(
+      const savedPreferences = await updatePreferences.mutateAsync(
         buildSpotifyFeaturePreferenceInput(
           {
             ...normalizedDraft,
@@ -432,32 +485,17 @@ export default function SettingsPage() {
           },
         ),
       );
+      utils.music.getUserPreferences.setData(undefined, savedPreferences);
+      const savedSettings =
+        extractSpotifyFeatureSettingsFromPreferences(savedPreferences);
       showToast(t("settingsSaved"), "success");
+      setSpotifySettings(savedSettings);
+      setSpotifyDraft(savedSettings);
+      setSpotifyClientSecretTouched(false);
+      setSpotifyCredentialTest(null);
     } catch {
       showToast(t("failedToSave"), "error");
-      return;
     }
-
-    setSpotifySettings(savedSettings);
-    setSpotifyDraft(savedSettings);
-    setSpotifyClientSecretTouched(false);
-    setSpotifyCredentialTest(null);
-    utils.music.getUserPreferences.setData(undefined, (prev) =>
-      prev
-        ? {
-            ...prev,
-            ...buildSpotifyFeaturePreferenceInput(savedSettings, {
-              includeClientSecret: false,
-            }),
-            spotifyClientSecret: "",
-            spotifyClientSecretConfigured: savedClientSecretConfigured,
-            spotifySettingsUpdatedAt: savedSettings.updatedAt
-              ? new Date(savedSettings.updatedAt)
-              : null,
-          }
-        : prev,
-    );
-    await utils.music.getUserPreferences.invalidate();
   };
 
   const handleSpotifySettingsRefresh = async () => {
@@ -580,11 +618,11 @@ export default function SettingsPage() {
         label: t("repeat"),
         description: getOptionLabel(
           repeatModeOptions,
-          player.repeatMode ?? "none",
+          effectivePreferences?.repeatMode ?? player.repeatMode ?? "none",
           t("repeatOff"),
         ),
         type: "select",
-        value: player.repeatMode ?? "none",
+        value: effectivePreferences?.repeatMode ?? player.repeatMode ?? "none",
         options: repeatModeOptions,
         onChange: (value) => {
           const mode = value as "none" | "one" | "all";
@@ -604,7 +642,8 @@ export default function SettingsPage() {
         id: "shuffleEnabled",
         label: t("shuffleLabel"),
         type: "toggle",
-        value: player.isShuffled ?? false,
+        value:
+          effectivePreferences?.shuffleEnabled ?? player.isShuffled ?? false,
         onChange: (value) => {
           const enabled = value as boolean;
           if (enabled !== player.isShuffled) {
@@ -696,8 +735,7 @@ export default function SettingsPage() {
           if (session) {
             void persistServerPreference(
               { language: nextLocale },
-              (previous) =>
-                previous ? { ...previous, language: nextLocale } : previous,
+              buildPreferencePatch("language", nextLocale),
             );
           }
         },

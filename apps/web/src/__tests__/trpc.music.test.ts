@@ -34,19 +34,34 @@ type MockDb = {
   update: () => { set: (values: Record<string, unknown>) => { where: () => Promise<void> } };
   updateSet: (values: Record<string, unknown>) => { where: () => Promise<void> };
   updateWhere: () => Promise<void>;
+  getCurrentRecord: () => MockPreferenceRecord;
 };
 
 const createMockDb = (findFirstResult: MockPreferenceRecord = null): MockDb => {
+  let currentRecord =
+    findFirstResult && typeof findFirstResult === "object"
+      ? { ...findFirstResult }
+      : findFirstResult;
   const findFirst = vi
     .fn<() => Promise<MockPreferenceRecord>>()
-    .mockResolvedValue(findFirstResult);
+    .mockImplementation(async () => currentRecord);
   const insertValues = vi
     .fn<(values: Record<string, unknown>) => Promise<void>>()
-    .mockResolvedValue(undefined);
+    .mockImplementation(async (values) => {
+      currentRecord = { ...values };
+    });
   const updateWhere = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const updateSet = vi.fn<(values: Record<string, unknown>) => { where: () => Promise<void> }>().mockReturnValue({
-    where: updateWhere,
-  });
+  const updateSet = vi
+    .fn<(values: Record<string, unknown>) => { where: () => Promise<void> }>()
+    .mockImplementation((values) => ({
+      where: async () => {
+        currentRecord = {
+          userId: "user-1",
+          ...(currentRecord ?? {}),
+          ...values,
+        };
+      },
+    }));
   const insert = vi.fn<() => { values: (values: Record<string, unknown>) => Promise<void> }>().mockReturnValue({
     values: insertValues,
   });
@@ -64,6 +79,7 @@ const createMockDb = (findFirstResult: MockPreferenceRecord = null): MockDb => {
     update,
     updateSet,
     updateWhere,
+    getCurrentRecord: () => currentRecord,
   };
 };
 
@@ -98,8 +114,7 @@ const createCallerContext = (db: MockDb): CallerContext =>
             | Record<string, unknown>
             | null;
           if (existing) {
-            db.updateSet(values);
-            await db.updateWhere();
+            await db.updateSet(values).where();
             return;
           }
 
@@ -159,7 +174,12 @@ describe("musicRouter tRPC operations", () => {
       keepPlaybackAlive: false,
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        visualizerType: "flowfield",
+        keepPlaybackAlive: false,
+      }),
+    );
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
@@ -180,7 +200,11 @@ describe("musicRouter tRPC operations", () => {
       visualizerMode: "specific",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        visualizerMode: "specific",
+      }),
+    );
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
@@ -200,7 +224,11 @@ describe("musicRouter tRPC operations", () => {
       streamQuality: "flac",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        streamQuality: "flac",
+      }),
+    );
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
@@ -221,7 +249,15 @@ describe("musicRouter tRPC operations", () => {
       spotifyUsername: " spotify-user ",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        spotifyFeaturesEnabled: true,
+        spotifyClientId: "client-id",
+        spotifyClientSecret: "",
+        spotifyClientSecretConfigured: true,
+        spotifyUsername: "spotify-user",
+      }),
+    );
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",
@@ -250,7 +286,15 @@ describe("musicRouter tRPC operations", () => {
       spotifyClientSecret: "",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        spotifyFeaturesEnabled: false,
+        spotifyClientId: "client-id",
+        spotifyClientSecret: "",
+        spotifyClientSecretConfigured: false,
+        spotifyUsername: "spotify-user",
+      }),
+    );
     expect(db.updateSet).toHaveBeenCalledWith(
       expect.objectContaining({
         spotifyFeaturesEnabled: false,

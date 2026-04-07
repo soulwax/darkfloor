@@ -168,15 +168,17 @@ function isUniqueConstraintError(
 
 function sanitizeUserPreferencesForUi<
   T extends {
-    spotifyClientSecret: string;
+    spotifyClientSecret?: string | null;
   },
 >(preferences: T) {
   const { spotifyClientSecret, ...rest } = preferences;
+  const normalizedSpotifyClientSecret = spotifyClientSecret ?? "";
 
   return {
     ...rest,
     spotifyClientSecret: "",
-    spotifyClientSecretConfigured: spotifyClientSecret.trim().length > 0,
+    spotifyClientSecretConfigured:
+      normalizedSpotifyClientSecret.trim().length > 0,
   };
 }
 
@@ -1685,7 +1687,12 @@ export const musicRouter = createTRPCRouter({
         normalizedInput,
       );
 
-      return { success: true };
+      const savedPreferences =
+        await ctx.dataStore.userPreferences.getOrCreateUiByUserId(
+          ctx.session.user.id,
+        );
+
+      return sanitizeUserPreferencesForUi(savedPreferences);
     }),
 
   resetPreferences: protectedProcedure.mutation(async ({ ctx }) => {
