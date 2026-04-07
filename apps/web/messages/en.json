@@ -209,6 +209,13 @@
     "collapsePlayer": "Collapse player",
     "trackDetailsUnavailable": "Track details unavailable for sharing"
   },
+  "globalContextMenu": {
+    "title": "Quick Navigation",
+    "hint": "Right click anywhere empty to move fast.",
+    "nativeHint": "Shift + right click: browser menu",
+    "currentPage": "Current page",
+    "goTo": "Open page"
+  },
   "queue": {
     "title": "Queue ({count})",
     "label": "Queue",

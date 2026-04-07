@@ -212,6 +212,13 @@
     "collapsePlayer": "Player einklappen",
     "trackDetailsUnavailable": "Track-Details zum Teilen sind nicht verfügbar"
   },
+  "globalContextMenu": {
+    "title": "Schnellnavigation",
+    "hint": "Rechtsklick auf freie Bereiche für schnelle Navigation.",
+    "nativeHint": "Shift + Rechtsklick: Browser-Menü",
+    "currentPage": "Aktuelle Seite",
+    "goTo": "Seite öffnen"
+  },
   "queue": {
     "title": "Warteschlange ({count})",
     "label": "Warteschlange",

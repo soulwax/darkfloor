@@ -212,6 +212,13 @@
     "collapsePlayer": "プレイヤーを閉じる",
     "trackDetailsUnavailable": "共有するためのトラック情報が不足しています"
   },
+  "globalContextMenu": {
+    "title": "クイックナビゲーション",
+    "hint": "何もない場所で右クリックすると素早く移動できます。",
+    "nativeHint": "Shift + 右クリック: ブラウザメニュー",
+    "currentPage": "現在のページ",
+    "goTo": "ページを開く"
+  },
   "queue": {
     "title": "キュー ({count})",
     "label": "キュー",

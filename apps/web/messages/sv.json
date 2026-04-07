@@ -212,6 +212,13 @@
     "collapsePlayer": "Minimera spelaren",
     "trackDetailsUnavailable": "Spårdetaljer saknas för delning"
   },
+  "globalContextMenu": {
+    "title": "Snabbnavigering",
+    "hint": "Högerklicka på tomma ytor för snabb navigering.",
+    "nativeHint": "Shift + högerklick: webbläsarmenyn",
+    "currentPage": "Nuvarande sida",
+    "goTo": "Öppna sida"
+  },
   "queue": {
     "title": "Kö ({count})",
     "label": "Kö",

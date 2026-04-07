@@ -212,6 +212,12 @@ export default function PersistentPlayer() {
     persistVisualizerPreference(next);
   }, [persistVisualizerPreference, visualizerEnabled]);
 
+  const handleVisualizerCanvasClick = useCallback(() => {
+    if (player.hideUI) {
+      player.setHideUI(false);
+    }
+  }, [player]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -437,6 +443,8 @@ export default function PersistentPlayer() {
           audioElement={player.audioElement}
           showFpsCounter={showFpsCounter}
           onRendererReady={setRenderer}
+          allowPointerInteraction={player.hideUI}
+          onCanvasClick={handleVisualizerCanvasClick}
         />
       )}
 

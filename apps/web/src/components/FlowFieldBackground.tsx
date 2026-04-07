@@ -14,12 +14,16 @@ interface FlowFieldBackgroundProps {
   audioElement: HTMLAudioElement | null;
   showFpsCounter?: boolean;
   onRendererReady?: (renderer: FlowFieldRenderer | null) => void;
+  allowPointerInteraction?: boolean;
+  onCanvasClick?: () => void;
 }
 
 export function FlowFieldBackground({
   audioElement,
   showFpsCounter = false,
   onRendererReady,
+  allowPointerInteraction = false,
+  onCanvasClick,
 }: FlowFieldBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<FlowFieldRenderer | null>(null);
@@ -29,12 +33,11 @@ export function FlowFieldBackground({
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const connectedAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isFirefox, setIsFirefox] = useState(false);
-
-  useEffect(() => {
-    if (typeof navigator === "undefined") return;
-    setIsFirefox(/firefox/i.test(navigator.userAgent ?? ""));
-  }, []);
+  const [isFirefox] = useState(
+    () =>
+      typeof navigator !== "undefined" &&
+      /firefox/i.test(navigator.userAgent ?? ""),
+  );
 
   // Sync playing state with audio element - intentional event subscription
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from audio element events */
@@ -173,14 +176,15 @@ export function FlowFieldBackground({
   return (
     <canvas
       ref={canvasRef}
+      onClick={allowPointerInteraction ? onCanvasClick : undefined}
       style={{
         position: "fixed",
         top: 0,
         left: 0,
         width: "100vw",
         height: "100vh",
-        zIndex: -1,
-        pointerEvents: "none",
+        zIndex: allowPointerInteraction ? 49 : -1,
+        pointerEvents: allowPointerInteraction ? "auto" : "none",
         contain: "paint",
         backfaceVisibility: "hidden",
         opacity: isFirefox ? 0.78 : 0.68,

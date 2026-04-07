@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.15] - 2026-04-07
+
+### Added
+
+- **Right click now falls back to a universal quick-navigation menu on empty areas**: When no track or playlist context menu claims the event, the web shell now opens a global navigation menu with one-click jumps to the main app sections, while `Shift + right click` still keeps access to the browser's native context menu.
+
 ## [1.15.14] - 2026-04-07
 
 ### Added

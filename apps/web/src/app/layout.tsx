@@ -16,6 +16,7 @@ import { DesktopShell } from "@/components/DesktopShell";
 import { ElectronChromeSync } from "@/components/ElectronChromeSync";
 import { ElectronStorageInit } from "@/components/ElectronStorageInit";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GlobalNavigationContextMenu } from "@/components/GlobalNavigationContextMenu";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import Header from "@/components/Header";
 import { LinuxTitlebar } from "@/components/LinuxTitlebar";
@@ -186,6 +187,8 @@ export default async function RootLayout({
                                   <TrackContextMenu />
                                   {}
                                   <PlaylistContextMenu />
+                                  {}
+                                  <GlobalNavigationContextMenu />
                                 </AuthGate>
                               </PlaylistContextMenuProvider>
                             </TrackContextMenuProvider>
