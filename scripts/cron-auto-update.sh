@@ -6,6 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 API_ROOT="${REPO_ROOT}/api"
 LOCK_DIR="${REPO_ROOT}/.git/cron-auto-update.lock"
+ROOT_STATUS_EXCLUDES=(
+  ":(exclude)logs/cron-auto-update.log"
+)
 
 log() {
   printf '[%s] %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "$*"
@@ -22,7 +25,13 @@ current_head() {
 working_tree_is_dirty() {
   local repo_dir="$1"
   shift
-  [[ -n "$(git -C "${repo_dir}" status --porcelain "$@")" ]]
+  local status_output
+  if [[ "${repo_dir}" == "${REPO_ROOT}" ]]; then
+    status_output="$(git -C "${repo_dir}" status --porcelain "$@" -- . "${ROOT_STATUS_EXCLUDES[@]}")"
+  else
+    status_output="$(git -C "${repo_dir}" status --porcelain "$@")"
+  fi
+  [[ -n "${status_output}" ]]
 }
 
 fast_forward_pull_if_needed() {
