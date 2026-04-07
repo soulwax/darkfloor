@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.13] - 2026-04-07
+
+### Added
+
+- **API upstream pools now support weighted priorities and richer admin diagnostics**: Multi-origin API env vars can now use `URL|weight` entries to prefer primary nodes over lower-priority replicas, and the admin dashboard now shows effective pool weights, resolver selection counts, cooldown state, and recent failure reasons for each configured upstream.
+
 ## [1.15.12] - 2026-04-07
 
 ### Fixed

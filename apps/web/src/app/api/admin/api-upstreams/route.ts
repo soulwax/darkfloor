@@ -1,6 +1,7 @@
 // File: apps/web/src/app/api/admin/api-upstreams/route.ts
 
 import {
+  apiV2UpstreamInternals,
   listConfiguredApiV2Upstreams,
 } from "@/lib/server/api-v2-upstream";
 import { auth } from "@/server/auth";
@@ -27,6 +28,22 @@ type UpstreamProbeResult = {
   state: "healthy" | "degraded" | "down";
   payloadPreview: string;
   error?: string;
+};
+
+type UpstreamRoutingState = {
+  poolWeights: Partial<Record<"default" | "read" | "write" | "stream", number>>;
+  cooldownUntil: string | null;
+  cooldownRemainingMs: number;
+  selectionCount: number;
+  selectionCountByPool: Partial<
+    Record<"default" | "read" | "write" | "stream", number>
+  >;
+  successCount: number;
+  failureCount: number;
+  lastSelectedAt: string | null;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureReason: string | null;
 };
 
 function getResultState(
@@ -113,20 +130,51 @@ export async function GET(request: NextRequest) {
   const clearRequested = parseClearFlag(request);
 
   if (clearRequested) {
-    // no-op placeholder so the UI can use a single refresh pathway later
+    apiV2UpstreamInternals.clearState();
   }
+
+  const stateSnapshot = apiV2UpstreamInternals.getStateSnapshot();
+  const now = Date.now();
 
   const items = await Promise.all(
     configuredUpstreams.map(async (upstream) => {
       const probes = await Promise.all(
         PROBE_PATHS.map((path) => probeUpstreamPath(upstream.url, path)),
       );
+      const cooldownUntilMs = stateSnapshot.cooldowns[upstream.url] ?? null;
+      const metrics = stateSnapshot.metricsByUrl[upstream.url];
+      const routing: UpstreamRoutingState = {
+        poolWeights: upstream.poolWeights,
+        cooldownUntil:
+          typeof cooldownUntilMs === "number"
+            ? new Date(cooldownUntilMs).toISOString()
+            : null,
+        cooldownRemainingMs:
+          typeof cooldownUntilMs === "number"
+            ? Math.max(0, cooldownUntilMs - now)
+            : 0,
+        selectionCount: metrics?.selectionCount ?? 0,
+        selectionCountByPool: metrics?.selectionCountByPool ?? {},
+        successCount: metrics?.successCount ?? 0,
+        failureCount: metrics?.failureCount ?? 0,
+        lastSelectedAt: metrics?.lastSelectedAt
+          ? new Date(metrics.lastSelectedAt).toISOString()
+          : null,
+        lastSuccessAt: metrics?.lastSuccessAt
+          ? new Date(metrics.lastSuccessAt).toISOString()
+          : null,
+        lastFailureAt: metrics?.lastFailureAt
+          ? new Date(metrics.lastFailureAt).toISOString()
+          : null,
+        lastFailureReason: metrics?.lastFailureReason ?? null,
+      };
 
       return {
         url: upstream.url,
         pools: upstream.pools,
         state: summarizeUpstreamState(probes),
         fetchedAt: new Date().toISOString(),
+        routing,
         probes,
       };
     }),

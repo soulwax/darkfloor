@@ -26,6 +26,14 @@ describe("admin upstream diagnostics route", () => {
     }));
     vi.doMock("@/lib/server/api-v2-upstream", () => ({
       listConfiguredApiV2Upstreams: vi.fn(() => []),
+      apiV2UpstreamInternals: {
+        clearState: vi.fn(),
+        getStateSnapshot: vi.fn(() => ({
+          cooldowns: {},
+          metricsByUrl: {},
+          nextCursorByPool: {},
+        })),
+      },
     }));
 
     const route = await loadGetRoute("@/app/api/admin/api-upstreams/route");
@@ -45,12 +53,45 @@ describe("admin upstream diagnostics route", () => {
         {
           url: "https://api-a.example.com",
           pools: ["default", "read", "write"],
+          poolWeights: { default: 5, read: 7, write: 9 },
         },
         {
           url: "https://api-b.example.com",
           pools: ["default", "stream"],
+          poolWeights: { default: 2, stream: 4 },
         },
       ]),
+      apiV2UpstreamInternals: {
+        clearState: vi.fn(),
+        getStateSnapshot: vi.fn(() => ({
+          cooldowns: {
+            "https://api-b.example.com": Date.now() + 15_000,
+          },
+          metricsByUrl: {
+            "https://api-a.example.com": {
+              selectionCount: 12,
+              selectionCountByPool: { read: 8, write: 4 },
+              successCount: 11,
+              failureCount: 1,
+              lastSelectedAt: Date.now() - 1_000,
+              lastSuccessAt: Date.now() - 1_000,
+              lastFailureAt: Date.now() - 30_000,
+              lastFailureReason: "status_503",
+            },
+            "https://api-b.example.com": {
+              selectionCount: 3,
+              selectionCountByPool: { stream: 3 },
+              successCount: 0,
+              failureCount: 3,
+              lastSelectedAt: Date.now() - 5_000,
+              lastSuccessAt: null,
+              lastFailureAt: Date.now() - 5_000,
+              lastFailureReason: "connect ECONNREFUSED",
+            },
+          },
+          nextCursorByPool: {},
+        })),
+      },
     }));
 
     vi.spyOn(global, "fetch").mockImplementation(async (input) => {
@@ -109,6 +150,12 @@ describe("admin upstream diagnostics route", () => {
         url: string;
         pools: string[];
         state: string;
+        routing: {
+          poolWeights: Record<string, number>;
+          cooldownRemainingMs: number;
+          selectionCount: number;
+          lastFailureReason: string | null;
+        };
         probes: Array<{ key: string; status: number | null; state: string }>;
       }>;
     };
@@ -119,9 +166,17 @@ describe("admin upstream diagnostics route", () => {
     expect(body.items[0]?.url).toBe("https://api-a.example.com");
     expect(body.items[0]?.pools).toEqual(["default", "read", "write"]);
     expect(body.items[0]?.state).toBe("healthy");
+    expect(body.items[0]?.routing.poolWeights).toEqual({
+      default: 5,
+      read: 7,
+      write: 9,
+    });
+    expect(body.items[0]?.routing.selectionCount).toBe(12);
     expect(body.items[1]?.url).toBe("https://api-b.example.com");
     expect(body.items[1]?.pools).toEqual(["default", "stream"]);
     expect(body.items[1]?.state).toBe("down");
+    expect(body.items[1]?.routing.cooldownRemainingMs).toBeGreaterThan(0);
+    expect(body.items[1]?.routing.lastFailureReason).toMatch(/ECONNREFUSED/);
     expect(body.items[1]?.probes.map((probe) => probe.key)).toEqual([
       "status",
       "version",

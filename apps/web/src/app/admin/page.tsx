@@ -66,6 +66,19 @@ type ApiUpstreamDiagnosticsEntry = {
   pools: ApiUpstreamPool[];
   state: "healthy" | "degraded" | "down";
   fetchedAt: string;
+  routing: {
+    poolWeights: Partial<Record<ApiUpstreamPool, number>>;
+    cooldownUntil: string | null;
+    cooldownRemainingMs: number;
+    selectionCount: number;
+    selectionCountByPool: Partial<Record<ApiUpstreamPool, number>>;
+    successCount: number;
+    failureCount: number;
+    lastSelectedAt: string | null;
+    lastSuccessAt: string | null;
+    lastFailureAt: string | null;
+    lastFailureReason: string | null;
+  };
   probes: ApiUpstreamProbeResult[];
 };
 
@@ -217,6 +230,46 @@ const API_DIAGNOSTIC_AUTH_KEYS = new Set(["cache", "authMe"]);
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null;
   return value as Record<string, unknown>;
+}
+
+function formatRelativeTimestamp(value: string | null): string {
+  if (!value) return "Never";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  const diffMs = Date.now() - parsed.getTime();
+  const absDiffMs = Math.abs(diffMs);
+  const diffSeconds = Math.round(absDiffMs / 1000);
+
+  if (diffSeconds < 5) return "Just now";
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function formatCooldownDuration(value: number): string {
+  if (value <= 0) return "0s";
+
+  const totalSeconds = Math.ceil(value / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes < 60) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
 function readFirstString(
@@ -1652,7 +1705,7 @@ export default function AdminPage() {
               API Instances
             </p>
             <p className="mt-1 text-sm text-[var(--color-subtext)]">
-              Direct probes for every configured upstream URL and its pool membership.
+              Direct probes plus live resolver state for every configured upstream URL.
             </p>
           </div>
           <button
@@ -1724,8 +1777,79 @@ export default function AdminPage() {
                       className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase"
                     >
                       {getApiUpstreamPoolLabel(pool)}
+                      {typeof item.routing.poolWeights[pool] === "number"
+                        ? ` · w${item.routing.poolWeights[pool]}`
+                        : ""}
                     </span>
                   ))}
+                  {item.routing.cooldownRemainingMs > 0 ? (
+                    <span className="rounded-full border border-[rgba(242,199,97,0.35)] bg-[rgba(242,199,97,0.12)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-warning)] uppercase">
+                      Cooling · {formatCooldownDuration(item.routing.cooldownRemainingMs)}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mb-3 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      Resolver
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                      {item.routing.selectionCount} selections
+                    </p>
+                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
+                      Last picked {formatRelativeTimestamp(item.routing.lastSelectedAt)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      Successes
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-[var(--color-success)]">
+                      {item.routing.successCount}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
+                      Last ok {formatRelativeTimestamp(item.routing.lastSuccessAt)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      Failures
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-[var(--color-danger)]">
+                      {item.routing.failureCount}
+                    </p>
+                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
+                      Last fail {formatRelativeTimestamp(item.routing.lastFailureAt)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-3 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                    <p className="mb-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      Pool Picks
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {item.pools.map((pool) => (
+                        <span
+                          key={`${item.url}-${pool}-count`}
+                          className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text)]"
+                        >
+                          {getApiUpstreamPoolLabel(pool)}:{" "}
+                          {item.routing.selectionCountByPool[pool] ?? 0}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
+                    <p className="mb-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                      Failure Reason
+                    </p>
+                    <p className="break-words font-mono text-[11px] text-[var(--color-subtext)]">
+                      {item.routing.lastFailureReason ?? "None"}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-3">

@@ -22,7 +22,7 @@ describe("api-v2-upstream", () => {
     vi.doMock("@/env", () => ({
       env: {
         API_V2_URLS:
-          "https://api-a.example.com, https://api-b.example.com\nhttps://api-a.example.com",
+          "https://api-a.example.com|3, https://api-b.example.com|2\nhttps://api-a.example.com|9",
         API_V2_URL: "https://api-c.example.com/",
       },
     }));
@@ -34,6 +34,11 @@ describe("api-v2-upstream", () => {
       "https://api-a.example.com",
       "https://api-b.example.com",
       "https://api-c.example.com",
+    ]);
+    expect(upstream.getApiV2BaseUrlConfigs()).toEqual([
+      { url: "https://api-a.example.com", weight: 3 },
+      { url: "https://api-b.example.com", weight: 2 },
+      { url: "https://api-c.example.com", weight: 1 },
     ]);
   });
 
@@ -175,5 +180,30 @@ describe("api-v2-upstream", () => {
     expect(getFetchUrl(fetchMock.mock.calls[0]![0])).toBe(
       "https://api-write.example.com/auth/me",
     );
+  });
+
+  it("prefers higher-weight origins more often when all nodes are healthy", async () => {
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_READ_URLS:
+          "https://api-primary.example.com|3,https://api-secondary.example.com|1",
+        API_V2_URL: undefined,
+      },
+    }));
+
+    const upstream = await loadModule();
+    upstream.apiV2UpstreamInternals.clearState();
+
+    expect([
+      upstream.getPreferredApiV2BaseUrl("read"),
+      upstream.getPreferredApiV2BaseUrl("read"),
+      upstream.getPreferredApiV2BaseUrl("read"),
+      upstream.getPreferredApiV2BaseUrl("read"),
+    ]).toEqual([
+      "https://api-primary.example.com",
+      "https://api-primary.example.com",
+      "https://api-primary.example.com",
+      "https://api-secondary.example.com",
+    ]);
   });
 });
