@@ -127,3 +127,5 @@ tmp-electron-run.log
 .history/
 *.orig
 *.rej
+
+logs/cron-auto-update.log
