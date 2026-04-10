@@ -20,6 +20,12 @@ const AUTH_SESSION_COOKIE_NAMES = [
   "next-auth.session-token",
   "__Secure-next-auth.session-token",
 ] as const;
+const INVALID_ORIGIN_HOSTNAMES = new Set([
+  "0.0.0.0",
+  "127.0.0.1",
+  "localhost",
+  "::1",
+]);
 
 function isTrackedOAuthProvider(provider: string | null): boolean {
   return provider !== null && TRACKED_OAUTH_PROVIDERS.has(provider);
@@ -71,16 +77,22 @@ function summarizeQueryEntries(url: URL): Array<{
 function resolveRequestOrigin(request: Request): string | null {
   try {
     const fallback = new URL(request.url);
-    const hostHeader =
+    const hostHeaderValue =
       request.headers.get("x-forwarded-host") ?? request.headers.get("host");
     const protoHeader =
       request.headers.get("x-forwarded-proto") ??
       fallback.protocol.replace(":", "");
 
+    if (!hostHeaderValue) return fallback.origin;
+
+    const hostHeader = hostHeaderValue.split(",")[0]?.trim() ?? "";
     if (!hostHeader) return fallback.origin;
 
     const origin = `${protoHeader}://${hostHeader}`;
     const parsed = new URL(origin);
+    if (INVALID_ORIGIN_HOSTNAMES.has(parsed.hostname)) {
+      return null;
+    }
     return parsed.origin;
   } catch {
     return null;
