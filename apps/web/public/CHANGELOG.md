@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.16] - 2026-04-10
+
+### Fixed
+
+- **Discord and GitHub OAuth callbacks no longer crash when Auth.js returns an immutable redirect response**: The NextAuth route wrapper now clones Auth.js responses before applying no-store and cookie headers, which fixes the production `TypeError: immutable` 500 during provider callback completion.
+
 ## [1.15.15] - 2026-04-07
 
 ### Added

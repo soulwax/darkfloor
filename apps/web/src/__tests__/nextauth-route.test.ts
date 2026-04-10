@@ -105,4 +105,35 @@ describe("NextAuth route wrapper", () => {
     expect(setCookie).not.toContain("Max-Age=0");
     expect(setCookie).not.toContain("__Secure-next-auth.session-token=");
   });
+
+  it("clones immutable auth responses before applying cache headers", async () => {
+    vi.resetModules();
+
+    const immutableResponse = Response.redirect(
+      "https://darkfloor.org/library",
+      302,
+    );
+    Object.freeze(immutableResponse);
+
+    const handlerGet = vi.fn(async () => immutableResponse);
+
+    vi.doMock("@/server/auth", () => ({
+      handlers: {
+        GET: handlerGet,
+        POST: vi.fn(),
+      },
+    }));
+
+    const route = await loadRoute();
+    const response = await route.GET(
+      makeRequest("/api/auth/callback/discord?code=test&state=abc"),
+      {
+        params: Promise.resolve({ nextauth: ["callback", "discord"] }),
+      },
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("https://darkfloor.org/library");
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
 });

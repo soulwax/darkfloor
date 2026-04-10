@@ -112,6 +112,10 @@ function applyDynamicAuthOrigin(request: Request): void {
   }
 }
 
+function createMutableResponse(response: Response): Response {
+  return new Response(response.body, response);
+}
+
 function redactCookieHeader(cookieHeader: string | null): string[] {
   if (!cookieHeader) return [];
   return cookieHeader
@@ -318,7 +322,7 @@ export async function GET(
   logAuthRequest(request);
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
-    const response = await handlers.GET(request);
+    const response = createMutableResponse(await handlers.GET(request));
     applyNoStoreAuthHeaders(response);
     if (shouldExpireSessionCookies(route)) {
       appendExpiredSessionCookies(response);
@@ -351,7 +355,7 @@ export async function POST(
   logAuthRequest(request);
   const route = parseAuthRoute(new URL(request.url).pathname);
   try {
-    const response = await handlers.POST(request);
+    const response = createMutableResponse(await handlers.POST(request));
     applyNoStoreAuthHeaders(response);
     if (shouldExpireSessionCookies(route)) {
       appendExpiredSessionCookies(response);
