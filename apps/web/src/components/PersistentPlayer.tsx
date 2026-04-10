@@ -68,11 +68,15 @@ export default function PersistentPlayer() {
 
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user;
+  const optionalReadsDisabled =
+    process.env.NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED === "true";
+  const optionalWritesDisabled =
+    process.env.NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED === "true";
 
   const { data: preferences } = api.music.getUserPreferences.useQuery(
     undefined,
     {
-      enabled: isAuthenticated,
+      enabled: isAuthenticated && !optionalReadsDisabled,
     },
   );
 
@@ -150,21 +154,35 @@ export default function PersistentPlayer() {
     if (
       isAuthenticated &&
       preferences &&
-      showQueue !== preferences.queuePanelOpen
+      showQueue !== preferences.queuePanelOpen &&
+      !optionalWritesDisabled
     ) {
       updatePreferences.mutate({ queuePanelOpen: showQueue });
     }
-  }, [showQueue, isAuthenticated, preferences, updatePreferences]);
+  }, [
+    showQueue,
+    isAuthenticated,
+    preferences,
+    updatePreferences,
+    optionalWritesDisabled,
+  ]);
 
   useEffect(() => {
     if (
       isAuthenticated &&
       preferences &&
-      showEqualizer !== preferences.equalizerPanelOpen
+      showEqualizer !== preferences.equalizerPanelOpen &&
+      !optionalWritesDisabled
     ) {
       updatePreferences.mutate({ equalizerPanelOpen: showEqualizer });
     }
-  }, [showEqualizer, isAuthenticated, preferences, updatePreferences]);
+  }, [
+    showEqualizer,
+    isAuthenticated,
+    preferences,
+    updatePreferences,
+    optionalWritesDisabled,
+  ]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;

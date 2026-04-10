@@ -57,9 +57,10 @@ function warn(message: string) {
   console.warn(`${colors.yellow}⚠ ${message}${colors.reset}`);
 }
 
-function resolveEnvValue(
-  keys: readonly string[],
-): { key: string | null; value: string | null } {
+function resolveEnvValue(keys: readonly string[]): {
+  key: string | null;
+  value: string | null;
+} {
   for (const key of keys) {
     const raw = process.env[key];
     if (typeof raw !== "string") continue;
@@ -287,7 +288,8 @@ function getSslConfig(connectionString: string) {
 
   const hostname = parsed?.hostname.toLowerCase() ?? "";
   const hasExplicitSslMode =
-    parsed?.searchParams.has("sslmode") ?? connectionString.includes("sslmode=");
+    parsed?.searchParams.has("sslmode") ??
+    connectionString.includes("sslmode=");
 
   if (
     hostname === "localhost" ||
@@ -344,6 +346,59 @@ function getSslConfig(connectionString: string) {
   return {
     rejectUnauthorized: false,
   };
+}
+
+function isPrismaHost(connectionString: string): boolean {
+  try {
+    return new URL(connectionString).hostname
+      .toLowerCase()
+      .includes("prisma.io");
+  } catch {
+    return connectionString.toLowerCase().includes("prisma.io");
+  }
+}
+
+function isPrismaPlanLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("planlimitreached") ||
+    (message.includes("failed to identify your database") &&
+      message.includes("restrictions"))
+  );
+}
+
+function printPrismaPlanLimitHelp(
+  sourceKey: string,
+  sourceUrl: string,
+  targetKey: string,
+): void {
+  if (!isPrismaHost(sourceUrl)) {
+    return;
+  }
+
+  error("");
+  error(
+    `Source database access is being blocked by the Prisma-hosted source (${sourceKey}).`,
+  );
+  error(
+    "This is not a Supabase target issue, and the migration script cannot produce an exact copy until the source becomes readable again.",
+  );
+  error("");
+  error("Next paths:");
+  error(
+    "1. Restore or obtain a readable source database URL, then rerun with OLD_DATABASE_URL or SOURCE_DATABASE_URL set explicitly.",
+  );
+  error(
+    "2. If you have a recent SQL dump, restore it into a temporary local/Postgres instance and rerun the migration from that temp source.",
+  );
+  error(
+    `3. If the Prisma source is the only copy, resolve the account restriction with Prisma support before rerunning toward ${targetKey}.`,
+  );
+  error("");
 }
 
 function getPnpmCommand(): string {
@@ -757,9 +812,7 @@ async function main() {
     error(
       `❌ One source DB URL env var is required: ${sourceCandidates.join(", ")}`,
     );
-    error(
-      "   Recommended: Set OLD_DATABASE_UNPOOLED for the source database",
-    );
+    error("   Recommended: Set OLD_DATABASE_UNPOOLED for the source database");
     process.exit(1);
   }
 
@@ -773,7 +826,8 @@ async function main() {
     process.exit(1);
   }
 
-  if (!source.key || !source.value || !target.key || !target.value) throw new Error("Missing source/target URLs");
+  if (!source.key || !source.value || !target.key || !target.value)
+    throw new Error("Missing source/target URLs");
   info(`Source (${source.key}): ${source.value.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target (${target.key}): ${target.value.replace(/:[^:@]+@/, ":****@")}`);
   info(`Target schema push: ${targetSchemaPush.key ?? target.key}`);
@@ -869,9 +923,7 @@ async function main() {
     if (missingTargetTables.length > 0) {
       error("\n❌ Required table(s) missing on target database!");
       error(`   Missing: ${missingTargetTables.join(", ")}`);
-      error(
-        "\n   Create the schema first (recommended in this repo):\n",
-      );
+      error("\n   Create the schema first (recommended in this repo):\n");
       log(
         `   DATABASE_URL="${targetUrl}" pnpm drizzle-kit push --config apps/web/drizzle.config.cjs\n`,
         "bright",
@@ -1076,7 +1128,9 @@ async function main() {
         );
         verified = false;
       } else {
-        success(`${plan.table}: verified (${targetAfter.toLocaleString()} rows)`);
+        success(
+          `${plan.table}: verified (${targetAfter.toLocaleString()} rows)`,
+        );
       }
     }
 
@@ -1086,6 +1140,9 @@ async function main() {
       warn("\n⚠️  Some tables have count mismatches. Please review.\n");
     }
   } catch (err: any) {
+    if (isPrismaPlanLimitError(err)) {
+      printPrismaPlanLimitHelp(source.key, sourceUrl, target.key);
+    }
     error(`\n❌ Migration failed: ${err.message}`);
     console.error(err);
     process.exit(1);

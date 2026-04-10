@@ -1,7 +1,7 @@
 {
   "name": "darkfloor-player",
   "desktopName": "Starchild.desktop",
-  "version": "1.15.16",
+  "version": "1.15.17",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
@@ -61,6 +61,7 @@
     "db:mark-applied": "node scripts/mark-migrations-applied.mjs",
     "copy:changelog": "node scripts/copy-changelog.js",
     "migrate:neon": "npx tsx scripts/migrate-to-neon.ts",
+    "migrate:supabase": "npx tsx scripts/migrate-to-supabase.ts",
     "predev": "npm run generate:ssl",
     "dev": "cross-env NODE_ENV=development node scripts/server.js",
     "dev:next": "npm --prefix apps/web run dev:next",

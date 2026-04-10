@@ -20,6 +20,18 @@ export const env = createEnv({
       .string()
       .optional()
       .transform((val) => val === "true"),
+    AUTH_DB_DISABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === "true"),
+    DB_ANALYTICS_DISABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === "true"),
+    DB_WRITE_DISABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === "true"),
     AUTH_DEBUG_OAUTH: z
       .string()
       .optional()
@@ -61,6 +73,14 @@ export const env = createEnv({
       .string()
       .optional()
       .transform((val) => val === "true"),
+    NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === "true"),
+    NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED: z
+      .string()
+      .optional()
+      .transform((val) => val === "true"),
   },
   runtimeEnv: {
     NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION,
@@ -71,6 +91,9 @@ export const env = createEnv({
     AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
     AUTH_SPOTIFY_ENABLED: process.env.AUTH_SPOTIFY_ENABLED,
+    AUTH_DB_DISABLED: process.env.AUTH_DB_DISABLED,
+    DB_ANALYTICS_DISABLED: process.env.DB_ANALYTICS_DISABLED,
+    DB_WRITE_DISABLED: process.env.DB_WRITE_DISABLED,
     AUTH_DEBUG_OAUTH: process.env.AUTH_DEBUG_OAUTH,
     AUTH_DEBUG_TOKEN: process.env.AUTH_DEBUG_TOKEN,
     SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
@@ -110,6 +133,10 @@ export const env = createEnv({
     NEXT_PUBLIC_AUTH_DEBUG: process.env.NEXT_PUBLIC_AUTH_DEBUG,
     NEXT_PUBLIC_AUTH_DEBUG_OAUTH:
       process.env.NEXT_PUBLIC_AUTH_DEBUG_OAUTH,
+    NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED:
+      process.env.NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED,
+    NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED:
+      process.env.NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED,
     BLUESIX_API_KEY:
       process.env.BLUESIX_API_KEY ??
       process.env.UNIVERSAL_KEY,

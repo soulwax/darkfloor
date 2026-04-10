@@ -45,6 +45,8 @@ declare module "next-auth" {
 
 const authDebugEnabled = isAuthDebugEnabled();
 const oauthVerboseDebugEnabled = isOAuthVerboseDebugEnabled();
+const authDbDisabled = env.AUTH_DB_DISABLED === true;
+const authDbEnabled = !authDbDisabled;
 const configuredProviders = ["discord"];
 const oauthProviders: NonNullable<NextAuthConfig["providers"]> = [
   DiscordProvider({
@@ -148,6 +150,7 @@ if (env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET) {
 logAuthInfo("NextAuth config bootstrap", {
   authDebugEnabled,
   oauthVerboseDebugEnabled,
+  authDbEnabled,
   nodeEnv: process.env.NODE_ENV,
   electronBuild: env.ELECTRON_BUILD,
   hasDatabaseUrl: Boolean(env.DATABASE_URL),
@@ -174,14 +177,16 @@ export const authConfig = {
   basePath: "/api/auth",
   pages: { signIn: "/signin" },
   providers: oauthProviders,
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+  adapter: authDbEnabled
+    ? DrizzleAdapter(db, {
+        usersTable: users,
+        accountsTable: accounts,
+        sessionsTable: sessions,
+        verificationTokensTable: verificationTokens,
+      })
+    : undefined,
   session: {
-    strategy: "database",
+    strategy: authDbEnabled ? "database" : "jwt",
     maxAge: 30 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
   },
@@ -259,6 +264,14 @@ export const authConfig = {
             profileImageUrl: summarizeUrlForLog(typedProfile?.image_url),
             profileKeys: typedProfile ? Object.keys(typedProfile) : [],
           });
+        }
+
+        if (!authDbEnabled) {
+          logAuthWarn("Auth DB disabled; skipping DB-backed sign-in checks", {
+            provider: account?.provider ?? null,
+            userId: user?.id ?? null,
+          });
+          return true;
         }
 
         if (user?.id) {
@@ -383,17 +396,47 @@ export const authConfig = {
         return "/signin?error=AuthFailed";
       }
     },
-    session: ({ session, user }) => {
+    jwt: ({ token, user }) => {
+      if (user) {
+        token.userId = String(user.id);
+        token.userHash = user.userHash ?? null;
+        token.admin = user.admin ?? false;
+        token.firstAdmin = user.firstAdmin ?? false;
+      }
+      return token;
+    },
+    session: ({ session, user, token }) => {
+      const tokenUserId =
+        typeof token?.userId === "string" ? token.userId : null;
+      const tokenSubject = typeof token?.sub === "string" ? token.sub : null;
+      const resolvedUser =
+        user ??
+        (token
+          ? {
+              id: tokenUserId ?? tokenSubject ?? "",
+              name: token.name ?? null,
+              email: token.email ?? null,
+              image: (token.picture as string | null) ?? null,
+              userHash: (token.userHash as string | null) ?? null,
+              admin: Boolean(token.admin),
+              firstAdmin: Boolean(token.firstAdmin),
+            }
+          : null);
+
+      if (!resolvedUser?.id) {
+        return session;
+      }
+
       const normalizedSession = {
         expires: session.expires,
         user: {
-          id: String(user.id),
-          name: user.name ?? null,
-          email: user.email ?? null,
-          image: user.image ?? null,
-          userHash: user.userHash ?? null,
-          admin: user.admin ?? false,
-          firstAdmin: user.firstAdmin ?? false,
+          id: resolvedUser.id,
+          name: resolvedUser.name ?? null,
+          email: resolvedUser.email ?? null,
+          image: resolvedUser.image ?? null,
+          userHash: resolvedUser.userHash ?? null,
+          admin: resolvedUser.admin ?? false,
+          firstAdmin: resolvedUser.firstAdmin ?? false,
         },
       };
 

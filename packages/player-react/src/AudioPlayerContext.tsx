@@ -167,6 +167,10 @@ export function AudioPlayerProvider({
   const { data: session, status: sessionStatus } = useSession();
   const isAuthenticated =
     sessionStatus === "authenticated" && Boolean(session?.user?.id);
+  const optionalReadsDisabled =
+    process.env.NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED === "true";
+  const optionalWritesDisabled =
+    process.env.NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED === "true";
   const isMobile = useIsMobile();
   const showToast = useCallback(
     (
@@ -205,7 +209,7 @@ export function AudioPlayerProvider({
   const addToPlaylistMutation = api.music.addToPlaylist.useMutation();
   const { data: preferences } = api.music.getUserPreferences.useQuery(
     undefined,
-    { enabled: isAuthenticated },
+    { enabled: isAuthenticated && !optionalReadsDisabled },
   );
   const resumeErrorThrottleRef = useRef(0);
   const queuePersistenceErrorThrottleRef = useRef(0);
@@ -251,13 +255,13 @@ export function AudioPlayerProvider({
     },
   });
   const { data: dbQueueState } = api.music.getQueueState.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !optionalReadsDisabled,
     refetchOnWindowFocus: false,
   });
 
   const { data: smartQueueSettings } = api.music.getSmartQueueSettings.useQuery(
     undefined,
-    { enabled: isAuthenticated },
+    { enabled: isAuthenticated && !optionalReadsDisabled },
   );
   const normalizedSmartQueueSettings = smartQueueSettings
     ? (() => {
@@ -578,7 +582,7 @@ export function AudioPlayerProvider({
       : GUEST_STREAM_QUALITY,
     onBackgroundResumeError: handleBackgroundResumeError,
     onTrackChange: (track) => {
-      if (track && isAuthenticated) {
+      if (track && isAuthenticated && !optionalWritesDisabled) {
         if (hasCompleteTrackData(track)) {
           addToHistory.mutate(
             {
@@ -648,7 +652,7 @@ export function AudioPlayerProvider({
   });
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || optionalWritesDisabled) return;
 
     const persistTimer = setTimeout(() => {
       const queuedTracksForSave: Array<{
@@ -708,6 +712,7 @@ export function AudioPlayerProvider({
     player.history,
     player.isShuffled,
     player.repeatMode,
+    optionalWritesDisabled,
   ]);
 
   useEffect(() => {
@@ -723,7 +728,7 @@ export function AudioPlayerProvider({
       );
       player.clearQueueAndHistory();
 
-      if (currentUserId && isAuthenticated) {
+      if (currentUserId && isAuthenticated && !optionalWritesDisabled) {
         clearQueueStateMutation.mutate();
       }
 
@@ -736,7 +741,12 @@ export function AudioPlayerProvider({
     }
 
     setLastUserId(currentUserId);
-  }, [session?.user?.id, isAuthenticated, lastUserId]);
+  }, [
+    session?.user?.id,
+    isAuthenticated,
+    lastUserId,
+    optionalWritesDisabled,
+  ]);
 
   useEffect(() => {
     const cleanupInterval = setInterval(

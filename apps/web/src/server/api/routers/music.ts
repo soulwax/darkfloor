@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { ENABLE_AUDIO_FEATURES } from "@/config/features";
+import { env } from "@/env";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -1973,6 +1974,10 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (env.DB_ANALYTICS_DISABLED) {
+        return { success: true };
+      }
+
       const completionPercentage = input.duration
         ? (input.duration / input.totalDuration) * 100
         : 0;

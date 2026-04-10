@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.17] - 2026-04-10
+
+### Changed
+
+- **Auth can run without the database while migrations are in progress**: Setting `AUTH_DB_DISABLED=true` switches NextAuth to JWT sessions, skips adapter writes, and bypasses DB-backed sign-in checks so OAuth can complete even when the database is restricted.
+- **Optional DB load shedding toggles**: New flags (`DB_ANALYTICS_DISABLED`, `NEXT_PUBLIC_DB_OPTIONAL_READS_DISABLED`, `NEXT_PUBLIC_DB_OPTIONAL_WRITES_DISABLED`) let the UI skip non-essential preference/history/queue persistence and the server skip automatic play analytics writes during migration windows.
+
 ## [1.15.16] - 2026-04-10
 
 ### Fixed
