@@ -132,6 +132,7 @@ type MigrationCliOptions = {
 
 const DEFAULT_BATCH_SIZE = 1000;
 const DRIZZLE_CONFIG_PATH = "apps/web/drizzle.config.cjs";
+const DEFAULT_DRIZZLE_TABLES_FILTER = "hexmusic-stream_*";
 
 function parseCsvSet(raw: string, flagName: string): Set<string> {
   const values = raw
@@ -502,6 +503,9 @@ function runDrizzlePush(databaseUrl: string): void {
     `Ensuring target schema exists via Drizzle push (${DRIZZLE_CONFIG_PATH})...`,
     "cyan",
   );
+  const tablesFilter =
+    process.env.MIGRATION_DRIZZLE_TABLES_FILTER?.trim() ||
+    DEFAULT_DRIZZLE_TABLES_FILTER;
 
   let lastError: Error | null = null;
 
@@ -515,6 +519,8 @@ function runDrizzlePush(databaseUrl: string): void {
         "push",
         "--config",
         DRIZZLE_CONFIG_PATH,
+        "--tablesFilter",
+        tablesFilter,
       ],
       {
         cwd: path.resolve(__dirname, ".."),
@@ -534,6 +540,7 @@ function runDrizzlePush(databaseUrl: string): void {
         );
       }
 
+      info(`Drizzle push tablesFilter: ${tablesFilter}`);
       success("Target schema is ready");
       return;
     }
