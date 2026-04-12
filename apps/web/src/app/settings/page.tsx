@@ -30,7 +30,6 @@ import {
   DEFAULT_COLOR_SCHEME,
   DEFAULT_STREAM_QUALITY,
   normalizeColorSchemeId,
-  type SettingsKey,
   type StreamQuality,
   type UserSettings,
 } from "@starchild/types/settings";

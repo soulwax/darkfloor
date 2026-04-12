@@ -14,7 +14,6 @@ interface TrackPlayButtonsProps {
 
 export function TrackPlayButtons({ tracks }: TrackPlayButtonsProps) {
   const player = useGlobalPlayer();
-  const t = useTranslations("player");
   const tc = useTranslations("common");
 
   const handlePlayAll = () => {

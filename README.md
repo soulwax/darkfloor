@@ -1,223 +1,193 @@
 # Starchild Music Frontend
 
-Starchild Music is a monorepo for a Next.js music application with shared playback libraries and an Electron desktop runtime.
-The backend API is consumed as an external service via `API_V2_URL`; it is not vendored in this repository.
-This README is intentionally concise; use `AGENTS.md`, `CONTEXT.md`, and `AI_TOOLING.md` for the current repo map.
+Frontend-first monorepo for the Starchild / Darkfloor music product.
 
-## Repository Overview
+The primary runtime is `apps/web`, a Next.js App Router application backed by tRPC, NextAuth, and Drizzle/Postgres. Desktop shells live in `apps/desktop` with Electron as the main path and Tauri as an experimental parallel track. `apps/mobile` is an Expo-based React Native Web shell that already uses a durable mobile controller architecture.
 
-This repository is organized as app runtimes plus shared packages:
+The Darkfloor API V2 backend is consumed through `API_V2_URL`. The `api/` directory remains a Git submodule for explicit backend or coordinated full-stack work, not the default frontend implementation path.
+
+## Current Snapshot
+
+- Root package: `darkfloor-player@1.15.17`
+- Default local frontend URL: `http://127.0.0.1:3222`
+- Default backend submodule URL when run locally: `http://127.0.0.1:3333`
+- Production frontend runtime: PM2 on Ubuntu (`bluesix-frontend-prod`)
+- Active tRPC routers in `apps/web/src/server/api/root.ts`: `admin`, `post`, `music`, `equalizer`
+- Additional router module present but not registered: `preferences`
+- Current web route groups include:
+  - UI pages such as `/`, `/about`, `/library`, `/playlists`, `/settings`, `/signin`, `/spotify`, `/admin`
+  - Music detail routes for albums, artists, tracks, playlists, and discovery playlists
+  - Route handlers under `/api/**` for auth, Songbird, Spotify, music discovery, V2 health/config/metrics, streaming, OG image generation, and admin diagnostics
+
+## Repository Layout
+
+### Apps
 
 - `apps/web`: primary Next.js App Router product
-  - tRPC API (`/api/trpc`)
-  - NextAuth (`/api/auth/[...nextauth]`)
-  - Route-handler proxies for Songbird/Bluesix V2 and Deezer (`/api/**`)
-- `apps/desktop`: Electron wrapper, packaging scripts, and an experimental Tauri desktop shell
-- `apps/mobile`: Expo-based React Native Web app with a persisted mobile shell and a future path to native targets
-- `packages/*`: shared runtime libraries (`@starchild/*`)
-  - `api-client`, `auth`, `config`, `types`
-  - `player-core`, `player-react`, `audio-adapters`
-  - `ui`, `visualizers`
+- `apps/desktop`: Electron desktop shell, packaging helpers, and experimental Tauri runtime
+- `apps/mobile`: Expo React Native Web shell with state and persistence in `src/mobile-shell/*`
 
-## Architecture Snapshot
+### Shared packages
 
-- UI routing and rendering: Next.js App Router (`apps/web/src/app`)
-- Internal first-party data API: tRPC routers (`apps/web/src/server/api/routers`)
-- Auth/session: NextAuth + Drizzle adapter (`apps/web/src/server/auth`)
-- Database: Postgres + Drizzle (`apps/web/src/server/db`, `apps/web/drizzle`)
-- Upstream integrations and backend contract consumption: route handlers under `apps/web/src/app/api/**`
-- Backend contract target: external Darkfloor API V2 service via `API_V2_URL`
-- Player internals:
-  - `packages/player-react/src/AudioPlayerContext.tsx`
-  - `packages/player-react/src/useAudioPlayer.ts`
-  - `packages/player-core/src/index.ts`
+- `packages/api-client`: REST and tRPC client helpers
+- `packages/auth`: auth logging and provider helpers
+- `packages/config`: constants, storage keys, visualizer config
+- `packages/types`: shared TypeScript contracts
+- `packages/player-core`: playback engine primitives
+- `packages/player-react`: React player context and hooks
+- `packages/audio-adapters`: runtime audio adapters
+- `packages/ui`: shared UI primitives and motion helpers
+- `packages/visualizers`: flow-field canvas and visualizer patterns
+- `packages/eslint-config`, `packages/tsconfig`: workspace config packages
 
-For fast repo orientation, start with `CONTEXT.md`, `AGENTS.md`, and `AI_TOOLING.md`.
+## First-Time Setup
 
-## Required Engineering Standards
+Run these commands from the repo root.
 
-Contributors and coding agents should demonstrate:
+1. Initialize the backend submodule. Root install runs `install:api` during `postinstall`, so the submodule must exist unless you are intentionally using the missing-submodule escape hatch:
 
-1. Advanced React architecture (App Router, server/client separation, render optimization)
-2. Gesture and animation engineering (precise drag thresholds, mobile-first interactions)
-3. Strict TypeScript discipline (no `any`, strong typing, clear contracts)
-4. State isolation and hook design (UI state vs playback engine boundaries)
-5. Monorepo boundary discipline (respect app/package import boundaries)
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   pnpm install --frozen-lockfile
+   ```
+
+3. Create a local env file. The custom server reads `.env` and `.env.local`; prefer `.env.local` for machine-specific overrides:
+
+   ```powershell
+   Copy-Item .env.example .env.local
+   ```
+
+4. Fill in the required values:
+   - `PORT`
+   - `AUTH_SECRET`
+   - `AUTH_DISCORD_ID`
+   - `AUTH_DISCORD_SECRET`
+   - `DATABASE_URL`
+   - `API_V2_URL`
+   - `UNIVERSAL_KEY`
+
+5. Run database commands if your local schema needs to be generated or applied:
+
+   ```bash
+   pnpm db:generate
+   pnpm db:migrate
+   ```
+
+6. Start the frontend:
+
+   ```bash
+   pnpm dev
+   ```
+
+7. Open `http://127.0.0.1:3222`.
 
 ## Prerequisites
 
 - Node.js 20+
 - pnpm 10+
-- PostgreSQL (local or hosted)
+- PostgreSQL for web/auth data
+- Git submodules enabled for normal root installs
+- Rust only if you plan to use the experimental Tauri path
 
-## Quick Start
+## Environment Notes
 
-Commands below are run from the repo root.
+The typed env schema lives in [`apps/web/src/env.js`](./apps/web/src/env.js). The starter template lives in [`.env.example`](./.env.example).
 
-1. Install dependencies:
+Important current behavior:
 
-```bash
-pnpm install --frozen-lockfile
-```
+- `DATABASE_URL` is the canonical frontend database key, but Prisma/Postgres aliases are accepted during env resolution.
+- `API_V2_URL` is the canonical upstream API base URL.
+- `SONGBIRD_API_URL` remains supported as a compatibility alias.
+- The custom server loads `.env`, then `.env.local` in development, and `.env.local`, `.env.production`, then `.env` in production with file values overriding inherited process env.
+- New env keys should be added to both `.env.example` and `apps/web/src/env.js`.
 
-This checkout does not include the backend source; point `API_V2_URL` at a running Darkfloor API V2 instance.
+## Common Commands
 
-1. Create local environment file:
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the main web runtime through the custom server wrapper |
+| `pnpm dev:next` | Run plain Next.js dev server on port `3222` |
+| `pnpm build` | Build the web app and the `api/` submodule |
+| `pnpm start` | Start the production custom server |
+| `pnpm check` | Boundary check plus web lint/typecheck |
+| `pnpm test` | Run the web Vitest suite |
+| `pnpm mobile:check` | Type-check the Expo mobile workspace |
+| `pnpm dev:mobile` | Start the Expo web shell |
+| `pnpm electron:dev` | Run the web dev server and Electron together |
+| `pnpm tauri:dev` | Start the experimental Tauri shell |
+| `pnpm ws:check` | Run workspace checks with Turborepo |
 
-```bash
-cp .env.example .env
-```
+## Key Source Paths
 
-1. Populate required env values (details below), especially:
-   - `AUTH_SECRET`
-   - `AUTH_DISCORD_ID`
-   - `AUTH_DISCORD_SECRET`
-   - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` if GitHub login should be enabled
-   - `DATABASE_URL`
-   - `API_V2_URL`
+### Web runtime
 
-2. Run database commands as needed:
+- [`apps/web/src/app`](./apps/web/src/app)
+- [`apps/web/src/server/api`](./apps/web/src/server/api)
+- [`apps/web/src/server/auth`](./apps/web/src/server/auth)
+- [`apps/web/src/server/db`](./apps/web/src/server/db)
+- [`apps/web/scripts/server.js`](./apps/web/scripts/server.js)
 
-```bash
-pnpm db:generate
-pnpm db:migrate
-```
+### Mobile runtime
 
-1. Start development server:
+- [`apps/mobile/App.tsx`](./apps/mobile/App.tsx)
+- [`apps/mobile/src/mobile-shell`](./apps/mobile/src/mobile-shell)
+- [`apps/mobile/README.md`](./apps/mobile/README.md)
 
-```bash
-pnpm dev
-```
+### Desktop runtime
 
-1. Open `http://localhost:3222`.
+- [`apps/desktop/electron`](./apps/desktop/electron)
+- [`apps/desktop/src-tauri`](./apps/desktop/src-tauri)
+- [`apps/desktop/scripts`](./apps/desktop/scripts)
 
-For the mobile runtime specifically, use `apps/mobile/README.md` after the root docs.
+### Shared packages
 
-## Environment Variables
+- [`packages/api-client/src`](./packages/api-client/src)
+- [`packages/player-core/src`](./packages/player-core/src)
+- [`packages/player-react/src`](./packages/player-react/src)
+- [`packages/types/src`](./packages/types/src)
+- [`packages/visualizers/src`](./packages/visualizers/src)
 
-The typed env schema lives in `apps/web/src/env.js`. When adding/changing env vars, update both `apps/web/src/env.js` and `.env.example`.
+## Assistant Entry Points
 
-Common variables:
+The canonical repo guidance is:
 
-| Variable                                                    | Status                                | Purpose                                                                                                                |
-| ----------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_SECRET`                                               | required                              | NextAuth secret (min length enforced)                                                                                  |
-| `AUTH_DISCORD_ID`                                           | required                              | Discord OAuth client id                                                                                                |
-| `AUTH_DISCORD_SECRET`                                       | required                              | Discord OAuth client secret                                                                                            |
-| `AUTH_GITHUB_ID` + `AUTH_GITHUB_SECRET`                     | optional                              | GitHub OAuth credentials; when present, GitHub sign-in is enabled                                                     |
-| `DATABASE_URL`                                              | required at runtime                   | Postgres connection string                                                                                             |
-| `NEXTAUTH_URL`                                              | recommended                           | Canonical app/auth base URL                                                                                            |
-| `API_V2_URL`                                                | required for V2 proxy routes          | Upstream API base URL                                                                                                  |
-| `NEXT_PUBLIC_AUTH_API_BASE`                                 | optional                              | Client-side override for backend auth/API host when it differs from the frontend origin                               |
-| `SONGBIRD_API_HEALTH_URI`                                   | optional                              | Path override for upstream health checks when the API uses something other than `/api/health`                         |
-| `UNIVERSAL_KEY`                                             | recommended                           | Canonical upstream auth key used for service token exchange and default proxy auth                                     |
-| `BLUESIX_API_KEY`                                           | optional                              | Override only when the upstream x-api-key should differ from `UNIVERSAL_KEY`                                           |
-| `SONGBIRD_API_URL`                                          | optional                              | Override only when Songbird token routes live on a different host than `API_V2_URL`                                   |
-| `AUTH_SPOTIFY_ENABLED` + `NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED` | optional                              | Spotify auth feature flag pair                                                                                         |
-| `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET`               | required when Spotify auth is enabled | Spotify OAuth credentials                                                                                              |
+1. [`AGENTS.md`](./AGENTS.md)
+2. [`CONTEXT.md`](./CONTEXT.md)
+3. [`README.md`](./README.md)
+4. [`AI_TOOLING.md`](./AI_TOOLING.md)
+5. [`.codex/prompt.md`](./.codex/prompt.md)
+6. [`.codex/tasks.md`](./.codex/tasks.md)
+7. [`.codex/acceptance.md`](./.codex/acceptance.md)
 
-Notes:
+Thin compatibility files now exist for common assistants:
 
-- Runtime aliases in `apps/web/src/env.js` still exist for compatibility, but new env files should use the canonical keys shown here.
-- `apps/web/src/server/db/index.ts` throws if `DATABASE_URL` is missing.
+- [`CODEX.md`](./CODEX.md)
+- [`CLAUDE.md`](./CLAUDE.md)
+- [`.cursor/rules/starchild-repo.mdc`](./.cursor/rules/starchild-repo.mdc)
+- [`.github/copilot-instructions.md`](./.github/copilot-instructions.md)
 
-## Development Commands
+Those files intentionally stay short and route back to `AGENTS.md` plus `AI_TOOLING.md`.
 
-| Command             | Description                                           |
-| ------------------- | ----------------------------------------------------- |
-| `pnpm dev`          | Start custom dev server wrapper (`scripts/server.js`) |
-| `pnpm dev:next`     | Start plain Next.js dev server on port `3222`         |
-| `pnpm dev:mobile`   | Start the Expo React Native Web app                   |
-| `pnpm dev:mobile:native` | Start Expo for native targets                    |
-| `pnpm dev:mobile:ios` | Start the Expo iOS target                           |
-| `pnpm dev:mobile:android` | Start the Expo Android target                   |
-| `pnpm build`        | Build the web app                                     |
-| `pnpm mobile:build` | Export the mobile app for web to `apps/mobile/dist`   |
-| `pnpm start`        | Start production server via custom wrapper            |
-| `pnpm check`        | Boundary check + lint + typecheck                     |
-| `pnpm mobile:check` | Type-check the Expo mobile app                        |
-| `pnpm test`         | Run Vitest suite in `apps/web`                        |
-| `pnpm format:write` | Format repository code                                |
-| `pnpm electron:dev` | Run dev server and Electron together                  |
-| `pnpm tauri:dev`    | Run dev server and the experimental Tauri shell       |
-| `pnpm tauri:build`  | Build the experimental Tauri desktop app              |
-| `pnpm ws:build`     | Build all workspaces with Turborepo                   |
-| `pnpm ws:check`     | Run workspace checks with Turborepo                   |
-| `pnpm ws:test`      | Run workspace tests with Turborepo                    |
+## Deployment Notes
 
-## Key Paths
-
-- App runtime:
-  - `apps/web/src/app`
-  - `apps/web/src/components`
-  - `apps/web/src/hooks`
-  - `apps/web/src/contexts`
-- Server/data:
-  - `apps/web/src/server/api/trpc.ts`
-  - `apps/web/src/server/api/root.ts`
-  - `apps/web/src/server/api/routers`
-  - `apps/web/src/server/auth`
-  - `apps/web/src/server/db`
-- Proxy helper modules:
-  - `apps/web/src/app/api/v2/_lib.ts`
-  - `apps/web/src/app/api/auth/_lib.ts`
-  - `apps/web/src/app/api/songbird/_lib.ts`
-  - `apps/web/src/app/api/music/_lib.ts`
-- Shared packages:
-  - `packages/api-client/src`
-  - `packages/player-react/src`
-  - `packages/player-core/src`
-  - `packages/types/src`
-
-## API Surface Summary
-
-| Surface            | Path                                               | Role                                       |
-| ------------------ | -------------------------------------------------- | ------------------------------------------ |
-| tRPC endpoint      | `apps/web/src/app/api/trpc/[trpc]/route.ts`        | Internal app API for DB-backed features    |
-| NextAuth endpoint  | `apps/web/src/app/api/auth/[...nextauth]/route.ts` | Session + OAuth flow handling              |
-| Health endpoint    | `apps/web/src/app/api/health/route.ts`             | Local health checks                        |
-| V2 proxy routes    | `apps/web/src/app/api/v2/**/route.ts`              | Generic upstream V2 proxy endpoints        |
-| Music proxy routes | `apps/web/src/app/api/music/**/route.ts`           | Discovery/search/playlists proxy endpoints |
-| Songbird routes    | `apps/web/src/app/api/songbird/**/route.ts`        | Token-authenticated Songbird endpoints     |
-
-For route-level behavior, inspect the route handlers under `apps/web/src/app/api/**` and the upstream contract targeted by `API_V2_URL`.
-
-## Runtime and Env Loading Behavior
-
-- Root server entrypoint: `scripts/server.js` (delegates to `apps/web/scripts/server.js`)
-- Dev mode (`NODE_ENV=development`): loads `.env`, then `.env.local` with override
-- Production mode: loads `.env.local`, then `.env.production`, then `.env`, with file values overriding inherited process env
-- Default app port: `3222` (set by `PORT`)
-
-## AI And Automation
-
-- `AGENTS.md` is the canonical repository workflow guide for coding agents.
-- `AI_TOOLING.md` is the tool-neutral quick-start for Codex, Claude Code, Cursor, Copilot, and similar assistants.
-- `apps/mobile/README.md` covers the current mobile shell architecture and validation flow.
-- Verify the live filesystem before trusting older repo snapshots like `tree.txt`.
-
-## Deployment Modes
-
-- Vercel:
-  - Configured in `vercel.json`
-  - Uses pnpm install/build commands
-- Docker:
-  - `Dockerfile` + `docker-compose.yml`
-  - App health checks call `/api/health`
-- PM2:
-  - `ecosystem.config.cjs` and `ecosystem.docker.cjs`
-
-For deployment behavior, inspect `vercel.json`, `Dockerfile`, `docker-compose.yml`, and the PM2 config files at the repo root.
+- PM2 is the default production context for the frontend.
+- Docker is available through [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml).
+- `vercel.json` exists for compatible builds and replica scenarios, but it is not the default production assumption for the main frontend.
 
 ## Additional Documentation
 
-- `AI_TOOLING.md` (tool-neutral AI assistant quick-start)
-- `AGENTS.md` (agent workflow and repository conventions)
-- `CONTEXT.md` (fast technical map)
-- `apps/mobile/README.md` (mobile runtime architecture and validation flow)
-- `CHANGELOG.md` (release history and user-visible milestones)
-- `tree.txt` (rough repository snapshot; verify against the live filesystem before relying on it)
+- [`AI_TOOLING.md`](./AI_TOOLING.md)
+- [`CHANGELOG.md`](./CHANGELOG.md)
+- [`apps/web/README.md`](./apps/web/README.md)
+- [`apps/desktop/README.md`](./apps/desktop/README.md)
+- [`apps/mobile/README.md`](./apps/mobile/README.md)
+- [`packages/README.md`](./packages/README.md)
 
 ## License
 
-GPLv3. See `LICENSE.md`.
+GPLv3. See [`LICENSE.md`](./LICENSE.md).

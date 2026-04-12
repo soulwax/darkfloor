@@ -151,9 +151,16 @@ async function parseErrorPayload(response: Response): Promise<{
     if (contentType.includes("application/json")) {
       const body = (await response.json()) as unknown;
       const record = asRecord(body);
+      const messageCandidates = [
+        record && typeof record.message === "string"
+          ? record.message.trim()
+          : undefined,
+        record && typeof record.error === "string"
+          ? record.error.trim()
+          : undefined,
+      ];
       const message =
-        (record && typeof record.message === "string" && record.message.trim()) ||
-        (record && typeof record.error === "string" && record.error.trim()) ||
+        messageCandidates.find((candidate) => candidate && candidate.length > 0) ??
         fallbackMessage;
 
       return {
@@ -235,8 +242,7 @@ export async function getSongbirdAccessToken(options?: {
     return pendingTokenRequest;
   }
 
-  let requestPromise: Promise<SongbirdAccessToken>;
-  requestPromise = fetchSongbirdToken().finally(() => {
+  const requestPromise = fetchSongbirdToken().finally(() => {
     if (pendingTokenRequest === requestPromise) {
       pendingTokenRequest = null;
     }

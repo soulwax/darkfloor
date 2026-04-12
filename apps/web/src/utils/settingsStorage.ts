@@ -18,7 +18,7 @@ function filterPersistableSettings(
   for (const key of USER_SETTINGS_KEYS) {
     const value = settings[key];
     if (value !== undefined) {
-      filtered[key] = value;
+      Object.assign(filtered, { [key]: value });
     }
   }
 

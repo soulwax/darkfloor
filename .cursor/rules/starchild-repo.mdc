@@ -1,0 +1,19 @@
+---
+description: Starchild frontend monorepo guidance
+globs: ["**/*"]
+alwaysApply: true
+---
+
+Read `AGENTS.md`, `CONTEXT.md`, `README.md`, and `AI_TOOLING.md` before making substantial changes.
+
+Key repo rules:
+
+- Treat this repository as frontend-first.
+- Default to `apps/web`, `apps/mobile`, and `packages/*`.
+- `apps/web` owns Next.js routing, Auth.js/NextAuth, OAuth, redirects, and cookie behavior.
+- `api/` is a Git submodule for explicit backend or coordinated full-stack work only.
+- The main frontend production runtime is PM2 on Ubuntu (`bluesix-frontend-prod`), not Vercel.
+- Use `apps/web/src/env.js` for validated env access and update `.env.example` when env keys change.
+- Root `pnpm install --frozen-lockfile` runs `install:api` in `postinstall`, so initialize submodules before first install.
+
+Tool-specific files in this repo should stay thin and point back to `AGENTS.md` plus `AI_TOOLING.md`.

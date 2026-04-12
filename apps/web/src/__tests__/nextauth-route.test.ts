@@ -3,8 +3,18 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-type GetRouteHandler = (request: NextRequest) => Promise<Response>;
-type PostRouteHandler = (request: NextRequest) => Promise<Response>;
+type RouteContext = {
+  params: Promise<{ nextauth: string[] }>;
+};
+
+type GetRouteHandler = (
+  request: NextRequest,
+  context: RouteContext,
+) => Promise<Response>;
+type PostRouteHandler = (
+  request: NextRequest,
+  context: RouteContext,
+) => Promise<Response>;
 type NextAuthRouteModule = {
   GET: GetRouteHandler;
   POST: PostRouteHandler;
