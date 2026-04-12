@@ -7,11 +7,11 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const repoRoot = resolve(__dirname, "../..");
-const schemaPath = resolve(__dirname, "src/server/db/schema.ts");
-const migrationsOutPath = resolve(__dirname, "drizzle");
+const schemaPath = "apps/web/src/server/db/schema.ts";
+const migrationsOutPath = "apps/web/drizzle";
 
-dotenvConfig({ path: resolve(repoRoot, ".env.local"), override: true });
-dotenvConfig({ path: resolve(repoRoot, ".env"), override: false });
+dotenvConfig({ path: resolve(repoRoot, ".env.local"), override: true, quiet: true });
+dotenvConfig({ path: resolve(repoRoot, ".env"), override: false, quiet: true });
 
 import drizzleEnv from "./drizzle.env";
 

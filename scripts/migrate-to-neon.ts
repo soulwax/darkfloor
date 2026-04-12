@@ -454,8 +454,47 @@ function printPrismaPlanLimitHelp(
   error("");
 }
 
-function getPnpmCommand(): string {
-  return process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+type PnpmInvocation = {
+  command: string;
+  args: string[];
+};
+
+function getPnpmInvocations(): PnpmInvocation[] {
+  const invocations: PnpmInvocation[] = [];
+  const seen = new Set<string>();
+
+  const pushInvocation = (command: string, args: string[] = []) => {
+    const key = `${command}\0${args.join("\0")}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    invocations.push({ command, args });
+  };
+
+  const npmExecPath = process.env.npm_execpath;
+  if (npmExecPath && /pnpm/i.test(path.basename(npmExecPath))) {
+    pushInvocation(process.execPath, [npmExecPath]);
+  }
+
+  const bundledCorepackPnpm = path.join(
+    path.dirname(process.execPath),
+    "node_modules",
+    "corepack",
+    "dist",
+    "pnpm.js",
+  );
+
+  if (existsSync(bundledCorepackPnpm)) {
+    pushInvocation(process.execPath, [bundledCorepackPnpm]);
+  }
+
+  if (process.platform === "win32") {
+    pushInvocation("pnpm.cmd");
+  }
+
+  pushInvocation("pnpm");
+  return invocations;
 }
 
 function runDrizzlePush(databaseUrl: string): void {
@@ -464,31 +503,48 @@ function runDrizzlePush(databaseUrl: string): void {
     "cyan",
   );
 
-  const result = spawnSync(
-    getPnpmCommand(),
-    ["drizzle-kit", "push", "--config", DRIZZLE_CONFIG_PATH],
-    {
-      cwd: path.resolve(__dirname, ".."),
-      env: {
-        ...process.env,
-        DRIZZLE_DATABASE_URL: databaseUrl,
-        DATABASE_URL: databaseUrl,
+  let lastError: Error | null = null;
+
+  for (const invocation of getPnpmInvocations()) {
+    const result = spawnSync(
+      invocation.command,
+      [
+        ...invocation.args,
+        "exec",
+        "drizzle-kit",
+        "push",
+        "--config",
+        DRIZZLE_CONFIG_PATH,
+      ],
+      {
+        cwd: path.resolve(__dirname, ".."),
+        env: {
+          ...process.env,
+          DRIZZLE_DATABASE_URL: databaseUrl,
+          DATABASE_URL: databaseUrl,
+        },
+        stdio: "inherit",
       },
-      stdio: "inherit",
-    },
-  );
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `Drizzle push failed with exit code ${result.status ?? "unknown"}`,
     );
+
+    if (!result.error) {
+      if (result.status !== 0) {
+        throw new Error(
+          `Drizzle push failed with exit code ${result.status ?? "unknown"}`,
+        );
+      }
+
+      success("Target schema is ready");
+      return;
+    }
+
+    lastError = result.error;
+    if (result.error.code !== "ENOENT" && result.error.code !== "EINVAL") {
+      throw result.error;
+    }
   }
 
-  success("Target schema is ready");
+  throw lastError ?? new Error("Unable to start pnpm for Drizzle push");
 }
 
 async function getTablesInOrder(sourcePool: Pool): Promise<string[]> {

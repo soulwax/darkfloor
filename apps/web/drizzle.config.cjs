@@ -6,11 +6,15 @@ const path = require("path");
 const dotenv = require("dotenv");
 
 const repoRoot = path.resolve(__dirname, "../..");
-const schemaPath = path.resolve(__dirname, "src/server/db/schema.ts");
+const schemaPath = "apps/web/src/server/db/schema.ts";
 const migrationsOutPath = "apps/web/drizzle";
 
-dotenv.config({ path: path.resolve(repoRoot, ".env.local"), override: true });
-dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false });
+dotenv.config({
+  path: path.resolve(repoRoot, ".env.local"),
+  override: true,
+  quiet: true,
+});
+dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false, quiet: true });
 
 function resolveDatabaseUrl() {
   const candidates = [
