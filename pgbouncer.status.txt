@@ -1,0 +1,19 @@
+× pgbouncer.service - connection pooler for PostgreSQL
+     Loaded: loaded (/usr/lib/systemd/system/pgbouncer.service; enabled; preset: enabled)
+     Active: failed (Result: exit-code) since Sat 2026-04-11 21:28:53 UTC; 27s ago
+       Docs: man:pgbouncer(1)
+             https://www.pgbouncer.org/
+    Process: 97740 ExecStart=/usr/sbin/pgbouncer /etc/pgbouncer/pgbouncer.ini (code=exited, status=1/FAILURE)
+   Main PID: 97740 (code=exited, status=1/FAILURE)
+        CPU: 6ms
+
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page systemd[1]: Starting pgbouncer.service - connection pooler for PostgreSQL...
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: kernel file descriptor limit: 1024 (hard: 524288); max_client_conn: 1000, max expected fd use: 1012
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: listening on 0.0.0.0:6432
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: cannot listen on unix:/var/run/pgbouncer/.s.PGSQL.6432: bind(): No such file or directory
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: [warn] event_del_: event has no event_base set.
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: failed to create unix socket
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page pgbouncer[97740]: cleanup_sockets, event_del: No such file or directory
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page systemd[1]: pgbouncer.service: Main process exited, code=exited, status=1/FAILURE
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page systemd[1]: pgbouncer.service: Failed with result 'exit-code'.
+Apr 11 21:28:53 interesting-easley.217-160-67-235.plesk.page systemd[1]: Failed to start pgbouncer.service - connection pooler for PostgreSQL.
