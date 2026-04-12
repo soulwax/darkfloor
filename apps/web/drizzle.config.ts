@@ -36,6 +36,24 @@ function resolveDatabaseUrl() {
   return undefined;
 }
 
+function resolveTablesFilter() {
+  const raw = process.env.MIGRATION_DRIZZLE_TABLES_FILTER?.trim();
+  if (!raw) {
+    return undefined;
+  }
+
+  const filters = raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+
+  return filters.length === 1 ? filters[0] : filters;
+}
+
 function getSslConfig() {
   const databaseUrl = resolveDatabaseUrl();
   const connectionString = databaseUrl ?? drizzleEnv.DB_HOST ?? "";
@@ -56,6 +74,7 @@ function getSslConfig() {
 }
 
 const databaseUrl = resolveDatabaseUrl();
+const tablesFilter = resolveTablesFilter();
 
 if (!databaseUrl && !process.env.DB_HOST) {
   console.warn(
@@ -67,6 +86,7 @@ const config = {
   schema: schemaPath,
   out: migrationsOutPath,
   dialect: "postgresql" as const,
+  ...(tablesFilter ? { tablesFilter } : {}),
   ...(databaseUrl
     ? {
         dbCredentials: {

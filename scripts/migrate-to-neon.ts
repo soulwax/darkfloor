@@ -519,8 +519,6 @@ function runDrizzlePush(databaseUrl: string): void {
         "push",
         "--config",
         DRIZZLE_CONFIG_PATH,
-        "--tablesFilter",
-        tablesFilter,
       ],
       {
         cwd: path.resolve(__dirname, ".."),
@@ -528,6 +526,7 @@ function runDrizzlePush(databaseUrl: string): void {
           ...process.env,
           DRIZZLE_DATABASE_URL: databaseUrl,
           DATABASE_URL: databaseUrl,
+          MIGRATION_DRIZZLE_TABLES_FILTER: tablesFilter,
         },
         stdio: "inherit",
       },
