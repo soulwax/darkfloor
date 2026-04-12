@@ -70,12 +70,16 @@ certs/starchild-env-public.pem
 drizzle.env.js
 
 .github/*.md
+!.github/copilot-instructions.md
 
 
 public/**/*.js
 
 .claude/
 .cursor/
+!.cursor/
+!.cursor/rules/
+!.cursor/rules/*.mdc
 docs/
 
 # Electron
@@ -95,6 +99,7 @@ resources/
 electron/azure-vault.json
 
 CLAUDE.md
+!CLAUDE.md
 REPOSITORY_ANALYSIS.md
 .github/docs/*
 

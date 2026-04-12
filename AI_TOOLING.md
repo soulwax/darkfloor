@@ -1,6 +1,6 @@
 # AI Tooling Guide
 
-Last updated: 2026-04-06
+Last updated: 2026-04-12
 
 This is the tool-neutral companion to `AGENTS.md`.
 
@@ -25,6 +25,7 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 - Verify the live filesystem before relying on older repo maps such as `tree.txt`.
 - Do not assume `docs/` or tool-specific config folders exist just because an older snapshot mentions them.
 - `AGENTS.md` is the canonical workflow file. Tool-specific files should stay thin and point back to it.
+- Root `pnpm install --frozen-lockfile` runs `install:api` in `postinstall`, so initialize the `api/` submodule before first install in a normal checkout.
 - Treat `apps/web` as the default home for auth, OAuth, cookies, redirects, and Next.js behavior.
 - Treat `api/` as an opt-in backend submodule. Do not enter it unless the task clearly requires backend or coordinated full-stack work.
 - Do not use backend/API env vars as the source of truth for frontend Auth.js provider behavior unless the code path explicitly consumes them.
@@ -87,4 +88,11 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 
 ## Compatibility files
 
-If you add tool-specific compatibility files later, keep them short and route them back to `AGENTS.md` plus this file.
+These thin compatibility files should mirror the same repo boundaries and setup reminders:
+
+- `CODEX.md`
+- `CLAUDE.md`
+- `.cursor/rules/starchild-repo.mdc`
+- `.github/copilot-instructions.md`
+
+Keep detailed architecture or workflow changes in `AGENTS.md` and this file first, then sync the thin compatibility files if needed.

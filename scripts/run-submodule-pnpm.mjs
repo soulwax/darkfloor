@@ -38,19 +38,71 @@ if (!fs.existsSync(submodulePackageJson)) {
   process.exit(1);
 }
 
-const result = spawnSync("pnpm", ["--dir", submoduleDir, ...pnpmArgs], {
-  cwd: repoRoot,
-  stdio: "inherit",
-  env: process.env,
-});
+function getPnpmInvocations() {
+  const invocations = [];
+  const seen = new Set();
 
-if (result.error) {
-  if (result.error.code === "ENOENT") {
-    console.error("pnpm is not available in PATH.");
-  } else {
-    console.error(result.error.message);
+  const pushInvocation = (command, args = []) => {
+    const key = `${command}\0${args.join("\0")}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    invocations.push({ command, args });
+  };
+
+  const npmExecPath = process.env.npm_execpath;
+  if (npmExecPath && /pnpm/i.test(path.basename(npmExecPath))) {
+    pushInvocation(process.execPath, [npmExecPath]);
   }
-  process.exit(1);
+
+  const bundledCorepackPnpm = path.join(
+    path.dirname(process.execPath),
+    "node_modules",
+    "corepack",
+    "dist",
+    "pnpm.js",
+  );
+
+  if (fs.existsSync(bundledCorepackPnpm)) {
+    pushInvocation(process.execPath, [bundledCorepackPnpm]);
+  }
+
+  if (process.platform === "win32") {
+    pushInvocation("pnpm.cmd");
+  }
+
+  pushInvocation("pnpm");
+  return invocations;
 }
 
-process.exit(result.status ?? 1);
+let lastError = null;
+
+for (const invocation of getPnpmInvocations()) {
+  const result = spawnSync(
+    invocation.command,
+    [...invocation.args, "--dir", submoduleDir, ...pnpmArgs],
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: process.env,
+    },
+  );
+
+  if (!result.error) {
+    process.exit(result.status ?? 1);
+  }
+
+  lastError = result.error;
+  if (result.error.code !== "ENOENT") {
+    console.error(result.error.message);
+    process.exit(1);
+  }
+}
+
+console.error(
+  lastError?.code === "ENOENT"
+    ? "pnpm is not available via PATH, npm_execpath, or the bundled Corepack runtime."
+    : lastError?.message ?? "Unable to start pnpm.",
+);
+process.exit(1);

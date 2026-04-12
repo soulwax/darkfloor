@@ -11,7 +11,7 @@ const navigationState = vi.hoisted(() => ({
 }));
 
 const sessionState = vi.hoisted(() => ({
-  data: { user: { id: "user-1" } },
+  data: { user: { id: "user-1" } } as { user: { id: string } } | null,
   status: "authenticated" as
     | "authenticated"
     | "loading"
