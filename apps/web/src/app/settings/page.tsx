@@ -32,6 +32,7 @@ import {
   normalizeColorSchemeId,
   type SettingsKey,
   type StreamQuality,
+  type UserSettings,
 } from "@starchild/types/settings";
 import type { SpotifyFeatureSettings } from "@starchild/types/spotifySettings";
 import { hapticLight, hapticToggle } from "@/utils/haptics";
@@ -164,8 +165,8 @@ export default function SettingsPage() {
   );
   const [spotifySettings, setSpotifySettings] =
     useState<SpotifyFeatureSettings>(() => normalizeSpotifyFeatureSettings());
-  const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(
-    () => normalizeSpotifyFeatureSettings(),
+  const [spotifyDraft, setSpotifyDraft] = useState<SpotifyFeatureSettings>(() =>
+    normalizeSpotifyFeatureSettings(),
   );
   const [spotifyClientSecretTouched, setSpotifyClientSecretTouched] =
     useState(false);
@@ -248,6 +249,11 @@ export default function SettingsPage() {
     },
   });
 
+  const syncLocalSettings = (values: Partial<UserSettings>) => {
+    settingsStorage.setAll(values);
+    setLocalSettings((prev) => ({ ...prev, ...values }));
+  };
+
   const persistServerPreference = async (
     input: ServerPreferenceInput,
     optimisticPatch: Partial<UserPreferencesRecord>,
@@ -294,20 +300,19 @@ export default function SettingsPage() {
   const handleToggle = (key: string, value: boolean) => {
     hapticToggle();
     if (key === "showFpsCounter") {
-      settingsStorage.set("showFpsCounter", value);
-      setLocalSettings((prev) => ({ ...prev, showFpsCounter: value }));
+      syncLocalSettings({ showFpsCounter: value });
       showToast(t("visualizerDebugUpdated"), "success");
       return;
     }
 
     if (session) {
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
         { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
-      settingsStorage.set(key as SettingsKey, value);
-      setLocalSettings((prev) => ({ ...prev, [key]: value }));
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
       showToast(t("savedLocally"), "success");
     }
   };
@@ -315,13 +320,13 @@ export default function SettingsPage() {
   const handleSlider = (key: string, value: number) => {
     hapticLight();
     if (session) {
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
         { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
-      settingsStorage.set(key as SettingsKey, value);
-      setLocalSettings((prev) => ({ ...prev, [key]: value }));
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
     }
   };
 
@@ -364,19 +369,18 @@ export default function SettingsPage() {
           buildPreferencePatch("theme", themeValue),
         );
       } else {
-        setLocalSettings((prev) => ({ ...prev, theme: themeValue }));
         showToast(t("savedLocally"), "success");
       }
       return;
     }
     if (session) {
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
       void persistServerPreference(
         { [key]: value } as ServerPreferenceInput,
         { [key]: value } as Partial<UserPreferencesRecord>,
       );
     } else {
-      settingsStorage.set(key as SettingsKey, value);
-      setLocalSettings((prev) => ({ ...prev, [key]: value }));
+      syncLocalSettings({ [key]: value } as Partial<UserSettings>);
       showToast(t("savedLocally"), "success");
     }
   };
@@ -432,11 +436,7 @@ export default function SettingsPage() {
       setSpotifyDraft(serverSpotifySettings);
       setSpotifyClientSecretTouched(false);
     }
-  }, [
-    preferences,
-    serverSpotifySettings,
-    session,
-  ]);
+  }, [preferences, serverSpotifySettings, session]);
 
   useEffect(() => {
     if (!session) {
@@ -462,6 +462,14 @@ export default function SettingsPage() {
     hasSyncedLanguageFromPreferencesRef.current = true;
     setLocale(preferredLanguage as AppLocale);
   }, [locale, preferences, session, setLocale]);
+
+  useEffect(() => {
+    if (!session || !preferences) {
+      return;
+    }
+
+    syncLocalSettings(preferences as Partial<UserSettings>);
+  }, [preferences, session]);
 
   const handleSpotifyDraftChange = (
     key: keyof Pick<

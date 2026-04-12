@@ -8,6 +8,22 @@ import {
 
 const SETTINGS_STORAGE_KEY = "starchild_user_settings";
 export const SETTINGS_UPDATED_EVENT = "starchild:settings-updated";
+const USER_SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as SettingsKey[];
+
+function filterPersistableSettings(
+  settings: Partial<UserSettings>,
+): Partial<UserSettings> {
+  const filtered: Partial<UserSettings> = {};
+
+  for (const key of USER_SETTINGS_KEYS) {
+    const value = settings[key];
+    if (value !== undefined) {
+      filtered[key] = value;
+    }
+  }
+
+  return filtered;
+}
 
 export const settingsStorage = {
   get(): Partial<UserSettings> {
@@ -35,6 +51,27 @@ export const settingsStorage = {
       window.dispatchEvent(
         new CustomEvent(SETTINGS_UPDATED_EVENT, {
           detail: { key, value, settings: updated },
+        }),
+      );
+    } catch (error) {
+      console.error("Failed to save settings to localStorage:", error);
+    }
+  },
+
+  setAll(settings: Partial<UserSettings>): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      const current = this.get();
+      const updated = {
+        ...current,
+        ...filterPersistableSettings(settings),
+      };
+
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(
+        new CustomEvent(SETTINGS_UPDATED_EVENT, {
+          detail: { settings: updated },
         }),
       );
     } catch (error) {
