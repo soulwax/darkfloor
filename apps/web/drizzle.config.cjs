@@ -11,7 +11,7 @@ const migrationsOutPath = "apps/web/drizzle";
 
 dotenv.config({
   path: path.resolve(repoRoot, ".env.local"),
-  override: true,
+  override: false,
   quiet: true,
 });
 dotenv.config({ path: path.resolve(repoRoot, ".env"), override: false, quiet: true });
@@ -20,11 +20,6 @@ function resolveDatabaseUrl() {
   const candidates = [
     process.env.DRIZZLE_DATABASE_URL,
     process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.PRISMA_DATABASE_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_URL_NON_POOLING,
-    process.env.DATABASE_URL_UNPOOLED,
   ];
 
   for (const candidate of candidates) {

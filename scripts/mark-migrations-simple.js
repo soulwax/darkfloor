@@ -13,23 +13,7 @@ dotenv.config();
  * @returns {import('pg').ClientConfig['ssl'] | undefined}
  */
 function resolveDatabaseUrl() {
-  const candidates = [
-    process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.PRISMA_DATABASE_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_URL_NON_POOLING,
-    process.env.DATABASE_URL_UNPOOLED,
-  ];
-
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-    if (value) {
-      return value;
-    }
-  }
-
-  return undefined;
+  return process.env.DATABASE_URL?.trim() || undefined;
 }
 
 function getSslConfig(connectionString) {
@@ -90,8 +74,8 @@ function getSslConfig(connectionString) {
 const resolvedDatabaseUrl = resolveDatabaseUrl();
 
 if (!resolvedDatabaseUrl) {
-  console.error('❌ Error: a frontend database URL environment variable is required');
-  console.error('   Make sure .env.local contains DATABASE_URL or Prisma/Postgres aliases');
+  console.error('❌ Error: DATABASE_URL is required for frontend migration utilities');
+  console.error('   Make sure .env.local contains DATABASE_URL');
   process.exit(1);
 }
 

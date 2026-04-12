@@ -8,23 +8,7 @@ import { Pool } from "pg";
 dotenv.config({ path: ".env.local" });
 
 function resolveDatabaseUrl(): string | undefined {
-  const candidates = [
-    process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.PRISMA_DATABASE_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_URL_NON_POOLING,
-    process.env.DATABASE_URL_UNPOOLED,
-  ];
-
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-    if (value) {
-      return value;
-    }
-  }
-
-  return undefined;
+  return process.env.DATABASE_URL?.trim() || undefined;
 }
 
 function getSslConfig(connectionString: string) {

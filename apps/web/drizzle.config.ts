@@ -10,7 +10,7 @@ const repoRoot = resolve(__dirname, "../..");
 const schemaPath = "apps/web/src/server/db/schema.ts";
 const migrationsOutPath = "apps/web/drizzle";
 
-dotenvConfig({ path: resolve(repoRoot, ".env.local"), override: true, quiet: true });
+dotenvConfig({ path: resolve(repoRoot, ".env.local"), override: false, quiet: true });
 dotenvConfig({ path: resolve(repoRoot, ".env"), override: false, quiet: true });
 
 import drizzleEnv from "./drizzle.env";
@@ -19,11 +19,6 @@ function resolveDatabaseUrl() {
   const candidates = [
     process.env.DRIZZLE_DATABASE_URL,
     process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.PRISMA_DATABASE_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_URL_NON_POOLING,
-    process.env.DATABASE_URL_UNPOOLED,
   ];
 
   for (const candidate of candidates) {

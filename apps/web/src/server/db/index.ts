@@ -9,7 +9,7 @@ const databaseUrl = env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL is required for the application. Prisma/Postgres aliases are accepted through env resolution, but the runtime still exposes the resolved value as DATABASE_URL."
+    "DATABASE_URL is required for the application."
   );
 }
 

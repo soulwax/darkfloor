@@ -100,7 +100,7 @@ The typed env schema lives in [`apps/web/src/env.js`](./apps/web/src/env.js). Th
 
 Important current behavior:
 
-- `DATABASE_URL` is the canonical frontend database key, but Prisma/Postgres aliases are accepted during env resolution.
+- `DATABASE_URL` is the canonical frontend database key used by the web runtime and frontend DB utilities.
 - `API_V2_URL` is the canonical upstream API base URL.
 - `SONGBIRD_API_URL` remains supported as a compatibility alias.
 - The custom server loads `.env`, then `.env.local` in development, and `.env.local`, `.env.production`, then `.env` in production with file values overriding inherited process env.

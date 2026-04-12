@@ -41,13 +41,7 @@ if (pm2Port) {
   process.env.PORT = pm2Port;
 }
 
-const resolvedDatabaseUrl =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.PRISMA_DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.DATABASE_URL_UNPOOLED;
+const resolvedDatabaseUrl = process.env.DATABASE_URL;
 
 console.log("=== Environment Variables Loaded ===");
 console.log("NODE_ENV:", process.env.NODE_ENV);
