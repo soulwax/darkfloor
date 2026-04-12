@@ -322,6 +322,12 @@ function getSslConfig(connectionString: string) {
     parsed = null;
   }
 
+  const forceInsecure =
+    process.env.DB_SSL_INSECURE === "true" ||
+    process.env.MIGRATION_SSL_INSECURE === "true";
+  const rejectUnauthorizedEnv = process.env.DB_SSL_REJECT_UNAUTHORIZED;
+  const caOverride = process.env.DB_SSL_CA;
+
   const hostname = parsed?.hostname.toLowerCase() ?? "";
   const hasExplicitSslMode =
     parsed?.searchParams.has("sslmode") ??
@@ -333,6 +339,17 @@ function getSslConfig(connectionString: string) {
     hostname === "::1"
   ) {
     return undefined;
+  }
+
+  if (forceInsecure) {
+    return { rejectUnauthorized: false };
+  }
+
+  if (caOverride) {
+    return {
+      rejectUnauthorized: rejectUnauthorizedEnv !== "false",
+      ca: caOverride,
+    };
   }
 
   const isCloudDb =
@@ -365,7 +382,7 @@ function getSslConfig(connectionString: string) {
 
   if (process.env.DB_SSL_CA) {
     return {
-      rejectUnauthorized: process.env.NODE_ENV === "production",
+      rejectUnauthorized: rejectUnauthorizedEnv !== "false",
       ca: process.env.DB_SSL_CA,
     };
   }
