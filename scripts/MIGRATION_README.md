@@ -1,14 +1,14 @@
-# Database Migration to Managed PostgreSQL
+# Database Migration from Prisma Postgres to Neon
 
-This guide explains how to migrate your database from your current PostgreSQL instance to a managed PostgreSQL target such as Prisma Postgres.
+This guide explains how to copy data from an old Prisma-hosted PostgreSQL database into a new Neon PostgreSQL database with `pnpm migrate:neon`.
 
 ## Prerequisites
 
 1. **Ensure schema exists on target database**: Before migrating data, create the schema on the target database. Run:
 
 ```bash
-# Set your target database URL temporarily
-export DATABASE_URL="postgres://token:secret@db.prisma.io:5432/postgres?sslmode=require"
+# Set your target Neon database URL temporarily
+export DATABASE_URL="postgresql://cloud_admin:password@your-neon-host:5432/postgres?sslmode=require"
 
 # Push schema to the target
 pnpm drizzle-kit push --config apps/web/drizzle.config.cjs
@@ -35,10 +35,17 @@ The migration script (`migrate-to-neon.ts`) provides:
 **Usage:**
 
 ```bash
-# Set source + target
-export OLD_DATABASE_URL="postgresql://source-user:pass@source-host/db"
-export NEW_DATABASE_URL="postgresql://target-user:pass@target-host/db"
-# (UNPOOLED variants optional; preferred for large parallel migrations)
+# Set source + target explicitly
+# Source: old Prisma Postgres database
+export OLD_DATABASE_URL="postgres://token:secret@db.prisma.io:5432/postgres?sslmode=require"
+export OLD_DATABASE_URL_UNPOOLED="${OLD_DATABASE_URL}"
+
+# Target: new Neon database
+export NEW_DATABASE_URL="postgresql://cloud_admin:password@your-neon-host:5432/postgres?sslmode=require"
+export NEW_DATABASE_URL_UNPOOLED="${NEW_DATABASE_URL}"
+
+# Keep the exact sslmode required by your source/target hosts.
+# For trusted internal/self-hosted targets, that may be sslmode=disable.
 
 # Run migration with defaults (append mode + verification)
 pnpm migrate:neon
@@ -95,11 +102,11 @@ pg_dump $SOURCE_DATABASE_URL | psql $TARGET_DATABASE_URL
 
 ## Post-Migration
 
-1. **Update your environment variables** to point to the new database:
+1. **Update your runtime environment variables** to point to the new Neon database:
 
 ```bash
 # Update .env.local
-DATABASE_URL="postgres://token:secret@db.prisma.io:5432/postgres?sslmode=require"
+DATABASE_URL="postgresql://cloud_admin:password@your-neon-host:5432/postgres?sslmode=require"
 # Optional aliases also supported:
 # PRISMA_DATABASE_URL="${DATABASE_URL}"
 # POSTGRES_PRISMA_URL="${DATABASE_URL}"
@@ -169,4 +176,5 @@ SELECT setval('hexmusic-stream_playlist_id_seq', (SELECT MAX(id) FROM "hexmusic-
 - Sequences are automatically reset to prevent ID conflicts
 - The script uses transactions for data integrity
 - Large tables are migrated in batches of 1000 rows for better performance
-- The `pnpm migrate:neon` command name is kept for compatibility even when the target is Prisma Postgres
+- `pnpm migrate:neon` now expects explicit old/new migration envs (`OLD_DATABASE_URL*` and `NEW_DATABASE_URL*`)
+- The normal frontend runtime should still use `DATABASE_URL` and its standard aliases

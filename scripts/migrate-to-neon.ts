@@ -21,7 +21,7 @@ function loadEnvFiles() {
 
   for (const envFile of envFiles) {
     if (!existsSync(envFile)) continue;
-    dotenv.config({ path: envFile, override: false });
+    dotenv.config({ path: envFile, override: false, quiet: true });
   }
 }
 
@@ -69,6 +69,40 @@ function resolveEnvValue(keys: readonly string[]): {
     return { key, value };
   }
   return { key: null, value: null };
+}
+
+function maskConnectionString(connectionString: string): string {
+  try {
+    const parsed = new URL(connectionString);
+    if (parsed.password) {
+      parsed.password = "****";
+    }
+    return parsed.toString();
+  } catch {
+    return connectionString.replace(/:[^:@/]+@/u, ":****@");
+  }
+}
+
+function detectDatabaseProvider(connectionString: string): string {
+  try {
+    const hostname = new URL(connectionString).hostname.toLowerCase();
+    if (hostname.includes("prisma.io")) {
+      return "Prisma Postgres";
+    }
+    if (hostname.includes("neon.tech") || hostname.includes("neon.")) {
+      return "Neon";
+    }
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1"
+    ) {
+      return "Local Postgres";
+    }
+    return hostname;
+  } catch {
+    return "PostgreSQL";
+  }
 }
 
 type ExistingDataMode = "append" | "skip-table" | "error" | "truncate";
@@ -155,10 +189,12 @@ Examples:
   pnpm migrate:neon -- --only-tables=hexmusic-stream_user,hexmusic-stream_session --existing=truncate --skip-confirm
 
 Notes:
-  - The script name remains "migrate:neon" for compatibility.
-  - Target URLs may be Prisma Postgres / managed Postgres URLs via
-    NEW_DATABASE_URL*, TARGET_DATABASE_URL*, POSTGRES_URL*, PRISMA_DATABASE_URL,
-    or DATABASE_URL* env aliases.
+  - Source envs: OLD_DATABASE_URL*, OLD_DATABASE_UNPOOLED,
+    SOURCE_DATABASE_URL*
+  - Target envs: NEW_DATABASE_URL*, NEW_DATABASE_UNPOOLED,
+    TARGET_DATABASE_URL*
+  - This command is intended for explicit old -> new managed Postgres copies,
+    such as Prisma Postgres -> Neon.
 `);
 }
 
@@ -769,27 +805,19 @@ async function main() {
   }
 
   const sourceCandidates = [
-    "OLD_DATABASE_URL",
     "OLD_DATABASE_URL_UNPOOLED",
+    "OLD_DATABASE_URL",
     "OLD_DATABASE_UNPOOLED",
-    "SOURCE_DATABASE_URL",
     "SOURCE_DATABASE_URL_UNPOOLED",
-    "DATABASE_URL",
-    "DATABASE_URL_UNPOOLED",
+    "SOURCE_DATABASE_URL",
   ] as const;
 
   const targetCandidates = [
-    "NEW_DATABASE_URL",
     "NEW_DATABASE_URL_UNPOOLED",
+    "NEW_DATABASE_URL",
     "NEW_DATABASE_UNPOOLED",
-    "TARGET_DATABASE_URL",
     "TARGET_DATABASE_URL_UNPOOLED",
-    "POSTGRES_PRISMA_URL",
-    "PRISMA_DATABASE_URL",
-    "POSTGRES_URL",
-    "POSTGRES_URL_NON_POOLING",
-    "DATABASE_URL",
-    "DATABASE_URL_UNPOOLED",
+    "TARGET_DATABASE_URL",
   ] as const;
 
   const source = resolveEnvValue(sourceCandidates);
@@ -798,13 +826,10 @@ async function main() {
   const targetUrl = target.value;
   const targetSchemaPush = resolveEnvValue([
     "NEW_DATABASE_URL",
-    "NEW_DATABASE_POOLED",
     "TARGET_DATABASE_URL",
-    "TARGET_DATABASE_POOLED",
-    "POSTGRES_PRISMA_URL",
-    "PRISMA_DATABASE_URL",
-    "POSTGRES_URL",
-    "DATABASE_URL",
+    "NEW_DATABASE_URL_UNPOOLED",
+    "NEW_DATABASE_UNPOOLED",
+    "TARGET_DATABASE_URL_UNPOOLED",
   ] as const);
   const targetSchemaPushUrl = targetSchemaPush.value ?? targetUrl;
 
@@ -812,7 +837,9 @@ async function main() {
     error(
       `❌ One source DB URL env var is required: ${sourceCandidates.join(", ")}`,
     );
-    error("   Recommended: Set OLD_DATABASE_UNPOOLED for the source database");
+    error(
+      "   Recommended: set OLD_DATABASE_URL / OLD_DATABASE_URL_UNPOOLED to the Prisma-hosted source database",
+    );
     process.exit(1);
   }
 
@@ -821,18 +848,21 @@ async function main() {
       `❌ One target DB URL env var is required: ${targetCandidates.join(", ")}`,
     );
     error(
-      "   Recommended: Set NEW_DATABASE_URL_UNPOOLED or PRISMA_DATABASE_URL for the target database",
+      "   Recommended: set NEW_DATABASE_URL / NEW_DATABASE_URL_UNPOOLED to the Neon target database",
     );
     process.exit(1);
   }
 
   if (!source.key || !source.value || !target.key || !target.value)
     throw new Error("Missing source/target URLs");
-  info(`Source (${source.key}): ${source.value.replace(/:[^:@]+@/, ":****@")}`);
-  info(`Target (${target.key}): ${target.value.replace(/:[^:@]+@/, ":****@")}`);
+  info(
+    `Source (${source.key}, ${detectDatabaseProvider(source.value)}): ${maskConnectionString(source.value)}`,
+  );
+  info(
+    `Target (${target.key}, ${detectDatabaseProvider(target.value)}): ${maskConnectionString(target.value)}`,
+  );
   info(`Target schema push: ${targetSchemaPush.key ?? target.key}`);
-  info(`Source: ${sourceUrl.replace(/:[^:@]+@/, ":****@")}`);
-  info(`Target: ${targetUrl.replace(/:[^:@]+@/, ":****@")}\n`);
+  log("", "reset");
 
   if (sourceUrl === targetUrl) {
     throw new Error(
