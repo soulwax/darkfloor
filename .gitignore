@@ -133,4 +133,7 @@ tmp-electron-run.log
 *.orig
 *.rej
 
-logs/cron-auto-update.log
+logs/*.log
+logs/**/*.log
+logs/**/**/*.log
+logs/**/**/**/*.log
