@@ -19,12 +19,10 @@
     "category": "Music",
     "shortDescription": "Starchild Music desktop app",
     "targets": ["nsis"],
-    "nsis": {
-      "artifactName": "${productName}_setup.exe",
-      "allowDowngrades": false
-    },
     "windows": {
       "digestAlgorithm": "sha256",
+      "allowDowngrades": false,
+      "nsis": {},
       "signCommand": {
         "cmd": "pwsh",
         "args": [
