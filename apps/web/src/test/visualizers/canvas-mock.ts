@@ -22,6 +22,9 @@ export function makeCtxMock(): CanvasRenderingContext2D {
     closePath: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
+    drawImage: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
     createLinearGradient: vi.fn(() => ({
       addColorStop: vi.fn(),
     })),
@@ -35,6 +38,8 @@ export function makeCtxMock(): CanvasRenderingContext2D {
     set lineWidth(_v: number) {},
     set lineCap(_v: CanvasLineCap) {},
     set lineJoin(_v: CanvasLineJoin) {},
+    set shadowBlur(_v: number) {},
+    set shadowColor(_v: string) {},
   } as unknown as CanvasRenderingContext2D;
 }
 
