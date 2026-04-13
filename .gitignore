@@ -140,3 +140,5 @@ logs/*.log
 logs/**/*.log
 logs/**/**/*.log
 logs/**/**/**/*.log
+.superpowers/brainstorm/1630-1776051327/state/server-info
+.superpowers/brainstorm/1630-1776051327/state/server.pid
