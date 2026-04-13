@@ -165,7 +165,7 @@ fn main() {
                                 "startup-error",
                                 WebviewUrl::External(error_url),
                             )
-                            .title("Starchild Tauri Experimental")
+                            .title("Starchild")
                             .inner_size(980.0, 720.0)
                             .min_inner_size(760.0, 560.0)
                             .resizable(true)
@@ -194,7 +194,7 @@ fn main() {
 
 fn build_main_window(app: &AppHandle, window_url: url::Url) -> tauri::Result<()> {
     let mut builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(window_url))
-        .title("Starchild Tauri Experimental")
+        .title("Starchild")
         .inner_size(1440.0, 920.0)
         .min_inner_size(1100.0, 720.0)
         .resizable(true)
@@ -505,7 +505,7 @@ fn write_startup_error_page(app: &AppHandle, error: &str) -> Option<PathBuf> {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Starchild Tauri Experimental</title>
+    <title>Starchild</title>
     <style>
       body {{
         margin: 0;

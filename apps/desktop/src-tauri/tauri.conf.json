@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Starchild Tauri Experimental",
-  "version": "1.15.5",
-  "identifier": "org.darkfloor.starchild.tauri.experimental",
+  "productName": "Starchild",
+  "version": "1.15.17",
+  "identifier": "org.darkfloor.starchild",
   "build": {
     "beforeBuildCommand": "pnpm run tauri:prepare",
     "beforeDevCommand": "pnpm run tauri:dev:server",
@@ -17,8 +17,12 @@
   "bundle": {
     "active": true,
     "category": "Music",
-    "shortDescription": "Experimental Tauri shell for Starchild Music",
-    "targets": "all",
+    "shortDescription": "Starchild Music desktop app",
+    "targets": ["nsis"],
+    "nsis": {
+      "artifactName": "${productName}_setup.exe",
+      "allowDowngrades": false
+    },
     "windows": {
       "digestAlgorithm": "sha256",
       "signCommand": {

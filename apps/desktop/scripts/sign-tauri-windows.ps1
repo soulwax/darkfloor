@@ -6,7 +6,7 @@ param(
     [string]$FilePathJson,
     [switch]$AutoDiscover,
     [string]$CertDirectory,
-    [string]$LeafCommonName = "Starchild Tauri Experimental Local Code Signing",
+    [string]$LeafCommonName = "Starchild Local Code Signing",
     [string]$LeafOrganization = "Darkfloor",
     [int]$LeafValidityDays = 825,
     [switch]$ForceReissue,
@@ -109,7 +109,7 @@ function Get-ResolvedTargets {
 
     if ($Discover) {
         $releaseDir = Join-Path $DesktopDirectory "src-tauri\target\release"
-        $primaryExe = Join-Path $releaseDir "starchild-tauri-experimental.exe"
+        $primaryExe = Join-Path $releaseDir "starchild.exe"
         if (Test-Path -LiteralPath $primaryExe -PathType Leaf) {
             $targets.Add((Resolve-Path -LiteralPath $primaryExe).Path)
         }

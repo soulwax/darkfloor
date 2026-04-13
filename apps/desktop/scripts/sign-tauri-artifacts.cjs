@@ -42,7 +42,7 @@ const requestedBundles = new Set(
 );
 
 const targets = [];
-const releaseExePath = path.join(releaseDir, "starchild-tauri-experimental.exe");
+const releaseExePath = path.join(releaseDir, "starchild.exe");
 if (fs.existsSync(releaseExePath)) {
   targets.push(releaseExePath);
 }
