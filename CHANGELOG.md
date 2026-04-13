@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.18] - 2026-04-14
+
+### Added
+
+- **Three new hyper-optimized FlowField visuals expand the scientific deep-space palette**: Added `chladniResonance`, `bioluminescentAbyss`, and `magneticFieldLines` as selectable audio-reactive patterns with standing-wave nodal sand, abyssal bioluminescent drifters, and dipole field-line tracing.
+
+### Changed
+
+- **The FlowField pattern registry is coherent again for the newest modular visuals**: The renderer, pattern union, transition families, and canvas validation list now agree on the new modular pattern ids so manual selection, random cycling, and specific-pattern activation all hit the same set of supported visuals.
+
 ## [1.15.17] - 2026-04-10
 
 ### Changed

@@ -178,6 +178,9 @@ const VALID_PATTERNS = new Set<string>([
   "scarabGeometryPulse",
   "synthwaveShoreline",
   "iridescentShatterField",
+  "chladniResonance",
+  "bioluminescentAbyss",
+  "magneticFieldLines",
 ]);
 
 export function FlowFieldCanvas({

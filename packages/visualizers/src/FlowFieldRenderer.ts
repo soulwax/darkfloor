@@ -35,6 +35,9 @@ import { renderCitrusStellarMist } from "./flowfieldPatterns/renderCitrusStellar
 import { renderScarabGeometryPulse } from "./flowfieldPatterns/renderScarabGeometryPulse";
 import { renderSynthwaveShoreline } from "./flowfieldPatterns/renderSynthwaveShoreline";
 import { renderIridescentShatterField } from "./flowfieldPatterns/renderIridescentShatterField";
+import { renderChladniResonance } from "./flowfieldPatterns/renderChladniResonance";
+import { renderBioluminescentAbyss } from "./flowfieldPatterns/renderBioluminescentAbyss";
+import { renderMagneticFieldLines } from "./flowfieldPatterns/renderMagneticFieldLines";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -284,6 +287,9 @@ export class FlowFieldRenderer {
     "scarabGeometryPulse",
     "synthwaveShoreline",
     "iridescentShatterField",
+    "chladniResonance",
+    "bioluminescentAbyss",
+    "magneticFieldLines",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -464,6 +470,9 @@ export class FlowFieldRenderer {
     "scarabGeometryPulse",
     "synthwaveShoreline",
     "iridescentShatterField",
+    "chladniResonance",
+    "bioluminescentAbyss",
+    "magneticFieldLines",
   ]);
   private static readonly MYSTICAL_HUES = [
     270, 280, 290, 240, 250, 0, 330, 340, 180, 200, 310, 350,
@@ -3232,6 +3241,7 @@ export class FlowFieldRenderer {
       case "chromaticSuperburst":
       case "citrusStellarMist":
       case "iridescentShatterField":
+      case "magneticFieldLines":
         return 0;
       case "rings":
       case "mandala":
@@ -3266,6 +3276,7 @@ export class FlowFieldRenderer {
       case "prismaticLatticeDrift":
       case "pulseLoomWeave":
       case "synthwaveShoreline":
+      case "chladniResonance":
         return 2;
       case "waves":
       case "dna":
@@ -3281,6 +3292,7 @@ export class FlowFieldRenderer {
       case "mycelialCatalyst":
       case "voltaicPetalStorm":
       case "solarRibbonDance":
+      case "bioluminescentAbyss":
         return 3;
       default:
         return 4;
@@ -4358,6 +4370,30 @@ export class FlowFieldRenderer {
         break;
       case "iridescentShatterField":
         renderIridescentShatterField(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "chladniResonance":
+        renderChladniResonance(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "bioluminescentAbyss":
+        renderBioluminescentAbyss(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "magneticFieldLines":
+        renderMagneticFieldLines(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,

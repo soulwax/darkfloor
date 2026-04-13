@@ -161,5 +161,4 @@ export type Pattern =
   | "iridescentShatterField"
   | "chladniResonance"
   | "bioluminescentAbyss"
-  | "magneticFieldLines"
-  | "cellularDivinity";
+  | "magneticFieldLines";
