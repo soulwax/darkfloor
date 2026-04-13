@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.19] - 2026-04-14
+
+### Added
+
+- **Three more scientifically magnificent FlowField visuals now probe space-time, wave physics, and collider energy**: Added `gravitationalLensArray`, `seismicPhaseMesh`, and `particleColliderBloom` as selectable audio-reactive patterns with warped lensing streams, tectonic phase contours, and beam-fed collision blooms.
+
+### Changed
+
+- **The modular visualizer family now reaches further into scientific-concept rendering without abandoning performance discipline**: The new patterns keep the same Firefox-aware bounded loops, typed helpers, and registry-driven integration path as the other modern FlowField modules so they stay vivid without breaking pattern transitions or specific-mode activation.
+
 ## [1.15.18] - 2026-04-14
 
 ### Added

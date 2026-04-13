@@ -513,24 +513,24 @@ export class FlowFieldRenderer {
   private static readonly KABBALAH_PATHS: ReadonlyArray<
     readonly [number, number]
   > = [
-    [0, 1],
-    [0, 2],
-    [1, 2],
-    [1, 3],
-    [2, 4],
-    [3, 4],
-    [3, 5],
-    [4, 5],
-    [3, 6],
-    [4, 7],
-    [5, 6],
-    [5, 7],
-    [6, 7],
-    [6, 8],
-    [7, 8],
-    [8, 9],
-    [5, 8],
-  ];
+      [0, 1],
+      [0, 2],
+      [1, 2],
+      [1, 3],
+      [2, 4],
+      [3, 4],
+      [3, 5],
+      [4, 5],
+      [3, 6],
+      [4, 7],
+      [5, 6],
+      [5, 7],
+      [6, 7],
+      [6, 8],
+      [7, 8],
+      [8, 9],
+      [5, 8],
+    ];
   private static readonly SRI_YANTRA_TRIANGLES = [
     { rotation: 0, inverted: true, scale: 1.0, hue: 0 },
     { rotation: Math.PI * 0.4, inverted: true, scale: 0.85, hue: 40 },
@@ -584,20 +584,20 @@ export class FlowFieldRenderer {
   private static readonly METATRON_OFFSETS: ReadonlyArray<
     readonly [number, number]
   > = [
-    [0, 0],
-    [0, -1],
-    [0.866, -0.5],
-    [0.866, 0.5],
-    [0, 1],
-    [-0.866, 0.5],
-    [-0.866, -0.5],
-    [0, -0.5],
-    [0.433, -0.25],
-    [0.433, 0.25],
-    [0, 0.5],
-    [-0.433, 0.25],
-    [-0.433, -0.25],
-  ];
+      [0, 0],
+      [0, -1],
+      [0.866, -0.5],
+      [0.866, 0.5],
+      [0, 1],
+      [-0.866, 0.5],
+      [-0.866, -0.5],
+      [0, -0.5],
+      [0.433, -0.25],
+      [0.433, 0.25],
+      [0, 0.5],
+      [-0.433, 0.25],
+      [-0.433, -0.25],
+    ];
 
   private static initSinTable(): Float32Array {
     const table = new Float32Array(this.SIN_TABLE_SIZE);
@@ -1018,7 +1018,7 @@ export class FlowFieldRenderer {
   private createBubble(): Bubble {
     const baseHue =
       FlowFieldRenderer.MYSTICAL_HUES[
-        (Math.random() * FlowFieldRenderer.MYSTICAL_HUES.length) | 0
+      (Math.random() * FlowFieldRenderer.MYSTICAL_HUES.length) | 0
       ] ?? 270;
     const hue = baseHue + (Math.random() - 0.5) * 30;
 
@@ -3144,9 +3144,9 @@ export class FlowFieldRenderer {
     const frameFade = Math.min(
       0.24,
       fadeAmount +
-        audioIntensity * 0.04 +
-        firefoxFadeBoost +
-        transitionFadeBoost,
+      audioIntensity * 0.04 +
+      firefoxFadeBoost +
+      transitionFadeBoost,
     );
     ctx.fillStyle = `rgba(0, 0, 0, ${frameFade})`;
     ctx.fillRect(0, 0, this.width, this.height);
@@ -3242,6 +3242,8 @@ export class FlowFieldRenderer {
       case "citrusStellarMist":
       case "iridescentShatterField":
       case "magneticFieldLines":
+      case "gravitationalLensArray":
+      case "particleColliderBloom":
         return 0;
       case "rings":
       case "mandala":
@@ -3277,6 +3279,7 @@ export class FlowFieldRenderer {
       case "pulseLoomWeave":
       case "synthwaveShoreline":
       case "chladniResonance":
+      case "seismicPhaseMesh":
         return 2;
       case "waves":
       case "dna":
@@ -4394,6 +4397,30 @@ export class FlowFieldRenderer {
         break;
       case "magneticFieldLines":
         renderMagneticFieldLines(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "gravitationalLensArray":
+        renderGravitationalLensArray(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "seismicPhaseMesh":
+        renderSeismicPhaseMesh(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          midIntensity,
+        );
+        break;
+      case "particleColliderBloom":
+        renderParticleColliderBloom(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,
@@ -9891,7 +9918,7 @@ export class FlowFieldRenderer {
       const size = Math.max(
         1,
         (3 + this.fastSin(timeSize + i) * 2 + trebleIntensity * 2) *
-          (0.75 + detailScale * 0.35),
+        (0.75 + detailScale * 0.35),
       );
       const alpha = Math.max(
         0.08,
@@ -13364,6 +13391,7 @@ export class FlowFieldRenderer {
     const detailScale = this.getAdaptiveDetailScale(pixelCount);
     const scale = 60 + ((audioIntensity * 40) | 0);
     const octaves = 2 + ((bassIntensity * 1) | 0);
+    const persistence = 0.5 + trebleIntensity * 0.25;
     const baseRadius = 160;
     const rings = Math.max(
       3,
@@ -13390,6 +13418,8 @@ export class FlowFieldRenderer {
       const points = Math.max(80, (120 * detailScale) | 0);
       const pointStep = FlowFieldRenderer.TWO_PI / points;
       const invScale = 1 / scale;
+      const octaveScale = 1;
+      const persistencePow = 1;
       const ring2 = ring << 1;
       for (let i = 0; i <= points; i++) {
         const angle = i * pointStep;
@@ -13397,6 +13427,7 @@ export class FlowFieldRenderer {
         const sinAngle = this.fastSin(angle);
         const nx = cosAngle * radius * invScale + time03;
         const ny = sinAngle * radius * invScale + time02;
+        const nz = tanAngle * radius * oc
 
         const xi = nx | 0;
         const yi = ny | 0;
@@ -13824,10 +13855,17 @@ export class FlowFieldRenderer {
 
         const midAngle = (angle1 + angle2) * 0.5;
         const innerRadius = knotRadius065 + offsetAngle * 25;
+        const outerRadius = knotRadius08 + offsetAngle * 25;
         const xMid = this.fastCos(midAngle) * innerRadius;
         const yMid = this.fastSin(midAngle) * innerRadius;
+        const zMidX = this.fastCos(midAngle) * outerRadius;
+        const zMidY = this.fastSin(midAngle) * outerRadius;
 
-        ctx.quadraticCurveTo(xMid, yMid, x2, y2);
+
+        ctx.quadraticCurveTo(xMid, yMid, x2, y2,);
+
+        ctx.lineTo(zMidX, zMidY);
+
         ctx.stroke();
 
         if ((s & 3) === 0) {
@@ -14153,8 +14191,8 @@ export class FlowFieldRenderer {
 
         const streamHue = this.fastMod360(
           layerHue +
-            i * (360 * invStreamCount) +
-            this.fastSin(layerTime + i) * 20,
+          i * (360 * invStreamCount) +
+          this.fastSin(layerTime + i) * 20,
         );
 
         const streamLength = streamHeight * (0.8 + audioIntensity * 0.4);
@@ -15634,7 +15672,7 @@ export class FlowFieldRenderer {
       const connAlpha = 0.2 + trebleIntensity * 0.2;
       const connDistance = this.fastSqrt(
         (connX2 - connX1) * (connX2 - connX1) +
-          (connY2 - connY1) * (connY2 - connY1),
+        (connY2 - connY1) * (connY2 - connY1),
       );
 
       if (connDistance < maxRadius * 0.4) {
@@ -16919,7 +16957,7 @@ export class FlowFieldRenderer {
         const wave =
           1 +
           this.fastSin(angle * 5 + time * 3.2 + bandProgress * 7) *
-            (0.1 + bassIntensity * 0.14) +
+          (0.1 + bassIntensity * 0.14) +
           this.fastSin(angle * 9 - time * 2.1) * (0.04 + midIntensity * 0.08);
         const x = this.fastCos(angle + rotation) * radius * wave;
         const y =

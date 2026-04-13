@@ -181,6 +181,9 @@ const VALID_PATTERNS = new Set<string>([
   "chladniResonance",
   "bioluminescentAbyss",
   "magneticFieldLines",
+  "gravitationalLensArray",
+  "seismicPhaseMesh",
+  "particleColliderBloom",
 ]);
 
 export function FlowFieldCanvas({

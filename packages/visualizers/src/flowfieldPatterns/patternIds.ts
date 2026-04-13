@@ -161,4 +161,7 @@ export type Pattern =
   | "iridescentShatterField"
   | "chladniResonance"
   | "bioluminescentAbyss"
-  | "magneticFieldLines";
+  | "magneticFieldLines"
+  | "gravitationalLensArray"
+  | "seismicPhaseMesh"
+  | "particleColliderBloom";
