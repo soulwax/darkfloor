@@ -158,4 +158,8 @@ export type Pattern =
   | "citrusStellarMist"
   | "scarabGeometryPulse"
   | "synthwaveShoreline"
-  | "iridescentShatterField";
+  | "iridescentShatterField"
+  | "chladniResonance"
+  | "bioluminescentAbyss"
+  | "magneticFieldLines"
+  | "cellularDivinity";

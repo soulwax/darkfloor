@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Three New Visualizations — Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050608;
+    color: #e8eaf0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    padding: 28px 24px 48px;
+  }
+  h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .subtitle { color: #7a8499; font-size: 14px; margin-bottom: 36px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .card {
+    background: #0d1017;
+    border: 1px solid #1e2535;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #3a4a6a; }
+  canvas { display: block; width: 100%; height: 260px; }
+  .card-body { padding: 18px 20px 22px; }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+  .tag-a { background: #0e2040; color: #5ba3f5; }
+  .tag-b { background: #071a14; color: #3de8a0; }
+  .tag-c { background: #1a0e2a; color: #c07af0; }
+  h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: #fff; }
+  p { font-size: 13px; color: #8a93a8; line-height: 1.6; }
+  .pill {
+    display: inline-block; margin-top: 10px; margin-right: 6px;
+    font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    background: #141b28; color: #5a6a88;
+  }
+</style>
+</head>
+<body>
+<h1>Three new visualizations</h1>
+<p class="subtitle">Animated previews — scroll down for details on each</p>
+
+<div class="grid">
+
+  <!-- A: Chladni Resonance -->
+  <div class="card">
+    <canvas id="ca" width="400" height="260"></canvas>
+    <div class="card-body">
+      <span class="tag tag-a">A</span>
+      <h3>Chladni Resonance</h3>
+      <p>Thousands of particles drift across a vibrating plate and accumulate along the nodal lines of standing wave interference. The pattern shifts continuously as frequency ratios evolve — from simple X-crosses to intricate star polygons and beyond.</p>
+      <span class="pill">particles</span>
+      <span class="pill">physics</span>
+      <span class="pill">bass-reactive</span>
+    </div>
+  </div>
+
+  <!-- B: Bioluminescent Abyss -->
+  <div class="card">
+    <canvas id="cb" width="400" height="260"></canvas>
+    <div class="card-body">
+      <span class="tag tag-b">B</span>
+      <h3>Bioluminescent Abyss</h3>
+      <p>Dark deep-sea environment. Jellyfish-like forms drift on slow currents, trailing organic bezier tendrils. Micro-particles of bio-light scatter through the water column. Bass hits trigger sudden blooms of cold teal-blue radiance from the seabed.</p>
+      <span class="pill">organic</span>
+      <span class="pill">atmospheric</span>
+      <span class="pill">dark palette</span>
+    </div>
+  </div>
+
+  <!-- C: Magnetic Field Lines -->
+  <div class="card">
+    <canvas id="cc" width="400" height="260"></canvas>
+    <div class="card-body">
+      <span class="tag tag-c">C</span>
+      <h3>Magnetic Field Lines</h3>
+      <p>Dipole magnetic field rendered as dense, flowing aurora-lit field lines. The poles slowly wander to music, causing the entire field geometry to breathe and warp. Lines brighten near the poles, sweep in long arcs across the canvas, vanishing at the horizon.</p>
+      <span class="pill">aurora palette</span>
+      <span class="pill">field theory</span>
+      <span class="pill">treble-reactive</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Shared utilities ────────────────────────────────────────────────
+function hsl(h, s, l, a=1) {
+  return `hsla(${h|0},${s|0}%,${l|0}%,${a})`;
+}
+let t = 0;
+
+// ── A: Chladni Resonance ────────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('ca');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const N = 1400;
+  const px = new Float32Array(N), py = new Float32Array(N);
+  const vx = new Float32Array(N), vy = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    px[i] = Math.random() * W;
+    py[i] = Math.random() * H;
+    vx[i] = (Math.random() - 0.5) * 1.5;
+    vy[i] = (Math.random() - 0.5) * 1.5;
+  }
+
+  function chladni(x, y, t) {
+    const m = 2 + Math.floor((Math.sin(t * 0.23) * 0.5 + 0.5) * 2);
+    const n = 3 + Math.floor((Math.cos(t * 0.17) * 0.5 + 0.5) * 2);
+    const nx = (x / W) * Math.PI;
+    const ny = (y / H) * Math.PI;
+    return Math.cos(m * nx) * Math.cos(n * ny) - Math.cos(n * nx) * Math.cos(m * ny);
+  }
+
+  function draw(lt) {
+    const dt = 0.016;
+    const phase = lt * 0.0005;
+    ctx.fillStyle = 'rgba(3,4,8,0.18)';
+    ctx.fillRect(0, 0, W, H);
+
+    for (let i = 0; i < N; i++) {
+      const v = chladni(px[i], py[i], phase);
+      const force = v * 1.4;
+      const eps = 0.8;
+      const dfdx = (chladni(px[i] + eps, py[i], phase) - chladni(px[i] - eps, py[i], phase)) / (2 * eps);
+      const dfdy = (chladni(px[i], py[i] + eps, phase) - chladni(px[i], py[i] - eps, phase)) / (2 * eps);
+      vx[i] -= dfdx * force * dt * 12;
+      vy[i] -= dfdy * force * dt * 12;
+      vx[i] *= 0.93;
+      vy[i] *= 0.93;
+      px[i] += vx[i];
+      py[i] += vy[i];
+      if (px[i] < 0) { px[i] = 0; vx[i] *= -0.5; }
+      if (px[i] > W) { px[i] = W; vx[i] *= -0.5; }
+      if (py[i] < 0) { py[i] = 0; vy[i] *= -0.5; }
+      if (py[i] > H) { py[i] = H; vy[i] *= -0.5; }
+
+      const absV = Math.abs(v);
+      const bright = Math.max(0, 1 - absV * 1.8);
+      const hue = 190 + absV * 120;
+      ctx.fillStyle = hsl(hue, 90, 60 + bright * 30, 0.55 + bright * 0.4);
+      const sz = 1.2 + bright * 1.8;
+      ctx.fillRect(px[i] - sz * 0.5, py[i] - sz * 0.5, sz, sz);
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// ── B: Bioluminescent Abyss ─────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cb');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  // jellies
+  const jellies = Array.from({length: 7}, (_, i) => ({
+    x: Math.random() * W,
+    y: Math.random() * H * 0.7 + 30,
+    r: 14 + Math.random() * 22,
+    vx: (Math.random() - 0.5) * 0.18,
+    vy: -0.05 - Math.random() * 0.08,
+    hue: 160 + Math.random() * 60,
+    phase: Math.random() * Math.PI * 2,
+    tendrils: 5 + Math.floor(Math.random() * 4),
+  }));
+
+  // particles
+  const N = 200;
+  const px = new Float32Array(N), py = new Float32Array(N);
+  const pvx = new Float32Array(N), pvy = new Float32Array(N);
+  const phue = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    px[i] = Math.random() * W;
+    py[i] = Math.random() * H;
+    pvx[i] = (Math.random() - 0.5) * 0.3;
+    pvy[i] = -0.1 - Math.random() * 0.3;
+    phue[i] = 150 + Math.random() * 80;
+  }
+
+  let bloom = 0;
+  setInterval(() => { bloom = 1.0; }, 3200);
+
+  function draw(lt) {
+    const t = lt * 0.001;
+    ctx.fillStyle = 'rgba(1,4,10,0.22)';
+    ctx.fillRect(0, 0, W, H);
+
+    // seabed glow bloom
+    if (bloom > 0.01) {
+      const g = ctx.createRadialGradient(W*0.5, H, 0, W*0.5, H, W*0.65);
+      g.addColorStop(0, hsl(170, 100, 55, bloom * 0.18));
+      g.addColorStop(1, hsl(190, 100, 30, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      bloom *= 0.96;
+    }
+
+    // drifting particles
+    for (let i = 0; i < N; i++) {
+      pvx[i] += (Math.random()-0.5)*0.02;
+      px[i] += pvx[i]; py[i] += pvy[i];
+      if (py[i] < -5) { py[i] = H + 5; px[i] = Math.random()*W; }
+      if (px[i] < 0) px[i] = W; if (px[i] > W) px[i] = 0;
+      ctx.beginPath();
+      ctx.arc(px[i], py[i], 0.8, 0, Math.PI*2);
+      ctx.fillStyle = hsl(phue[i], 90, 70, 0.35 + 0.3*Math.sin(t*2 + i));
+      ctx.fill();
+    }
+
+    // jellies
+    for (const j of jellies) {
+      const pulse = Math.sin(t * 1.4 + j.phase);
+      const w = j.r * (1 + pulse * 0.15);
+      const h2 = j.r * (0.8 - pulse * 0.1);
+
+      ctx.save();
+      ctx.translate(j.x, j.y);
+
+      // bell
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w);
+      g.addColorStop(0, hsl(j.hue, 90, 75, 0.35));
+      g.addColorStop(0.6, hsl(j.hue + 20, 100, 55, 0.2));
+      g.addColorStop(1, hsl(j.hue + 40, 100, 40, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w, h2, 0, Math.PI, Math.PI*2);
+      ctx.fill();
+
+      // tendrils
+      for (let k = 0; k < j.tendrils; k++) {
+        const tx0 = (k / j.tendrils - 0.5) * w * 1.8;
+        const tLen = 22 + Math.sin(t * 0.9 + k + j.phase) * 10;
+        ctx.beginPath();
+        ctx.moveTo(tx0, 0);
+        ctx.bezierCurveTo(
+          tx0 + Math.sin(t + k)*6, tLen*0.4,
+          tx0 + Math.cos(t*0.7 + k)*8, tLen*0.7,
+          tx0 + Math.sin(t*1.2 + k)*5, tLen
+        );
+        ctx.strokeStyle = hsl(j.hue + 30, 80, 65, 0.18);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      j.x += j.vx + Math.sin(t * 0.4 + j.phase) * 0.12;
+      j.y += j.vy + Math.sin(t * 0.6 + j.phase) * 0.04;
+      if (j.y < -j.r * 2) j.y = H + j.r;
+      if (j.x < -j.r) j.x = W + j.r;
+      if (j.x > W + j.r) j.x = -j.r;
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// ── C: Magnetic Field Lines ─────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cc');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  function fieldAt(x, y, poles) {
+    let fx = 0, fy = 0;
+    for (const p of poles) {
+      const dx = x - p.x, dy = y - p.y;
+      const r2 = dx*dx + dy*dy + 400;
+      const r = Math.sqrt(r2);
+      const mag = p.sign / (r2);
+      fx += mag * dx / r;
+      fy += mag * dy / r;
+    }
+    return { fx, fy };
+  }
+
+  function draw(lt) {
+    const t = lt * 0.0006;
+    ctx.fillStyle = 'rgba(2,3,12,0.28)';
+    ctx.fillRect(0, 0, W, H);
+
+    const poles = [
+      { x: W * (0.3 + Math.sin(t * 0.41) * 0.07), y: H * (0.45 + Math.cos(t * 0.29) * 0.08), sign: 1 },
+      { x: W * (0.7 + Math.cos(t * 0.37) * 0.07), y: H * (0.55 + Math.sin(t * 0.31) * 0.08), sign: -1 },
+    ];
+
+    // draw poles
+    for (const p of poles) {
+      const hue = p.sign > 0 ? 200 : 290;
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 22);
+      g.addColorStop(0, hsl(hue, 100, 85, 0.9));
+      g.addColorStop(1, hsl(hue, 100, 50, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // trace field lines from + pole
+    const nLines = 28;
+    const steps = 160;
+    const ds = 3.5;
+
+    for (let i = 0; i < nLines; i++) {
+      const angle = (i / nLines) * Math.PI * 2;
+      let x = poles[0].x + Math.cos(angle) * 10;
+      let y = poles[0].y + Math.sin(angle) * 10;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      let drawn = 0;
+
+      for (let s = 0; s < steps; s++) {
+        const { fx, fy } = fieldAt(x, y, poles);
+        const len = Math.sqrt(fx*fx + fy*fy) + 1e-9;
+        x += (fx / len) * ds;
+        y += (fy / len) * ds;
+        if (x < -20 || x > W+20 || y < -20 || y > H+20) break;
+        ctx.lineTo(x, y);
+        drawn++;
+
+        // near negative pole → stop
+        const dx = x - poles[1].x, dy = y - poles[1].y;
+        if (dx*dx + dy*dy < 200) break;
+      }
+
+      const hue = 220 + Math.sin(t * 0.8 + i * 0.4) * 60;
+      const brightness = 40 + (i % 4) * 8;
+      ctx.strokeStyle = hsl(hue, 100, brightness, 0.25 + 0.12 * Math.sin(t * 1.2 + i * 0.3));
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
