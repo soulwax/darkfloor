@@ -127,6 +127,9 @@ node_modules/
 .vite/
 tmp-electron-run.log
 
+# local cron logs
+logs/cron-auto-update*.log*
+
 # editor / patch leftovers
 .vscode/
 .history/
