@@ -1,5 +1,5 @@
 // File: apps/web/src/test/visualizers/renderChladniResonance.test.ts
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   chladniF,
   renderChladniResonance,
