@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>New Designs — Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #050608; color: #e8eaf0; font-family: "Segoe UI", Arial, sans-serif; padding: 28px 24px 48px; }
+  h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .subtitle { color: #7a8499; font-size: 14px; margin-bottom: 32px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 36px; }
+  .card { background: #0d1017; border: 1px solid #1e2535; border-radius: 16px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 280px; }
+  .card-body { padding: 18px 20px 22px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; margin-bottom: 10px; }
+  .tag-gol { background: #0e2218; color: #40e090; }
+  .tag-abyss { background: #071220; color: #4ab0f5; }
+  h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: #fff; }
+  p { font-size: 13px; color: #8a93a8; line-height: 1.6; }
+  .pill { display: inline-block; margin-top: 8px; margin-right: 6px; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #141b28; color: #5a6a88; }
+  .note { margin-top: 14px; font-size: 12px; color: #4a9060; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>Two design previews</h1>
+<p class="subtitle">Left: Cellular Divinity (Game of Life) &nbsp;·&nbsp; Right: Abyss v2 — more abstract, more mysterious</p>
+
+<div class="row">
+
+  <!-- Cellular Divinity -->
+  <div class="card">
+    <canvas id="cgol" width="560" height="280"></canvas>
+    <div class="card-body">
+      <span class="tag tag-gol">New</span>
+      <h3>Cellular Divinity</h3>
+      <p>Conway's Game of Life seeded with known interesting patterns — Acorn, R-pentomino, gliders, oscillators. Cells are colored by <em>age</em> (bright at birth → deep at maturity) and each newborn inherits a hue blended from its living neighbors, so color propagates through the colony like genetic information. Bass triggers new pattern injections. When the population collapses, new seeds scatter.</p>
+      <span class="pill">age-hue inheritance</span>
+      <span class="pill">structured seeding</span>
+      <span class="pill">bass-reactive</span>
+      <p class="note">Quasi-random: never pure noise — always seeded from a curated catalog of known interesting patterns.</p>
+    </div>
+  </div>
+
+  <!-- Abyss v2 -->
+  <div class="card">
+    <canvas id="cabyss" width="560" height="280"></canvas>
+    <div class="card-body">
+      <span class="tag tag-abyss">Revised</span>
+      <h3>Bioluminescent Abyss v2</h3>
+      <p>Darker, stranger. Jellyfish replaced by slowly rotating <em>abstract radial forms</em> — pulsing halo-rings with branching filaments, like deep-sea creatures that have no name. Drifting thread-curtains of micro-light instead of distinct particles. Occasional cold detonations of bioluminescence from the abyss floor. No recognizable anatomy.</p>
+      <span class="pill">halo forms</span>
+      <span class="pill">filament curtains</span>
+      <span class="pill">void atmosphere</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Cellular Divinity ───────────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cgol');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const CS = 7; // cell size px
+  const cols = Math.floor(W / CS);
+  const rows = Math.floor(H / CS);
+  const N = cols * rows;
+
+  let grid = new Uint8Array(N);
+  let next = new Uint8Array(N);
+  let age  = new Float32Array(N);
+  let hue  = new Float32Array(N);
+  let gen  = 0;
+
+  // Pattern catalog [dx, dy]
+  const ACORN = [[1,0],[3,1],[0,2],[1,2],[4,2],[5,2],[6,2]];
+  const R_PENT = [[1,0],[2,0],[0,1],[1,1],[1,2]];
+  const GLIDER = [[1,0],[2,1],[0,2],[1,2],[2,2]];
+  const DIEHARD = [[6,0],[0,1],[1,1],[1,2],[5,2],[6,2],[7,2]];
+  const LWSS = [[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]];
+  const CATALOG = [ACORN, R_PENT, GLIDER, DIEHARD, LWSS, GLIDER, R_PENT, GLIDER];
+
+  function seedPattern(pattern, ox, oy, seedHue) {
+    for (const [dx, dy] of pattern) {
+      const x = (ox + dx + cols) % cols;
+      const y = (oy + dy + rows) % rows;
+      const idx = y * cols + x;
+      grid[idx] = 1;
+      age[idx] = 0;
+      hue[idx] = seedHue;
+    }
+  }
+
+  function initialSeed() {
+    grid.fill(0); age.fill(0); hue.fill(0);
+    const pats = 7;
+    for (let i = 0; i < pats; i++) {
+      const p = CATALOG[i % CATALOG.length];
+      const ox = 4 + Math.floor((i / pats) * (cols - 12));
+      const oy = 4 + Math.floor(((i * 3 + 1) % 5) / 5 * (rows - 10));
+      seedPattern(p, ox, oy, (i / pats) * 320);
+    }
+    gen = 0;
+  }
+  initialSeed();
+
+  function stepGoL() {
+    let pop = 0;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        let n = 0, hSum = 0, hCount = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = (x + dx + cols) % cols;
+            const ny = (y + dy + rows) % rows;
+            const ni = ny * cols + nx;
+            if (grid[ni]) { n++; hSum += hue[ni]; hCount++; }
+          }
+        }
+        const i = y * cols + x;
+        const alive = grid[i] === 1;
+        if (alive && (n === 2 || n === 3)) {
+          next[i] = 1;
+          age[i] += 1;
+          pop++;
+        } else if (!alive && n === 3) {
+          next[i] = 1;
+          age[i] = 0;
+          hue[i] = hCount > 0 ? (hSum / hCount + (Math.random()-0.5)*25) : Math.random()*360;
+          pop++;
+        } else {
+          next[i] = 0;
+          age[i] = Math.max(0, age[i] - 1);
+        }
+      }
+    }
+    const tmp = grid; grid = next; next = tmp;
+    gen++;
+    if (pop < 10) { initialSeed(); }
+    return pop;
+  }
+
+  let frame = 0;
+  let hueBase = 120;
+  function draw(lt) {
+    frame++;
+    hueBase = (hueBase + 0.04) % 360;
+    if (frame % 3 === 0) stepGoL();
+
+    ctx.fillStyle = 'rgba(2,5,3,0.18)';
+    ctx.fillRect(0, 0, W, H);
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const i = y * cols + x;
+        if (grid[i] || age[i] > 0.2) {
+          const a = age[i];
+          const alive = grid[i] === 1;
+          const h = (hue[i] + hueBase) % 360;
+          const brightness = alive ? Math.max(38, 72 - Math.min(a, 60) * 0.4) : 30;
+          const sat = alive ? Math.max(60, 95 - Math.min(a, 60)) : 40;
+          const alpha = alive ? Math.min(0.9, 0.45 + Math.min(a, 30) * 0.015) : Math.max(0, age[i] * 0.12);
+          const sz = alive ? CS - 1 : CS * 0.6;
+          ctx.fillStyle = `hsla(${h|0},${sat|0}%,${brightness|0}%,${alpha.toFixed(2)})`;
+          ctx.fillRect(x * CS + (CS - sz) * 0.5, y * CS + (CS - sz) * 0.5, sz, sz);
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// ── Bioluminescent Abyss v2 ─────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cabyss');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  // Abstract halo forms — not jellies
+  const forms = Array.from({length: 5}, (_, i) => ({
+    x: W * (0.15 + i * 0.18),
+    y: H * (0.3 + ((i*7)%5)*0.08),
+    vx: (Math.random()-0.5)*0.12,
+    vy: -0.03 - Math.random()*0.04,
+    r: 18 + Math.random()*28,
+    hue: 170 + Math.random()*50,
+    phase: i * 1.2,
+    arms: 5 + (i % 3),
+    rot: Math.random()*Math.PI*2,
+    rotSpeed: (Math.random()-0.5)*0.004,
+  }));
+
+  // Light curtain threads
+  const THREADS = 120;
+  const tx = new Float32Array(THREADS), ty = new Float32Array(THREADS);
+  const tvx = new Float32Array(THREADS), tvy = new Float32Array(THREADS);
+  const thue = new Float32Array(THREADS);
+  for (let i = 0; i < THREADS; i++) {
+    tx[i] = Math.random()*W; ty[i] = Math.random()*H;
+    tvx[i] = (Math.random()-0.5)*0.15; tvy[i] = -0.05 - Math.random()*0.18;
+    thue[i] = 155 + Math.random()*60;
+  }
+
+  let bloom = 0;
+  setInterval(() => bloom = 1.0, 4000);
+
+  function draw(lt) {
+    const t = lt * 0.001;
+    ctx.fillStyle = 'rgba(0,2,8,0.24)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Seabed bloom
+    if (bloom > 0.01) {
+      const g = ctx.createRadialGradient(W*0.5, H, 0, W*0.5, H, W*0.7);
+      g.addColorStop(0, `hsla(175,100%,50%,${(bloom*0.18).toFixed(3)})`);
+      g.addColorStop(1, 'hsla(190,100%,25%,0)');
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      ctx.restore();
+      bloom *= 0.962;
+    }
+
+    // Thread curtain
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < THREADS; i++) {
+      tvx[i] += (Math.random()-0.5)*0.02;
+      tx[i] += tvx[i]; ty[i] += tvy[i];
+      if (ty[i] < -3) { ty[i] = H+3; tx[i] = Math.random()*W; }
+      if (tx[i] < 0) tx[i] = W; if (tx[i] > W) tx[i] = 0;
+      const fl = 0.15 + 0.2*Math.sin(t*2.2+i*0.9);
+      ctx.beginPath();
+      ctx.arc(tx[i], ty[i], 0.7, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${thue[i]|0},90%,70%,${fl.toFixed(3)})`;
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Abstract radial forms
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const f of forms) {
+      f.rot += f.rotSpeed;
+      const pulse = Math.sin(t*1.1 + f.phase);
+      const R = f.r * (1 + pulse * 0.22);
+
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot);
+
+      // Core halo ring
+      const rg = ctx.createRadialGradient(0, 0, R*0.3, 0, 0, R);
+      rg.addColorStop(0, `hsla(${f.hue|0},90%,70%,0.0)`);
+      rg.addColorStop(0.55, `hsla(${f.hue|0},100%,65%,0.22)`);
+      rg.addColorStop(0.82, `hsla(${(f.hue+30)|0},100%,50%,0.14)`);
+      rg.addColorStop(1, `hsla(${(f.hue+60)|0},80%,35%,0)`);
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, Math.PI*2);
+      ctx.fill();
+
+      // Radiating filaments
+      for (let a = 0; a < f.arms; a++) {
+        const angle = (a / f.arms) * Math.PI*2 + t*0.18;
+        const fLen = R * (1.4 + Math.sin(t*0.7 + a*1.3)*0.4);
+        const cx1 = Math.cos(angle+0.3)*R*0.6;
+        const cy1 = Math.sin(angle+0.3)*R*0.6;
+        const ex = Math.cos(angle)*fLen;
+        const ey = Math.sin(angle)*fLen;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(cx1, cy1, ex*0.7, ey*0.7, ex, ey);
+        ctx.strokeStyle = `hsla(${(f.hue+a*15)|0},90%,60%,0.12)`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      f.x += f.vx + Math.sin(t*0.4+f.phase)*0.1;
+      f.y += f.vy;
+      if (f.y < -f.r*2) { f.y = H+f.r; f.x = Math.random()*W; }
+      if (f.x < -f.r) f.x = W+f.r;
+      if (f.x > W+f.r) f.x = -f.r;
+    }
+    ctx.restore();
+  }
+
+  function loop(lt) { draw(lt); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
