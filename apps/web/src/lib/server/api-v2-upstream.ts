@@ -8,6 +8,10 @@ const API_V2_RETRYABLE_RESPONSE_STATUSES = new Set([502, 503, 504]);
 const API_V2_RETRYABLE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const API_V2_DEFAULT_WEIGHT = 1;
 const API_V2_MAX_WEIGHT = 100;
+const API_V2_LATENCY_EWMA_ALPHA = 0.3;
+const API_V2_IN_FLIGHT_SCORE_PENALTY = 2;
+const API_V2_FAILURE_SCORE_PENALTY = 3;
+const API_V2_LATENCY_SCORE_BUCKET_MS = 250;
 
 type UpstreamRequest = NextRequest | Request;
 export type ApiV2UpstreamPool = "default" | "read" | "write" | "stream";
@@ -24,15 +28,27 @@ type ApiV2UpstreamMetrics = {
   selectionCount: number;
   selectionCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
   successCount: number;
+  successCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
   failureCount: number;
+  failureCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
+  inFlightCount: number;
+  inFlightCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
+  peakInFlightCount: number;
+  peakInFlightCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
+  consecutiveFailureCount: number;
+  consecutiveFailureCountByPool: Partial<Record<ApiV2UpstreamPool, number>>;
   lastSelectedAt: number | null;
   lastSuccessAt: number | null;
   lastFailureAt: number | null;
   lastFailureReason: string | null;
+  lastResponseStatus: number | null;
+  lastLatencyMs: number | null;
+  latencyEwmaMs: number | null;
 };
 
 type ApiV2UpstreamState = {
-  cooldowns: Map<string, number>;
+  cooldownsByPool: Partial<Record<ApiV2UpstreamPool, Map<string, number>>>;
+  currentWeightByPool: Partial<Record<ApiV2UpstreamPool, Map<string, number>>>;
   metricsByUrl: Map<string, ApiV2UpstreamMetrics>;
   nextCursorByPool: Partial<Record<ApiV2UpstreamPool, number>>;
 };
@@ -59,7 +75,8 @@ function getState(): ApiV2UpstreamState {
   };
 
   globalState.__darkfloorApiV2UpstreamState ??= {
-    cooldowns: new Map<string, number>(),
+    cooldownsByPool: {},
+    currentWeightByPool: {},
     metricsByUrl: new Map<string, ApiV2UpstreamMetrics>(),
     nextCursorByPool: {},
   };
@@ -134,69 +151,189 @@ function getUpstreamMetrics(baseUrl: string): ApiV2UpstreamMetrics {
     selectionCount: 0,
     selectionCountByPool: {},
     successCount: 0,
+    successCountByPool: {},
     failureCount: 0,
+    failureCountByPool: {},
+    inFlightCount: 0,
+    inFlightCountByPool: {},
+    peakInFlightCount: 0,
+    peakInFlightCountByPool: {},
+    consecutiveFailureCount: 0,
+    consecutiveFailureCountByPool: {},
     lastSelectedAt: null,
     lastSuccessAt: null,
     lastFailureAt: null,
     lastFailureReason: null,
+    lastResponseStatus: null,
+    lastLatencyMs: null,
+    latencyEwmaMs: null,
   };
   state.metricsByUrl.set(baseUrl, created);
   return created;
 }
 
-function getPoolCursor(pool: ApiV2UpstreamPool): number {
-  return getState().nextCursorByPool[pool] ?? 0;
+function getPoolCooldowns(pool: ApiV2UpstreamPool): Map<string, number> {
+  const state = getState();
+  state.cooldownsByPool[pool] ??= new Map<string, number>();
+  return state.cooldownsByPool[pool];
 }
 
-function setPoolCursor(pool: ApiV2UpstreamPool, value: number): void {
-  getState().nextCursorByPool[pool] = value;
+function getPoolCurrentWeights(pool: ApiV2UpstreamPool): Map<string, number> {
+  const state = getState();
+  state.currentWeightByPool[pool] ??= new Map<string, number>();
+  return state.currentWeightByPool[pool];
 }
 
-function buildWeightedSchedule(
+function incrementPoolCounter(
+  counters: Partial<Record<ApiV2UpstreamPool, number>>,
+  pool: ApiV2UpstreamPool,
+  amount = 1,
+): number {
+  const nextValue = (counters[pool] ?? 0) + amount;
+  counters[pool] = nextValue;
+  return nextValue;
+}
+
+function decrementPoolCounter(
+  counters: Partial<Record<ApiV2UpstreamPool, number>>,
+  pool: ApiV2UpstreamPool,
+): number {
+  const nextValue = Math.max(0, (counters[pool] ?? 0) - 1);
+  counters[pool] = nextValue;
+  return nextValue;
+}
+
+function completeInFlightCount(
+  metrics: ApiV2UpstreamMetrics,
+  pool: ApiV2UpstreamPool,
+): void {
+  metrics.inFlightCount = Math.max(0, metrics.inFlightCount - 1);
+  decrementPoolCounter(metrics.inFlightCountByPool, pool);
+}
+
+function updateLatencyMetrics(
+  metrics: ApiV2UpstreamMetrics,
+  latencyMs: number | undefined,
+): void {
+  if (latencyMs === undefined) return;
+
+  metrics.lastLatencyMs = latencyMs;
+  metrics.latencyEwmaMs =
+    metrics.latencyEwmaMs === null
+      ? latencyMs
+      : metrics.latencyEwmaMs * (1 - API_V2_LATENCY_EWMA_ALPHA) +
+        latencyMs * API_V2_LATENCY_EWMA_ALPHA;
+}
+
+function getSelectionPenalty(pool: ApiV2UpstreamPool, baseUrl: string): number {
+  const metrics = getUpstreamMetrics(baseUrl);
+  const inFlightCount = metrics.inFlightCountByPool[pool] ?? 0;
+  const consecutiveFailures = metrics.consecutiveFailureCountByPool[pool] ?? 0;
+  const latencyPenalty =
+    metrics.latencyEwmaMs === null
+      ? 0
+      : Math.min(6, metrics.latencyEwmaMs / API_V2_LATENCY_SCORE_BUCKET_MS);
+
+  return (
+    inFlightCount * API_V2_IN_FLIGHT_SCORE_PENALTY +
+    consecutiveFailures * API_V2_FAILURE_SCORE_PENALTY +
+    latencyPenalty
+  );
+}
+
+function compareHealthyUpstreams(
+  pool: ApiV2UpstreamPool,
+  left: ApiV2ResolvedUpstream,
+  right: ApiV2ResolvedUpstream,
+): number {
+  const leftMetrics = getUpstreamMetrics(left.url);
+  const rightMetrics = getUpstreamMetrics(right.url);
+
+  const leftFailures = leftMetrics.consecutiveFailureCountByPool[pool] ?? 0;
+  const rightFailures = rightMetrics.consecutiveFailureCountByPool[pool] ?? 0;
+  if (leftFailures !== rightFailures) {
+    return leftFailures - rightFailures;
+  }
+
+  const leftInFlight = leftMetrics.inFlightCountByPool[pool] ?? 0;
+  const rightInFlight = rightMetrics.inFlightCountByPool[pool] ?? 0;
+  if (leftInFlight !== rightInFlight) {
+    return leftInFlight - rightInFlight;
+  }
+
+  const leftLatency = leftMetrics.latencyEwmaMs ?? Number.POSITIVE_INFINITY;
+  const rightLatency = rightMetrics.latencyEwmaMs ?? Number.POSITIVE_INFINITY;
+  if (leftLatency !== rightLatency) {
+    return leftLatency - rightLatency;
+  }
+
+  if (left.weight !== right.weight) {
+    return right.weight - left.weight;
+  }
+
+  const leftLastSelectedAt = leftMetrics.lastSelectedAt ?? 0;
+  const rightLastSelectedAt = rightMetrics.lastSelectedAt ?? 0;
+  if (leftLastSelectedAt !== rightLastSelectedAt) {
+    return leftLastSelectedAt - rightLastSelectedAt;
+  }
+
+  return 0;
+}
+
+function selectPrimaryHealthyUpstream(
+  pool: ApiV2UpstreamPool,
   upstreams: ApiV2ResolvedUpstream[],
-): ApiV2ResolvedUpstream[] {
-  const schedule: ApiV2ResolvedUpstream[] = [];
+): ApiV2ResolvedUpstream {
+  const currentWeights = getPoolCurrentWeights(pool);
+  let totalWeight = 0;
+  let bestCandidate: ApiV2ResolvedUpstream | null = null;
+  let bestCandidateCurrentWeight = 0;
+  let bestCandidateScore = Number.NEGATIVE_INFINITY;
 
   for (const upstream of upstreams) {
-    for (let index = 0; index < upstream.weight; index += 1) {
-      schedule.push(upstream);
+    totalWeight += upstream.weight;
+
+    const currentWeight =
+      (currentWeights.get(upstream.url) ?? 0) + upstream.weight;
+    currentWeights.set(upstream.url, currentWeight);
+
+    const score = currentWeight - getSelectionPenalty(pool, upstream.url);
+    if (
+      bestCandidate === null ||
+      score > bestCandidateScore ||
+      (score === bestCandidateScore &&
+        compareHealthyUpstreams(pool, upstream, bestCandidate) < 0)
+    ) {
+      bestCandidate = upstream;
+      bestCandidateCurrentWeight = currentWeight;
+      bestCandidateScore = score;
     }
   }
 
-  return schedule;
-}
-
-function dedupeOrderedUpstreams(
-  upstreams: ApiV2ResolvedUpstream[],
-): ApiV2ResolvedUpstream[] {
-  const seen = new Set<string>();
-  const deduped: ApiV2ResolvedUpstream[] = [];
-
-  for (const upstream of upstreams) {
-    if (seen.has(upstream.url)) continue;
-    seen.add(upstream.url);
-    deduped.push(upstream);
+  if (!bestCandidate) {
+    return upstreams[0]!;
   }
 
-  return deduped;
+  currentWeights.set(
+    bestCandidate.url,
+    bestCandidateCurrentWeight - totalWeight,
+  );
+
+  return bestCandidate;
 }
 
-function rotateWeightedUpstreams(
+function orderHealthyUpstreams(
   pool: ApiV2UpstreamPool,
   upstreams: ApiV2ResolvedUpstream[],
 ): ApiV2ResolvedUpstream[] {
   if (upstreams.length <= 1) return upstreams;
 
-  const weightedSchedule = buildWeightedSchedule(upstreams);
-  if (weightedSchedule.length <= 1) return dedupeOrderedUpstreams(weightedSchedule);
+  const preferred = selectPrimaryHealthyUpstream(pool, upstreams);
+  const remaining = upstreams
+    .filter((upstream) => upstream.url !== preferred.url)
+    .sort((left, right) => compareHealthyUpstreams(pool, left, right));
 
-  const cursor = getPoolCursor(pool) % weightedSchedule.length;
-  const rotated = weightedSchedule
-    .slice(cursor)
-    .concat(weightedSchedule.slice(0, cursor));
-
-  setPoolCursor(pool, (cursor + 1) % weightedSchedule.length);
-  return dedupeOrderedUpstreams(rotated);
+  return [preferred, ...remaining];
 }
 
 function buildOrderedApiV2BaseUrls(
@@ -205,49 +342,70 @@ function buildOrderedApiV2BaseUrls(
   const baseUrls = getApiV2BaseUrlConfigs(pool);
   if (baseUrls.length <= 1) return baseUrls;
 
-  const state = getState();
+  const cooldowns = getPoolCooldowns(pool);
   const now = Date.now();
   const healthy: ApiV2ResolvedUpstream[] = [];
   const cooling: Array<ApiV2ResolvedUpstream & { until: number }> = [];
 
   for (const baseUrl of baseUrls) {
-    const until = state.cooldowns.get(baseUrl.url);
+    const until = cooldowns.get(baseUrl.url);
     if (typeof until === "number" && until > now) {
       cooling.push({ ...baseUrl, until });
       continue;
     }
 
-    state.cooldowns.delete(baseUrl.url);
+    cooldowns.delete(baseUrl.url);
     healthy.push(baseUrl);
   }
 
-  const orderedHealthy = rotateWeightedUpstreams(pool, healthy);
+  const orderedHealthy = orderHealthyUpstreams(pool, healthy);
 
   cooling.sort(
-    (left, right) =>
-      left.until - right.until || right.weight - left.weight,
+    (left, right) => left.until - right.until || right.weight - left.weight,
   );
   return orderedHealthy.concat(
     cooling.map(({ until: _until, ...entry }) => entry),
   );
 }
 
-function markApiV2BaseUrlSuccess(baseUrl: string): void {
-  getState().cooldowns.delete(baseUrl);
+function markApiV2BaseUrlSuccess(
+  baseUrl: string,
+  pool: ApiV2UpstreamPool,
+  responseStatus?: number,
+  latencyMs?: number,
+): void {
+  getPoolCooldowns(pool).delete(baseUrl);
   const metrics = getUpstreamMetrics(baseUrl);
   metrics.successCount += 1;
+  incrementPoolCounter(metrics.successCountByPool, pool);
+  metrics.consecutiveFailureCount = 0;
+  metrics.consecutiveFailureCountByPool[pool] = 0;
   metrics.lastSuccessAt = Date.now();
+  metrics.lastFailureReason = null;
+  metrics.lastResponseStatus = responseStatus ?? null;
+  updateLatencyMetrics(metrics, latencyMs);
+  completeInFlightCount(metrics, pool);
 }
 
-function markApiV2BaseUrlFailure(baseUrl: string, reason?: string): void {
-  getState().cooldowns.set(
-    baseUrl,
-    Date.now() + API_V2_FAILURE_COOLDOWN_MS,
-  );
+function markApiV2BaseUrlFailure(
+  baseUrl: string,
+  pool: ApiV2UpstreamPool,
+  reason?: string,
+  latencyMs?: number,
+  responseStatus?: number,
+): void {
+  getPoolCooldowns(pool).set(baseUrl, Date.now() + API_V2_FAILURE_COOLDOWN_MS);
   const metrics = getUpstreamMetrics(baseUrl);
   metrics.failureCount += 1;
+  incrementPoolCounter(metrics.failureCountByPool, pool);
+  metrics.consecutiveFailureCount += 1;
+  metrics.consecutiveFailureCountByPool[pool] =
+    (metrics.consecutiveFailureCountByPool[pool] ?? 0) + 1;
   metrics.lastFailureAt = Date.now();
   metrics.lastFailureReason = reason ?? null;
+  metrics.lastResponseStatus = responseStatus ?? null;
+  updateLatencyMetrics(metrics, latencyMs);
+  completeInFlightCount(metrics, pool);
 }
 
 function markApiV2BaseUrlSelected(
@@ -258,6 +416,19 @@ function markApiV2BaseUrlSelected(
   metrics.selectionCount += 1;
   metrics.selectionCountByPool[pool] =
     (metrics.selectionCountByPool[pool] ?? 0) + 1;
+  metrics.inFlightCount += 1;
+  const poolInFlightCount = incrementPoolCounter(
+    metrics.inFlightCountByPool,
+    pool,
+  );
+  metrics.peakInFlightCount = Math.max(
+    metrics.peakInFlightCount,
+    metrics.inFlightCount,
+  );
+  metrics.peakInFlightCountByPool[pool] = Math.max(
+    metrics.peakInFlightCountByPool[pool] ?? 0,
+    poolInFlightCount,
+  );
   metrics.lastSelectedAt = Date.now();
 }
 
@@ -269,7 +440,9 @@ function shouldRetryRequest(
   return API_V2_RETRYABLE_METHODS.has(method);
 }
 
-function getConfiguredPoolUrls(pool: ApiV2UpstreamPool): ApiV2ResolvedUpstream[] {
+function getConfiguredPoolUrls(
+  pool: ApiV2UpstreamPool,
+): ApiV2ResolvedUpstream[] {
   switch (pool) {
     case "read":
       return parseConfiguredApiV2Urls(env.API_V2_READ_URLS);
@@ -313,7 +486,9 @@ export function getApiV2BaseUrlConfigs(
   return Array.from(merged.values());
 }
 
-export function getApiV2BaseUrls(pool: ApiV2UpstreamPool = "default"): string[] {
+export function getApiV2BaseUrls(
+  pool: ApiV2UpstreamPool = "default",
+): string[] {
   return getApiV2BaseUrlConfigs(pool).map((entry) => entry.url);
 }
 
@@ -324,7 +499,12 @@ export function getPreferredApiV2BaseUrl(
 }
 
 export function listConfiguredApiV2Upstreams(): ApiV2ConfiguredUpstream[] {
-  const orderedPools: ApiV2UpstreamPool[] = ["default", "read", "write", "stream"];
+  const orderedPools: ApiV2UpstreamPool[] = [
+    "default",
+    "read",
+    "write",
+    "stream",
+  ];
   const poolMembership = new Map<
     string,
     {
@@ -394,6 +574,7 @@ export async function fetchApiV2WithFailover(
       request: options.request,
     });
     markApiV2BaseUrlSelected(baseUrl, pool);
+    const attemptStartedAt = Date.now();
 
     try {
       const response = await fetch(upstreamUrl, {
@@ -405,20 +586,33 @@ export async function fetchApiV2WithFailover(
             : AbortSignal.timeout(timeoutMs),
       });
 
+      const latencyMs = Date.now() - attemptStartedAt;
       const isRetryableResponse =
         shouldRetry &&
         API_V2_RETRYABLE_RESPONSE_STATUSES.has(response.status) &&
         index < baseUrls.length - 1;
 
       if (isRetryableResponse) {
-        markApiV2BaseUrlFailure(baseUrl, `retryable_status_${response.status}`);
+        markApiV2BaseUrlFailure(
+          baseUrl,
+          pool,
+          `retryable_status_${response.status}`,
+          latencyMs,
+          response.status,
+        );
         continue;
       }
 
-      if (response.ok) {
-        markApiV2BaseUrlSuccess(baseUrl);
-      } else if (API_V2_RETRYABLE_RESPONSE_STATUSES.has(response.status)) {
-        markApiV2BaseUrlFailure(baseUrl, `status_${response.status}`);
+      if (API_V2_RETRYABLE_RESPONSE_STATUSES.has(response.status)) {
+        markApiV2BaseUrlFailure(
+          baseUrl,
+          pool,
+          `status_${response.status}`,
+          latencyMs,
+          response.status,
+        );
+      } else {
+        markApiV2BaseUrlSuccess(baseUrl, pool, response.status, latencyMs);
       }
 
       return {
@@ -431,7 +625,9 @@ export async function fetchApiV2WithFailover(
       lastError = error;
       markApiV2BaseUrlFailure(
         baseUrl,
+        pool,
         error instanceof Error ? error.message : String(error),
+        Date.now() - attemptStartedAt,
       );
 
       if (!shouldRetry || index === baseUrls.length - 1) {
@@ -449,18 +645,50 @@ export const apiV2UpstreamInternals = {
   buildOrderedApiV2BaseUrls,
   clearState(): void {
     const state = getState();
-    state.cooldowns.clear();
+    for (const cooldowns of Object.values(state.cooldownsByPool)) {
+      cooldowns?.clear();
+    }
+    for (const currentWeights of Object.values(state.currentWeightByPool)) {
+      currentWeights?.clear();
+    }
+    state.metricsByUrl.clear();
     state.nextCursorByPool = {};
   },
   getStateSnapshot(): {
     cooldowns: Record<string, number>;
+    cooldownsByPool: Partial<Record<ApiV2UpstreamPool, Record<string, number>>>;
     metricsByUrl: Record<string, ApiV2UpstreamMetrics>;
+    currentWeightByPool: Partial<
+      Record<ApiV2UpstreamPool, Record<string, number>>
+    >;
     nextCursorByPool: Partial<Record<ApiV2UpstreamPool, number>>;
   } {
     const state = getState();
+    const cooldownsByPool = Object.fromEntries(
+      Object.entries(state.cooldownsByPool).map(([pool, cooldowns]) => [
+        pool,
+        Object.fromEntries((cooldowns ?? new Map<string, number>()).entries()),
+      ]),
+    ) as Partial<Record<ApiV2UpstreamPool, Record<string, number>>>;
+    const cooldowns = Object.values(cooldownsByPool).reduce<
+      Record<string, number>
+    >((aggregate, poolCooldowns) => {
+      for (const [url, until] of Object.entries(poolCooldowns ?? {})) {
+        aggregate[url] = Math.max(aggregate[url] ?? 0, until);
+      }
+      return aggregate;
+    }, {});
+
     return {
-      cooldowns: Object.fromEntries(state.cooldowns.entries()),
+      cooldowns,
+      cooldownsByPool,
       metricsByUrl: Object.fromEntries(state.metricsByUrl.entries()),
+      currentWeightByPool: Object.fromEntries(
+        Object.entries(state.currentWeightByPool).map(([pool, weights]) => [
+          pool,
+          Object.fromEntries((weights ?? new Map<string, number>()).entries()),
+        ]),
+      ) as Partial<Record<ApiV2UpstreamPool, Record<string, number>>>,
       nextCursorByPool: { ...state.nextCursorByPool },
     };
   },

@@ -45,7 +45,8 @@ describe("api-v2-upstream", () => {
   it("prefers pool-specific urls and falls back to the default pool", async () => {
     vi.doMock("@/env", () => ({
       env: {
-        API_V2_URLS: "https://api-default-a.example.com,https://api-default-b.example.com",
+        API_V2_URLS:
+          "https://api-default-a.example.com,https://api-default-b.example.com",
         API_V2_READ_URLS: "https://api-read.example.com",
         API_V2_WRITE_URLS: "https://api-write.example.com",
         API_V2_STREAM_URLS: "https://api-stream.example.com",
@@ -157,14 +158,12 @@ describe("api-v2-upstream", () => {
     const upstream = await loadModule();
     upstream.apiV2UpstreamInternals.clearState();
 
-    const fetchMock = vi
-      .spyOn(global, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ ok: true }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-      );
+    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
 
     await upstream.fetchApiV2WithFailover({
       pathname: "/auth/me",
@@ -202,8 +201,54 @@ describe("api-v2-upstream", () => {
     ]).toEqual([
       "https://api-primary.example.com",
       "https://api-primary.example.com",
-      "https://api-primary.example.com",
       "https://api-secondary.example.com",
+      "https://api-primary.example.com",
     ]);
+  });
+
+  it("keeps cooldowns scoped to the pool that failed", async () => {
+    vi.doMock("@/env", () => ({
+      env: {
+        API_V2_READ_URLS:
+          "https://api-primary.example.com,https://api-secondary.example.com",
+        API_V2_STREAM_URLS:
+          "https://api-primary.example.com,https://api-secondary.example.com",
+        API_V2_URL: undefined,
+      },
+    }));
+
+    const upstream = await loadModule();
+    upstream.apiV2UpstreamInternals.clearState();
+
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(
+        new Response("bad gateway", {
+          status: 503,
+          headers: { "content-type": "text/plain" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    const streamResult = await upstream.fetchApiV2WithFailover({
+      pathname: "/music/stream",
+      pool: "stream",
+      timeoutMs: 1000,
+    });
+
+    expect(streamResult.baseUrl).toBe("https://api-secondary.example.com");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    expect(upstream.getPreferredApiV2BaseUrl("stream")).toBe(
+      "https://api-secondary.example.com",
+    );
+    expect(upstream.getPreferredApiV2BaseUrl("read")).toBe(
+      "https://api-primary.example.com",
+    );
   });
 });
