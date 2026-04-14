@@ -2,6 +2,8 @@
 
 "use client";
 
+import { ClusterDiagnosticsPanel } from "@/app/admin/ClusterDiagnosticsPanel";
+import { type ApiClusterDiagnostics } from "@/app/admin/clusterDiagnostics";
 import { useToast } from "@/contexts/ToastContext";
 import { ensureAccessToken } from "@/services/spotifyAuthClient";
 import { api } from "@starchild/api-client/trpc/react";
@@ -48,45 +50,9 @@ type ApiDiagnosticResult = {
   error?: string;
 };
 
-type ApiUpstreamPool = "default" | "read" | "write" | "stream";
-
-type ApiUpstreamProbeResult = {
-  key: string;
-  label: string;
-  pathname: string;
-  status: number | null;
-  ok: boolean;
-  state: "healthy" | "degraded" | "down";
-  payloadPreview: string;
-  error?: string;
-};
-
-type ApiUpstreamDiagnosticsEntry = {
-  url: string;
-  pools: ApiUpstreamPool[];
-  state: "healthy" | "degraded" | "down";
-  fetchedAt: string;
-  routing: {
-    poolWeights: Partial<Record<ApiUpstreamPool, number>>;
-    cooldownUntil: string | null;
-    cooldownRemainingMs: number;
-    selectionCount: number;
-    selectionCountByPool: Partial<Record<ApiUpstreamPool, number>>;
-    successCount: number;
-    failureCount: number;
-    lastSelectedAt: string | null;
-    lastSuccessAt: string | null;
-    lastFailureAt: string | null;
-    lastFailureReason: string | null;
-  };
-  probes: ApiUpstreamProbeResult[];
-};
-
 type ApiUpstreamDiagnosticsResponse = {
   ok: boolean;
-  fetchedAt: string;
-  count: number;
-  items: ApiUpstreamDiagnosticsEntry[];
+  diagnostics?: ApiClusterDiagnostics;
   error?: string;
 };
 
@@ -230,46 +196,6 @@ const API_DIAGNOSTIC_AUTH_KEYS = new Set(["cache", "authMe"]);
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null;
   return value as Record<string, unknown>;
-}
-
-function formatRelativeTimestamp(value: string | null): string {
-  if (!value) return "Never";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-
-  const diffMs = Date.now() - parsed.getTime();
-  const absDiffMs = Math.abs(diffMs);
-  const diffSeconds = Math.round(absDiffMs / 1000);
-
-  if (diffSeconds < 5) return "Just now";
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-
-  const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.round(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
-function formatCooldownDuration(value: number): string {
-  if (value <= 0) return "0s";
-
-  const totalSeconds = Math.ceil(value / 1000);
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (minutes < 60) {
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
 function readFirstString(
@@ -705,27 +631,6 @@ function getResultState(
   return "healthy";
 }
 
-function getApiUpstreamHostLabel(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
-}
-
-function getApiUpstreamPoolLabel(pool: ApiUpstreamPool): string {
-  switch (pool) {
-    case "default":
-      return "Generic";
-    case "read":
-      return "Read";
-    case "write":
-      return "Write";
-    case "stream":
-      return "Stream";
-  }
-}
-
 async function probeApiTarget(
   target: ApiDiagnosticTarget,
   accessToken: string | null,
@@ -825,9 +730,10 @@ export default function AdminPage() {
     ApiDiagnosticResult[]
   >([]);
   const [isDiagnosticsLoading, setIsDiagnosticsLoading] = useState(false);
-  const [apiUpstreamDiagnostics, setApiUpstreamDiagnostics] = useState<
-    ApiUpstreamDiagnosticsEntry[]
-  >([]);
+  const [apiUpstreamDiagnostics, setApiUpstreamDiagnostics] =
+    useState<ApiClusterDiagnostics | null>(null);
+  const [apiUpstreamDiagnosticsError, setApiUpstreamDiagnosticsError] =
+    useState<string | null>(null);
   const [isApiUpstreamDiagnosticsLoading, setIsApiUpstreamDiagnosticsLoading] =
     useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
@@ -1006,19 +912,39 @@ export default function AdminPage() {
   const refreshApiUpstreamDiagnostics = useCallback(async () => {
     setIsApiUpstreamDiagnosticsLoading(true);
     try {
+      let accessToken: string | null = null;
+      try {
+        accessToken = await ensureAccessToken();
+      } catch {
+        accessToken = null;
+      }
+
       const response = await fetch("/api/admin/api-upstreams", {
         cache: "no-store",
         credentials: "same-origin",
+        headers: accessToken
+          ? { authorization: `Bearer ${accessToken}` }
+          : undefined,
       });
       const payload = (await response.json()) as ApiUpstreamDiagnosticsResponse;
-      if (!response.ok || !payload.ok) {
-        throw new Error(
+      if (payload.diagnostics) {
+        setApiUpstreamDiagnostics(payload.diagnostics);
+      }
+      if (!response.ok) {
+        const message =
           payload.error ??
-            `API upstream diagnostics request failed (${response.status})`,
+          `API upstream diagnostics request failed (${response.status})`;
+        setApiUpstreamDiagnosticsError(message);
+        throw new Error(message);
+      }
+      if (!payload.ok) {
+        setApiUpstreamDiagnosticsError(
+          payload.error ?? "Detailed cluster diagnostics are partially unavailable.",
         );
+        return;
       }
 
-      setApiUpstreamDiagnostics(payload.items);
+      setApiUpstreamDiagnosticsError(null);
     } catch (error) {
       showToast(
         error instanceof Error
@@ -1697,199 +1623,12 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)]/90 via-[var(--color-surface-2)]/85 to-[rgba(88,198,177,0.12)] p-6 shadow-[var(--shadow-lg)]">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm tracking-[0.14em] text-[var(--color-subtext)] uppercase">
-              <Link2 className="h-4 w-4 text-[var(--color-accent)]" />
-              API Instances
-            </p>
-            <p className="mt-1 text-sm text-[var(--color-subtext)]">
-              Direct probes plus live resolver state for every configured upstream URL.
-            </p>
-          </div>
-          <button
-            onClick={() => void refreshApiUpstreamDiagnostics()}
-            disabled={isApiUpstreamDiagnosticsLoading}
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:opacity-50"
-          >
-            {isApiUpstreamDiagnosticsLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-4 w-4" />
-            )}
-            Refresh instances
-          </button>
-        </div>
-
-        {apiUpstreamDiagnostics.length === 0 && isApiUpstreamDiagnosticsLoading ? (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {[1, 2].map((item) => (
-              <div
-                key={item}
-                className="h-48 animate-pulse rounded-2xl bg-[var(--color-surface)]/70"
-              />
-            ))}
-          </div>
-        ) : apiUpstreamDiagnostics.length === 0 ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-subtext)]">
-            <CircleAlert className="h-4 w-4 text-[var(--color-warning)]" />
-            No API upstreams are configured yet.
-          </div>
-        ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {apiUpstreamDiagnostics.map((item) => (
-              <div
-                key={item.url}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4"
-              >
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-semibold text-[var(--color-text)]">
-                      {getApiUpstreamHostLabel(item.url)}
-                    </p>
-                    <p className="break-all font-mono text-[11px] text-[var(--color-muted)]">
-                      {item.url}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] uppercase ${
-                      item.state === "healthy"
-                        ? "bg-[rgba(88,198,177,0.15)] text-[var(--color-success)]"
-                        : item.state === "degraded"
-                          ? "bg-[rgba(242,199,97,0.15)] text-[var(--color-warning)]"
-                          : "bg-[rgba(242,139,130,0.15)] text-[var(--color-danger)]"
-                    }`}
-                  >
-                    {item.state === "healthy" ? (
-                      <CircleCheck className="h-3 w-3" />
-                    ) : (
-                      <CircleAlert className="h-3 w-3" />
-                    )}
-                    {item.state}
-                  </span>
-                </div>
-
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {item.pools.map((pool) => (
-                    <span
-                      key={`${item.url}-${pool}`}
-                      className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase"
-                    >
-                      {getApiUpstreamPoolLabel(pool)}
-                      {typeof item.routing.poolWeights[pool] === "number"
-                        ? ` · w${item.routing.poolWeights[pool]}`
-                        : ""}
-                    </span>
-                  ))}
-                  {item.routing.cooldownRemainingMs > 0 ? (
-                    <span className="rounded-full border border-[rgba(242,199,97,0.35)] bg-[rgba(242,199,97,0.12)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-warning)] uppercase">
-                      Cooling · {formatCooldownDuration(item.routing.cooldownRemainingMs)}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mb-3 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
-                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
-                      Resolver
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
-                      {item.routing.selectionCount} selections
-                    </p>
-                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
-                      Last picked {formatRelativeTimestamp(item.routing.lastSelectedAt)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
-                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
-                      Successes
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--color-success)]">
-                      {item.routing.successCount}
-                    </p>
-                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
-                      Last ok {formatRelativeTimestamp(item.routing.lastSuccessAt)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
-                    <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
-                      Failures
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--color-danger)]">
-                      {item.routing.failureCount}
-                    </p>
-                    <p className="mt-1 text-[11px] text-[var(--color-subtext)]">
-                      Last fail {formatRelativeTimestamp(item.routing.lastFailureAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-3 grid gap-3 md:grid-cols-2">
-                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
-                    <p className="mb-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
-                      Pool Picks
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {item.pools.map((pool) => (
-                        <span
-                          key={`${item.url}-${pool}-count`}
-                          className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] font-semibold text-[var(--color-text)]"
-                        >
-                          {getApiUpstreamPoolLabel(pool)}:{" "}
-                          {item.routing.selectionCountByPool[pool] ?? 0}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3">
-                    <p className="mb-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
-                      Failure Reason
-                    </p>
-                    <p className="break-words font-mono text-[11px] text-[var(--color-subtext)]">
-                      {item.routing.lastFailureReason ?? "None"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-3">
-                  {item.probes.map((probe) => (
-                    <div
-                      key={`${item.url}-${probe.key}`}
-                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/70 p-3"
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-[var(--color-text)]">
-                          {probe.label}
-                        </p>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] uppercase ${
-                            probe.state === "healthy"
-                              ? "bg-[rgba(88,198,177,0.15)] text-[var(--color-success)]"
-                              : probe.state === "degraded"
-                                ? "bg-[rgba(242,199,97,0.15)] text-[var(--color-warning)]"
-                                : "bg-[rgba(242,139,130,0.15)] text-[var(--color-danger)]"
-                          }`}
-                        >
-                          {probe.status ?? "ERR"}
-                        </span>
-                      </div>
-                      <p className="mb-2 font-mono text-[10px] text-[var(--color-muted)]">
-                        {probe.pathname}
-                      </p>
-                      <pre className="max-h-24 overflow-auto rounded-lg bg-[var(--color-surface)]/80 p-2 text-[10px] leading-relaxed text-[var(--color-subtext)]">
-                        {probe.error
-                          ? `${probe.error}\n${probe.payloadPreview}`
-                          : probe.payloadPreview}
-                      </pre>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ClusterDiagnosticsPanel
+        diagnostics={apiUpstreamDiagnostics}
+        error={apiUpstreamDiagnosticsError}
+        isLoading={isApiUpstreamDiagnosticsLoading}
+        onRefresh={refreshApiUpstreamDiagnostics}
+      />
 
       <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)]/90 via-[var(--color-surface-2)]/85 to-[rgba(244,178,102,0.12)] p-6 shadow-[var(--shadow-lg)]">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

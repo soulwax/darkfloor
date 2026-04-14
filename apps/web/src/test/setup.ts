@@ -4,6 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
 process.env.API_V2_URL = "http://localhost:3222";
+process.env.API_HUB_URL = "http://localhost:3222";
 process.env.SONGBIRD_API_URL = "http://localhost:3222";
 process.env.SONGBIRD_API_HEALTH_URI = "/api/health";
 process.env.NEXT_PUBLIC_V2_API_URL = "http://localhost:3222";
