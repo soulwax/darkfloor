@@ -1,7 +1,5 @@
 // File: apps/web/src/app/not-found.tsx
 
-import Link from "next/link";
-
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -12,12 +10,12 @@ export default function NotFound() {
         <p className="mb-6 text-lg text-[var(--color-subtext)]">
           Page not found
         </p>
-        <Link
+        <a
           href="/"
           className="rounded-lg bg-[var(--color-accent)] px-6 py-3 text-[var(--color-on-accent)] transition-colors hover:opacity-90"
         >
           Go Home
-        </Link>
+        </a>
       </div>
     </div>
   );
