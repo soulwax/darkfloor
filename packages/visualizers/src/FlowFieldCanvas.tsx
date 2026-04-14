@@ -184,6 +184,7 @@ const VALID_PATTERNS = new Set<string>([
   "gravitationalLensArray",
   "seismicPhaseMesh",
   "particleColliderBloom",
+  "logicLifeCircuit",
 ]);
 
 export function FlowFieldCanvas({

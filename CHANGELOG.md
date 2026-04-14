@@ -5,6 +5,16 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.20] - 2026-04-14
+
+### Added
+
+- **A quasi-random Conway-style logic visual now joins the FlowField family**: Added `logicLifeCircuit`, a Game of Life-inspired modular pattern that periodically seeds AND, OR, NOT, NAND, and XOR gate silhouettes with live-cell signal pulses so the automaton keeps discovering circuit-like forms instead of collapsing into generic noise.
+
+### Changed
+
+- **The scientific visualizer registry is fully synchronized again**: The newest modular science patterns now share the same import, pattern-list, fade-family, and validation surfaces as the rest of the renderer so manual selection, random cycling, and specific-mode playback all stay aligned.
+
 ## [1.15.19] - 2026-04-14
 
 ### Added

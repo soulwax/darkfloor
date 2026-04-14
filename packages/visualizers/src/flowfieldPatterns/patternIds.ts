@@ -164,4 +164,5 @@ export type Pattern =
   | "magneticFieldLines"
   | "gravitationalLensArray"
   | "seismicPhaseMesh"
-  | "particleColliderBloom";
+  | "particleColliderBloom"
+  | "logicLifeCircuit";

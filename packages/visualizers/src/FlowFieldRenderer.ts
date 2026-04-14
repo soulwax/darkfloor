@@ -38,6 +38,10 @@ import { renderIridescentShatterField } from "./flowfieldPatterns/renderIridesce
 import { renderChladniResonance } from "./flowfieldPatterns/renderChladniResonance";
 import { renderBioluminescentAbyss } from "./flowfieldPatterns/renderBioluminescentAbyss";
 import { renderMagneticFieldLines } from "./flowfieldPatterns/renderMagneticFieldLines";
+import { renderGravitationalLensArray } from "./flowfieldPatterns/renderGravitationalLensArray";
+import { renderSeismicPhaseMesh } from "./flowfieldPatterns/renderSeismicPhaseMesh";
+import { renderParticleColliderBloom } from "./flowfieldPatterns/renderParticleColliderBloom";
+import { renderLogicLifeCircuit } from "./flowfieldPatterns/renderLogicLifeCircuit";
 import type { FlowFieldPatternContext } from "./flowfieldPatterns/types";
 
 interface Particle {
@@ -290,6 +294,10 @@ export class FlowFieldRenderer {
     "chladniResonance",
     "bioluminescentAbyss",
     "magneticFieldLines",
+    "gravitationalLensArray",
+    "seismicPhaseMesh",
+    "particleColliderBloom",
+    "logicLifeCircuit",
   ];
 
   private currentPattern: Pattern = "kaleidoscope";
@@ -473,6 +481,10 @@ export class FlowFieldRenderer {
     "chladniResonance",
     "bioluminescentAbyss",
     "magneticFieldLines",
+    "gravitationalLensArray",
+    "seismicPhaseMesh",
+    "particleColliderBloom",
+    "logicLifeCircuit",
   ]);
   private static readonly MYSTICAL_HUES = [
     270, 280, 290, 240, 250, 0, 330, 340, 180, 200, 310, 350,
@@ -3280,6 +3292,7 @@ export class FlowFieldRenderer {
       case "synthwaveShoreline":
       case "chladniResonance":
       case "seismicPhaseMesh":
+      case "logicLifeCircuit":
         return 2;
       case "waves":
       case "dna":
@@ -4421,6 +4434,14 @@ export class FlowFieldRenderer {
         break;
       case "particleColliderBloom":
         renderParticleColliderBloom(
+          this.getPatternContext(),
+          audioIntensity,
+          bassIntensity,
+          trebleIntensity,
+        );
+        break;
+      case "logicLifeCircuit":
+        renderLogicLifeCircuit(
           this.getPatternContext(),
           audioIntensity,
           bassIntensity,
