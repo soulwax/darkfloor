@@ -9,11 +9,26 @@ type MessagesModule = {
 };
 
 export default getRequestConfig(async ({ requestLocale }) => {
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
+  // cookies() / headers() require a live request context (workStore).
+  // During static prerender of internal Next.js pages (e.g. /_global-error)
+  // that context does not exist, so we fall back to undefined gracefully.
+  let cookieLocale: (typeof routing.locales)[number] | undefined = undefined;
+  let acceptedLocale: (typeof routing.locales)[number] | undefined = undefined;
 
-  const cookieLocale = normalizeLocale(cookieStore.get("NEXT_LOCALE")?.value);
-  const acceptedLocale = normalizeLocale(requestHeaders.get("accept-language"));
+  try {
+    const cookieStore = await cookies();
+    cookieLocale = normalizeLocale(cookieStore.get("NEXT_LOCALE")?.value);
+  } catch {
+    // no request context — static prerender path
+  }
+
+  try {
+    const requestHeaders = await headers();
+    acceptedLocale = normalizeLocale(requestHeaders.get("accept-language"));
+  } catch {
+    // no request context — static prerender path
+  }
+
   const requestedLocale = normalizeLocale(await requestLocale);
 
   const locale =
