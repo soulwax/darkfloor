@@ -8,7 +8,7 @@ The Darkfloor API V2 backend is consumed through `API_V2_URL`. The `api/` direct
 
 ## Current Snapshot
 
-- Root package: `darkfloor-player@1.15.20`
+- Root package: `darkfloor-player@1.15.21`
 - Default local frontend URL: `http://127.0.0.1:3222`
 - Default backend submodule URL when run locally: `http://127.0.0.1:3333`
 - Production frontend runtime: PM2 on Ubuntu (`bluesix-frontend-prod`)
