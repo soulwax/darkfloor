@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.22] - 2026-04-14
+
+### Changed
+
+- **The admin system panel now reads cluster health from the centralized Songbird API hub**: Admin diagnostics no longer inspect a rotating list of individual frontend-known API nodes and instead fetch the protected cluster diagnostics routes from the single configurable hub origin, defaulting to `https://ld.songbirdapi.com`.
+- **Cluster diagnostics are richer and more resilient in the admin UI**: The system panel now shows total, healthy, and in-sync counts plus per-node status, version, timing, environment, sync state, and optional public config details, while still rendering partial summary data when the detailed protected endpoint is unavailable.
+
 ## [1.15.21] - 2026-04-14
 
 ### Fixed
