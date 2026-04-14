@@ -33,12 +33,6 @@ export function FlowFieldBackground({
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const connectedAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isFirefox] = useState(
-    () =>
-      typeof navigator !== "undefined" &&
-      /firefox/i.test(navigator.userAgent ?? ""),
-  );
-
   // Sync playing state with audio element - intentional event subscription
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from audio element events */
   useEffect(() => {
@@ -187,11 +181,9 @@ export function FlowFieldBackground({
         pointerEvents: allowPointerInteraction ? "auto" : "none",
         contain: "paint",
         backfaceVisibility: "hidden",
-        opacity: isFirefox ? 0.78 : 0.68,
-        filter: isFirefox
-          ? "contrast(1.18) saturate(1.38)"
-          : "blur(10px) contrast(1.52) saturate(1.92)",
-        mixBlendMode: isFirefox ? "normal" : "screen",
+        opacity: 0.78,
+        filter: "contrast(1.18) saturate(1.38)",
+        mixBlendMode: "normal",
       }}
     />
   );

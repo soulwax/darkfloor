@@ -122,7 +122,7 @@ export class FlowFieldRenderer {
   private firefoxLastContextResetAt = 0;
 
   private static readonly FIREFOX_LOW_FPS_FRAME_TIME_MS = 200;
-  private static readonly FIREFOX_LOW_FPS_REQUIRED_FRAMES = 8;
+  private static readonly FIREFOX_LOW_FPS_REQUIRED_FRAMES = 4;
   private static readonly FIREFOX_LOW_FPS_RESET_COOLDOWN_MS = 10_000;
 
   private patternTimer = 0;
