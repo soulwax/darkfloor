@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Starchild",
-  "version": "1.15.20",
+  "version": "1.15.21",
   "identifier": "org.darkfloor.starchild",
   "build": {
     "beforeBuildCommand": "pnpm run tauri:prepare",

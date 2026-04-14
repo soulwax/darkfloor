@@ -23,6 +23,11 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+// Packaged Tauri auth must stay on the exact loopback origin registered with
+// the OAuth providers.
+const TAURI_LOOPBACK_HOST: &str = "127.0.0.1";
+const TAURI_RUNTIME_PORT: u16 = 3222;
+
 const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
 (() => {
   const internals = window.__TAURI_INTERNALS__;
@@ -134,6 +139,14 @@ fn tauri_window_state(window: tauri::WebviewWindow) -> Result<TauriWindowState, 
     Ok(TauriWindowState { is_maximized })
 }
 
+fn resolve_loopback_host() -> &'static str {
+    TAURI_LOOPBACK_HOST
+}
+
+fn build_runtime_origin(host: &str, port: u16) -> String {
+    format!("http://{host}:{port}")
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .manage(ServerState::default())
@@ -148,7 +161,8 @@ fn main() {
             let handle = app.handle();
 
             if cfg!(debug_assertions) {
-                let window_url = "http://127.0.0.1:3222".parse()?;
+                let window_url =
+                    build_runtime_origin(resolve_loopback_host(), TAURI_RUNTIME_PORT).parse()?;
                 return Ok(build_main_window(&handle, window_url)?);
             }
 
@@ -241,11 +255,13 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
                 .source
                 .as_deref()
                 .unwrap_or("no external source"),
-        ),
+            ),
     );
 
-    let server_port = reserve_loopback_port()?;
-    let runtime_origin = format!("http://127.0.0.1:{server_port}");
+    let loopback_host = resolve_loopback_host();
+    let server_port = TAURI_RUNTIME_PORT;
+    let runtime_origin = build_runtime_origin(loopback_host, server_port);
+    log_startup(app, format!("Loopback host: {loopback_host}"));
     let mut command = Command::new(&node_path);
     command.arg(&server_path);
     if let Some(server_dir) = server_path.parent() {
@@ -265,7 +281,7 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
         command.env("STARCHILD_RUNTIME_ENV_SOURCE", source);
     }
     command.env("PORT", server_port.to_string());
-    command.env("HOSTNAME", "127.0.0.1");
+    command.env("HOSTNAME", loopback_host);
     command.env("AUTH_URL", &runtime_origin);
     command.env("NEXTAUTH_URL", &runtime_origin);
     command.env("NEXTAUTH_URL_INTERNAL", &runtime_origin);
@@ -292,7 +308,12 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
         app,
         format!("Spawned packaged Node server on port {server_port}"),
     );
-    wait_for_server_ready(&mut child, server_port, Duration::from_secs(30))?;
+    wait_for_server_ready(
+        &mut child,
+        loopback_host,
+        server_port,
+        Duration::from_secs(30),
+    )?;
     log_startup(
         app,
         format!("Packaged Node server became ready on {runtime_origin}"),
@@ -316,6 +337,7 @@ fn stop_packaged_server(app: &AppHandle) {
 
 fn wait_for_server_ready(
     child: &mut Child,
+    host: &str,
     port: u16,
     timeout: Duration,
 ) -> Result<(), Box<dyn Error>> {
@@ -329,7 +351,7 @@ fn wait_for_server_ready(
             .into());
         }
 
-        if TcpStream::connect(("127.0.0.1", port)).is_ok() {
+        if TcpStream::connect((host, port)).is_ok() {
             return Ok(());
         }
 
@@ -340,9 +362,24 @@ fn wait_for_server_ready(
     Err(io::Error::other("Timed out waiting for the packaged Node server to become ready").into())
 }
 
-fn reserve_loopback_port() -> Result<u16, Box<dyn Error>> {
-    let listener = TcpListener::bind(("127.0.0.1", 0))?;
-    Ok(listener.local_addr()?.port())
+#[cfg(test)]
+mod tests {
+    use super::{
+        TAURI_RUNTIME_PORT, build_runtime_origin, resolve_loopback_host,
+    };
+
+    #[test]
+    fn packaged_tauri_oauth_uses_registered_loopback_host() {
+        assert_eq!(resolve_loopback_host(), "127.0.0.1");
+    }
+
+    #[test]
+    fn packaged_tauri_runtime_origin_matches_registered_redirect_origin() {
+        assert_eq!(
+            build_runtime_origin(resolve_loopback_host(), TAURI_RUNTIME_PORT),
+            "http://127.0.0.1:3222"
+        );
+    }
 }
 
 fn resolve_standalone_server(standalone_dir: &Path) -> Option<PathBuf> {

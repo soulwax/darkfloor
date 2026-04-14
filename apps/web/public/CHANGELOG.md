@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.21] - 2026-04-14
+
+### Fixed
+
+- **Packaged Tauri desktop auth now stays on the provider-registered callback origin**: The experimental Tauri shell now boots its internal runtime on `http://127.0.0.1:3222` instead of a random loopback callback origin, so Discord/GitHub sign-in no longer advertises the wrong redirect URL in production bundles.
+
 ## [1.15.20] - 2026-04-14
 
 ### Added
