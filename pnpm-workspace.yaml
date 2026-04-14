@@ -1,21 +1,9 @@
-# File: pnpm-workspace.yaml
-
-packages:
-  - 'apps/*'
-  - 'packages/*'
-
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@parcel/watcher'
-  - '@prisma/engines'
-  - '@scarf/scarf'
-  - '@soulwax/d-fi'
-  - '@swc/core'
-  - bcrypt
-  - canvas
-  - electron
-  - electron-winstaller
-  - esbuild
-  - prisma
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  '@parcel/watcher': true
+  '@soulwax/d-fi': true
+  '@swc/core': true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
