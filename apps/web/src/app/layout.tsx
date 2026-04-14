@@ -8,6 +8,7 @@ import { Suspense, type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
+import { routing } from "@/i18n/routing";
 import { DynamicTitle } from "@/components/DynamicTitle";
 import { AuthGate } from "@/components/AuthGate";
 import { DesktopShell } from "@/components/DesktopShell";
@@ -119,8 +120,19 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const locale = await getLocale();
-  const messages = await getMessages();
+  // getLocale/getMessages access next/headers internally. During static
+  // prerendering of special Next.js routes (e.g. /_global-error), Next.js
+  // 16.x does not initialize workStore, so headers() throws an InvariantError.
+  // We fall back to the default locale + empty messages; those routes never
+  // render user-facing content that needs translations anyway.
+  let locale: string = routing.defaultLocale;
+  let messages: Awaited<ReturnType<typeof getMessages>> = {};
+  try {
+    locale = await getLocale();
+    messages = await getMessages();
+  } catch {
+    // workStore not initialized — static prerender of a special Next.js route
+  }
 
   return (
     <html lang={locale} className={appSans.variable} suppressHydrationWarning>
