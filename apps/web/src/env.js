@@ -125,6 +125,7 @@ export const env = createEnv({
     API_V2_STREAM_URLS: process.env.API_V2_STREAM_URLS,
     NEXT_PUBLIC_AUTH_API_BASE:
       process.env.NEXT_PUBLIC_AUTH_API_BASE ??
+      process.env.NEXTAUTH_URL ??
       process.env.API_V2_URL ??
       process.env.SONGBIRD_API_URL,
     NEXT_PUBLIC_AUTH_SPOTIFY_ENABLED:

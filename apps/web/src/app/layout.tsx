@@ -42,6 +42,8 @@ import { getBaseUrl } from "@/utils/getBaseUrl";
 import { RegisterServiceWorker } from "./register-sw";
 import emilyLogo from "../../public/emily-the-strange.png";
 
+export const dynamic = "force-dynamic";
+
 const appSans = localFont({
   src: [
     {
@@ -150,9 +152,6 @@ export default async function RootLayout({
           <ErrorBoundary>
             <SessionProvider>
               <TRPCReactProvider>
-                <Suspense fallback={null}>
-                  <TauriTitlebar />
-                </Suspense>
                 <ThemeProvider>
                   <AuthModalProvider>
                     <ElectronChromeSync />
@@ -167,6 +166,12 @@ export default async function RootLayout({
                                 <AuthGate>
                                   {}
                                   <UIWrapper>
+                                    {}
+                                    <div suppressHydrationWarning>
+                                      <Suspense fallback={null}>
+                                        <TauriTitlebar />
+                                      </Suspense>
+                                    </div>
                                     {}
                                     <div suppressHydrationWarning>
                                       <Suspense fallback={null}>

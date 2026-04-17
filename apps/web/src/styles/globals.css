@@ -103,7 +103,7 @@
   --desktop-window-edge-offset: 0px;
   --desktop-window-frame-gap: 0px;
   --desktop-window-radius: 1.1rem;
-  --tauri-titlebar-height: 3rem;
+  --tauri-titlebar-height: 3.5rem;
   --tauri-frame-border: rgba(244, 178, 102, 0.14);
   --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
   --tauri-frame-sheen: linear-gradient(
@@ -2734,63 +2734,151 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .tauri-titlebar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   user-select: none;
-  min-height: calc(var(--tauri-titlebar-height) - 1rem);
+  min-height: calc(var(--tauri-titlebar-height) - 0.75rem);
 }
 
-.tauri-titlebar-search {
+.tauri-titlebar-inner-macos {
+  gap: 0.9rem;
+}
+
+.tauri-titlebar-drag-zone {
   min-width: 0;
 }
 
-.tauri-tabbar {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.035);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+.tauri-titlebar-brand {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
-.tauri-tab {
-  position: relative;
-  border: 1px solid transparent;
+.tauri-titlebar-brand-image {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
 }
 
-.tauri-tab::after {
-  content: "";
-  position: absolute;
-  inset: auto 0.7rem 0.22rem;
-  height: 2px;
+.tauri-titlebar-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tauri-titlebar-kicker {
+  min-width: 0;
+  color: var(--color-subtext);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tauri-titlebar-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.24rem 0.6rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f4b266, #58c6b1);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.tauri-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.tauri-tab.is-active {
-  border-color: rgba(244, 178, 102, 0.16);
+  border: 1px solid rgba(244, 178, 102, 0.16);
   background: rgba(244, 178, 102, 0.12);
-}
-
-.tauri-tab.is-active::after {
-  opacity: 1;
-}
-
-.tauri-search-shell {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(6, 11, 18, 0.56);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.tauri-search-submit {
   color: var(--color-text);
-  background: rgba(244, 178, 102, 0.12);
-  border: 1px solid rgba(244, 178, 102, 0.18);
+  line-height: 1;
 }
 
-.tauri-search-submit:hover {
-  background: rgba(244, 178, 102, 0.18);
+.tauri-titlebar-signal {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
+}
+
+.tauri-titlebar-signal.is-playing {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(244, 178, 102, 0.11);
+  animation: tauri-titlebar-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tauri-titlebar-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(244, 178, 102, 0.11);
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(244, 178, 102, 0.18);
+  }
+}
+
+.tauri-titlebar-trackline {
+  min-width: 0;
+}
+
+.tauri-titlebar-track {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.tauri-titlebar-track-meta {
+  min-width: 0;
+  color: var(--color-subtext);
+  font-size: 0.82rem;
+}
+
+.tauri-titlebar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.tauri-titlebar-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.2rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-subtext);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tauri-titlebar-version {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tauri-play-toggle {
+  flex-shrink: 0;
+  border: 1px solid rgba(244, 178, 102, 0.18);
+  background: rgba(244, 178, 102, 0.14);
+  color: var(--color-text);
+  transition:
+    transform 100ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.tauri-play-toggle:hover {
+  background: rgba(244, 178, 102, 0.22);
+  border-color: rgba(244, 178, 102, 0.26);
+}
+
+.tauri-play-toggle:active {
+  transform: scale(0.96);
 }
 
 .tauri-window-controls {
@@ -2822,19 +2910,81 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
     border-color 120ms ease;
 }
 
+.tauri-window-controls.is-macos .tauri-window-controls-shell {
+  gap: 0.5rem;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control {
+  width: 13px;
+  height: 13px;
+  border: none;
+  box-shadow: none;
+  color: rgba(26, 28, 32, 0.72);
+}
+
+.tauri-window-controls.is-macos .tauri-window-control svg {
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.tauri-window-controls.is-macos:hover .tauri-window-control svg,
+.tauri-window-controls.is-macos .tauri-window-control:focus-visible svg {
+  opacity: 1;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-minimize {
+  background: #f4be4f;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-maximize {
+  background: #61c554;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-close {
+  background: #ec6a5f;
+}
+
 .tauri-window-control:hover {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
+.tauri-window-controls.is-macos .tauri-window-control:hover {
+  border-color: transparent;
+  color: rgba(26, 28, 32, 0.72);
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-minimize:hover {
+  background: #f4be4f;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-maximize:hover {
+  background: #61c554;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-close:hover {
+  background: #ec6a5f;
+}
+
 .tauri-window-control:active {
   transform: scale(0.96);
+}
+
+.tauri-window-controls.is-macos .tauri-window-control:active {
+  transform: none;
 }
 
 .tauri-window-control-close:hover {
   background: #dc5c64;
   border-color: #dc5c64;
+}
+
+.tauri-window-controls.is-macos .tauri-window-control-close:hover {
+  background: #ec6a5f;
+  border-color: transparent;
 }
 
 .desktop-main {
