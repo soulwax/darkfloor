@@ -135,7 +135,7 @@ export class FlowFieldRenderer {
   private allPatterns: Pattern[] = [
     "rays",
     "galaxy",
-    "fractal",
+    // "fractal", // Disabled for now.
     "tunnel",
     "lightning",
     "bubbles",
@@ -682,6 +682,22 @@ export class FlowFieldRenderer {
     this.centerY = this.height >> 1;
     if (typeof navigator !== "undefined") {
       this.isFirefox = /firefox/i.test(navigator.userAgent ?? "");
+    }
+
+    if (this.isFirefox) {
+      this.allPatterns = this.allPatterns.filter(
+        (pattern) => pattern !== "kaleidoscope",
+      );
+    }
+
+    if (!this.allPatterns.includes(this.currentPattern)) {
+      this.currentPattern = this.allPatterns[0] ?? "rays";
+    }
+
+    if (!this.allPatterns.includes(this.nextPattern)) {
+      this.nextPattern =
+        this.allPatterns[Math.floor(Math.random() * this.allPatterns.length)] ??
+        this.currentPattern;
     }
 
     this.shufflePatterns();
@@ -3662,9 +3678,9 @@ export class FlowFieldRenderer {
     trebleIntensity: number,
   ): void {
     switch (pattern) {
-      case "fractal":
-        this.renderFractal(audioIntensity, bassIntensity, midIntensity);
-        break;
+      // case "fractal":
+      //   this.renderFractal(audioIntensity, bassIntensity, midIntensity);
+      //   break;
       case "rays":
         renderRays(
           this.getPatternContext({

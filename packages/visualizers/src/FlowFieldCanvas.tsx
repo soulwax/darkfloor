@@ -21,7 +21,7 @@ interface FlowFieldCanvasProps {
 
 const VALID_PATTERNS = new Set<string>([
   "kaleidoscope",
-  "fractal",
+  // "fractal", // Disabled for now.
   "rays",
   "tunnel",
   "bubbles",
@@ -187,6 +187,14 @@ const VALID_PATTERNS = new Set<string>([
   "logicLifeCircuit",
 ]);
 
+const isFirefoxPatternBlocked = (pattern: string): boolean =>
+  pattern === "kaleidoscope" &&
+  typeof navigator !== "undefined" &&
+  /firefox/i.test(navigator.userAgent ?? "");
+
+const isSupportedPattern = (pattern: string): boolean =>
+  VALID_PATTERNS.has(pattern) && !isFirefoxPatternBlocked(pattern);
+
 export function FlowFieldCanvas({
   audioElement,
   isPlaying,
@@ -265,7 +273,7 @@ export function FlowFieldCanvas({
           visualizerMode === "specific" &&
           visualizerType &&
           visualizerType !== "flowfield" &&
-          VALID_PATTERNS.has(visualizerType)
+          isSupportedPattern(visualizerType)
         ) {
           rendererRef.current.setPattern(visualizerType as Pattern, {
             immediate: true,
@@ -293,7 +301,7 @@ export function FlowFieldCanvas({
       visualizerMode === "specific" &&
       visualizerType &&
       visualizerType !== "flowfield" &&
-      VALID_PATTERNS.has(visualizerType) &&
+      isSupportedPattern(visualizerType) &&
       rendererRef.current
     ) {
       rendererRef.current.setPattern(visualizerType as Pattern);
