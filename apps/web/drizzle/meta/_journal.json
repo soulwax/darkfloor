@@ -197,6 +197,13 @@
       "when": 1775537501639,
       "tag": "0027_certain_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1776340831940,
+      "tag": "0028_restore_deezer_id_columns",
+      "breakpoints": true
     }
   ]
 }

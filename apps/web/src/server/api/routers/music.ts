@@ -115,17 +115,15 @@ type SpiceUpResponse = {
 };
 
 function getDeezerId(track: z.infer<typeof trackSchema>): number | undefined {
-  if (track.deezer_id !== undefined) {
-    return typeof track.deezer_id === "string"
-      ? parseInt(track.deezer_id, 10) || undefined
-      : track.deezer_id;
-  }
-  return undefined;
+  const id = track.deezer_id ?? track.id;
+
+  return typeof id === "string" ? parseInt(id, 10) || undefined : id;
 }
 
 type PostgresConstraintError = {
   code?: string;
   constraint?: string;
+  cause?: unknown;
 };
 
 type SpotifyFeaturePreferenceDraft = {
@@ -162,13 +160,18 @@ function isUniqueConstraintError(
   error: unknown,
   constraint?: string,
 ): error is PostgresConstraintError {
-  if (!error || typeof error !== "object") return false;
+  let current: unknown = error;
 
-  const candidate = error as PostgresConstraintError;
-  if (candidate.code !== "23505") return false;
-  if (!constraint) return true;
+  while (current && typeof current === "object") {
+    const candidate = current as PostgresConstraintError;
+    if (candidate.code === "23505") {
+      return constraint ? candidate.constraint === constraint : true;
+    }
 
-  return candidate.constraint === constraint;
+    current = candidate.cause;
+  }
+
+  return false;
 }
 
 function sanitizeUserPreferencesForUi<
@@ -194,6 +197,16 @@ async function syncListeningHistoryIdSequence(
     SELECT setval(
       pg_get_serial_sequence('"hexmusic-stream_listening_history"', 'id'),
       COALESCE((SELECT MAX("id") FROM "hexmusic-stream_listening_history"), 0) + 1,
+      false
+    )
+  `);
+}
+
+async function syncFavoriteIdSequence(database: typeof db): Promise<void> {
+  await database.execute(sql`
+    SELECT setval(
+      pg_get_serial_sequence('"hexmusic-stream_favorite"', 'id'),
+      COALESCE((SELECT MAX("id") FROM "hexmusic-stream_favorite"), 0) + 1,
       false
     )
   `);
@@ -1043,8 +1056,8 @@ async function syncAutoFavorites(database: typeof db, userId: string) {
     (t: { trackId: number }) => !currentFavoriteTrackIds.has(t.trackId),
   );
   if (toAdd.length > 0) {
-    await database.insert(favorites).values(
-      toAdd.map((t: { trackId: number; trackData: unknown }) => {
+    const favoriteEntries = toAdd.map(
+      (t: { trackId: number; trackData: unknown }) => {
         const track = t.trackData as Track;
         return {
           userId,
@@ -1052,8 +1065,22 @@ async function syncAutoFavorites(database: typeof db, userId: string) {
           deezerId: getDeezerId(track as z.infer<typeof trackSchema>),
           trackData: track,
         };
-      }),
+      },
     );
+
+    const insertFavorites = async () =>
+      database.insert(favorites).values(favoriteEntries);
+
+    try {
+      await insertFavorites();
+    } catch (error) {
+      if (isUniqueConstraintError(error, "hexmusic-stream_favorite_pkey")) {
+        await syncFavoriteIdSequence(database);
+        await insertFavorites();
+      } else {
+        throw error;
+      }
+    }
   }
 }
 
@@ -1072,12 +1099,26 @@ export const musicRouter = createTRPCRouter({
         return { success: true, alreadyExists: true };
       }
 
-      await ctx.db.insert(favorites).values({
+      const favoriteEntry = {
         userId: ctx.session.user.id,
         trackId: input.track.id,
         deezerId: getDeezerId(input.track),
         trackData: input.track,
-      });
+      };
+
+      const insertFavorite = async () =>
+        ctx.db.insert(favorites).values(favoriteEntry);
+
+      try {
+        await insertFavorite();
+      } catch (error) {
+        if (isUniqueConstraintError(error, "hexmusic-stream_favorite_pkey")) {
+          await syncFavoriteIdSequence(ctx.db);
+          await insertFavorite();
+        } else {
+          throw error;
+        }
+      }
 
       return { success: true, alreadyExists: false };
     }),

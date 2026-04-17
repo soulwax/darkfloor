@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.23] - 2026-04-16
+
+### Fixed
+
+- **Favorite, playlist, and listening persistence now restores dedicated Deezer columns and favorite IDs during migrations**: Added an idempotent Drizzle repair migration for the missing dedicated Deezer ID columns/indexes and the favorite identity sequence, covering databases affected by schema restore or migration-journal drift.
+- **Native Deezer track saves now populate `deezerId` from the track ID**: Favorite, playlist, history, analytics, playback, and recommendation writes now preserve the Deezer identifier for tracks that arrive with `id` but no separate `deezer_id`.
+
 ## [1.15.22] - 2026-04-14
 
 ### Changed
