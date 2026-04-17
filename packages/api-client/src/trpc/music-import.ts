@@ -88,6 +88,30 @@ const importSpotifyPlaylistResponseSchema = z.object({
   }),
 });
 
+const deezerTrackSchema = z.object({ id: z.union([z.number(), z.string()]) })
+  .passthrough();
+
+const importM3u8PlaylistInputSchema = z.object({
+  content: z.string().min(1),
+  sourcePlaylistId: z.string().trim().min(1).optional(),
+  sourcePlaylistName: z.string().trim().min(1).optional(),
+  playlistName: z.string().trim().min(1).optional(),
+  descriptionOverride: z.string().trim().min(1).optional(),
+  createPlaylist: z.boolean().optional(),
+  isPublic: z.boolean().optional(),
+});
+
+const importM3u8PlaylistResponseSchema = importSpotifyPlaylistResponseSchema.extend({
+  matchedTracks: z.array(
+    z.object({
+      index: z.number().int().nonnegative(),
+      spotifyTrackId: z.null(),
+      deezerTrackId: z.string().trim().min(1),
+      deezerTrack: deezerTrackSchema,
+    }),
+  ),
+});
+
 export type ImportSpotifyPlaylistInput = z.input<
   typeof importSpotifyPlaylistInputSchema
 >;
@@ -98,6 +122,14 @@ export type ImportSpotifyPlaylistResponse = z.infer<
 
 export type ImportSpotifyPlaylistUnmatchedReason = z.infer<
   typeof spotifyImportUnmatchedReasonSchema
+>;
+
+export type ImportM3u8PlaylistInput = z.input<
+  typeof importM3u8PlaylistInputSchema
+>;
+
+export type ImportM3u8PlaylistResponse = z.infer<
+  typeof importM3u8PlaylistResponseSchema
 >;
 
 export class ImportSpotifyPlaylistError extends Error {
@@ -112,11 +144,34 @@ export class ImportSpotifyPlaylistError extends Error {
   }
 }
 
+export class ImportM3u8PlaylistError extends Error {
+  readonly status: number;
+  readonly payload: unknown;
+
+  constructor(status: number, message: string, payload: unknown) {
+    super(message);
+    this.name = "ImportM3u8PlaylistError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 type ImportSpotifyPlaylistMutationOptions = Omit<
   UseMutationOptions<
     ImportSpotifyPlaylistResponse,
     ImportSpotifyPlaylistError,
     ImportSpotifyPlaylistInput
+  >,
+  "mutationFn"
+> & {
+  fetchImpl?: typeof fetch;
+};
+
+type ImportM3u8PlaylistMutationOptions = Omit<
+  UseMutationOptions<
+    ImportM3u8PlaylistResponse,
+    ImportM3u8PlaylistError,
+    ImportM3u8PlaylistInput
   >,
   "mutationFn"
 > & {
@@ -210,6 +265,22 @@ function normalizeImportSpotifyPlaylistInput(
   };
 }
 
+function normalizeImportM3u8PlaylistInput(
+  input: ImportM3u8PlaylistInput,
+): ImportM3u8PlaylistInput {
+  const parsedInput = importM3u8PlaylistInputSchema.parse(input);
+
+  return {
+    content: parsedInput.content,
+    sourcePlaylistId: parsedInput.sourcePlaylistId?.trim() ?? undefined,
+    sourcePlaylistName: parsedInput.sourcePlaylistName?.trim() ?? undefined,
+    playlistName: parsedInput.playlistName?.trim() ?? undefined,
+    descriptionOverride: parsedInput.descriptionOverride?.trim() ?? undefined,
+    createPlaylist: parsedInput.createPlaylist,
+    isPublic: parsedInput.isPublic,
+  };
+}
+
 export async function importSpotifyPlaylist(
   input: ImportSpotifyPlaylistInput,
   options: ImportSpotifyPlaylistRequestOptions = {},
@@ -249,6 +320,45 @@ export async function importSpotifyPlaylist(
   return parsedPayload.data;
 }
 
+export async function importM3u8Playlist(
+  input: ImportM3u8PlaylistInput,
+  options: ImportSpotifyPlaylistRequestOptions = {},
+): Promise<ImportM3u8PlaylistResponse> {
+  const normalizedInput = normalizeImportM3u8PlaylistInput(input);
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const response = await fetchImpl("/api/music/playlists/import/m3u8", {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(normalizedInput),
+  });
+
+  const payload = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw new ImportM3u8PlaylistError(
+      response.status,
+      extractErrorMessage(payload) ??
+        `M3U/M3U8 playlist import failed (${response.status})`,
+      payload,
+    );
+  }
+
+  const parsedPayload = importM3u8PlaylistResponseSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    throw new ImportM3u8PlaylistError(
+      502,
+      "M3U/M3U8 playlist import returned an invalid response payload.",
+      payload,
+    );
+  }
+
+  return parsedPayload.data;
+}
+
 export function useImportSpotifyPlaylistMutation(
   options?: ImportSpotifyPlaylistMutationOptions,
 ): UseMutationResult<
@@ -260,6 +370,21 @@ export function useImportSpotifyPlaylistMutation(
 
   return useMutation({
     mutationFn: (input) => importSpotifyPlaylist(input, { fetchImpl }),
+    ...mutationOptions,
+  });
+}
+
+export function useImportM3u8PlaylistMutation(
+  options?: ImportM3u8PlaylistMutationOptions,
+): UseMutationResult<
+  ImportM3u8PlaylistResponse,
+  ImportM3u8PlaylistError,
+  ImportM3u8PlaylistInput
+> {
+  const { fetchImpl, ...mutationOptions } = options ?? {};
+
+  return useMutation({
+    mutationFn: (input) => importM3u8Playlist(input, { fetchImpl }),
     ...mutationOptions,
   });
 }

@@ -7,15 +7,23 @@ import { LoadingState } from "@starchild/ui/LoadingSpinner";
 import { useToast } from "@/contexts/ToastContext";
 import { usePlaylistContextMenu } from "@/contexts/PlaylistContextMenuContext";
 import {
-  parseM3u8Playlist,
-  selectBestM3u8TrackMatch,
-  type M3u8PlaylistEntry,
-} from "@/utils/m3u8PlaylistImport";
-import { api } from "@starchild/api-client/trpc/react";
-import { getTrackById, searchTracks } from "@starchild/api-client/rest";
-import { hapticLight } from "@/utils/haptics";
-import type { Track } from "@starchild/types";
-import { Music, Plus, Upload } from "lucide-react";
+  api,
+  ImportM3u8PlaylistError,
+  type ImportM3u8PlaylistInput,
+  type ImportM3u8PlaylistResponse,
+} from "@starchild/api-client/trpc/react";
+import { authFetch } from "@/services/spotifyAuthClient";
+import { hapticLight, hapticSuccess } from "@/utils/haptics";
+import {
+  CircleAlert,
+  CircleCheck,
+  ListMusic,
+  Loader2,
+  Music,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -25,51 +33,393 @@ import { useRef, useState, type ChangeEvent } from "react";
 
 export const dynamic = "force-dynamic";
 
-const M3U8_IMPORT_MAX_TRACKS = 500;
+type M3u8ImportPayload = ImportM3u8PlaylistInput;
+type M3u8MatchedTrack = ImportM3u8PlaylistResponse["matchedTracks"][number];
+type M3u8UnmatchedTrack =
+  ImportM3u8PlaylistResponse["importReport"]["unmatched"][number];
 
-async function resolveM3u8Entry(
-  entry: M3u8PlaylistEntry,
-): Promise<Track | null> {
-  if (entry.deezerTrackId !== null) {
-    try {
-      return await getTrackById(entry.deezerTrackId);
-    } catch (error) {
-      console.warn("[playlists] Failed to fetch Deezer track from M3U8 entry", {
-        lineNumber: entry.lineNumber,
-        error,
-      });
-    }
-  }
+const M3U8_FILE_NAME_PATTERN = /\.(?:m3u8?|txt)$/i;
 
-  if (!entry.query) {
-    return null;
-  }
-
-  try {
-    const result = await searchTracks(entry.query);
-    return selectBestM3u8TrackMatch(entry, result.data);
-  } catch (error) {
-    console.warn("[playlists] Failed to search M3U8 entry", {
-      lineNumber: entry.lineNumber,
-      query: entry.query,
-      error,
-    });
-    return null;
-  }
+function getM3u8PlaylistName(fileName: string): string {
+  return fileName.replace(M3U8_FILE_NAME_PATTERN, "").trim() || fileName;
 }
 
-function getUniqueTracks(tracks: Track[]): Track[] {
-  const seenTrackIds = new Set<number>();
-  const uniqueTracks: Track[] = [];
+function isM3u8FileName(fileName: string): boolean {
+  return /\.(?:m3u8?)$/i.test(fileName);
+}
 
-  for (const track of tracks) {
-    if (seenTrackIds.has(track.id)) continue;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
+}
 
-    seenTrackIds.add(track.id);
-    uniqueTracks.push(track);
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function getMatchedTrackTitle(track: M3u8MatchedTrack): string {
+  const record = asRecord(track.deezerTrack);
+  return (
+    readString(record?.title_short) ??
+    readString(record?.title) ??
+    `Deezer #${track.deezerTrackId}`
+  );
+}
+
+function getMatchedTrackArtist(track: M3u8MatchedTrack): string | null {
+  const record = asRecord(track.deezerTrack);
+  const artist = asRecord(record?.artist);
+  return readString(artist?.name);
+}
+
+function getMatchedTrackCover(track: M3u8MatchedTrack): string | null {
+  const record = asRecord(track.deezerTrack);
+  const album = asRecord(record?.album);
+  return (
+    readString(album?.cover_medium) ??
+    readString(album?.cover_small) ??
+    readString(album?.cover) ??
+    null
+  );
+}
+
+function normalizeM3u8ImportError(
+  error: unknown,
+  translate: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  const message = error instanceof Error ? error.message : "";
+  const lowerMessage = message.toLowerCase();
+  const status = error instanceof ImportM3u8PlaylistError ? error.status : null;
+
+  if (status === 401) {
+    return translate("m3u8Unauthorized");
   }
 
-  return uniqueTracks;
+  if (status === 400) {
+    if (lowerMessage.includes("hls") || lowerMessage.includes("ext-x")) {
+      return translate("m3u8HlsRejected");
+    }
+
+    if (
+      lowerMessage.includes("too many") ||
+      lowerMessage.includes("200") ||
+      lowerMessage.includes("track limit")
+    ) {
+      return translate("m3u8TooManyTracks");
+    }
+
+    if (
+      lowerMessage.includes("1 mb") ||
+      lowerMessage.includes("1mb") ||
+      lowerMessage.includes("content over")
+    ) {
+      return translate("m3u8ContentTooLarge");
+    }
+
+    return translate("m3u8InvalidPlaylist");
+  }
+
+  return message || translate("m3u8ImportFailedGeneric");
+}
+
+function M3u8ImportDialog(props: {
+  isOpen: boolean;
+  isSubmitting: boolean;
+  payload: M3u8ImportPayload | null;
+  result: ImportM3u8PlaylistResponse | null;
+  error: string | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const { error, isOpen, isSubmitting, onClose, onConfirm, payload, result } =
+    props;
+  const t = useTranslations("playlists");
+  const tc = useTranslations("common");
+
+  if (!isOpen) return null;
+
+  const matchedTracks = result?.matchedTracks ?? [];
+  const unmatchedTracks = result?.importReport.unmatched ?? [];
+  const playlistName =
+    payload?.playlistName ?? result?.importReport.sourcePlaylistName ?? "";
+  const canCreate = Boolean(
+    payload &&
+      result &&
+      !result.playlistCreated &&
+      result.importReport.matchedCount > 0 &&
+      !isSubmitting,
+  );
+
+  return (
+    <>
+      <div
+        className="theme-chrome-backdrop fixed inset-0 z-50 backdrop-blur-sm"
+        onClick={() => {
+          if (!isSubmitting) onClose();
+        }}
+      />
+      <div className="fixed inset-x-3 top-1/2 z-50 max-h-[88vh] -translate-y-1/2 md:right-auto md:left-1/2 md:w-full md:max-w-4xl md:-translate-x-1/2">
+        <div className="surface-panel flex max-h-[88vh] flex-col overflow-hidden">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--color-border)] px-4 py-4 md:px-6 md:py-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+                {t("m3u8ImportReviewEyebrow")}
+              </p>
+              <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] md:text-2xl">
+                {result?.playlistCreated
+                  ? t("m3u8ImportCreatedTitle")
+                  : t("m3u8ImportReviewTitle")}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-subtext)]">
+                {result?.playlistCreated
+                  ? t("m3u8ImportCreatedDescription", {
+                      name: result.playlist?.name ?? playlistName,
+                    })
+                  : t("m3u8ImportReviewDescription")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="rounded-lg p-2 text-[var(--color-subtext)] transition hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] disabled:opacity-50"
+              aria-label={tc("close")}
+              title={tc("close")}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+            {isSubmitting && !result ? (
+              <div className="rounded-[1.25rem] border border-[rgba(244,178,102,0.24)] bg-[linear-gradient(160deg,rgba(244,178,102,0.16),rgba(15,23,42,0.78))] p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.14)]">
+                    <Loader2 className="h-5 w-5 animate-spin text-[var(--color-accent)]" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--color-text)]">
+                      {t("m3u8PreviewLoadingTitle")}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                      {t("m3u8PreviewLoadingDescription")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="mb-4 flex items-start gap-3 rounded-2xl border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] p-4 text-sm leading-6 text-red-200">
+                <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+                <p>{error}</p>
+              </div>
+            ) : null}
+
+            {result ? (
+              <div className="space-y-5">
+                <div
+                  className={`rounded-[1.25rem] border p-5 ${
+                    result.playlistCreated
+                      ? "border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.12)]"
+                      : "border-[rgba(244,178,102,0.24)] bg-[var(--color-surface-hover)]/55"
+                  }`}
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${
+                          result.playlistCreated
+                            ? "border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.14)] text-green-200"
+                            : "border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.14)] text-[var(--color-accent)]"
+                        }`}
+                      >
+                        {result.playlistCreated ? (
+                          <CircleCheck className="h-5 w-5" />
+                        ) : (
+                          <ListMusic className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-[var(--color-text)]">
+                          {result.playlist?.name ?? playlistName}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--color-subtext)]">
+                          {t("m3u8ImportSummary", {
+                            total: result.importReport.totalTracks,
+                            matched: result.importReport.matchedCount,
+                            unmatched: result.importReport.unmatchedCount,
+                            skipped: result.importReport.skippedCount,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        {
+                          labelKey: "m3u8MatchedLabel",
+                          count: result.importReport.matchedCount,
+                        },
+                        {
+                          labelKey: "m3u8UnmatchedLabel",
+                          count: result.importReport.unmatchedCount,
+                        },
+                        {
+                          labelKey: "m3u8SkippedLabel",
+                          count: result.importReport.skippedCount,
+                        },
+                      ].map(({ labelKey, count }) => (
+                        <div
+                          key={labelKey}
+                          className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-3 py-2 text-center"
+                        >
+                          <p className="text-lg font-semibold text-[var(--color-text)]">
+                            {count}
+                          </p>
+                          <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--color-subtext)] uppercase">
+                            {t(labelKey)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/45 p-4">
+                    <h3 className="text-sm font-semibold text-[var(--color-text)]">
+                      {t("m3u8ResolvedTracksTitle")}
+                    </h3>
+                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
+                      {matchedTracks.length > 0 ? (
+                        matchedTracks.map((track) => {
+                          const title = getMatchedTrackTitle(track);
+                          const artist = getMatchedTrackArtist(track);
+                          const cover = getMatchedTrackCover(track);
+
+                          return (
+                            <div
+                              key={`${track.index}-${track.deezerTrackId}`}
+                              className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3"
+                            >
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-muted)]/20">
+                                {cover ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={cover}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <Music className="h-4 w-4 text-[var(--color-subtext)]" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                                  {title}
+                                </p>
+                                <p className="mt-1 truncate text-xs text-[var(--color-subtext)]">
+                                  {artist ?? tc("unknownArtist")}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4 text-sm text-[var(--color-subtext)]">
+                          {t("m3u8NoResolvedTracks")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface-hover)]/45 p-4">
+                    <h3 className="text-sm font-semibold text-[var(--color-text)]">
+                      {t("m3u8UnresolvedTracksTitle")}
+                    </h3>
+                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
+                      {unmatchedTracks.length > 0 ? (
+                        unmatchedTracks.map((track: M3u8UnmatchedTrack) => (
+                          <div
+                            key={`${track.index}-${track.name}`}
+                            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                                  {track.name}
+                                </p>
+                                <p className="mt-1 truncate text-xs text-[var(--color-subtext)]">
+                                  {track.artist ?? tc("unknownArtist")}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-[var(--color-subtext)] uppercase">
+                                {track.reason}
+                              </span>
+                            </div>
+                            {track.candidates && track.candidates.length > 0 ? (
+                              <div className="mt-3 space-y-1">
+                                {track.candidates.slice(0, 3).map((candidate) => (
+                                  <p
+                                    key={candidate.deezerTrackId}
+                                    className="truncate rounded-xl border border-[rgba(244,178,102,0.2)] bg-[rgba(244,178,102,0.08)] px-3 py-2 text-xs text-[var(--color-subtext)]"
+                                  >
+                                    {candidate.title}
+                                    {candidate.artist
+                                      ? ` - ${candidate.artist}`
+                                      : ""}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4 text-sm text-[var(--color-subtext)]">
+                          {t("m3u8NoUnresolvedTracks")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--color-border)] px-4 py-4 sm:flex-row sm:justify-end md:px-6">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="btn-secondary touch-target-lg disabled:opacity-50"
+            >
+              {result?.playlistCreated ? tc("close") : tc("cancel")}
+            </button>
+            {result && !result.playlistCreated ? (
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={!canCreate}
+                className="btn-primary touch-target-lg inline-flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("m3u8CreatingPlaylist")}
+                  </>
+                ) : (
+                  t("m3u8CreatePlaylist")
+                )}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default function PlaylistsPage() {
@@ -84,8 +434,12 @@ export default function PlaylistsPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [isImportingM3u8, setIsImportingM3u8] = useState(false);
-  const [m3u8ImportStatus, setM3u8ImportStatus] = useState<string | null>(null);
+  const [isM3u8ImportDialogOpen, setIsM3u8ImportDialogOpen] = useState(false);
+  const [m3u8ImportPayload, setM3u8ImportPayload] =
+    useState<M3u8ImportPayload | null>(null);
+  const [m3u8ImportResult, setM3u8ImportResult] =
+    useState<ImportM3u8PlaylistResponse | null>(null);
+  const [m3u8ImportError, setM3u8ImportError] = useState<string | null>(null);
   const m3u8FileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: playlists, isLoading } = api.music.getPlaylists.useQuery(
@@ -110,8 +464,31 @@ export default function PlaylistsPage() {
       showToast(t("failedToCreate", { error: error.message }), "error");
     },
   });
-  const createImportedPlaylist = api.music.createPlaylist.useMutation();
-  const addImportedTrack = api.music.addToPlaylist.useMutation();
+  const importM3u8Playlist = api.music.importM3u8Playlist.useMutation({
+    fetchImpl: authFetch,
+    onSuccess: async (result, variables) => {
+      setM3u8ImportError(null);
+      setM3u8ImportResult(result);
+      setIsM3u8ImportDialogOpen(true);
+
+      if (result.playlistCreated) {
+        await utils.music.getPlaylists.invalidate();
+        const playlistName =
+          result.playlist?.name ??
+          variables.playlistName ??
+          variables.sourcePlaylistName ??
+          t("importM3u8");
+        showToast(t("m3u8ImportCreatedToast", { name: playlistName }), "success");
+        hapticSuccess();
+      }
+    },
+    onError: (error) => {
+      const message = normalizeM3u8ImportError(error, t);
+      setM3u8ImportError(message);
+      setIsM3u8ImportDialogOpen(true);
+      showToast(message, "error");
+    },
+  });
 
   const handleCreatePlaylist = () => {
     if (!newPlaylistName.trim()) {
@@ -132,121 +509,56 @@ export default function PlaylistsPage() {
       return;
     }
 
-    setIsImportingM3u8(true);
-    setM3u8ImportStatus(t("m3u8ReadingFile"));
+    if (!isM3u8FileName(file.name)) {
+      showToast(t("m3u8UnsupportedExtension"), "error");
+      return;
+    }
+
+    setIsM3u8ImportDialogOpen(true);
+    setM3u8ImportResult(null);
+    setM3u8ImportError(null);
 
     try {
       const content = await file.text();
-      const parsed = parseM3u8Playlist(content, file.name);
-      const entries = parsed.entries.slice(0, M3U8_IMPORT_MAX_TRACKS);
-
-      if (parsed.entries.length > M3U8_IMPORT_MAX_TRACKS) {
-        showToast(
-          t("m3u8ImportLimitReached", {
-            count: M3U8_IMPORT_MAX_TRACKS,
-          }),
-          "info",
-        );
-      }
-
-      if (entries.length === 0) {
-        showToast(t("m3u8NoEntries"), "error");
-        return;
-      }
-
-      const resolvedTracks: Track[] = [];
-
-      for (const [entryIndex, entry] of entries.entries()) {
-        setM3u8ImportStatus(
-          t("m3u8ResolvingTracks", {
-            current: entryIndex + 1,
-            total: entries.length,
-          }),
-        );
-
-        const track = await resolveM3u8Entry(entry);
-        if (track) {
-          resolvedTracks.push(track);
-        }
-      }
-
-      const uniqueTracks = getUniqueTracks(resolvedTracks);
-      if (uniqueTracks.length === 0) {
-        showToast(t("m3u8NoMatches"), "error");
-        return;
-      }
-
-      setM3u8ImportStatus(t("creating"));
-      const playlist = await createImportedPlaylist.mutateAsync({
-        name: parsed.name,
-        description: t("m3u8ImportDescription", { fileName: file.name }),
+      const playlistName = getM3u8PlaylistName(file.name);
+      const payload: M3u8ImportPayload = {
+        content,
+        sourcePlaylistId: file.name,
+        sourcePlaylistName: playlistName,
+        playlistName,
+        createPlaylist: false,
         isPublic: false,
-      });
+      };
 
-      let importedCount = 0;
-      let failedCount = 0;
-
-      for (const [trackIndex, track] of uniqueTracks.entries()) {
-        setM3u8ImportStatus(
-          t("m3u8AddingTracks", {
-            current: trackIndex + 1,
-            total: uniqueTracks.length,
-          }),
-        );
-
-        try {
-          await addImportedTrack.mutateAsync({
-            playlistId: playlist.id,
-            track,
-          });
-          importedCount += 1;
-        } catch (error) {
-          failedCount += 1;
-          console.warn("[playlists] Failed to add imported M3U8 track", {
-            playlistId: playlist.id,
-            trackId: track.id,
-            error,
-          });
-        }
-      }
-
-      await utils.music.getPlaylists.invalidate();
-
-      if (failedCount > 0) {
-        showToast(
-          t("importedM3u8PlaylistPartial", {
-            name: playlist.name,
-            imported: importedCount,
-            total: uniqueTracks.length,
-            failed: failedCount,
-          }),
-          "warning",
-          5000,
-        );
-      } else {
-        showToast(
-          t("importedM3u8Playlist", {
-            name: playlist.name,
-            imported: importedCount,
-            total: uniqueTracks.length,
-          }),
-          "success",
-          5000,
-        );
-      }
-
-      router.push(`/playlists/${playlist.id}`);
+      setM3u8ImportPayload(payload);
+      importM3u8Playlist.mutate(payload);
     } catch (error) {
-      showToast(
-        t("m3u8ImportFailed", {
-          error: error instanceof Error ? error.message : tc("unknownError"),
-        }),
-        "error",
-      );
-    } finally {
-      setIsImportingM3u8(false);
-      setM3u8ImportStatus(null);
+      const message = t("m3u8FileReadFailed", {
+        error: error instanceof Error ? error.message : tc("unknownError"),
+      });
+      setM3u8ImportError(message);
+      showToast(message, "error");
     }
+  };
+
+  const handleConfirmM3u8Import = () => {
+    if (!m3u8ImportPayload || importM3u8Playlist.isPending) return;
+
+    setM3u8ImportError(null);
+    importM3u8Playlist.mutate({
+      ...m3u8ImportPayload,
+      createPlaylist: true,
+    });
+  };
+
+  const handleCloseM3u8ImportDialog = () => {
+    if (importM3u8Playlist.isPending) return;
+
+    setIsM3u8ImportDialogOpen(false);
+    setM3u8ImportPayload(null);
+    setM3u8ImportResult(null);
+    setM3u8ImportError(null);
+    importM3u8Playlist.reset();
   };
 
   const handleM3u8FileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -288,12 +600,14 @@ export default function PlaylistsPage() {
               hapticLight();
               m3u8FileInputRef.current?.click();
             }}
-            disabled={isImportingM3u8}
+            disabled={importM3u8Playlist.isPending}
             className="btn-secondary touch-target-lg flex w-full items-center justify-center gap-2 disabled:opacity-50 md:w-auto"
           >
             <Upload className="h-5 w-5" />
             <span>
-              {isImportingM3u8 ? t("importingM3u8") : t("importM3u8")}
+              {importM3u8Playlist.isPending
+                ? t("importingM3u8")
+                : t("importM3u8")}
             </span>
           </button>
           <button
@@ -313,15 +627,15 @@ export default function PlaylistsPage() {
         onChange={handleM3u8FileChange}
         aria-label={t("importM3u8")}
       />
-      {m3u8ImportStatus && (
-        <p
-          className="mb-4 text-sm text-[var(--color-subtext)]"
-          role="status"
-          aria-live="polite"
-        >
-          {m3u8ImportStatus}
-        </p>
-      )}
+      <M3u8ImportDialog
+        isOpen={isM3u8ImportDialogOpen}
+        isSubmitting={importM3u8Playlist.isPending}
+        payload={m3u8ImportPayload}
+        result={m3u8ImportResult}
+        error={m3u8ImportError}
+        onClose={handleCloseM3u8ImportDialog}
+        onConfirm={handleConfirmM3u8Import}
+      />
 
       {}
       {isLoading ? (
@@ -464,7 +778,7 @@ export default function PlaylistsPage() {
                   hapticLight();
                   m3u8FileInputRef.current?.click();
                 }}
-                disabled={isImportingM3u8}
+                disabled={importM3u8Playlist.isPending}
                 className="btn-secondary touch-target-lg flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Upload className="h-5 w-5" />

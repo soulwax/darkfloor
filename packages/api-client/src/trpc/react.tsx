@@ -10,10 +10,14 @@ import { useState } from "react";
 import SuperJSON from "superjson";
 
 import {
+  ImportM3u8PlaylistError,
   ImportSpotifyPlaylistError,
+  type ImportM3u8PlaylistInput,
+  type ImportM3u8PlaylistResponse,
   type ImportSpotifyPlaylistInput,
   type ImportSpotifyPlaylistResponse,
   type ImportSpotifyPlaylistUnmatchedReason,
+  useImportM3u8PlaylistMutation,
   useImportSpotifyPlaylistMutation,
 } from "./music-import";
 import { type AppRouter } from "./router";
@@ -38,6 +42,9 @@ type ApiWithSpotifyImportMutation = typeof trpcApi & {
     importSpotifyPlaylist: {
       useMutation: typeof useImportSpotifyPlaylistMutation;
     };
+    importM3u8Playlist: {
+      useMutation: typeof useImportM3u8PlaylistMutation;
+    };
   };
 };
 
@@ -45,10 +52,18 @@ const spotifyImportMutationApi = {
   useMutation: useImportSpotifyPlaylistMutation,
 } as const;
 
+const m3u8ImportMutationApi = {
+  useMutation: useImportM3u8PlaylistMutation,
+} as const;
+
 const musicApi = new Proxy(trpcApi.music as object, {
   get(target, prop, receiver): unknown {
     if (prop === "importSpotifyPlaylist") {
       return spotifyImportMutationApi;
+    }
+
+    if (prop === "importM3u8Playlist") {
+      return m3u8ImportMutationApi;
     }
 
     return Reflect.get(target, prop, receiver) as unknown;
@@ -69,11 +84,13 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
 
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export type {
+  ImportM3u8PlaylistInput,
+  ImportM3u8PlaylistResponse,
   ImportSpotifyPlaylistInput,
   ImportSpotifyPlaylistResponse,
   ImportSpotifyPlaylistUnmatchedReason,
 };
-export { ImportSpotifyPlaylistError };
+export { ImportM3u8PlaylistError, ImportSpotifyPlaylistError };
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
