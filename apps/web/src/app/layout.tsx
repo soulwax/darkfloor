@@ -42,6 +42,8 @@ import { getBaseUrl } from "@/utils/getBaseUrl";
 import { RegisterServiceWorker } from "./register-sw";
 import emilyLogo from "../../public/emily-the-strange.png";
 
+export const dynamic = "force-dynamic";
+
 const appSans = localFont({
   src: [
     {

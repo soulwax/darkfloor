@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.23] - 2026-04-14
+
+### Fixed
+
+- **Tauri desktop OAuth launch now honors the canonical auth origin again**: Discord and GitHub sign-in now start from the validated public auth base, and when no explicit browser auth base is set the client falls back to `NEXTAUTH_URL` before any backend API host. This keeps packaged Tauri auth pinned to the registered loopback origin such as `http://127.0.0.1:3222`.
+- **Standalone/Tauri release builds no longer die while prerendering `/_global-error`**: The root App Router shell and global error boundary now opt into dynamic rendering so request-bound locale/auth setup is not executed during the special build-time prerender path that lacks a Next.js request work store.
+
 ## [1.15.22] - 2026-04-14
 
 ### Changed
