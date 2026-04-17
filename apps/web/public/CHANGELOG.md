@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.26] - 2026-04-17
+
+### Fixed
+
+- **Local M3U/M3U8 playlist import now behaves like a complete frontend upload flow**: The `/playlists` page now keeps the import dialog alive while the browser reads the selected file, submits the preview request as JSON through the protected backend import client, preserves the preview payload for the confirm-create pass, and gives the success state a direct path into the created playlist.
+
 ## [1.15.25] - 2026-04-17
 
 ### Changed
