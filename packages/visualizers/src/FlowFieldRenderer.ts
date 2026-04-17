@@ -15386,121 +15386,155 @@ export class FlowFieldRenderer {
   ): void {
     const ctx = this.ctx;
     ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.translate(this.centerX, this.centerY);
+    try {
+      const safeAudioIntensity = Number.isFinite(audioIntensity)
+        ? Math.max(0, Math.min(1, audioIntensity))
+        : 0;
+      const safeBassIntensity = Number.isFinite(bassIntensity)
+        ? Math.max(0, Math.min(1, bassIntensity))
+        : 0;
+      const safeTrebleIntensity = Number.isFinite(trebleIntensity)
+        ? Math.max(0, Math.min(1, trebleIntensity))
+        : 0;
+      const minDimension = Math.max(0, Math.min(this.width, this.height));
+      const maxRadius = minDimension * (0.45 + safeAudioIntensity * 0.25);
 
-    const time = this.time * 0.0004;
-    const minDimension = Math.min(this.width, this.height);
-    const maxRadius = minDimension * (0.45 + audioIntensity * 0.25);
-    const twoPi = FlowFieldRenderer.TWO_PI;
+      if (!Number.isFinite(maxRadius) || maxRadius <= 0) {
+        return;
+      }
 
-    const baseHue = this.fastMod360(this.hueBase + time * 3);
-    const fieldHue = this.fastMod360(baseHue + 180);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.translate(this.centerX, this.centerY);
 
-    // Firefox optimization: Drastically simplified EM field visualization
+      const time = this.time * 0.0004;
+      const twoPi = FlowFieldRenderer.TWO_PI;
 
-    const chargeCount = 2;
-    const chargeX = this.emChargeX;
-    const chargeY = this.emChargeY;
-    const invChargeCount = 1 / chargeCount;
+      const baseHue = this.fastMod360(this.hueBase + time * 3);
+      const fieldHue = this.fastMod360(baseHue + 180);
 
-    // Simple charge positions
-    for (let c = 0; c < chargeCount; c++) {
-      const chargeAngle = c * invChargeCount * twoPi + time * 0.1;
-      const chargeRadius = maxRadius * 0.25;
-      chargeX[c] = this.fastCos(chargeAngle) * chargeRadius;
-      chargeY[c] = this.fastSin(chargeAngle) * chargeRadius;
-    }
+      // Firefox optimization: Drastically simplified EM field visualization
+      const chargeCount = 2;
+      const chargeX = this.emChargeX;
+      const chargeY = this.emChargeY;
+      const invChargeCount = 1 / chargeCount;
 
-    // Firefox optimization: Simple radial field lines, no physics simulation
-    const fieldLineCount = 16; // Reduced from 24-40
-    const invFieldLineCount = 1 / fieldLineCount;
-    const lineAngleStep = twoPi * invFieldLineCount;
+      for (let c = 0; c < chargeCount; c++) {
+        const chargeAngle = c * invChargeCount * twoPi + time * 0.1;
+        const orbitRadius = maxRadius * 0.25;
+        const nextChargeX = this.fastCos(chargeAngle) * orbitRadius;
+        const nextChargeY = this.fastSin(chargeAngle) * orbitRadius;
+        chargeX[c] = Number.isFinite(nextChargeX) ? nextChargeX : 0;
+        chargeY[c] = Number.isFinite(nextChargeY) ? nextChargeY : 0;
+      }
 
-    ctx.lineCap = "round";
-    ctx.lineWidth = 1.5 + trebleIntensity;
-    ctx.shadowBlur = 0; // No shadows
-
-    for (let i = 0; i < fieldLineCount; i++) {
-      const lineAngle = lineAngleStep * i;
-      const lineHue = this.fastMod360(fieldHue + i * 22.5);
-      const lineAlpha = 0.4 + audioIntensity * 0.3;
-
-      ctx.strokeStyle = this.hsla(lineHue, 85, 65, lineAlpha);
-
-      // Simple curved line from center outward
-      ctx.beginPath();
+      const fieldLineCount = 16;
+      const lineAngleStep = twoPi / fieldLineCount;
       const innerRadius = maxRadius * 0.1;
+      const midRadius = maxRadius * 0.6;
       const outerRadius = maxRadius * 1.2;
 
-      ctx.moveTo(
-        this.fastCos(lineAngle) * innerRadius,
-        this.fastSin(lineAngle) * innerRadius,
-      );
+      ctx.lineCap = "round";
+      ctx.lineWidth = 1.5 + safeTrebleIntensity;
+      ctx.shadowBlur = 0;
 
-      // Add some curve with quadratic bezier
-      const midAngle = lineAngle + this.fastSin(time * 2 + i) * 0.3;
-      const midRadius = maxRadius * 0.6;
-      ctx.quadraticCurveTo(
-        this.fastCos(midAngle) * midRadius,
-        this.fastSin(midAngle) * midRadius,
-        this.fastCos(lineAngle) * outerRadius,
-        this.fastSin(lineAngle) * outerRadius,
-      );
-      ctx.stroke();
+      for (let i = 0; i < fieldLineCount; i++) {
+        const lineAngle = lineAngleStep * i;
+        const midAngle = lineAngle + this.fastSin(time * 2 + i) * 0.3;
+        const startX = this.fastCos(lineAngle) * innerRadius;
+        const startY = this.fastSin(lineAngle) * innerRadius;
+        const controlX = this.fastCos(midAngle) * midRadius;
+        const controlY = this.fastSin(midAngle) * midRadius;
+        const endX = this.fastCos(lineAngle) * outerRadius;
+        const endY = this.fastSin(lineAngle) * outerRadius;
+
+        if (
+          !Number.isFinite(startX) ||
+          !Number.isFinite(startY) ||
+          !Number.isFinite(controlX) ||
+          !Number.isFinite(controlY) ||
+          !Number.isFinite(endX) ||
+          !Number.isFinite(endY)
+        ) {
+          continue;
+        }
+
+        const lineHue = this.fastMod360(fieldHue + i * 22.5);
+        const lineAlpha = 0.4 + safeAudioIntensity * 0.3;
+        ctx.strokeStyle = this.hsla(lineHue, 85, 65, lineAlpha);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+        ctx.stroke();
+      }
+
+      ctx.shadowBlur = 10;
+      for (let c = 0; c < chargeCount; c++) {
+        const chargePosX = chargeX[c] ?? 0;
+        const chargePosY = chargeY[c] ?? 0;
+        const chargeSize = Math.max(1, 15 + safeBassIntensity * 8);
+        const chargePulse = 1 + this.fastSin(time * 2) * 0.15;
+        const fillRadius = chargeSize * chargePulse;
+        const ringRadius = fillRadius * 1.5;
+
+        if (
+          !Number.isFinite(chargePosX) ||
+          !Number.isFinite(chargePosY) ||
+          !Number.isFinite(fillRadius) ||
+          !Number.isFinite(ringRadius) ||
+          fillRadius <= 0 ||
+          ringRadius <= 0
+        ) {
+          continue;
+        }
+
+        const chargeHue =
+          c === 0
+            ? this.fastMod360(fieldHue + 30)
+            : this.fastMod360(fieldHue + 210);
+        const chargeAlpha = 0.8 + safeAudioIntensity * 0.2;
+
+        ctx.fillStyle = this.hsla(chargeHue, 95, 75, chargeAlpha);
+        ctx.shadowColor = this.hsla(chargeHue, 100, 80, 0.6);
+        ctx.beginPath();
+        ctx.arc(chargePosX, chargePosY, fillRadius, 0, twoPi);
+        ctx.fill();
+
+        ctx.strokeStyle = this.hsla(chargeHue, 90, 70, chargeAlpha * 0.4);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(chargePosX, chargePosY, ringRadius, 0, twoPi);
+        ctx.stroke();
+      }
+
+      const particleCount = 12;
+      const particleAngleStep = twoPi / particleCount;
+
+      ctx.shadowBlur = 0;
+      for (let p = 0; p < particleCount; p++) {
+        const particleAngle = particleAngleStep * p + time * 0.6;
+        const particleRadius = maxRadius * (0.3 + (p % 3) * 0.2);
+        const particleX = this.fastCos(particleAngle) * particleRadius;
+        const particleY = this.fastSin(particleAngle) * particleRadius;
+        const particleSize = Math.max(0.5, 2.5 + safeTrebleIntensity * 2);
+
+        if (!Number.isFinite(particleX) || !Number.isFinite(particleY)) {
+          continue;
+        }
+
+        const particleHue = this.fastMod360(fieldHue + p * 30);
+        ctx.fillStyle = this.hsla(particleHue, 90, 75, 0.7);
+        ctx.fillRect(
+          particleX - particleSize,
+          particleY - particleSize,
+          particleSize * 2,
+          particleSize * 2,
+        );
+      }
+    } catch {
+      // One bad canvas call should not stop the requestAnimationFrame loop.
+    } finally {
+      ctx.restore();
     }
-
-    // Simplified charges - no gradients, just simple fills
-    ctx.shadowBlur = 10; // Reduced from 25+
-    for (let c = 0; c < chargeCount; c++) {
-      const chargeSize = 15 + bassIntensity * 8;
-      const chargeHue =
-        c === 0
-          ? this.fastMod360(fieldHue + 30)
-          : this.fastMod360(fieldHue + 210);
-      const chargeAlpha = 0.8 + audioIntensity * 0.2;
-      const chargePulse = 1 + this.fastSin(time * 2) * 0.15;
-      const chargePosX = chargeX[c]!;
-      const chargePosY = chargeY[c]!;
-
-      ctx.fillStyle = this.hsla(chargeHue, 95, 75, chargeAlpha);
-      ctx.shadowColor = this.hsla(chargeHue, 100, 80, 0.6);
-      ctx.beginPath();
-      ctx.arc(chargePosX, chargePosY, chargeSize * chargePulse, 0, twoPi);
-      ctx.fill();
-
-      // Single ring per charge
-      ctx.strokeStyle = this.hsla(chargeHue, 90, 70, chargeAlpha * 0.4);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(chargePosX, chargePosY, chargeSize * chargePulse * 1.5, 0, twoPi);
-      ctx.stroke();
-    }
-
-    // Simplified particles - no physics, just orbiting dots
-    const particleCount = 12; // Reduced from 25-45
-    const invParticleCount = 1 / particleCount;
-    const particleAngleStep = twoPi * invParticleCount;
-
-    ctx.shadowBlur = 0; // No particle shadows
-    for (let p = 0; p < particleCount; p++) {
-      const particleAngle = particleAngleStep * p + time * 0.6;
-      const particleRadius = maxRadius * (0.3 + (p % 3) * 0.2);
-      const particleX = this.fastCos(particleAngle) * particleRadius;
-      const particleY = this.fastSin(particleAngle) * particleRadius;
-      const particleHue = this.fastMod360(fieldHue + p * 30);
-      const particleSize = 2.5 + trebleIntensity * 2;
-
-      ctx.fillStyle = this.hsla(particleHue, 90, 75, 0.7);
-      ctx.fillRect(
-        particleX - particleSize,
-        particleY - particleSize,
-        particleSize * 2,
-        particleSize * 2,
-      );
-    }
-
-    ctx.restore();
   }
 
   private renderQuantumFoam(
