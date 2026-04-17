@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.25] - 2026-04-17
+
+### Changed
+
+- **Visualizer availability has been tightened for stability**: The legacy `fractal` FlowField pattern is now commented out and unavailable, and `kaleidoscope` is automatically excluded on Firefox so it does not enter the active pattern pool there.
+
 ## [1.15.24] - 2026-04-17
 
 ### Added
