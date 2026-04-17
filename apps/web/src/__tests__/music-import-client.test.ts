@@ -1,7 +1,13 @@
 // File: apps/web/src/__tests__/music-import-client.test.ts
 
-import { importSpotifyPlaylist } from "@starchild/api-client/trpc/music-import";
-import type { ImportSpotifyPlaylistError } from "@starchild/api-client/trpc/music-import";
+import {
+  importM3u8Playlist,
+  importSpotifyPlaylist,
+} from "@starchild/api-client/trpc/music-import";
+import type {
+  ImportM3u8PlaylistError,
+  ImportSpotifyPlaylistError,
+} from "@starchild/api-client/trpc/music-import";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("importSpotifyPlaylist client", () => {
@@ -291,5 +297,113 @@ describe("importSpotifyPlaylist client", () => {
         method: "POST",
       }),
     );
+  });
+});
+
+describe("importM3u8Playlist client", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("submits UTF-8 playlist content to the M3U import endpoint", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          playlistCreated: false,
+          playlist: null,
+          matchedTracks: [
+            {
+              index: 0,
+              spotifyTrackId: null,
+              deezerTrackId: "101",
+              deezerTrack: {
+                id: 101,
+                title: "Track One",
+              },
+            },
+          ],
+          importReport: {
+            sourcePlaylistId: "Roadtrip.m3u8",
+            sourcePlaylistName: "Roadtrip",
+            totalTracks: 2,
+            matchedCount: 1,
+            unmatchedCount: 1,
+            skippedCount: 0,
+            unmatched: [
+              {
+                index: 1,
+                spotifyTrackId: null,
+                name: "Missing track",
+                artist: "Unknown Artist",
+                reason: "not_found",
+              },
+            ],
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    const result = await importM3u8Playlist({
+      content: "#EXTM3U\n#EXTINF:180,Artist - Track One",
+      sourcePlaylistId: "Roadtrip.m3u8",
+      sourcePlaylistName: "Roadtrip",
+      playlistName: "Roadtrip",
+      createPlaylist: false,
+      isPublic: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/music/playlists/import/m3u8", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: "#EXTM3U\n#EXTINF:180,Artist - Track One",
+        sourcePlaylistId: "Roadtrip.m3u8",
+        sourcePlaylistName: "Roadtrip",
+        playlistName: "Roadtrip",
+        descriptionOverride: undefined,
+        createPlaylist: false,
+        isPublic: true,
+      }),
+    });
+    expect(result.matchedTracks[0]?.spotifyTrackId).toBeNull();
+    expect(result.importReport.unmatched[0]?.reason).toBe("not_found");
+  });
+
+  it("throws a status-aware error when M3U import fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: "HLS manifests are not supported for this route.",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      ),
+    );
+
+    await expect(
+      importM3u8Playlist({
+        content: "#EXTM3U\n#EXT-X-VERSION:3",
+      }),
+    ).rejects.toMatchObject({
+      name: "ImportM3u8PlaylistError",
+      status: 400,
+      message: "HLS manifests are not supported for this route.",
+    } satisfies Partial<ImportM3u8PlaylistError>);
   });
 });

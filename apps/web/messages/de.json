@@ -486,6 +486,8 @@
     "m3u8ImportReviewDescription": "Zugeordnete Titel sind bereit für den Import. Nicht zugeordnete Einträge werden zur Prüfung angezeigt.",
     "m3u8ImportCreatedTitle": "Playlist erstellt",
     "m3u8ImportCreatedDescription": "\"{name}\" wurde aus der hochgeladenen Playlist erstellt.",
+    "m3u8FileReadingTitle": "Playlist-Datei wird gelesen",
+    "m3u8FileReadingDescription": "Starchild laedt die hochgeladene Playlist, bevor Titel abgeglichen werden.",
     "m3u8PreviewLoadingTitle": "Playlist-Titel werden abgeglichen",
     "m3u8PreviewLoadingDescription": "Das Backend liest die Datei und löst Deezer-Titel auf.",
     "m3u8ImportSummary": "{matched} zugeordnet, {unmatched} ungelöst, {skipped} übersprungen von {total} Einträgen",

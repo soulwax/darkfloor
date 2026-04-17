@@ -666,3 +666,150 @@ describe("Spotify music import route", () => {
     });
   });
 });
+
+describe("M3U music import route", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("requires caller authorization before proxying local playlist imports", async () => {
+    vi.resetModules();
+    const proxyApiV2 = vi.fn();
+
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadPostRoute(
+      "@/app/api/music/playlists/import/m3u8/route",
+    );
+    const response = await route.POST(
+      makeRequest("/api/music/playlists/import/m3u8", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          content: "#EXTM3U\n#EXTINF:180,Artist - Track One",
+        }),
+      }),
+    );
+    const body = (await response.json()) as { error?: string };
+
+    expect(response.status).toBe(401);
+    expect(body.error).toMatch(/authorization is required/i);
+    expect(proxyApiV2).not.toHaveBeenCalled();
+  });
+
+  it("forwards M3U import payloads to the protected backend endpoint", async () => {
+    vi.resetModules();
+    let forwardedBody: Record<string, unknown> | null = null;
+    const proxyApiV2 = vi.fn(
+      async (options: {
+        request?: Request;
+        pathname: string;
+        method?: string;
+        timeoutMs?: number;
+      }) => {
+        forwardedBody = options.request
+          ? ((await options.request.json()) as Record<string, unknown>)
+          : null;
+
+        return NextResponse.json({
+          ok: true,
+          playlistCreated: false,
+          playlist: null,
+          matchedTracks: [],
+          importReport: {
+            sourcePlaylistId: "Roadtrip.m3u8",
+            sourcePlaylistName: "Roadtrip",
+            totalTracks: 1,
+            matchedCount: 0,
+            unmatchedCount: 1,
+            skippedCount: 0,
+            unmatched: [],
+          },
+        });
+      },
+    );
+
+    vi.doMock("@/app/api/v2/_lib", () => ({
+      proxyApiV2,
+    }));
+
+    const route = await loadPostRoute(
+      "@/app/api/music/playlists/import/m3u8/route",
+    );
+    const response = await route.POST(
+      makeRequest("/api/music/playlists/import/m3u8", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer backend-jwt-1",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          content: "#EXTM3U\n#EXTINF:180,Artist - Track One",
+          sourcePlaylistId: "Roadtrip.m3u8",
+          sourcePlaylistName: "Roadtrip",
+          playlistName: "Roadtrip",
+          createPlaylist: false,
+          isPublic: true,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(proxyApiV2).toHaveBeenCalledTimes(1);
+    expect(
+      (
+        proxyApiV2.mock.calls as unknown as Array<
+          [
+            {
+              request?: Request;
+              pathname?: string;
+              method?: string;
+              timeoutMs?: number;
+            },
+          ]
+        >
+      )[0]?.[0]?.pathname,
+    ).toBe("/music/playlists/import/m3u8");
+    expect(
+      (
+        proxyApiV2.mock.calls as unknown as Array<
+          [
+            {
+              request?: Request;
+              pathname?: string;
+              method?: string;
+              timeoutMs?: number;
+            },
+          ]
+        >
+      )[0]?.[0]?.timeoutMs,
+    ).toBe(90_000);
+    expect(
+      (
+        proxyApiV2.mock.calls as unknown as Array<
+          [
+            {
+              request?: Request;
+              pathname?: string;
+              method?: string;
+              timeoutMs?: number;
+            },
+          ]
+        >
+      )[0]?.[0]?.request?.headers.get("authorization"),
+    ).toBe("Bearer backend-jwt-1");
+    expect(forwardedBody).toEqual({
+      content: "#EXTM3U\n#EXTINF:180,Artist - Track One",
+      sourcePlaylistId: "Roadtrip.m3u8",
+      sourcePlaylistName: "Roadtrip",
+      playlistName: "Roadtrip",
+      descriptionOverride: undefined,
+      createPlaylist: false,
+      isPublic: true,
+    });
+  });
+});

@@ -128,14 +128,23 @@ function normalizeM3u8ImportError(
 function M3u8ImportDialog(props: {
   isOpen: boolean;
   isSubmitting: boolean;
+  isReadingFile: boolean;
   payload: M3u8ImportPayload | null;
   result: ImportM3u8PlaylistResponse | null;
   error: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const { error, isOpen, isSubmitting, onClose, onConfirm, payload, result } =
-    props;
+  const {
+    error,
+    isOpen,
+    isReadingFile,
+    isSubmitting,
+    onClose,
+    onConfirm,
+    payload,
+    result,
+  } = props;
   const t = useTranslations("playlists");
   const tc = useTranslations("common");
 
@@ -194,7 +203,7 @@ function M3u8ImportDialog(props: {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
-            {isSubmitting && !result ? (
+            {(isReadingFile || (isSubmitting && !result)) ? (
               <div className="rounded-[1.25rem] border border-[rgba(244,178,102,0.24)] bg-[linear-gradient(160deg,rgba(244,178,102,0.16),rgba(15,23,42,0.78))] p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.14)]">
@@ -202,10 +211,14 @@ function M3u8ImportDialog(props: {
                   </div>
                   <div>
                     <p className="font-semibold text-[var(--color-text)]">
-                      {t("m3u8PreviewLoadingTitle")}
+                      {isReadingFile
+                        ? t("m3u8FileReadingTitle")
+                        : t("m3u8PreviewLoadingTitle")}
                     </p>
                     <p className="mt-1 text-sm text-[var(--color-subtext)]">
-                      {t("m3u8PreviewLoadingDescription")}
+                      {isReadingFile
+                        ? t("m3u8FileReadingDescription")
+                        : t("m3u8PreviewLoadingDescription")}
                     </p>
                   </div>
                 </div>
@@ -393,7 +406,7 @@ function M3u8ImportDialog(props: {
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isReadingFile}
               className="btn-secondary touch-target-lg disabled:opacity-50"
             >
               {result?.playlistCreated ? tc("close") : tc("cancel")}
@@ -414,6 +427,14 @@ function M3u8ImportDialog(props: {
                   t("m3u8CreatePlaylist")
                 )}
               </button>
+            ) : result?.playlistCreated && result.playlist?.id ? (
+              <Link
+                href={`/playlists/${result.playlist.id}`}
+                onClick={onClose}
+                className="btn-primary touch-target-lg inline-flex items-center justify-center gap-2"
+              >
+                {tc("open")}
+              </Link>
             ) : null}
           </div>
         </div>
@@ -440,6 +461,7 @@ export default function PlaylistsPage() {
   const [m3u8ImportResult, setM3u8ImportResult] =
     useState<ImportM3u8PlaylistResponse | null>(null);
   const [m3u8ImportError, setM3u8ImportError] = useState<string | null>(null);
+  const [isReadingM3u8File, setIsReadingM3u8File] = useState(false);
   const m3u8FileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: playlists, isLoading } = api.music.getPlaylists.useQuery(
@@ -517,6 +539,7 @@ export default function PlaylistsPage() {
     setIsM3u8ImportDialogOpen(true);
     setM3u8ImportResult(null);
     setM3u8ImportError(null);
+    setIsReadingM3u8File(true);
 
     try {
       const content = await file.text();
@@ -536,8 +559,11 @@ export default function PlaylistsPage() {
       const message = t("m3u8FileReadFailed", {
         error: error instanceof Error ? error.message : tc("unknownError"),
       });
+      setM3u8ImportPayload(null);
       setM3u8ImportError(message);
       showToast(message, "error");
+    } finally {
+      setIsReadingM3u8File(false);
     }
   };
 
@@ -558,6 +584,7 @@ export default function PlaylistsPage() {
     setM3u8ImportPayload(null);
     setM3u8ImportResult(null);
     setM3u8ImportError(null);
+    setIsReadingM3u8File(false);
     importM3u8Playlist.reset();
   };
 
@@ -630,6 +657,7 @@ export default function PlaylistsPage() {
       <M3u8ImportDialog
         isOpen={isM3u8ImportDialogOpen}
         isSubmitting={importM3u8Playlist.isPending}
+        isReadingFile={isReadingM3u8File}
         payload={m3u8ImportPayload}
         result={m3u8ImportResult}
         error={m3u8ImportError}

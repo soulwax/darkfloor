@@ -486,6 +486,8 @@
     "m3u8ImportReviewDescription": "一致したトラックはインポート準備ができています。未解決の項目は確認用に表示されます。",
     "m3u8ImportCreatedTitle": "プレイリストを作成しました",
     "m3u8ImportCreatedDescription": "アップロードしたプレイリストから「{name}」を作成しました。",
+    "m3u8FileReadingTitle": "プレイリストファイルを読み込み中",
+    "m3u8FileReadingDescription": "Starchild がアップロードしたプレイリストを読み込み、照合の準備をしています。",
     "m3u8PreviewLoadingTitle": "プレイリストのトラックを照合中",
     "m3u8PreviewLoadingDescription": "バックエンドがファイルを読み込み、Deezerトラックを解決しています。",
     "m3u8ImportSummary": "{total}件中、{matched}件一致、{unmatched}件未解決、{skipped}件スキップ",

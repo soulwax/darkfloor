@@ -486,6 +486,8 @@
     "m3u8ImportReviewDescription": "Matchade spår är redo att importeras. Omatchade poster visas för granskning.",
     "m3u8ImportCreatedTitle": "Spellista skapad",
     "m3u8ImportCreatedDescription": "\"{name}\" skapades från den uppladdade spellistan.",
+    "m3u8FileReadingTitle": "Läser spellistefil",
+    "m3u8FileReadingDescription": "Starchild läser in den uppladdade spellistan innan spåren matchas.",
     "m3u8PreviewLoadingTitle": "Matchar spellistespår",
     "m3u8PreviewLoadingDescription": "Backend läser filen och matchar Deezer-spår.",
     "m3u8ImportSummary": "{matched} matchade, {unmatched} olösta, {skipped} hoppades över av {total} poster",

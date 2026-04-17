@@ -483,6 +483,8 @@
     "m3u8ImportReviewDescription": "Matched tracks are ready to import. Unmatched entries are shown for review.",
     "m3u8ImportCreatedTitle": "Playlist created",
     "m3u8ImportCreatedDescription": "\"{name}\" was created from the uploaded playlist.",
+    "m3u8FileReadingTitle": "Reading playlist file",
+    "m3u8FileReadingDescription": "Starchild is loading the uploaded playlist before matching tracks.",
     "m3u8PreviewLoadingTitle": "Matching playlist tracks",
     "m3u8PreviewLoadingDescription": "The backend is reading the file and resolving Deezer tracks.",
     "m3u8ImportSummary": "{matched} matched, {unmatched} unresolved, {skipped} skipped from {total} entries",
