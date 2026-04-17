@@ -177,18 +177,6 @@ export default function Header() {
       return;
     }
 
-    if (isTauriDesktop) {
-      document.documentElement.style.setProperty(
-        "--electron-header-height",
-        "0px",
-      );
-      return () => {
-        document.documentElement.style.removeProperty(
-          "--electron-header-height",
-        );
-      };
-    }
-
     const updateHeaderHeight = () => {
       const headerHeight = Math.max(
         0,
@@ -317,7 +305,7 @@ export default function Header() {
   const isElectronRuntime =
     typeof window !== "undefined" && Boolean(window.electron?.isElectron);
 
-  if (isTauriDesktop || (isMobile && isElectronRuntime)) {
+  if (isMobile && isElectronRuntime) {
     return null;
   }
 
@@ -408,26 +396,22 @@ export default function Header() {
         </div>
 
         <div className="electron-no-drag flex shrink-0 flex-nowrap items-center justify-end gap-2 pr-2 pl-2 whitespace-nowrap sm:pr-3">
-          {!isTauriDesktop ? (
-            <>
-              <Link
-                href="/"
-                className={primaryActionClass}
-                aria-current={isHomeActive ? "page" : undefined}
-              >
-                <Home className="h-3.5 w-3.5" />
-                <span className="hidden xl:inline">{tc("home")}</span>
-              </Link>
-              <Link
-                href="/library"
-                className={primaryActionClass}
-                aria-current={isLibraryActive ? "page" : undefined}
-              >
-                <Library className="h-3.5 w-3.5" />
-                <span className="hidden xl:inline">{tc("library")}</span>
-              </Link>
-            </>
-          ) : null}
+          <Link
+            href="/"
+            className={primaryActionClass}
+            aria-current={isHomeActive ? "page" : undefined}
+          >
+            <Home className="h-3.5 w-3.5" />
+            <span className="hidden xl:inline">{tc("home")}</span>
+          </Link>
+          <Link
+            href="/library"
+            className={primaryActionClass}
+            aria-current={isLibraryActive ? "page" : undefined}
+          >
+            <Library className="h-3.5 w-3.5" />
+            <span className="hidden xl:inline">{tc("library")}</span>
+          </Link>
           <DropdownMenu open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button

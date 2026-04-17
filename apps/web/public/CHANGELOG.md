@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.24] - 2026-04-17
+
+### Changed
+
+- **The experimental Tauri desktop shell now looks and behaves much closer to the main web app**: Tauri once again uses the real web header and branded desktop sidebar instead of a separate tabbed titlebar layout, so navigation, search, and shell structure now stay aligned with the primary frontend.
+- **The custom Tauri titlebar is slimmer, more informative, and more OS-aware**: The desktop chrome now focuses on meaningful window-level context by surfacing the current section, live playback status, queue count, and quick play/pause access while keeping draggable regions intact and moving the traffic-light controls to the left on macOS-style environments.
+
 ## [1.15.23] - 2026-04-16
 
 ### Fixed

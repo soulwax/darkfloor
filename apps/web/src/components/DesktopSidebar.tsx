@@ -70,8 +70,6 @@ export function DesktopSidebar() {
   const tp = useTranslations("playlists");
   const ts = useTranslations("shell");
   const isAdmin = session?.user?.admin === true;
-  const isTauriDesktop =
-    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
   const { openAuthModal } = useAuthModal();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -334,42 +332,38 @@ export function DesktopSidebar() {
           />
 
           <div className="flex h-full min-h-0 w-full flex-col bg-transparent">
-            {isTauriDesktop ? (
-              <div className="h-3 shrink-0" />
-            ) : (
-              <div className="px-3 pt-4 pb-2">
-                <div
-                  className={`flex items-center ${collapsed ? "justify-center" : "justify-start"} rounded-xl px-2 py-1.5`}
-                >
-                  <Image
-                    src={emilyLogo}
-                    alt="Starchild"
-                    width={36}
-                    height={36}
-                    className="sidebar-logo-glow h-9 w-9 rounded-xl"
-                    priority
-                    unoptimized
-                  />
-                  {!collapsed && (
-                    <div className="ml-4 min-w-0">
-                      <div className="header-logo-title truncate text-base font-semibold tracking-[0.02em] text-[var(--color-text)]">
-                        Starchild
-                      </div>
-                      <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
-                        {session
-                          ? `${ts("greeting")} ${
-                              session.user?.name ??
-                              session.user?.email ??
-                              session.user?.userHash ??
-                              ts("there")
-                            }`
-                          : ts("greetingFallback")}
-                      </div>
+            <div className="px-3 pt-4 pb-2">
+              <div
+                className={`flex items-center ${collapsed ? "justify-center" : "justify-start"} rounded-xl px-2 py-1.5`}
+              >
+                <Image
+                  src={emilyLogo}
+                  alt="Starchild"
+                  width={36}
+                  height={36}
+                  className="sidebar-logo-glow h-9 w-9 rounded-xl"
+                  priority
+                  unoptimized
+                />
+                {!collapsed && (
+                  <div className="ml-4 min-w-0">
+                    <div className="header-logo-title truncate text-base font-semibold tracking-[0.02em] text-[var(--color-text)]">
+                      Starchild
                     </div>
-                  )}
-                </div>
+                    <div className="truncate text-[10px] font-medium tracking-[0.16em] text-[var(--color-muted)] uppercase">
+                      {session
+                        ? `${ts("greeting")} ${
+                            session.user?.name ??
+                            session.user?.email ??
+                            session.user?.userHash ??
+                            ts("there")
+                          }`
+                        : ts("greetingFallback")}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {!collapsed && (
               <div className="shell-section-label px-4 pb-1">{ts("menu")}</div>

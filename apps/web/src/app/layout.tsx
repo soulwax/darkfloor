@@ -152,9 +152,6 @@ export default async function RootLayout({
           <ErrorBoundary>
             <SessionProvider>
               <TRPCReactProvider>
-                <Suspense fallback={null}>
-                  <TauriTitlebar />
-                </Suspense>
                 <ThemeProvider>
                   <AuthModalProvider>
                     <ElectronChromeSync />
@@ -169,6 +166,12 @@ export default async function RootLayout({
                                 <AuthGate>
                                   {}
                                   <UIWrapper>
+                                    {}
+                                    <div suppressHydrationWarning>
+                                      <Suspense fallback={null}>
+                                        <TauriTitlebar />
+                                      </Suspense>
+                                    </div>
                                     {}
                                     <div suppressHydrationWarning>
                                       <Suspense fallback={null}>
