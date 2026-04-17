@@ -5,12 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.15.23] - 2026-04-14
+## [1.15.23] - 2026-04-16
 
 ### Fixed
 
-- **Tauri desktop OAuth launch now honors the canonical auth origin again**: Discord and GitHub sign-in now start from the validated public auth base, and when no explicit browser auth base is set the client falls back to `NEXTAUTH_URL` before any backend API host. This keeps packaged Tauri auth pinned to the registered loopback origin such as `http://127.0.0.1:3222`.
-- **Standalone/Tauri release builds no longer die while prerendering `/_global-error`**: The root App Router shell and global error boundary now opt into dynamic rendering so request-bound locale/auth setup is not executed during the special build-time prerender path that lacks a Next.js request work store.
+- **Favorite, playlist, and listening persistence now restores dedicated Deezer columns and favorite IDs during migrations**: Added an idempotent Drizzle repair migration for the missing dedicated Deezer ID columns/indexes and the favorite identity sequence, covering databases affected by schema restore or migration-journal drift.
+- **Native Deezer track saves now populate `deezerId` from the track ID**: Favorite, playlist, history, analytics, playback, and recommendation writes now preserve the Deezer identifier for tracks that arrive with `id` but no separate `deezer_id`.
 
 ## [1.15.22] - 2026-04-14
 

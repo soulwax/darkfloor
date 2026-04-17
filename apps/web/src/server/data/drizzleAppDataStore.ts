@@ -21,6 +21,7 @@ import type {
 type PostgresConstraintError = {
   code?: string;
   constraint?: string;
+  cause?: unknown;
 };
 
 const userPreferencesUiColumns = {
@@ -61,26 +62,24 @@ function isUniqueConstraintError(
   error: unknown,
   constraint?: string,
 ): error is PostgresConstraintError {
-  if (!error || typeof error !== "object") {
-    return false;
+  let current: unknown = error;
+
+  while (current && typeof current === "object") {
+    const candidate = current as PostgresConstraintError;
+    if (candidate.code === "23505") {
+      return constraint ? candidate.constraint === constraint : true;
+    }
+
+    current = candidate.cause;
   }
 
-  const candidate = error as PostgresConstraintError;
-  if (candidate.code !== "23505") {
-    return false;
-  }
-
-  return constraint ? candidate.constraint === constraint : true;
+  return false;
 }
 
 function getDeezerId(track: Track): number | undefined {
-  if (track.deezer_id === undefined) {
-    return undefined;
-  }
+  const id = track.deezer_id ?? track.id;
 
-  return typeof track.deezer_id === "string"
-    ? Number.parseInt(track.deezer_id, 10) || undefined
-    : track.deezer_id;
+  return typeof id === "string" ? Number.parseInt(id, 10) || undefined : id;
 }
 
 async function syncPlaylistIdSequence(database: DatabaseClient): Promise<void> {
