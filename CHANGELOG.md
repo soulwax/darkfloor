@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.24] - 2026-04-17
+
+### Added
+
+- **Playlists can now be imported from local M3U/M3U8 files**: The `/playlists` page now opens `.m3u` and `.m3u8` files, parses `#EXTINF` metadata and Deezer track URLs, resolves tracks through the existing music search/track APIs, and creates a normal Starchild playlist with import progress and result feedback.
+
 ## [1.15.23] - 2026-04-16
 
 ### Fixed
