@@ -4,15 +4,10 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { resolveTauriCliPath } = require("./run-tauri-cli.cjs");
 
 const desktopDir = path.resolve(__dirname, "..");
-const tauriCliPath = path.join(
-  desktopDir,
-  "node_modules",
-  "@tauri-apps",
-  "cli",
-  "tauri.js",
-);
+const tauriCliPath = resolveTauriCliPath();
 const baseConfigPath = path.join(desktopDir, "src-tauri", "tauri.conf.json");
 const generatedConfigPath = path.join(
   desktopDir,
@@ -29,7 +24,7 @@ if (!fs.existsSync(baseConfigPath)) {
   fail(`Missing Tauri config: ${baseConfigPath}`);
 }
 
-if (!fs.existsSync(tauriCliPath)) {
+if (!tauriCliPath || !fs.existsSync(tauriCliPath)) {
   fail(`Tauri CLI entrypoint not found: ${tauriCliPath}`);
 }
 

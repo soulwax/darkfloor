@@ -4,6 +4,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { resolveTauriCliPath } = require("./run-tauri-cli.cjs");
 
 const desktopDir = path.resolve(__dirname, "..");
 const bundleRoot = path.join(desktopDir, "src-tauri", "b");
@@ -20,13 +21,7 @@ const runtimeBundleStaged = path.join(
   "runtime",
   "tauri-runtime-env.json",
 );
-const tauriCliPath = path.join(
-  desktopDir,
-  "node_modules",
-  "@tauri-apps",
-  "cli",
-  "tauri.js",
-);
+const tauriCliPath = resolveTauriCliPath();
 const baseConfigPath = path.join(desktopDir, "src-tauri", "tauri.conf.json");
 const generatedConfigPath = path.join(
   desktopDir,
@@ -83,7 +78,7 @@ if (!bundledNode) {
   );
 }
 
-if (!fs.existsSync(tauriCliPath)) {
+if (!tauriCliPath || !fs.existsSync(tauriCliPath)) {
   fail(`Tauri CLI entrypoint not found: ${tauriCliPath}`);
 }
 
