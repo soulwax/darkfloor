@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderBioluminescentAbyss } from "../../../../packages/visualizers/src/flowfieldPatterns/renderBioluminescentAbyss";
+import { renderBioluminescentAbyss } from "../../../../../packages/visualizers/src/flowfieldPatterns/renderBioluminescentAbyss";
 import { makePatternContext } from "./canvas-mock";
 
 describe("renderBioluminescentAbyss", () => {

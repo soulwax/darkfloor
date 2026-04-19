@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   chladniF,
   renderChladniResonance,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderChladniResonance";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderChladniResonance";
 import { makePatternContext } from "./canvas-mock";
 
 describe("chladniF", () => {

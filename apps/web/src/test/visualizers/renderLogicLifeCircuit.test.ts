@@ -3,7 +3,7 @@ import {
   evaluateLogicGate,
   renderLogicLifeCircuit,
   stepGameOfLife,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderLogicLifeCircuit";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderLogicLifeCircuit";
 import { makePatternContext } from "./canvas-mock";
 
 describe("evaluateLogicGate", () => {

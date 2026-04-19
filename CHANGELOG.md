@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.27] - 2026-04-19
+
+### Fixed
+
+- **The visualizer now recovers from the broken `perlinNoiseField` renderer instead of freezing the browser session**: Repaired the stray undefined variable path inside the Perlin pattern, switched its ring deformation back to bounded fractal-noise math, and added a renderer-level fallback so a future pattern exception drops back to a safe visual instead of requiring a full refresh.
+
 ## [1.15.26] - 2026-04-17
 
 ### Fixed
@@ -22,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Playlists can now be imported from local M3U/M3U8 files**: The `/playlists` page now opens `.m3u` and `.m3u8` files, parses `#EXTINF` metadata and Deezer track URLs, resolves tracks through the existing music search/track APIs, and creates a normal Starchild playlist with import progress and result feedback.
+
 ### Changed
 
 - **The experimental Tauri desktop shell now looks and behaves much closer to the main web app**: Tauri once again uses the real web header and branded desktop sidebar instead of a separate tabbed titlebar layout, so navigation, search, and shell structure now stay aligned with the primary frontend.

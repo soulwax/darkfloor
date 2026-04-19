@@ -1,6 +1,6 @@
 // File: apps/web/src/test/visualizers/canvas-mock.ts
 import { vi } from "vitest";
-import type { FlowFieldPatternContext } from "../../../../packages/visualizers/src/flowfieldPatterns/types";
+import type { FlowFieldPatternContext } from "../../../../../packages/visualizers/src/flowfieldPatterns/types";
 
 export function makeCtxMock(): CanvasRenderingContext2D {
   return {
@@ -31,6 +31,8 @@ export function makeCtxMock(): CanvasRenderingContext2D {
     createRadialGradient: vi.fn(() => ({
       addColorStop: vi.fn(),
     })),
+    setTransform: vi.fn(),
+    setLineDash: vi.fn(),
     set fillStyle(_v: string | CanvasGradient | CanvasPattern) {},
     set strokeStyle(_v: string | CanvasGradient | CanvasPattern) {},
     set globalCompositeOperation(_v: GlobalCompositeOperation) {},
@@ -38,8 +40,12 @@ export function makeCtxMock(): CanvasRenderingContext2D {
     set lineWidth(_v: number) {},
     set lineCap(_v: CanvasLineCap) {},
     set lineJoin(_v: CanvasLineJoin) {},
+    set miterLimit(_v: number) {},
     set shadowBlur(_v: number) {},
+    set shadowOffsetX(_v: number) {},
+    set shadowOffsetY(_v: number) {},
     set shadowColor(_v: string) {},
+    set filter(_v: string) {},
   } as unknown as CanvasRenderingContext2D;
 }
 

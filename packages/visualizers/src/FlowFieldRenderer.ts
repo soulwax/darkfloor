@@ -120,6 +120,7 @@ export class FlowFieldRenderer {
   private showFpsCounter = false;
   private firefoxLowFpsStreak = 0;
   private firefoxLastContextResetAt = 0;
+  private lastRenderFailureSignature: string | null = null;
 
   private static readonly FIREFOX_LOW_FPS_FRAME_TIME_MS = 200;
   private static readonly FIREFOX_LOW_FPS_REQUIRED_FRAMES = 4;
@@ -525,24 +526,24 @@ export class FlowFieldRenderer {
   private static readonly KABBALAH_PATHS: ReadonlyArray<
     readonly [number, number]
   > = [
-      [0, 1],
-      [0, 2],
-      [1, 2],
-      [1, 3],
-      [2, 4],
-      [3, 4],
-      [3, 5],
-      [4, 5],
-      [3, 6],
-      [4, 7],
-      [5, 6],
-      [5, 7],
-      [6, 7],
-      [6, 8],
-      [7, 8],
-      [8, 9],
-      [5, 8],
-    ];
+    [0, 1],
+    [0, 2],
+    [1, 2],
+    [1, 3],
+    [2, 4],
+    [3, 4],
+    [3, 5],
+    [4, 5],
+    [3, 6],
+    [4, 7],
+    [5, 6],
+    [5, 7],
+    [6, 7],
+    [6, 8],
+    [7, 8],
+    [8, 9],
+    [5, 8],
+  ];
   private static readonly SRI_YANTRA_TRIANGLES = [
     { rotation: 0, inverted: true, scale: 1.0, hue: 0 },
     { rotation: Math.PI * 0.4, inverted: true, scale: 0.85, hue: 40 },
@@ -596,20 +597,20 @@ export class FlowFieldRenderer {
   private static readonly METATRON_OFFSETS: ReadonlyArray<
     readonly [number, number]
   > = [
-      [0, 0],
-      [0, -1],
-      [0.866, -0.5],
-      [0.866, 0.5],
-      [0, 1],
-      [-0.866, 0.5],
-      [-0.866, -0.5],
-      [0, -0.5],
-      [0.433, -0.25],
-      [0.433, 0.25],
-      [0, 0.5],
-      [-0.433, 0.25],
-      [-0.433, -0.25],
-    ];
+    [0, 0],
+    [0, -1],
+    [0.866, -0.5],
+    [0.866, 0.5],
+    [0, 1],
+    [-0.866, 0.5],
+    [-0.866, -0.5],
+    [0, -0.5],
+    [0.433, -0.25],
+    [0.433, 0.25],
+    [0, 0.5],
+    [-0.433, 0.25],
+    [-0.433, -0.25],
+  ];
 
   private static initSinTable(): Float32Array {
     const table = new Float32Array(this.SIN_TABLE_SIZE);
@@ -1046,7 +1047,7 @@ export class FlowFieldRenderer {
   private createBubble(): Bubble {
     const baseHue =
       FlowFieldRenderer.MYSTICAL_HUES[
-      (Math.random() * FlowFieldRenderer.MYSTICAL_HUES.length) | 0
+        (Math.random() * FlowFieldRenderer.MYSTICAL_HUES.length) | 0
       ] ?? 270;
     const hue = baseHue + (Math.random() - 0.5) * 30;
 
@@ -3172,52 +3173,92 @@ export class FlowFieldRenderer {
     const frameFade = Math.min(
       0.24,
       fadeAmount +
-      audioIntensity * 0.04 +
-      firefoxFadeBoost +
-      transitionFadeBoost,
+        audioIntensity * 0.04 +
+        firefoxFadeBoost +
+        transitionFadeBoost,
     );
     ctx.fillStyle = `rgba(0, 0, 0, ${frameFade})`;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    if (this.isTransitioning) {
-      const t = this.transitionProgress;
-      const eased = t * t * t * (t * (t * 6 - 15) + 10);
-      const outgoingAlpha = Math.max(0, 1 - eased * 0.9);
-      const incomingAlpha = Math.min(1, 0.08 + eased * 0.92);
+    try {
+      if (this.isTransitioning) {
+        const t = this.transitionProgress;
+        const eased = t * t * t * (t * (t * 6 - 15) + 10);
+        const outgoingAlpha = Math.max(0, 1 - eased * 0.9);
+        const incomingAlpha = Math.min(1, 0.08 + eased * 0.92);
 
-      ctx.save();
-      ctx.globalAlpha = outgoingAlpha;
-      this.renderPattern(
-        this.currentPattern,
-        audioIntensity,
-        bassIntensity,
-        midIntensity,
-        trebleIntensity,
-      );
-      ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = outgoingAlpha;
+        this.renderPattern(
+          this.currentPattern,
+          audioIntensity,
+          bassIntensity,
+          midIntensity,
+          trebleIntensity,
+        );
+        ctx.restore();
 
-      ctx.save();
-      ctx.globalAlpha = incomingAlpha;
-      this.renderPattern(
-        this.nextPattern,
-        audioIntensity,
-        bassIntensity,
-        midIntensity,
-        trebleIntensity,
-      );
-      ctx.restore();
-    } else {
-      this.renderPattern(
-        this.currentPattern,
-        audioIntensity,
-        bassIntensity,
-        midIntensity,
-        trebleIntensity,
-      );
+        ctx.save();
+        ctx.globalAlpha = incomingAlpha;
+        this.renderPattern(
+          this.nextPattern,
+          audioIntensity,
+          bassIntensity,
+          midIntensity,
+          trebleIntensity,
+        );
+        ctx.restore();
+      } else {
+        this.renderPattern(
+          this.currentPattern,
+          audioIntensity,
+          bassIntensity,
+          midIntensity,
+          trebleIntensity,
+        );
+      }
+
+      this.renderTransitionParticles(audioIntensity);
+      this.renderFpsCounter(ctx);
+      this.lastRenderFailureSignature = null;
+    } catch (error) {
+      this.handleRenderFailure(error);
+    }
+  }
+
+  private handleRenderFailure(error: unknown): void {
+    const activePattern = this.currentPattern;
+    const errorMessage =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    const failureSignature = `${activePattern}:${errorMessage}`;
+
+    if (this.lastRenderFailureSignature !== failureSignature) {
+      console.error("[Visual] Render failure recovered with fallback pattern", {
+        pattern: activePattern,
+        nextPattern: this.nextPattern,
+        isTransitioning: this.isTransitioning,
+        error,
+      });
+      this.lastRenderFailureSignature = failureSignature;
     }
 
-    this.renderTransitionParticles(audioIntensity);
-    this.renderFpsCounter(ctx);
+    this.isTransitioning = false;
+    this.transitionProgress = 0;
+    this.transitionParticles = [];
+    this.resetCanvasState("render-error");
+
+    const fallbackPattern: Pattern =
+      activePattern === "rays" || !this.allPatterns.includes("rays")
+        ? (this.allPatterns[0] ?? "rays")
+        : "rays";
+
+    this.currentPattern = fallbackPattern;
+    const fallbackIndex = this.allPatterns.indexOf(fallbackPattern);
+    this.nextPattern =
+      this.allPatterns[(fallbackIndex + 1) % this.allPatterns.length] ??
+      fallbackPattern;
   }
 
   private startPatternTransition(
@@ -4806,7 +4847,10 @@ export class FlowFieldRenderer {
    * degrade performance over time.
    */
   private resetCanvasState(
-    reason: "pattern-cycle" | "firefox-low-fps" = "pattern-cycle",
+    reason:
+      | "pattern-cycle"
+      | "firefox-low-fps"
+      | "render-error" = "pattern-cycle",
   ): void {
     const ctx = this.ctx;
 
@@ -4845,7 +4889,9 @@ export class FlowFieldRenderer {
     const reasonLabel =
       reason === "firefox-low-fps"
         ? "Firefox low FPS safeguard"
-        : "every 10 patterns";
+        : reason === "render-error"
+          ? "render failure recovery"
+          : "every 10 patterns";
     console.log(`[Visual] 🔄 Deep canvas reset performed (${reasonLabel})`);
   }
 
@@ -9955,7 +10001,7 @@ export class FlowFieldRenderer {
       const size = Math.max(
         1,
         (3 + this.fastSin(timeSize + i) * 2 + trebleIntensity * 2) *
-        (0.75 + detailScale * 0.35),
+          (0.75 + detailScale * 0.35),
       );
       const alpha = Math.max(
         0.08,
@@ -13456,7 +13502,6 @@ export class FlowFieldRenderer {
       const pointStep = FlowFieldRenderer.TWO_PI / points;
       const invScale = 1 / scale;
       const octaveScale = 1;
-      const persistencePow = 1;
       const ring2 = ring << 1;
       for (let i = 0; i <= points; i++) {
         const angle = i * pointStep;
@@ -13464,18 +13509,44 @@ export class FlowFieldRenderer {
         const sinAngle = this.fastSin(angle);
         const nx = cosAngle * radius * invScale + time03;
         const ny = sinAngle * radius * invScale + time02;
-        const nz = tanAngle * radius * oc
+        let value = 0;
+        let amplitude = 1;
+        let normalization = 0;
+        let frequency = octaveScale;
 
-        const xi = nx | 0;
-        const yi = ny | 0;
-        const hash1 = ((xi * 73) ^ (yi * 97)) & 0xff;
-        const hash2 = ((hash1 * 101) ^ ((this.time >> 2) & 0xff)) & 0xff;
-        const fx = nx - xi;
-        const fy = ny - yi;
-        const u = fx * fx * (3 - 2 * fx);
-        const v = fy * fy * (3 - 2 * fy);
-        const grad = (hash2 / 255) * 2 - 1;
-        const value = grad * u * v;
+        for (let octave = 0; octave < octaves; octave++) {
+          const sampleX = nx * frequency + octave * 17.13;
+          const sampleY = ny * frequency - octave * 11.7;
+          const xi = sampleX | 0;
+          const yi = sampleY | 0;
+          const fx = sampleX - xi;
+          const fy = sampleY - yi;
+          const u = fx * fx * (3 - 2 * fx);
+          const v = fy * fy * (3 - 2 * fy);
+          const cornerSeed = octave * 131;
+          const hash00 = ((xi * 73) ^ (yi * 97) ^ cornerSeed) & 0xff;
+          const hash10 = (((xi + 1) * 73) ^ (yi * 97) ^ cornerSeed) & 0xff;
+          const hash01 = ((xi * 73) ^ ((yi + 1) * 97) ^ cornerSeed) & 0xff;
+          const hash11 =
+            (((xi + 1) * 73) ^ ((yi + 1) * 97) ^ cornerSeed) & 0xff;
+          const grad00 = (hash00 / 255) * 2 - 1;
+          const grad10 = (hash10 / 255) * 2 - 1;
+          const grad01 = (hash01 / 255) * 2 - 1;
+          const grad11 = (hash11 / 255) * 2 - 1;
+          const interpX0 = grad00 + (grad10 - grad00) * u;
+          const interpX1 = grad01 + (grad11 - grad01) * u;
+          const octaveValue = interpX0 + (interpX1 - interpX0) * v;
+
+          value += octaveValue * amplitude;
+          normalization += amplitude;
+          amplitude *= persistence;
+          frequency *= 2;
+        }
+
+        if (normalization > 0) {
+          value /= normalization;
+        }
+
         const wave = value * (15 + ring2);
 
         const currentRadius = radius + wave;
@@ -13898,8 +13969,7 @@ export class FlowFieldRenderer {
         const zMidX = this.fastCos(midAngle) * outerRadius;
         const zMidY = this.fastSin(midAngle) * outerRadius;
 
-
-        ctx.quadraticCurveTo(xMid, yMid, x2, y2,);
+        ctx.quadraticCurveTo(xMid, yMid, x2, y2);
 
         ctx.lineTo(zMidX, zMidY);
 
@@ -14228,8 +14298,8 @@ export class FlowFieldRenderer {
 
         const streamHue = this.fastMod360(
           layerHue +
-          i * (360 * invStreamCount) +
-          this.fastSin(layerTime + i) * 20,
+            i * (360 * invStreamCount) +
+            this.fastSin(layerTime + i) * 20,
         );
 
         const streamLength = streamHeight * (0.8 + audioIntensity * 0.4);
@@ -15743,7 +15813,7 @@ export class FlowFieldRenderer {
       const connAlpha = 0.2 + trebleIntensity * 0.2;
       const connDistance = this.fastSqrt(
         (connX2 - connX1) * (connX2 - connX1) +
-        (connY2 - connY1) * (connY2 - connY1),
+          (connY2 - connY1) * (connY2 - connY1),
       );
 
       if (connDistance < maxRadius * 0.4) {
@@ -17028,7 +17098,7 @@ export class FlowFieldRenderer {
         const wave =
           1 +
           this.fastSin(angle * 5 + time * 3.2 + bandProgress * 7) *
-          (0.1 + bassIntensity * 0.14) +
+            (0.1 + bassIntensity * 0.14) +
           this.fastSin(angle * 9 - time * 2.1) * (0.04 + midIntensity * 0.08);
         const x = this.fastCos(angle + rotation) * radius * wave;
         const y =

@@ -3,7 +3,7 @@ import {
   renderSeismicPhaseMesh,
   sampleSeismicField,
   type Epicenter,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderSeismicPhaseMesh";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderSeismicPhaseMesh";
 import { makePatternContext } from "./canvas-mock";
 
 describe("sampleSeismicField", () => {
