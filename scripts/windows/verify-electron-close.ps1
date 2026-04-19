@@ -80,6 +80,19 @@ function Resolve-FirstExistingFile {
   return $null
 }
 
+function Join-PathIfBase {
+  param(
+    [string]$BasePath,
+    [string]$ChildPath
+  )
+
+  if ([string]::IsNullOrWhiteSpace($BasePath)) {
+    return $null
+  }
+
+  return Join-Path -Path $BasePath -ChildPath $ChildPath
+}
+
 function Test-IsPathUnder {
   param(
     [string]$CandidatePath,
@@ -114,18 +127,20 @@ function Get-StarchildProcessRows {
     Where-Object {
       $name = $_.Name
       if ($name -notin @("Starchild.exe", "node.exe", "electron.exe")) {
-        return $false
+        $false
+      } elseif ($processIdSet.Contains([int]$_.ProcessId)) {
+        $true
+      } else {
+        $executablePath = [string]$_.ExecutablePath
+        $commandLine = [string]$_.CommandLine
+        $commandLineMentionsInstallRoot = (
+          -not [string]::IsNullOrWhiteSpace($commandLine) -and
+          $commandLine.IndexOf($InstallRoot, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+        )
+
+        (Test-IsPathUnder -CandidatePath $executablePath -RootPath $InstallRoot) -or
+          $commandLineMentionsInstallRoot
       }
-
-      if ($processIdSet.Contains([int]$_.ProcessId)) {
-        return $true
-      }
-
-      $executablePath = [string]$_.ExecutablePath
-      $commandLine = [string]$_.CommandLine
-
-      (Test-IsPathUnder -CandidatePath $executablePath -RootPath $InstallRoot) -or
-        ($commandLine -like "*$InstallRoot*")
     } |
     Sort-Object Name, ProcessId
 }
@@ -145,9 +160,9 @@ function Format-ProcessRow {
 $exeCandidates = @(
   $ExePath,
   (Join-Path -Path $repoRoot -ChildPath "dist\win-unpacked\Starchild.exe"),
-  (Join-Path -Path $env:LOCALAPPDATA -ChildPath "Programs\Starchild\Starchild.exe"),
-  (Join-Path -Path $env:ProgramFiles -ChildPath "Starchild\Starchild.exe"),
-  (Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath "Starchild\Starchild.exe")
+  (Join-PathIfBase -BasePath $env:LOCALAPPDATA -ChildPath "Programs\Starchild\Starchild.exe"),
+  (Join-PathIfBase -BasePath $env:ProgramFiles -ChildPath "Starchild\Starchild.exe"),
+  (Join-PathIfBase -BasePath ${env:ProgramFiles(x86)} -ChildPath "Starchild\Starchild.exe")
 )
 
 $resolvedExePath = Resolve-FirstExistingFile -Candidates $exeCandidates
