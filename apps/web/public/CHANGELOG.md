@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.15.27] - 2026-04-17
 
 
+- **Signed-in greeter settings now save to account preferences**: Reopened greeter changes for language, mood, and preferred genre now write through the same tRPC preference and taste-profile paths as Settings/Home, while guests keep the existing local fallback.
 - **Tauri MSI builds now leave the working release artifacts signed as well as the installer**: The MSI bundle scripts now run the same post-sign artifact pass as the NSIS lane, so both `target/release/starchild.exe` and the generated `.msi` stay signed after the build finishes.
 - **Tauri artifact versions are synchronized with the main app version again**: The Tauri config and Rust manifest now ship `1.15.27`, so generated executables and installers no longer advertise the stale `1.15.21` version.
 - **The visualizer now recovers from the broken `perlinNoiseField` renderer instead of freezing the browser session**: Repaired the stray undefined variable path inside the Perlin pattern, switched its ring deformation back to bounded fractal-noise math, and added a renderer-level fallback so a future pattern exception drops back to a safe visual instead of requiring a full refresh.

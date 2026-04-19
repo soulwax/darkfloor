@@ -13,6 +13,7 @@ import {
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import type { AppLocale } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { localStorage as appStorage } from "@/services/storage";
 import { parsePreferredGenreId } from "@/utils/genre";
@@ -25,9 +26,11 @@ import {
   VISUALIZER_PREFERENCE_UPDATED_EVENT,
 } from "@/utils/visualizerPreference";
 import { getGenres, type GenreListItem } from "@starchild/api-client/rest";
+import { api, type RouterInputs } from "@starchild/api-client/trpc/react";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { ChevronDown, Music2, Play, Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -45,6 +48,9 @@ type MoodPreset = {
   autoQueue: boolean;
   smartMix: boolean;
 };
+
+type PreferenceInput = RouterInputs["music"]["updatePreferences"];
+type TasteProfileInput = RouterInputs["music"]["upsertTasteProfile"];
 
 type GenreOption = {
   id: number | null;
@@ -97,6 +103,12 @@ function resolveInitialMood(
   return match?.id ?? "chill";
 }
 
+function normalizeSimilarityPreference(value: unknown): SimilarityPreference {
+  return value === "strict" || value === "diverse" || value === "balanced"
+    ? value
+    : "balanced";
+}
+
 function getNextGenreOptionIndex(
   key: string,
   currentIndex: number,
@@ -135,6 +147,9 @@ export function GuestModal({
   onContinueAsGuest,
   callbackUrl = "/library",
 }: GuestModalProps) {
+  const { data: session } = useSession();
+  const isSignedIn = Boolean(session?.user);
+  const trpcUtils = api.useUtils();
   const { openAuthModal } = useAuthModal();
   const t = useTranslations("guest");
   const tWelcome = useTranslations("welcome");
@@ -179,6 +194,30 @@ export function GuestModal({
   const [highlightedGenreIndex, setHighlightedGenreIndex] = useState(0);
   const genreTriggerRef = useRef<HTMLButtonElement | null>(null);
   const genreListboxRef = useRef<HTMLDivElement | null>(null);
+  const { data: preferences } = api.music.getUserPreferences.useQuery(
+    undefined,
+    { enabled: isSignedIn },
+  );
+  const { data: tasteProfile } = api.music.getTasteProfile.useQuery(undefined, {
+    enabled: isSignedIn,
+    refetchOnWindowFocus: false,
+  });
+  const updatePreferences = api.music.updatePreferences.useMutation({
+    onSuccess: (savedPreferences) => {
+      trpcUtils.music.getUserPreferences.setData(undefined, savedPreferences);
+    },
+    onError: (error) => {
+      console.warn("[GuestModal] Failed to save account preferences:", error);
+    },
+  });
+  const upsertTasteProfile = api.music.upsertTasteProfile.useMutation({
+    onSuccess: () => {
+      void trpcUtils.music.getTasteProfile.invalidate();
+    },
+    onError: (error) => {
+      console.warn("[GuestModal] Failed to save taste profile:", error);
+    },
+  });
 
   const selectedMood = useMemo(
     () => MOOD_PRESETS.find((preset) => preset.id === selectedMoodId) ?? null,
@@ -208,12 +247,43 @@ export function GuestModal({
     return index >= 0 ? index : 0;
   }, [genreOptions, preferredGenreId]);
 
+  function saveLanguagePreference(nextLocale: AppLocale): void {
+    if (!isSignedIn) return;
+
+    const input = { language: nextLocale } satisfies PreferenceInput;
+    updatePreferences.mutate(input);
+  }
+
+  function saveMoodPreference(preset: MoodPreset): void {
+    if (!isSignedIn) return;
+
+    const input = {
+      autoQueueEnabled: preset.autoQueue,
+      smartMixEnabled: preset.smartMix,
+      similarityPreference: preset.similarity,
+    } satisfies PreferenceInput;
+
+    updatePreferences.mutate(input);
+  }
+
+  function saveTastePreference(genre: GenreListItem | null): void {
+    if (!isSignedIn) return;
+
+    const input = {
+      preferredGenreId: genre?.id ?? null,
+      preferredGenreName: genre?.name ?? null,
+    } satisfies TasteProfileInput;
+
+    upsertTasteProfile.mutate(input);
+  }
+
   function setGenrePreference(genre: GenreListItem | null): void {
     if (!genre) {
       setPreferredGenreId(null);
       setPreferredGenreName("");
       appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_ID);
       appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_NAME);
+      saveTastePreference(null);
       return;
     }
 
@@ -221,6 +291,7 @@ export function GuestModal({
     setPreferredGenreName(genre.name);
     appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_ID, genre.id);
     appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_NAME, genre.name);
+    saveTastePreference(genre);
   }
 
   function closeGenreMenu(): void {
@@ -502,11 +573,55 @@ export function GuestModal({
     activeOption?.scrollIntoView({ block: "nearest" });
   }, [highlightedGenreIndex, isGenreMenuOpen]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Sync signed-in account settings into the greeter controls after tRPC data loads. */
+  useEffect(() => {
+    if (!isSignedIn || !preferences) return;
+
+    setSelectedMoodId(
+      resolveInitialMood(
+        normalizeSimilarityPreference(preferences.similarityPreference),
+        preferences.autoQueueEnabled ?? false,
+        preferences.smartMixEnabled ?? true,
+      ),
+    );
+  }, [isSignedIn, preferences]);
+
+  useEffect(() => {
+    if (!isSignedIn || !tasteProfile) return;
+
+    const profileGenreId = parsePreferredGenreId(
+      tasteProfile.preferredGenreId ?? null,
+    );
+    const profileGenreName =
+      typeof tasteProfile.preferredGenreName === "string"
+        ? tasteProfile.preferredGenreName.trim()
+        : "";
+
+    setPreferredGenreId(profileGenreId);
+    setPreferredGenreName(profileGenreName);
+
+    if (profileGenreId) {
+      appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_ID, profileGenreId);
+    } else {
+      appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_ID);
+    }
+
+    if (profileGenreName) {
+      appStorage.set(STORAGE_KEYS.PREFERRED_GENRE_NAME, profileGenreName);
+    } else {
+      appStorage.remove(STORAGE_KEYS.PREFERRED_GENRE_NAME);
+    }
+  }, [isSignedIn, tasteProfile]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const applyMoodPreset = (preset: MoodPreset): void => {
     setSelectedMoodId(preset.id);
-    settingsStorage.set("similarityPreference", preset.similarity);
-    settingsStorage.set("autoQueueEnabled", preset.autoQueue);
-    settingsStorage.set("smartMixEnabled", preset.smartMix);
+    settingsStorage.setAll({
+      similarityPreference: preset.similarity,
+      autoQueueEnabled: preset.autoQueue,
+      smartMixEnabled: preset.smartMix,
+    });
+    saveMoodPreference(preset);
   };
 
   const enableFirefoxVisuals = () => {
@@ -611,7 +726,10 @@ export function GuestModal({
                         type="button"
                         aria-pressed={selected}
                         disabled={isLocaleSwitchPending}
-                        onClick={() => setLocale(option.value)}
+                        onClick={() => {
+                          setLocale(option.value);
+                          saveLanguagePreference(option.value);
+                        }}
                         className={cn(
                           "h-11 rounded-xl border px-3 text-left text-[13px] font-medium transition-all duration-200 ease-out sm:text-sm",
                           selected
