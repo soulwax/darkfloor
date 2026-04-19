@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.27] - 2026-04-17
 
-### Fixed
 
 - **Tauri MSI builds now leave the working release artifacts signed as well as the installer**: The MSI bundle scripts now run the same post-sign artifact pass as the NSIS lane, so both `target/release/starchild.exe` and the generated `.msi` stay signed after the build finishes.
 - **Tauri artifact versions are synchronized with the main app version again**: The Tauri config and Rust manifest now ship `1.15.27`, so generated executables and installers no longer advertise the stale `1.15.21` version.
+- **The visualizer now recovers from the broken `perlinNoiseField` renderer instead of freezing the browser session**: Repaired the stray undefined variable path inside the Perlin pattern, switched its ring deformation back to bounded fractal-noise math, and added a renderer-level fallback so a future pattern exception drops back to a safe visual instead of requiring a full refresh.
 
 ## [1.15.26] - 2026-04-17
 
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Playlists can now be imported from local M3U/M3U8 files**: The `/playlists` page now opens `.m3u` and `.m3u8` files, parses `#EXTINF` metadata and Deezer track URLs, resolves tracks through the existing music search/track APIs, and creates a normal Starchild playlist with import progress and result feedback.
+
 ### Changed
 
 - **The experimental Tauri desktop shell now looks and behaves much closer to the main web app**: Tauri once again uses the real web header and branded desktop sidebar instead of a separate tabbed titlebar layout, so navigation, search, and shell structure now stay aligned with the primary frontend.

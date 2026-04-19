@@ -3,7 +3,7 @@ import {
   renderGravitationalLensArray,
   sampleLensDeflection,
   type LensMass,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderGravitationalLensArray";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderGravitationalLensArray";
 import { makePatternContext } from "./canvas-mock";
 
 describe("sampleLensDeflection", () => {

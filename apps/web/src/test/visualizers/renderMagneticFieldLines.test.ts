@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   renderMagneticFieldLines,
   sampleDipoleField,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderMagneticFieldLines";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderMagneticFieldLines";
 import { makePatternContext } from "./canvas-mock";
 
 describe("sampleDipoleField", () => {
@@ -17,16 +17,10 @@ describe("sampleDipoleField", () => {
 
   it("mirrors cleanly across the horizontal axis for a symmetric dipole", () => {
     const top = sampleDipoleField(0, 48, -60, 0, 60, 0, 240, { x: 0, y: 0 });
-    const bottom = sampleDipoleField(
-      0,
-      -48,
-      -60,
-      0,
-      60,
-      0,
-      240,
-      { x: 0, y: 0 },
-    );
+    const bottom = sampleDipoleField(0, -48, -60, 0, 60, 0, 240, {
+      x: 0,
+      y: 0,
+    });
 
     expect(top.x).toBeCloseTo(bottom.x, 10);
     expect(top.y).toBeCloseTo(-bottom.y, 10);

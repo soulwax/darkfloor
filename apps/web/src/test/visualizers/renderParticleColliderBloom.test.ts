@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   colliderBurstEnvelope,
   renderParticleColliderBloom,
-} from "../../../../packages/visualizers/src/flowfieldPatterns/renderParticleColliderBloom";
+} from "../../../../../packages/visualizers/src/flowfieldPatterns/renderParticleColliderBloom";
 import { makePatternContext } from "./canvas-mock";
 
 describe("colliderBurstEnvelope", () => {
@@ -12,8 +12,12 @@ describe("colliderBurstEnvelope", () => {
   });
 
   it("peaks higher around the midpoint than near the edges", () => {
-    expect(colliderBurstEnvelope(0.5)).toBeGreaterThan(colliderBurstEnvelope(0.1));
-    expect(colliderBurstEnvelope(0.5)).toBeGreaterThan(colliderBurstEnvelope(0.9));
+    expect(colliderBurstEnvelope(0.5)).toBeGreaterThan(
+      colliderBurstEnvelope(0.1),
+    );
+    expect(colliderBurstEnvelope(0.5)).toBeGreaterThan(
+      colliderBurstEnvelope(0.9),
+    );
   });
 });
 
