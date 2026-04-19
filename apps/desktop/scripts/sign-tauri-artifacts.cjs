@@ -55,9 +55,10 @@ if (requestedBundles.size === 0 || requestedBundles.has("nsis")) {
 }
 
 if (requestedBundles.has("msi")) {
-  console.warn(
-    "[tauri:sign:artifacts] MSI post-signing is not part of the default free signing flow. Skipping MSI artifacts.",
-  );
+  const msiBundlePath = findLatestFile(path.join(releaseDir, "bundle", "msi"), ".msi");
+  if (msiBundlePath) {
+    targets.push(msiBundlePath);
+  }
 }
 
 const uniqueTargets = [...new Set(targets)].filter((target) => fs.existsSync(target));

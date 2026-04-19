@@ -6,7 +6,7 @@ use std::{
     fs::{self, OpenOptions},
     io,
     io::Write,
-    net::{TcpListener, TcpStream},
+    net::TcpStream,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,

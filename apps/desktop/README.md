@@ -22,6 +22,9 @@ The Tauri setup is intentionally parallel and opt-in:
 
 Notes:
 
+- A normal repo-root `pnpm install --frozen-lockfile` is now enough for the
+  Tauri lane; the build scripts resolve `@tauri-apps/cli` from the root install
+  and no longer rely on a separate `apps/desktop` package install.
 - The Tauri build reuses the existing Next standalone output and bundled Node
   runtime, but stages them into `apps/desktop/src-tauri/b/` instead of touching
   Electron packaging assets.

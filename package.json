@@ -1,7 +1,7 @@
 {
   "name": "darkfloor-player",
   "desktopName": "Starchild.desktop",
-  "version": "1.15.26",
+  "version": "1.15.27",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",

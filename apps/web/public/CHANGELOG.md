@@ -5,6 +5,13 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.27] - 2026-04-17
+
+### Fixed
+
+- **Tauri MSI builds now leave the working release artifacts signed as well as the installer**: The MSI bundle scripts now run the same post-sign artifact pass as the NSIS lane, so both `target/release/starchild.exe` and the generated `.msi` stay signed after the build finishes.
+- **Tauri artifact versions are synchronized with the main app version again**: The Tauri config and Rust manifest now ship `1.15.27`, so generated executables and installers no longer advertise the stale `1.15.21` version.
+
 ## [1.15.26] - 2026-04-17
 
 ### Fixed
