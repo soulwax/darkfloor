@@ -886,18 +886,6 @@ export function AudioPlayerProvider({
     utils,
   ]);
 
-  // Use a ref to maintain a stable reference to the audio element
-  // This prevents audio-related effects from re-running when hideUI changes
-  const stableAudioElementRef = useRef<HTMLAudioElement | null>(null);
-
-  // Update the ref when the audio element actually changes
-  // We check if it's different to avoid unnecessary updates
-  if (player.audioRef.current !== stableAudioElementRef.current) {
-    stableAudioElementRef.current = player.audioRef.current;
-  }
-
-  const audioElement = stableAudioElementRef.current;
-
   const value: AudioPlayerContextType = useMemo(
     () => ({
       currentTrack: player.currentTrack,
@@ -919,7 +907,7 @@ export function AudioPlayerProvider({
       hideUI,
       setHideUI,
 
-      audioElement,
+      audioElement: player.audioElement,
 
       play,
       playTrack,
@@ -967,9 +955,9 @@ export function AudioPlayerProvider({
       player.isShuffled,
       player.repeatMode,
       player.isLoading,
-      // showMobilePlayer and hideUI are excluded from dependencies because they're UI-only state
-      // audioElement is excluded from dependencies because it's maintained via a stable ref
-      // We don't want context value recreation when hideUI or showMobilePlayer changes to trigger audio effects
+      showMobilePlayer,
+      hideUI,
+      player.audioElement,
       play,
       playTrack,
       player.togglePlay,

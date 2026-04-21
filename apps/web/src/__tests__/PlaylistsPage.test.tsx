@@ -30,7 +30,7 @@ const {
     pushMock: vi.fn(),
     showToastMock: vi.fn(),
     useCreatePlaylistMutationMock: vi.fn(() => createMutationState),
-    useImportM3u8MutationMock: vi.fn(() => importMutationState),
+    useImportM3u8MutationMock: vi.fn((_options?: unknown) => importMutationState),
   };
 });
 

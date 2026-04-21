@@ -21,6 +21,9 @@ export default defineConfig({
       "@starchild/player-react": fileURLToPath(
         new URL("../../packages/player-react/src", import.meta.url),
       ),
+      "@starchild/audio-adapters": fileURLToPath(
+        new URL("../../packages/audio-adapters/src", import.meta.url),
+      ),
       "@starchild/api-client": fileURLToPath(
         new URL("../../packages/api-client/src", import.meta.url),
       ),

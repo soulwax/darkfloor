@@ -1,7 +1,7 @@
 // File: apps/web/src/__tests__/useAudioPlayer.test.ts
 
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAudioPlayer } from "@starchild/player-react/useAudioPlayer";
 import type { Track } from "@starchild/types";
 
@@ -45,6 +45,7 @@ describe("useAudioPlayer", () => {
 
     await waitFor(() => {
       expect(result.current.audioRef.current).not.toBeNull();
+      expect(result.current.audioElement).not.toBeNull();
     });
 
     const audioEl = document.querySelector(
@@ -55,6 +56,91 @@ describe("useAudioPlayer", () => {
     expect(audioEl?.getAttribute("playsinline")).toBe("true");
     expect(audioEl?.getAttribute("webkit-playsinline")).toBe("true");
     expect(audioEl?.getAttribute("x5-playsinline")).toBe("true");
+  });
+
+  it("keeps media session play and pause actions idempotent", async () => {
+    const actionHandlers: Partial<
+      Record<MediaSessionAction, MediaSessionActionHandler | null>
+    > = {};
+    const originalMediaMetadata = globalThis.MediaMetadata;
+
+    Object.defineProperty(globalThis, "MediaMetadata", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(function MediaMetadata(metadata?: MediaMetadataInit) {
+        return metadata;
+      }),
+    });
+    Object.defineProperty(navigator, "mediaSession", {
+      configurable: true,
+      value: {
+        metadata: null,
+        playbackState: "none",
+        setActionHandler: vi.fn(
+          (
+            action: MediaSessionAction,
+            handler: MediaSessionActionHandler | null,
+          ) => {
+            actionHandlers[action] = handler;
+          },
+        ),
+      },
+    });
+
+    try {
+      const { result } = renderHook(() => useAudioPlayer());
+
+      await waitFor(() => {
+        expect(result.current.audioRef.current).not.toBeNull();
+      });
+
+      act(() => {
+        result.current.addToQueue(createTrack(30, "Media Session Track"));
+      });
+
+      await waitFor(() => {
+        expect(actionHandlers.play).toEqual(expect.any(Function));
+        expect(actionHandlers.pause).toEqual(expect.any(Function));
+      });
+
+      const audio = result.current.audioRef.current!;
+      const playSpy = vi.spyOn(audio, "play");
+      const pauseSpy = vi.spyOn(audio, "pause");
+
+      Object.defineProperty(audio, "paused", {
+        configurable: true,
+        value: false,
+      });
+
+      act(() => {
+        actionHandlers.play?.({ action: "play" });
+      });
+
+      expect(pauseSpy).not.toHaveBeenCalled();
+      expect(playSpy).not.toHaveBeenCalled();
+
+      Object.defineProperty(audio, "paused", {
+        configurable: true,
+        value: true,
+      });
+
+      act(() => {
+        actionHandlers.pause?.({ action: "pause" });
+      });
+
+      expect(playSpy).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(navigator, "mediaSession");
+      if (originalMediaMetadata) {
+        Object.defineProperty(globalThis, "MediaMetadata", {
+          configurable: true,
+          writable: true,
+          value: originalMediaMetadata,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "MediaMetadata");
+      }
+    }
   });
 
   it("advances to the next track when playback ends", async () => {

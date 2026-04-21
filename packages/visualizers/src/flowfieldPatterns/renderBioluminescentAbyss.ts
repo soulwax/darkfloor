@@ -27,12 +27,13 @@ function createAbyssState(
   const depth = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
-    depth[i] = Math.random();
+    const pointDepth = Math.random();
+    depth[i] = pointDepth;
     phase[i] = Math.random() * Math.PI * 2;
     x[i] = Math.random() * width;
     y[i] = Math.random() * height;
     vx[i] = (Math.random() - 0.5) * 0.18;
-    vy[i] = -(0.06 + depth[i] * 0.22);
+    vy[i] = -(0.06 + pointDepth * 0.22);
   }
 
   return {

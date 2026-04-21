@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Playback controls now behave correctly from hardware and browser media controls**: Media Session play and pause actions are now idempotent instead of sharing one toggle handler, so a native play command no longer pauses an already-playing track and a native pause command no longer starts playback.
+- **Player visualizer and UI state now receive the global audio element reliably**: The shared player hook now publishes the created audio element through React state, and the provider context updates when mobile-player and hide-UI state changes, keeping equalizer, visualizer, and player chrome consumers in sync.
+- **Strict type checks are clean across the touched playback and visualizer paths**: Repaired stale playback test mocks and tightened a few FlowField pattern calculations so the current web typecheck no longer stops on those files.
 - **Discord and GitHub OAuth launch now stays on the frontend origin instead of the backend API port**: The client-side OAuth URL builder no longer reads the public API base for Auth.js provider sign-in, so leaked backend values such as `http://127.0.0.1:3333` cannot send browser sign-in to the server port.
 - **Mobile native sessions now stay portrait-only at runtime**: The Expo mobile root now locks phones to portrait mode during boot, preventing horizontal rotation from recreating the runtime and resetting the audio context.
 - **Signed-in greeter settings now save to account preferences**: Reopened greeter changes for language, mood, and preferred genre now write through the same tRPC preference and taste-profile paths as Settings/Home, while guests keep the existing local fallback.

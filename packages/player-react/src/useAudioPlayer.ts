@@ -39,6 +39,14 @@ const MIN_HISTORY_FOR_AUTO_QUEUE = 2;
 const PREVIOUS_TRACK_RESTART_THRESHOLD_SEC = 3;
 const AUTO_PLAY_DELAY_MS = 150;
 const DEFAULT_AUTO_QUEUE_COUNT = 5;
+const MEDIA_ERR_ABORTED =
+  typeof MediaError === "undefined" ? 1 : MediaError.MEDIA_ERR_ABORTED;
+const MEDIA_ERR_NETWORK =
+  typeof MediaError === "undefined" ? 2 : MediaError.MEDIA_ERR_NETWORK;
+const MEDIA_ERR_SRC_NOT_SUPPORTED =
+  typeof MediaError === "undefined"
+    ? 4
+    : MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED;
 
 const normalizeStoredVolume = (value: unknown): number => {
   const numericValue =
@@ -118,6 +126,9 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   }, [options]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null,
+  );
 
   const [queuedTracks, setQueuedTracks] = useState<QueuedTrack[]>([]);
   const [smartQueueState, setSmartQueueState] = useState<SmartQueueState>({
@@ -346,6 +357,10 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       if (!audioRef.current.isConnected) {
         document.body.appendChild(audioRef.current);
       }
+
+      setAudioElement(audioRef.current);
+    } else if (audioRef.current) {
+      setAudioElement(audioRef.current);
     }
   }, [volume]);
 
@@ -733,7 +748,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       const target = e.target as HTMLAudioElement;
       const error = target.error;
 
-      if (error?.code === MediaError.MEDIA_ERR_ABORTED) {
+      if (error?.code === MEDIA_ERR_ABORTED) {
         return;
       }
 
@@ -758,7 +773,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         statusCode !== null && [429, 500, 502, 503, 504].includes(statusCode);
       const isRetryableMessage =
         /Bad Gateway|Gateway Timeout|Service Unavailable/i.test(errorMessage);
-      const isNetworkError = error?.code === MediaError.MEDIA_ERR_NETWORK;
+      const isNetworkError = error?.code === MEDIA_ERR_NETWORK;
 
       const isHttpError =
         /^\d{3}:/.test(errorMessage) ||
@@ -768,7 +783,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         errorMessage.includes("upstream error") ||
         errorMessage.includes("ServiceUnavailableException");
       const isUnsupportedFormat =
-        error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ||
+        error?.code === MEDIA_ERR_SRC_NOT_SUPPORTED ||
         /format error|unsupported|not supported/i.test(errorMessage);
 
       if (isUnsupportedFormat && currentTrack) {
@@ -1435,7 +1450,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const mediaErrorCode = audioRef.current?.error?.code;
       const isUnsupportedFormat =
-        mediaErrorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ||
+        mediaErrorCode === MEDIA_ERR_SRC_NOT_SUPPORTED ||
         /format error|unsupported|not supported/i.test(errorMessage);
 
       if (isUnsupportedFormat) {
@@ -1504,16 +1519,21 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator))
       return;
 
-    const togglePlayPause = () => {
-      if (audioRef.current && !isPlayPauseOperationRef.current) {
-        const isActuallyPlaying = !audioRef.current.paused;
-        if (isActuallyPlaying) {
-          pause();
-        } else {
-          play().catch((error) => {
-            logger.error("Playback failed:", error);
-          });
-        }
+    const handlePlayAction = () => {
+      if (!audioRef.current || isPlayPauseOperationRef.current) return;
+
+      if (audioRef.current.paused) {
+        play().catch((error) => {
+          logger.error("Playback failed:", error);
+        });
+      }
+    };
+
+    const handlePauseAction = () => {
+      if (!audioRef.current || isPlayPauseOperationRef.current) return;
+
+      if (!audioRef.current.paused) {
+        pause();
       }
     };
 
@@ -1571,8 +1591,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     };
 
     try {
-      navigator.mediaSession.setActionHandler("play", togglePlayPause);
-      navigator.mediaSession.setActionHandler("pause", togglePlayPause);
+      navigator.mediaSession.setActionHandler("play", handlePlayAction);
+      navigator.mediaSession.setActionHandler("pause", handlePauseAction);
       navigator.mediaSession.setActionHandler("nexttrack", handleNextTrack);
       navigator.mediaSession.setActionHandler(
         "previoustrack",
@@ -2240,7 +2260,24 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   useEffect(() => {
     if (!currentTrack || !audioRef.current) return;
 
-    const streamUrl = buildStreamUrlById(currentTrack.id.toString());
+    let streamUrl: string;
+    try {
+      streamUrl = buildStreamUrlById(currentTrack.id.toString());
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to build stream URL";
+      logger.error(
+        `[useAudioPlayer] Failed to build stream URL for track ${currentTrack.id}:`,
+        error,
+      );
+      setIsLoading(false);
+      setIsPlaying(false);
+      onError?.(message, currentTrack.id);
+      return;
+    }
+
     const currentSrc = audioRef.current.src;
     const isNewTrack = lastLoadedTrackIdRef.current !== currentTrack.id;
     const needsLoad = isNewTrack || !currentSrc || currentSrc !== streamUrl;
@@ -2291,7 +2328,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         });
       }, AUTO_PLAY_DELAY_MS);
     }
-  }, [buildStreamUrlById, currentTrack, loadTrack, play]);
+  }, [buildStreamUrlById, currentTrack, loadTrack, onError, play]);
 
   useEffect(() => {
     const syncInterval = setInterval(() => {
@@ -2550,6 +2587,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     isMuted,
     isShuffled,
     repeatMode,
+    setRepeatMode,
     isLoading,
     failedTrackIds,
 
@@ -2599,5 +2637,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     getQueueSections,
 
     audioRef,
+    audioElement,
   };
 }

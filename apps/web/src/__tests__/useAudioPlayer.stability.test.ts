@@ -77,7 +77,7 @@ const renderPlayerHook = (options?: Parameters<typeof useAudioPlayer>[0]) =>
   );
 
 vi.mock("@starchild/api-client/rest", () => ({
-  getStreamUrlById: vi.fn().mockResolvedValue("https://example.com/stream.mp3"),
+  getStreamUrlById: vi.fn().mockReturnValue("https://example.com/stream.mp3"),
 }));
 
 vi.mock("@/utils/logger", () => ({

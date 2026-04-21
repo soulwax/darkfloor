@@ -60,7 +60,7 @@ export function renderParticleColliderBloom(
   ctx.stroke();
 
   for (let shell = 0; shell < shellCount; shell++) {
-    const shellProgress = shellCount === 1 ? 0.5 : shell / (shellCount - 1);
+    const shellProgress = shell / (shellCount - 1);
     const radius =
       coreRadius * (0.95 + shellProgress * 1.9) +
       envelope * minDimension * 0.012 * (shell + 1);

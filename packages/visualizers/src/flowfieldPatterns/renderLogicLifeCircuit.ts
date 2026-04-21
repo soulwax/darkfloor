@@ -131,7 +131,7 @@ function stampGlider(
   y: number,
   mirror: boolean,
 ): void {
-  const points = mirror
+  const points: Array<readonly [number, number]> = mirror
     ? [
         [0, 1],
         [1, 2],
