@@ -560,6 +560,12 @@ export function AudioPlayerProvider({
       ) as QueuedTrack[],
       smartQueueState: normalizedSmartQueueState,
       history: (dbQueueState.history || []) as Track[],
+      currentTime:
+        typeof dbQueueState.currentTime === "number" &&
+        Number.isFinite(dbQueueState.currentTime) &&
+        dbQueueState.currentTime >= 0
+          ? dbQueueState.currentTime
+          : 0,
       isShuffled: dbQueueState.isShuffled ?? false,
       repeatMode: coerceRepeatMode(dbQueueState.repeatMode),
     };
@@ -568,6 +574,7 @@ export function AudioPlayerProvider({
     dbQueueState?.queuedTracks,
     dbQueueState?.smartQueueState,
     dbQueueState?.history,
+    dbQueueState?.currentTime,
     dbQueueState?.isShuffled,
     dbQueueState?.repeatMode,
   ]);
@@ -650,6 +657,9 @@ export function AudioPlayerProvider({
     },
     smartQueueSettings: normalizedSmartQueueSettings,
   });
+  const persistedCurrentTime = player.currentTrack
+    ? Math.floor(player.currentTime / 5) * 5
+    : 0;
 
   useEffect(() => {
     if (!isAuthenticated || optionalWritesDisabled) return;
@@ -686,7 +696,7 @@ export function AudioPlayerProvider({
           };
         })(),
         history: player.history,
-        currentTime: player.currentTime,
+        currentTime: persistedCurrentTime,
         isShuffled: player.isShuffled,
         repeatMode: player.repeatMode,
       };
@@ -702,7 +712,7 @@ export function AudioPlayerProvider({
         );
         saveQueueStateMutation.mutate({ queueState });
       }
-    }, 1000);
+    }, 300);
 
     return () => clearTimeout(persistTimer);
   }, [
@@ -710,6 +720,7 @@ export function AudioPlayerProvider({
     player.queuedTracks,
     player.smartQueueState,
     player.history,
+    persistedCurrentTime,
     player.isShuffled,
     player.repeatMode,
     optionalWritesDisabled,

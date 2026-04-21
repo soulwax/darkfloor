@@ -2,6 +2,7 @@
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { STORAGE_KEYS } from "@starchild/config/storage";
 import { useAudioPlayer } from "@starchild/player-react/useAudioPlayer";
 import type { Track } from "@starchild/types";
 
@@ -197,6 +198,58 @@ describe("useAudioPlayer", () => {
     await waitFor(() => {
       expect(result.current.queue[0]?.id).toBe(second.id);
       expect(result.current.history[0]?.id).toBe(first.id);
+    });
+  });
+
+  it("restores the persisted playback position for the current track", async () => {
+    const track = createTrack(77, "Resume Me");
+
+    localStorage.setItem(
+      STORAGE_KEYS.QUEUE_STATE,
+      JSON.stringify({
+        version: 2,
+        queuedTracks: [
+          {
+            track,
+            queueSource: "user",
+            addedAt: new Date("2026-04-21T00:00:00.000Z").toISOString(),
+            queueId: "queue-resume-77",
+          },
+        ],
+        smartQueueState: {
+          isActive: false,
+          lastRefreshedAt: null,
+          seedTrackId: null,
+          trackCount: 0,
+        },
+        history: [],
+        currentTime: 47,
+        isShuffled: false,
+        repeatMode: "none",
+      }),
+    );
+
+    const { result } = renderHook(() => useAudioPlayer());
+
+    await waitFor(() => {
+      expect(result.current.currentTrack?.id).toBe(track.id);
+      expect(result.current.audioRef.current).not.toBeNull();
+    });
+
+    const audio = result.current.audioRef.current!;
+    Object.defineProperty(audio, "duration", {
+      configurable: true,
+      writable: true,
+      value: 180,
+    });
+
+    act(() => {
+      audio.dispatchEvent(new Event("loadedmetadata"));
+    });
+
+    await waitFor(() => {
+      expect(audio.currentTime).toBe(47);
+      expect(result.current.currentTime).toBe(47);
     });
   });
 });

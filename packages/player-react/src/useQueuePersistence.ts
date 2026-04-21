@@ -34,11 +34,13 @@ interface StoredQueuedTrack extends Omit<QueuedTrack, "addedAt"> {
   addedAt: string;
 }
 
-interface StoredSmartQueueState extends Omit<SmartQueueState, "lastRefreshedAt"> {
+interface StoredSmartQueueState
+  extends Omit<SmartQueueState, "lastRefreshedAt"> {
   lastRefreshedAt: string | null;
 }
 
-interface StoredQueueStateV2 extends Omit<QueueStateV2, "queuedTracks" | "smartQueueState"> {
+interface StoredQueueStateV2
+  extends Omit<QueueStateV2, "queuedTracks" | "smartQueueState"> {
   queuedTracks: StoredQueuedTrack[];
   smartQueueState: StoredSmartQueueState;
 }
@@ -49,7 +51,6 @@ export function useQueuePersistence(state: QueueState) {
   const persistTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-
     if (persistTimerRef.current) {
       clearTimeout(persistTimerRef.current);
     }
@@ -76,6 +77,7 @@ export function loadPersistedQueueState(): QueueState | null {
 
   if (!result.success) {
     console.error("Failed to load queue state:", result.error);
+    clearPersistedQueueState();
     return null;
   }
 
@@ -85,7 +87,7 @@ export function loadPersistedQueueState(): QueueState | null {
 
   const stored = result.data;
 
-  if ('version' in stored && stored.version === 2) {
+  if ("version" in stored && stored.version === 2) {
     const v2Data = stored;
     return {
       ...v2Data,
@@ -102,13 +104,13 @@ export function loadPersistedQueueState(): QueueState | null {
     } as QueueStateV2;
   }
 
-  if ('queue' in stored && Array.isArray(stored.queue)) {
+  if ("queue" in stored && Array.isArray(stored.queue)) {
     const v1 = stored;
     console.log("[useQueuePersistence] 🔄 Migrating queue state from V1 to V2");
 
     const migratedQueuedTracks: QueuedTrack[] = v1.queue.map((track, idx) => ({
       track,
-      queueSource: 'user' as const,
+      queueSource: "user" as const,
       addedAt: new Date(),
       queueId: `migrated-${track.id}-${idx}`,
     }));
@@ -134,6 +136,7 @@ export function loadPersistedQueueState(): QueueState | null {
   }
 
   console.warn("[useQueuePersistence] ⚠️ Unknown queue state format, ignoring");
+  clearPersistedQueueState();
   return null;
 }
 

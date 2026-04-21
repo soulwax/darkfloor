@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   clearPersistedQueueState,
   loadPersistedQueueState,
+  useQueuePersistence,
 } from "./useQueuePersistence";
 
 type RepeatMode = "none" | "one" | "all";
@@ -68,6 +69,21 @@ const normalizeStoredVolume = (value: unknown): number => {
   return Math.max(0, Math.min(1, numericValue));
 };
 
+const normalizeStoredCurrentTime = (value: unknown): number => {
+  const numericValue =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    return 0;
+  }
+
+  return numericValue;
+};
+
 interface UseAudioPlayerOptions {
   onTrackChange?: (track: Track) => void;
   onTrackEnd?: (track: Track) => void;
@@ -105,6 +121,7 @@ interface UseAudioPlayerOptions {
     history: Track[];
     isShuffled: boolean;
     repeatMode: RepeatMode;
+    currentTime: number;
   } | null;
 }
 
@@ -171,6 +188,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   );
   const isPlayingRef = useRef(isPlaying);
   const shouldResumeOnFocusRef = useRef(false);
+  const pendingResumeTimeRef = useRef<number | null>(null);
+  const pendingResumeTrackIdRef = useRef<number | null>(null);
   const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastLoadedTrackIdRef = useRef<number | null>(null);
   const shouldAutoPlayNextRef = useRef(false);
@@ -194,10 +213,50 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     [queuedTracks],
   );
   const currentTrack = queue[0] ?? null;
+  const persistedCurrentTime = currentTrack
+    ? Math.floor(normalizeStoredCurrentTime(currentTime))
+    : 0;
+  const localQueueState = useMemo(
+    () => ({
+      version: 2 as const,
+      queuedTracks,
+      smartQueueState,
+      history,
+      currentTime: persistedCurrentTime,
+      isShuffled,
+      repeatMode,
+    }),
+    [
+      queuedTracks,
+      smartQueueState,
+      history,
+      persistedCurrentTime,
+      isShuffled,
+      repeatMode,
+    ],
+  );
+
+  useQueuePersistence(localQueueState);
 
   useEffect(() => {
     queueRef.current = queuedTracks;
   }, [queuedTracks]);
+
+  useEffect(() => {
+    if (!currentTrack) {
+      pendingResumeTimeRef.current = null;
+      pendingResumeTrackIdRef.current = null;
+      return;
+    }
+
+    if (
+      pendingResumeTrackIdRef.current !== null &&
+      pendingResumeTrackIdRef.current !== currentTrack.id
+    ) {
+      pendingResumeTimeRef.current = null;
+      pendingResumeTrackIdRef.current = null;
+    }
+  }, [currentTrack]);
 
   const generateQueueId = useCallback(() => {
     return `queue-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -235,43 +294,99 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       STORAGE_KEYS.VOLUME,
       DEFAULT_VOLUME,
     );
+    const persistedState = loadPersistedQueueState();
+
+    interface PersistedStateV2 {
+      version: 2;
+      queuedTracks: QueuedTrack[];
+      smartQueueState?: SmartQueueState;
+      history: Track[];
+      isShuffled: boolean;
+      repeatMode: RepeatMode;
+      currentTime: number;
+    }
+
+    const isV2State = (state: unknown): state is PersistedStateV2 => {
+      return (
+        typeof state === "object" &&
+        state !== null &&
+        "queuedTracks" in state &&
+        Array.isArray(state.queuedTracks)
+      );
+    };
+
+    const setPendingResumeTime = (
+      nextQueuedTracks: QueuedTrack[],
+      nextCurrentTime: number,
+    ) => {
+      const normalizedCurrentTime =
+        normalizeStoredCurrentTime(nextCurrentTime);
+      const nextTrackId = nextQueuedTracks[0]?.track.id ?? null;
+
+      setCurrentTime(normalizedCurrentTime);
+
+      if (nextTrackId !== null && normalizedCurrentTime > 0) {
+        pendingResumeTrackIdRef.current = nextTrackId;
+        pendingResumeTimeRef.current = normalizedCurrentTime;
+        return;
+      }
+
+      pendingResumeTrackIdRef.current = null;
+      pendingResumeTimeRef.current = null;
+    };
+
+    const restoreQueueState = (
+      nextQueuedTracks: QueuedTrack[],
+      nextHistory: Track[],
+      nextIsShuffled: boolean,
+      nextRepeatMode: RepeatMode,
+      nextSmartQueueState: SmartQueueState | null,
+      nextCurrentTime: number,
+    ) => {
+      setQueuedTracks(nextQueuedTracks);
+      setHistory(nextHistory);
+      setIsShuffled(nextIsShuffled);
+      setRepeatMode(nextRepeatMode);
+
+      if (nextSmartQueueState) {
+        setSmartQueueState({
+          ...nextSmartQueueState,
+          isLoading: false,
+        });
+      }
+
+      setPendingResumeTime(nextQueuedTracks, nextCurrentTime);
+    };
 
     setVolume(normalizeStoredVolume(savedVolume));
 
     if (initialQueueState && initialQueueState.queuedTracks.length > 0) {
+      const persistedCurrentTrackId =
+        isV2State(persistedState) ? persistedState.queuedTracks[0]?.track.id : null;
+      const currentTrackId = initialQueueState.queuedTracks[0]?.track.id ?? null;
+      const localPersistedCurrentTime = isV2State(persistedState)
+        ? normalizeStoredCurrentTime(persistedState.currentTime)
+        : 0;
+      const preferredRestoreTime =
+        currentTrackId !== null && persistedCurrentTrackId === currentTrackId
+          ? Math.max(
+              normalizeStoredCurrentTime(initialQueueState.currentTime),
+              localPersistedCurrentTime,
+            )
+          : normalizeStoredCurrentTime(initialQueueState.currentTime);
+
       logger.info("[useAudioPlayer] 📥 Restoring queue state from database");
-      setQueuedTracks(initialQueueState.queuedTracks);
-      setSmartQueueState({
-        ...initialQueueState.smartQueueState,
-        isLoading: false,
-      });
-      setHistory(initialQueueState.history);
-      setIsShuffled(initialQueueState.isShuffled);
-      setRepeatMode(initialQueueState.repeatMode);
+      restoreQueueState(
+        initialQueueState.queuedTracks,
+        initialQueueState.history,
+        initialQueueState.isShuffled,
+        initialQueueState.repeatMode,
+        initialQueueState.smartQueueState,
+        preferredRestoreTime,
+      );
       return;
     }
-
-    const persistedState = loadPersistedQueueState();
     if (persistedState) {
-      interface PersistedStateV2 {
-        version: 2;
-        queuedTracks: QueuedTrack[];
-        smartQueueState?: SmartQueueState;
-        history: Track[];
-        isShuffled: boolean;
-        repeatMode: RepeatMode;
-        currentTime: number;
-      }
-
-      const isV2State = (state: unknown): state is PersistedStateV2 => {
-        return (
-          typeof state === "object" &&
-          state !== null &&
-          "queuedTracks" in state &&
-          Array.isArray(state.queuedTracks)
-        );
-      };
-
       const hasQueuedTracks =
         isV2State(persistedState) && persistedState.queuedTracks.length > 0;
       const hasLegacyQueue =
@@ -281,13 +396,14 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
       if (hasQueuedTracks || hasLegacyQueue) {
         if (isV2State(persistedState)) {
-          setQueuedTracks(persistedState.queuedTracks);
-          if (persistedState.smartQueueState) {
-            setSmartQueueState({
-              ...persistedState.smartQueueState,
-              isLoading: false,
-            });
-          }
+          restoreQueueState(
+            persistedState.queuedTracks,
+            persistedState.history,
+            persistedState.isShuffled,
+            persistedState.repeatMode,
+            persistedState.smartQueueState ?? null,
+            persistedState.currentTime,
+          );
         } else if ("queue" in persistedState && persistedState.queue) {
           const migratedTracks = persistedState.queue.map((track, idx) => ({
             track,
@@ -295,15 +411,20 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             addedAt: new Date(),
             queueId: `migrated-${track.id}-${idx}`,
           }));
-          setQueuedTracks(migratedTracks);
+          restoreQueueState(
+            migratedTracks,
+            persistedState.history,
+            persistedState.isShuffled,
+            persistedState.repeatMode,
+            null,
+            persistedState.currentTime,
+          );
         }
-        setHistory(persistedState.history);
-        setIsShuffled(persistedState.isShuffled);
-        setRepeatMode(persistedState.repeatMode);
       } else {
         logger.debug(
           "[useAudioPlayer] Queue was cleared, not restoring from persistence",
         );
+        setCurrentTime(0);
       }
     }
   }, [initialQueueState]);
@@ -311,26 +432,6 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   useEffect(() => {
     localStorage.set(STORAGE_KEYS.VOLUME, volume);
   }, [volume]);
-
-  useEffect(() => {
-    const queueState = {
-      version: 2 as const,
-      queuedTracks,
-      smartQueueState,
-      history,
-      currentTime,
-      isShuffled,
-      repeatMode,
-    };
-    localStorage.set(STORAGE_KEYS.QUEUE_STATE, queueState);
-  }, [
-    queuedTracks,
-    smartQueueState,
-    history,
-    currentTime,
-    isShuffled,
-    repeatMode,
-  ]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !audioRef.current) {
@@ -719,8 +820,37 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       }
       setCurrentTime(newTime);
     };
+    const restorePendingCurrentTime = () => {
+      if (!currentTrack) return;
+      if (pendingResumeTrackIdRef.current !== currentTrack.id) return;
+
+      const pendingResumeTime = pendingResumeTimeRef.current;
+      if (pendingResumeTime === null || pendingResumeTime <= 0) {
+        pendingResumeTrackIdRef.current = null;
+        pendingResumeTimeRef.current = null;
+        return;
+      }
+
+      const maxDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+      const nextCurrentTime =
+        maxDuration > 0
+          ? Math.min(maxDuration, pendingResumeTime)
+          : pendingResumeTime;
+
+      if (!Number.isFinite(nextCurrentTime) || nextCurrentTime <= 0) {
+        pendingResumeTrackIdRef.current = null;
+        pendingResumeTimeRef.current = null;
+        return;
+      }
+
+      audio.currentTime = nextCurrentTime;
+      setCurrentTime(nextCurrentTime);
+      pendingResumeTrackIdRef.current = null;
+      pendingResumeTimeRef.current = null;
+    };
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
+      restorePendingCurrentTime();
       enforcePlaybackRate();
     };
     const handlePlay = () => {
@@ -743,6 +873,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       if (streamErrorTrackIdRef.current === currentTrack?.id) {
         streamErrorRetryCountRef.current = 0;
       }
+      restorePendingCurrentTime();
     };
     const handleError = (e: Event) => {
       const target = e.target as HTMLAudioElement;
@@ -1218,8 +1349,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       }
 
       try {
+        const nextCurrentTime =
+          pendingResumeTrackIdRef.current === track.id
+            ? (pendingResumeTimeRef.current ?? 0)
+            : 0;
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        setCurrentTime(nextCurrentTime);
       } catch (error) {
         logger.debug("[useAudioPlayer] Error resetting audio:", error);
       }
@@ -1849,6 +1985,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     setQueuedTracks(newQueue);
 
     if (newQueue.length === 0) {
+      pendingResumeTrackIdRef.current = null;
+      pendingResumeTimeRef.current = null;
       clearPersistedQueueState();
     }
   }, [queuedTracks]);
@@ -2466,6 +2604,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     setQueuedTracks([]);
     setHistory([]);
     originalQueueOrderRef.current = [];
+    pendingResumeTrackIdRef.current = null;
+    pendingResumeTimeRef.current = null;
     setIsPlaying(false);
     if (audioRef.current) {
       audioRef.current.pause();
