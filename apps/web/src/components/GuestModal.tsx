@@ -656,57 +656,84 @@ export function GuestModal({
             </div>
           ) : null}
 
-          <DialogHeader className="border-b border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_52%)] px-3 py-3 sm:px-5 sm:py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/35 bg-[#1DB954]/12 shadow-[0_10px_24px_rgba(29,185,84,0.16)] sm:h-11 sm:w-11">
-                  <Music2 className="h-5 w-5 text-[#1DB954]" />
-                </div>
-                <div className="min-w-0">
-                  <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold tracking-[0.12em] text-white/72 uppercase sm:text-[11px]">
-                    <Sparkles
-                      aria-hidden="true"
-                      className="h-3 w-3 shrink-0 text-[#1DB954]"
-                    />
-                    <span className="truncate">{tWelcome("title")}</span>
-                  </div>
-                  <DialogTitle className="mt-2 text-[15px] leading-5 text-white sm:text-lg sm:leading-6">
-                    {t("title")}
-                  </DialogTitle>
-                  <DialogDescription className="mt-1 text-xs leading-relaxed text-white/80 sm:text-sm">
-                    {tWelcome("subtitle")}
-                  </DialogDescription>
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-white/62 sm:text-xs">
-                    {t("description")}
-                  </p>
-                  <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/72 sm:text-xs">
-                    <Play aria-hidden="true" className="h-3 w-3 shrink-0" />
-                    <span className="truncate">
-                      {tWelcome("startPlayingHint")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/[0.03] text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white sm:h-10 sm:w-10"
-                  aria-label={t("closeAndSkip")}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </DialogClose>
-            </div>
-          </DialogHeader>
-
           <div
             className={cn(
               "guest-modal-content-scroll min-h-0 flex-1 touch-pan-y overflow-y-auto",
-              "space-y-3 px-3 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pt-3",
-              "text-sm sm:px-5",
+              "space-y-3 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pt-3 sm:px-5",
+              "text-sm",
             )}
           >
+            <section
+              data-testid="guest-modal-intro"
+              className="space-y-3 rounded-2xl border border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(29,185,84,0.18),transparent_52%)] p-3 sm:p-4"
+            >
+              <DialogHeader className="space-y-0 text-left">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#1DB954]/35 bg-[#1DB954]/12 shadow-[0_10px_24px_rgba(29,185,84,0.16)] sm:h-11 sm:w-11">
+                      <Music2 className="h-4 w-4 text-[#1DB954] sm:h-5 sm:w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold tracking-[0.12em] text-white/72 uppercase sm:text-[11px]">
+                        <Sparkles
+                          aria-hidden="true"
+                          className="h-3 w-3 shrink-0 text-[#1DB954]"
+                        />
+                        <span className="truncate">{tWelcome("title")}</span>
+                      </div>
+                      <DialogTitle className="mt-2 text-sm leading-5 text-white sm:text-lg sm:leading-6">
+                        {t("title")}
+                      </DialogTitle>
+                      <DialogDescription className="mt-1 text-xs leading-relaxed text-white/80 sm:text-sm">
+                        {tWelcome("subtitle")}
+                      </DialogDescription>
+                    </div>
+                  </div>
+
+                  <DialogClose asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/[0.03] text-white/80 transition-colors hover:bg-white/[0.08] hover:text-white sm:h-10 sm:w-10"
+                      aria-label={t("closeAndSkip")}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </DialogClose>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-2">
+                <p className="text-[11px] leading-relaxed text-white/62 sm:text-xs">
+                  {t("description")}
+                </p>
+                <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/72 sm:text-xs">
+                  <Play aria-hidden="true" className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{tWelcome("startPlayingHint")}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => openAuthModal({ callbackUrl })}
+                  className="h-11 w-full rounded-xl bg-[linear-gradient(135deg,#5865F2,#7480ff)] px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:brightness-110 active:brightness-95 sm:h-12 sm:text-sm"
+                >
+                  {t("signInToSync")}
+                </button>
+                <DialogClose asChild>
+                  <button
+                    type="button"
+                    className="h-10 w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/92 transition duration-200 ease-out hover:border-white/30 hover:bg-white/[0.1] sm:h-12 sm:text-sm"
+                  >
+                    {t("skipForNow")}
+                  </button>
+                </DialogClose>
+                <p className="text-[10px] leading-relaxed text-white/45">
+                  {tCookie("inlineNotice")}
+                </p>
+              </div>
+            </section>
+
             <section className="space-y-3 rounded-2xl border border-white/12 p-2.5 sm:p-3">
               <p className="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">
                 {t("tuneStartPage")}
@@ -836,24 +863,8 @@ export function GuestModal({
               </p>
             </section>
 
-            <div className="space-y-2 pb-1">
-              <button
-                type="button"
-                onClick={() => openAuthModal({ callbackUrl })}
-                className="h-12 w-full rounded-xl bg-[linear-gradient(135deg,#5865F2,#7480ff)] px-4 text-[13px] font-semibold text-white transition duration-200 ease-out hover:brightness-110 active:brightness-95 sm:text-sm"
-              >
-                {t("signInToSync")}
-              </button>
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/92 transition duration-200 ease-out hover:border-white/30 hover:bg-white/[0.1] sm:text-sm"
-                >
-                  {t("skipForNow")}
-                </button>
-              </DialogClose>
-
-              {showFirefoxVisualsOptIn && (
+            {showFirefoxVisualsOptIn ? (
+              <div className="space-y-2 pb-1">
                 <div className="rounded-xl border border-white/12 bg-white/[0.02] px-3 py-2 text-[11px] leading-relaxed text-white/68">
                   <p>{t("firefoxVisualsDescription")}</p>
                   {firefoxVisualsOptedIn ? (
@@ -870,12 +881,8 @@ export function GuestModal({
                     </button>
                   )}
                 </div>
-              )}
-
-              <p className="px-1 text-[10px] leading-relaxed text-white/45">
-                {tCookie("inlineNotice")}
-              </p>
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </DialogContent>
