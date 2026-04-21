@@ -6,7 +6,7 @@ use std::{
     fs::{self, OpenOptions},
     io,
     io::Write,
-    net::TcpStream,
+    net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
@@ -255,13 +255,14 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
                 .source
                 .as_deref()
                 .unwrap_or("no external source"),
-            ),
+        ),
     );
 
     let loopback_host = resolve_loopback_host();
     let server_port = TAURI_RUNTIME_PORT;
     let runtime_origin = build_runtime_origin(loopback_host, server_port);
     log_startup(app, format!("Loopback host: {loopback_host}"));
+    ensure_port_available(loopback_host, server_port)?;
     let mut command = Command::new(&node_path);
     command.arg(&server_path);
     if let Some(server_dir) = server_path.parent() {
@@ -326,6 +327,22 @@ fn start_packaged_server(app: &AppHandle) -> Result<url::Url, Box<dyn Error>> {
     Ok(runtime_origin.parse()?)
 }
 
+fn ensure_port_available(host: &str, port: u16) -> Result<(), Box<dyn Error>> {
+    match TcpListener::bind((host, port)) {
+        Ok(listener) => {
+            drop(listener);
+            Ok(())
+        }
+        Err(error) => Err(io::Error::new(
+            error.kind(),
+            format!(
+                "The packaged Tauri runtime requires {host}:{port} for its local OAuth loopback server, but that address is already in use. Close any existing Starchild/dev server or local port-forward using that port and try again."
+            ),
+        )
+        .into()),
+    }
+}
+
 fn stop_packaged_server(app: &AppHandle) {
     let state = app.state::<ServerState>();
     let mut guard = state.0.lock().expect("server state mutex poisoned");
@@ -364,9 +381,7 @@ fn wait_for_server_ready(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        TAURI_RUNTIME_PORT, build_runtime_origin, resolve_loopback_host,
-    };
+    use super::{build_runtime_origin, resolve_loopback_host, TAURI_RUNTIME_PORT};
 
     #[test]
     fn packaged_tauri_oauth_uses_registered_loopback_host() {
