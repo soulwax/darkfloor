@@ -1764,6 +1764,8 @@ export const musicRouter = createTRPCRouter({
         queueState: z
           .object({
             version: z.literal(2),
+            persistedAt: z.string(),
+            ownerId: z.string().nullable(),
             queuedTracks: z.array(
               z.object({
                 track: z.any(),
@@ -1790,6 +1792,8 @@ export const musicRouter = createTRPCRouter({
       const normalizedQueueState = input.queueState
         ? ({
             version: input.queueState.version,
+            persistedAt: input.queueState.persistedAt,
+            ownerId: input.queueState.ownerId,
             queuedTracks: input.queueState.queuedTracks.map((item) => ({
               track: (item.track ?? null) as Track | null,
               queueSource: item.queueSource,
@@ -1803,6 +1807,8 @@ export const musicRouter = createTRPCRouter({
             repeatMode: input.queueState.repeatMode,
           } as {
             version: 2;
+            persistedAt: string;
+            ownerId: string | null;
             queuedTracks: Array<{
               track: Track | null;
               queueSource: "user" | "smart";

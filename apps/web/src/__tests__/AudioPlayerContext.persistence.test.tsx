@@ -32,6 +32,8 @@ const queueStateState = vi.hoisted(() => ({
         };
         history: Track[];
         currentTime: number;
+        persistedAt?: string;
+        ownerId?: string | null;
         isShuffled: boolean;
         repeatMode: "none" | "one" | "all";
       }
@@ -183,6 +185,8 @@ describe("AudioPlayerContext persistence", () => {
       },
       history: [],
       currentTime: 32,
+      persistedAt: "2026-04-21T00:02:00.000Z",
+      ownerId: "user-1",
       isShuffled: false,
       repeatMode: "none",
     };
@@ -275,5 +279,112 @@ describe("AudioPlayerContext persistence", () => {
       saveQueueStateMutate.mock.calls.at(-1)?.[0]?.queueState;
 
     expect(lastPersistedQueueState?.currentTime).toBe(40);
+  });
+
+  it("prefers a fresher same-owner local snapshot over older database state", async () => {
+    localStorage.setItem(
+      "hexmusic_queue_state",
+      JSON.stringify({
+        version: 2,
+        persistedAt: "2026-04-21T00:05:00.000Z",
+        ownerId: "user-1",
+        queuedTracks: [
+          {
+            track: createTrack(88, "Local Newer"),
+            queueId: "local-queue-88",
+            queueSource: "user",
+            addedAt: new Date("2026-04-21T00:04:00.000Z").toISOString(),
+          },
+        ],
+        smartQueueState: {
+          isActive: false,
+          lastRefreshedAt: null,
+          seedTrackId: null,
+          trackCount: 0,
+        },
+        history: [],
+        currentTime: 61,
+        isShuffled: false,
+        repeatMode: "none",
+      }),
+    );
+
+    queueStateState.value = {
+      queuedTracks: [
+        {
+          track: createTrack(89, "Database Older"),
+          queueId: "db-queue-89",
+          queueSource: "user",
+          addedAt: new Date("2026-04-21T00:00:00.000Z").toISOString(),
+        },
+      ],
+      smartQueueState: {
+        isActive: false,
+        lastRefreshedAt: null,
+        seedTrackId: null,
+        trackCount: 0,
+      },
+      history: [],
+      currentTime: 12,
+      persistedAt: "2026-04-21T00:00:00.000Z",
+      ownerId: "user-1",
+      isShuffled: false,
+      repeatMode: "none",
+    };
+
+    render(
+      <AudioPlayerProvider>
+        <PlayerProbe />
+      </AudioPlayerProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track")).toHaveTextContent(
+        "Local Newer",
+      );
+      expect(screen.getByTestId("current-time")).toHaveTextContent("61");
+    });
+  });
+
+  it("keeps an authenticated database queue ahead of a fresher guest snapshot", async () => {
+    localStorage.setItem(
+      "hexmusic_queue_state",
+      JSON.stringify({
+        version: 2,
+        persistedAt: "2026-04-21T00:06:00.000Z",
+        ownerId: null,
+        queuedTracks: [
+          {
+            track: createTrack(90, "Guest Queue"),
+            queueId: "guest-queue-90",
+            queueSource: "user",
+            addedAt: new Date("2026-04-21T00:04:00.000Z").toISOString(),
+          },
+        ],
+        smartQueueState: {
+          isActive: false,
+          lastRefreshedAt: null,
+          seedTrackId: null,
+          trackCount: 0,
+        },
+        history: [],
+        currentTime: 77,
+        isShuffled: false,
+        repeatMode: "none",
+      }),
+    );
+
+    render(
+      <AudioPlayerProvider>
+        <PlayerProbe />
+      </AudioPlayerProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track")).toHaveTextContent(
+        "Database Resume",
+      );
+      expect(screen.getByTestId("current-time")).toHaveTextContent("32");
+    });
   });
 });

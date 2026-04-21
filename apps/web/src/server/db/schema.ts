@@ -272,6 +272,8 @@ export const userPreferences = createTable(
       .jsonb()
       .$type<{
         version: 2;
+        persistedAt?: string;
+        ownerId?: string | null;
         queuedTracks: Array<{
           track: unknown;
           queueSource: "user" | "smart";

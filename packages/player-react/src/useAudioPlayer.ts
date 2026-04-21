@@ -115,6 +115,7 @@ interface UseAudioPlayerOptions {
   streamQuality?: StreamQuality;
   onBackgroundResumeError?: (reason: string, error: unknown) => void;
   smartQueueSettings?: SmartQueueSettings;
+  persistenceOwnerId?: string | null;
   initialQueueState?: {
     queuedTracks: QueuedTrack[];
     smartQueueState: SmartQueueState;
@@ -122,6 +123,8 @@ interface UseAudioPlayerOptions {
     isShuffled: boolean;
     repeatMode: RepeatMode;
     currentTime: number;
+    persistedAt?: string | null;
+    ownerId?: string | null;
   } | null;
 }
 
@@ -134,6 +137,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     keepPlaybackAlive = true,
     streamQuality = DEFAULT_STREAM_QUALITY,
     onBackgroundResumeError,
+    persistenceOwnerId = null,
     initialQueueState,
   } = options;
 
@@ -219,6 +223,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const localQueueState = useMemo(
     () => ({
       version: 2 as const,
+      persistedAt: new Date().toISOString(),
+      ownerId: persistenceOwnerId,
       queuedTracks,
       smartQueueState,
       history,
@@ -233,6 +239,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       persistedCurrentTime,
       isShuffled,
       repeatMode,
+      persistenceOwnerId,
     ],
   );
 
@@ -298,6 +305,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
     interface PersistedStateV2 {
       version: 2;
+      persistedAt?: string | null;
+      ownerId?: string | null;
       queuedTracks: QueuedTrack[];
       smartQueueState?: SmartQueueState;
       history: Track[];
@@ -313,6 +322,12 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         "queuedTracks" in state &&
         Array.isArray(state.queuedTracks)
       );
+    };
+
+    const getPersistedAtMs = (value: string | null | undefined): number => {
+      if (typeof value !== "string" || value.length === 0) return 0;
+      const parsed = Date.parse(value);
+      return Number.isFinite(parsed) ? parsed : 0;
     };
 
     const setPendingResumeTime = (
@@ -361,28 +376,29 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     setVolume(normalizeStoredVolume(savedVolume));
 
     if (initialQueueState && initialQueueState.queuedTracks.length > 0) {
-      const persistedCurrentTrackId =
-        isV2State(persistedState) ? persistedState.queuedTracks[0]?.track.id : null;
-      const currentTrackId = initialQueueState.queuedTracks[0]?.track.id ?? null;
-      const localPersistedCurrentTime = isV2State(persistedState)
-        ? normalizeStoredCurrentTime(persistedState.currentTime)
-        : 0;
-      const preferredRestoreTime =
-        currentTrackId !== null && persistedCurrentTrackId === currentTrackId
-          ? Math.max(
-              normalizeStoredCurrentTime(initialQueueState.currentTime),
-              localPersistedCurrentTime,
-            )
-          : normalizeStoredCurrentTime(initialQueueState.currentTime);
+      const shouldPreferLocalState =
+        isV2State(persistedState) &&
+        persistedState.queuedTracks.length > 0 &&
+        persistedState.ownerId === persistenceOwnerId &&
+        getPersistedAtMs(persistedState.persistedAt) >
+          getPersistedAtMs(initialQueueState.persistedAt);
 
-      logger.info("[useAudioPlayer] 📥 Restoring queue state from database");
+      const preferredState = shouldPreferLocalState
+        ? persistedState
+        : initialQueueState;
+
+      logger.info(
+        `[useAudioPlayer] 📥 Restoring queue state from ${
+          shouldPreferLocalState ? "local storage" : "database"
+        }`,
+      );
       restoreQueueState(
-        initialQueueState.queuedTracks,
-        initialQueueState.history,
-        initialQueueState.isShuffled,
-        initialQueueState.repeatMode,
-        initialQueueState.smartQueueState,
-        preferredRestoreTime,
+        preferredState.queuedTracks,
+        preferredState.history,
+        preferredState.isShuffled,
+        preferredState.repeatMode,
+        preferredState.smartQueueState ?? null,
+        preferredState.currentTime,
       );
       return;
     }
@@ -427,7 +443,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         setCurrentTime(0);
       }
     }
-  }, [initialQueueState]);
+  }, [initialQueueState, persistenceOwnerId]);
 
   useEffect(() => {
     localStorage.set(STORAGE_KEYS.VOLUME, volume);

@@ -19,6 +19,8 @@ interface QueueStateV1 {
 
 interface QueueStateV2 {
   version: 2;
+  persistedAt: string;
+  ownerId: string | null;
   queuedTracks: QueuedTrack[];
   smartQueueState: SmartQueueState;
   history: Track[];
@@ -40,7 +42,12 @@ interface StoredSmartQueueState
 }
 
 interface StoredQueueStateV2
-  extends Omit<QueueStateV2, "queuedTracks" | "smartQueueState"> {
+  extends Omit<
+    QueueStateV2,
+    "persistedAt" | "ownerId" | "queuedTracks" | "smartQueueState"
+  > {
+  persistedAt?: string;
+  ownerId?: string | null;
   queuedTracks: StoredQueuedTrack[];
   smartQueueState: StoredSmartQueueState;
 }
@@ -91,6 +98,12 @@ export function loadPersistedQueueState(): QueueState | null {
     const v2Data = stored;
     return {
       ...v2Data,
+      persistedAt:
+        typeof v2Data.persistedAt === "string"
+          ? v2Data.persistedAt
+          : new Date(0).toISOString(),
+      ownerId:
+        typeof v2Data.ownerId === "string" ? v2Data.ownerId : null,
       queuedTracks: v2Data.queuedTracks.map((qt) => ({
         ...qt,
         addedAt: new Date(qt.addedAt),
@@ -117,6 +130,8 @@ export function loadPersistedQueueState(): QueueState | null {
 
     const v2: QueueStateV2 = {
       version: 2,
+      persistedAt: new Date().toISOString(),
+      ownerId: null,
       queuedTracks: migratedQueuedTracks,
       smartQueueState: {
         isActive: false,

@@ -208,6 +208,8 @@ describe("useAudioPlayer", () => {
       STORAGE_KEYS.QUEUE_STATE,
       JSON.stringify({
         version: 2,
+        persistedAt: "2026-04-21T00:01:00.000Z",
+        ownerId: null,
         queuedTracks: [
           {
             track,
@@ -252,4 +254,5 @@ describe("useAudioPlayer", () => {
       expect(result.current.currentTime).toBe(47);
     });
   });
+
 });
