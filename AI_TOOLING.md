@@ -33,7 +33,8 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 
 ## Quick commands
 
-- `pnpm dev`: start the main web runtime through the custom server
+- `pnpm dev`: start the main web runtime through the custom server, without launching `api/`
+- `pnpm dev:api`: start the `api/` submodule explicitly when backend work is needed
 - `pnpm dev:mobile`: start the Expo web runtime
 - `pnpm dev:mobile:native`: start Expo for native targets
 - `pnpm dev:mobile:ios`: launch the iOS Expo target

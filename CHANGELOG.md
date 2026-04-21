@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.28] - 2026-04-21
+
+### Changed
+
+- **The first-run greeter now keeps the welcome copy, cookie notice, and OAuth sign-in together as one compact intro card**: The guest modal no longer splits those first-touch elements across separate blocks, and the mobile layout uses tighter spacing so the sign-in and consent moment stays readable without taking over the whole sheet.
+
 ## [1.15.27] - 2026-04-17
 
 ### Fixed

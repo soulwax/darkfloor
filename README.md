@@ -78,7 +78,7 @@ Run these commands from the repo root.
    pnpm db:migrate
    ```
 
-6. Start the frontend:
+6. Start the frontend only:
 
    ```bash
    pnpm dev
@@ -110,7 +110,8 @@ Important current behavior:
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm dev` | Start the main web runtime through the custom server wrapper |
+| `pnpm dev` | Start the main web runtime through the custom server wrapper without launching the `api/` submodule |
+| `pnpm dev:api` | Start the backend `api/` submodule explicitly when coordinated backend work is needed |
 | `pnpm dev:next` | Run plain Next.js dev server on port `3222` |
 | `pnpm build` | Build the web app and the `api/` submodule |
 | `pnpm start` | Start the production custom server |

@@ -68,7 +68,8 @@ Player internals live in shared packages:
 ## Commands (Run From Repo Root)
 
 - Install deps: `pnpm install --frozen-lockfile`
-- Dev (custom server wrapper): `pnpm dev`
+- Dev (custom server wrapper, frontend only): `pnpm dev`
+- Dev (backend submodule, explicit opt-in): `pnpm dev:api`
 - Dev (Next.js only): `pnpm dev:next`
 - Build: `pnpm build`
 - Start (prod custom server): `pnpm start`

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -6,6 +12,7 @@ import { GuestModal } from "@/components/GuestModal";
 
 const mocks = vi.hoisted(() => ({
   setLocale: vi.fn(),
+  openAuthModal: vi.fn(),
   updatePreferencesMutate: vi.fn(),
   upsertTasteProfileMutate: vi.fn(),
   setPreferenceData: vi.fn(),
@@ -37,7 +44,7 @@ vi.mock("@/hooks/useMediaQuery", () => ({
 }));
 
 vi.mock("@/contexts/AuthModalContext", () => ({
-  useAuthModal: () => ({ openAuthModal: vi.fn() }),
+  useAuthModal: () => ({ openAuthModal: mocks.openAuthModal }),
 }));
 
 vi.mock("@/components/ui/dialog", () => ({
@@ -139,6 +146,29 @@ describe("GuestModal", () => {
     expect(mocks.upsertTasteProfileMutate).toHaveBeenCalledWith({
       preferredGenreId: 12,
       preferredGenreName: "Techno",
+    });
+  });
+
+  it("keeps the greeter, OAuth CTA, and cookie notice in one intro card", async () => {
+    render(<GuestModal />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).not.toBeDisabled(),
+    );
+
+    const introCard = screen.getByTestId("guest-modal-intro");
+
+    expect(
+      within(introCard).getByRole("button", { name: "signInToSync" }),
+    ).toBeInTheDocument();
+    expect(within(introCard).getByText("inlineNotice")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(introCard).getByRole("button", { name: "signInToSync" }),
+    );
+
+    expect(mocks.openAuthModal).toHaveBeenCalledWith({
+      callbackUrl: "/library",
     });
   });
 });

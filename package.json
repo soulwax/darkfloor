@@ -1,7 +1,7 @@
 {
   "name": "darkfloor-player",
   "desktopName": "Starchild.desktop",
-  "version": "1.15.27",
+  "version": "1.15.28",
   "description": "A modern music streaming and discovery platform with intelligent recommendations, advanced audio features, and a beautiful user interface",
   "private": true,
   "type": "module",
@@ -63,7 +63,9 @@
     "migrate:neon": "npx tsx scripts/migrate-to-neon.ts",
     "migrate:supabase": "npx tsx scripts/migrate-to-supabase.ts",
     "predev": "npm run generate:ssl",
-    "dev": "cross-env NODE_ENV=development node scripts/server.js",
+    "dev": "pnpm run dev:web",
+    "dev:web": "cross-env NODE_ENV=development node scripts/server.js",
+    "dev:api": "node scripts/run-submodule-pnpm.mjs api run dev",
     "dev:next": "npm --prefix apps/web run dev:next",
     "dev:next:turbo": "npm --prefix apps/web run dev:next:turbo",
     "dev:mobile": "npm --prefix apps/mobile run dev",
@@ -80,7 +82,9 @@
     "ws:test": "npx turbo run test",
     "ws:format:check": "npx turbo run format:check",
     "ws:format:write": "npx turbo run format:write",
-    "pm2:start": "pm2 start ecosystem.config.cjs --only bluesix-frontend-prod --env production",
+    "pm2:start:web": "node scripts/pm2-apply-action.mjs restart production bluesix-frontend-prod",
+    "pm2:start:api": "node scripts/run-submodule-pnpm.mjs api run pm2:restart",
+    "pm2:start": "pnpm run pm2:start:api && pnpm run pm2:start:web",
     "pm2:start:build": "npm run build && npm run pm2:start",
     "pm2:dev": "pm2 start ecosystem.config.cjs --only bluesix-frontend-dev --env development",
     "pm2:reload:web": "node scripts/pm2-apply-action.mjs reload production bluesix-frontend-prod",
@@ -321,5 +325,5 @@
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
+  "packageManager": "pnpm@10.33.0"
 }
