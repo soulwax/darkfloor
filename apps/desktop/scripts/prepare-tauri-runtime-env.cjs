@@ -17,7 +17,7 @@ const ALGORITHM = "aes-256-gcm+rsa-oaep-sha256";
 const KEY_BUNDLE_VERSION = 1;
 const KEY_BUNDLE_ALGORITHM = "xor-stream-sha256-ca-v1";
 const MASK_DOMAIN = "starchild-tauri-runtime-env";
-const DEFAULT_APP_IDENTIFIER = "org.darkfloor.starchild.tauri.experimental";
+const DEFAULT_APP_IDENTIFIER = "org.darkfloor.starchild";
 
 const repoRoot = path.resolve(__dirname, "../../..");
 const { ensureKeypair } = require(

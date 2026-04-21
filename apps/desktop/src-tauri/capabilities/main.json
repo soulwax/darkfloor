@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Grants the main Starchild window access to the Tauri IPC bridge and core window operations. The remote.urls entry is required because the window loads from an external HTTP origin (http://127.0.0.1:3222) rather than from a bundled tauri:// asset.",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["http://127.0.0.1:3222/**"]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized"
+  ]
+}
