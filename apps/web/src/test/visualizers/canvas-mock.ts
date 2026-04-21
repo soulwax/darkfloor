@@ -3,6 +3,20 @@ import { vi } from "vitest";
 import type { FlowFieldPatternContext } from "../../../../../packages/visualizers/src/flowfieldPatterns/types";
 
 export function makeCtxMock(): CanvasRenderingContext2D {
+  let fillStyle: string | CanvasGradient | CanvasPattern = "";
+  let strokeStyle: string | CanvasGradient | CanvasPattern = "";
+  let globalCompositeOperation: GlobalCompositeOperation = "source-over";
+  let globalAlpha = 1;
+  let lineWidth = 1;
+  let lineCap: CanvasLineCap = "butt";
+  let lineJoin: CanvasLineJoin = "miter";
+  let miterLimit = 10;
+  let shadowBlur = 0;
+  let shadowOffsetX = 0;
+  let shadowOffsetY = 0;
+  let shadowColor = "";
+  let filter = "none";
+
   return {
     save: vi.fn(),
     restore: vi.fn(),
@@ -33,19 +47,84 @@ export function makeCtxMock(): CanvasRenderingContext2D {
     })),
     setTransform: vi.fn(),
     setLineDash: vi.fn(),
-    set fillStyle(_v: string | CanvasGradient | CanvasPattern) {},
-    set strokeStyle(_v: string | CanvasGradient | CanvasPattern) {},
-    set globalCompositeOperation(_v: GlobalCompositeOperation) {},
-    set globalAlpha(_v: number) {},
-    set lineWidth(_v: number) {},
-    set lineCap(_v: CanvasLineCap) {},
-    set lineJoin(_v: CanvasLineJoin) {},
-    set miterLimit(_v: number) {},
-    set shadowBlur(_v: number) {},
-    set shadowOffsetX(_v: number) {},
-    set shadowOffsetY(_v: number) {},
-    set shadowColor(_v: string) {},
-    set filter(_v: string) {},
+    get fillStyle() {
+      return fillStyle;
+    },
+    set fillStyle(value: string | CanvasGradient | CanvasPattern) {
+      fillStyle = value;
+    },
+    get strokeStyle() {
+      return strokeStyle;
+    },
+    set strokeStyle(value: string | CanvasGradient | CanvasPattern) {
+      strokeStyle = value;
+    },
+    get globalCompositeOperation() {
+      return globalCompositeOperation;
+    },
+    set globalCompositeOperation(value: GlobalCompositeOperation) {
+      globalCompositeOperation = value;
+    },
+    get globalAlpha() {
+      return globalAlpha;
+    },
+    set globalAlpha(value: number) {
+      globalAlpha = value;
+    },
+    get lineWidth() {
+      return lineWidth;
+    },
+    set lineWidth(value: number) {
+      lineWidth = value;
+    },
+    get lineCap() {
+      return lineCap;
+    },
+    set lineCap(value: CanvasLineCap) {
+      lineCap = value;
+    },
+    get lineJoin() {
+      return lineJoin;
+    },
+    set lineJoin(value: CanvasLineJoin) {
+      lineJoin = value;
+    },
+    get miterLimit() {
+      return miterLimit;
+    },
+    set miterLimit(value: number) {
+      miterLimit = value;
+    },
+    get shadowBlur() {
+      return shadowBlur;
+    },
+    set shadowBlur(value: number) {
+      shadowBlur = value;
+    },
+    get shadowOffsetX() {
+      return shadowOffsetX;
+    },
+    set shadowOffsetX(value: number) {
+      shadowOffsetX = value;
+    },
+    get shadowOffsetY() {
+      return shadowOffsetY;
+    },
+    set shadowOffsetY(value: number) {
+      shadowOffsetY = value;
+    },
+    get shadowColor() {
+      return shadowColor;
+    },
+    set shadowColor(value: string) {
+      shadowColor = value;
+    },
+    get filter() {
+      return filter;
+    },
+    set filter(value: string) {
+      filter = value;
+    },
   } as unknown as CanvasRenderingContext2D;
 }
 

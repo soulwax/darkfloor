@@ -566,6 +566,12 @@ export function AudioPlayerProvider({
         dbQueueState.currentTime >= 0
           ? dbQueueState.currentTime
           : 0,
+      persistedAt:
+        typeof dbQueueState.persistedAt === "string"
+          ? dbQueueState.persistedAt
+          : null,
+      ownerId:
+        typeof dbQueueState.ownerId === "string" ? dbQueueState.ownerId : null,
       isShuffled: dbQueueState.isShuffled ?? false,
       repeatMode: coerceRepeatMode(dbQueueState.repeatMode),
     };
@@ -575,12 +581,15 @@ export function AudioPlayerProvider({
     dbQueueState?.smartQueueState,
     dbQueueState?.history,
     dbQueueState?.currentTime,
+    dbQueueState?.persistedAt,
+    dbQueueState?.ownerId,
     dbQueueState?.isShuffled,
     dbQueueState?.repeatMode,
   ]);
 
   const player = useAudioPlayer({
     initialQueueState: initialQueueState,
+    persistenceOwnerId: session?.user?.id ?? null,
     keepPlaybackAlive: preferences?.keepPlaybackAlive ?? true,
     streamQuality: isAuthenticated
       ? isStreamQuality(preferences?.streamQuality)
@@ -660,6 +669,18 @@ export function AudioPlayerProvider({
   const persistedCurrentTime = player.currentTrack
     ? Math.floor(player.currentTime / 5) * 5
     : 0;
+  const queuePersistedAt = useMemo(
+    () => new Date().toISOString(),
+    [
+      player.queuedTracks,
+      player.smartQueueState,
+      player.history,
+      persistedCurrentTime,
+      player.isShuffled,
+      player.repeatMode,
+      session?.user?.id,
+    ],
+  );
 
   useEffect(() => {
     if (!isAuthenticated || optionalWritesDisabled) return;
@@ -681,6 +702,8 @@ export function AudioPlayerProvider({
       }));
       const queueState = {
         version: 2 as const,
+        persistedAt: queuePersistedAt,
+        ownerId: session?.user?.id ?? null,
         queuedTracks: queuedTracksForSave,
         smartQueueState: (() => {
           const normalizedState = normalizeSmartQueueState(
@@ -723,7 +746,11 @@ export function AudioPlayerProvider({
     persistedCurrentTime,
     player.isShuffled,
     player.repeatMode,
+    queuePersistedAt,
+    session?.user?.id,
     optionalWritesDisabled,
+    clearQueueStateMutation,
+    saveQueueStateMutation,
   ]);
 
   useEffect(() => {
@@ -757,6 +784,9 @@ export function AudioPlayerProvider({
     isAuthenticated,
     lastUserId,
     optionalWritesDisabled,
+    clearQueueStateMutation,
+    player.clearQueueAndHistory,
+    showToast,
   ]);
 
   useEffect(() => {
