@@ -524,6 +524,8 @@ fn escape_html(value: &str) -> String {
 
 fn write_startup_error_page(app: &AppHandle, error: &str) -> Option<PathBuf> {
     let log_path = startup_log_path(app);
+    let log_content = fs::read_to_string(&log_path)
+        .unwrap_or_else(|_| format!("(log not available at {})", log_path.display()));
     let output_dir = app
         .path()
         .app_config_dir()
@@ -597,7 +599,7 @@ fn write_startup_error_page(app: &AppHandle, error: &str) -> Option<PathBuf> {
     </main>
   </body>
 </html>"#,
-        escape_html(&log_path.display().to_string()),
+        escape_html(&log_content),
         escape_html(error),
     );
 
