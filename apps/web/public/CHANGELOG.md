@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Discord and GitHub OAuth launch now stays on the frontend origin instead of the backend API port**: The client-side OAuth URL builder no longer reads the public API base for Auth.js provider sign-in, so leaked backend values such as `http://127.0.0.1:3333` cannot send browser sign-in to the server port.
+- **Mobile native sessions now stay portrait-only at runtime**: The Expo mobile root now locks phones to portrait mode during boot, preventing horizontal rotation from recreating the runtime and resetting the audio context.
 - **Signed-in greeter settings now save to account preferences**: Reopened greeter changes for language, mood, and preferred genre now write through the same tRPC preference and taste-profile paths as Settings/Home, while guests keep the existing local fallback.
 - **Tauri MSI builds now leave the working release artifacts signed as well as the installer**: The MSI bundle scripts now run the same post-sign artifact pass as the NSIS lane, so both `target/release/starchild.exe` and the generated `.msi` stay signed after the build finishes.
 - **Tauri artifact versions are synchronized with the main app version again**: The Tauri config and Rust manifest now ship `1.15.27`, so generated executables and installers no longer advertise the stale `1.15.21` version.

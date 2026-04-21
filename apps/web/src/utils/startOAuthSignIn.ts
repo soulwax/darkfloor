@@ -1,7 +1,6 @@
 // File: apps/web/src/utils/startOAuthSignIn.ts
 
 import { logAuthClientDebug } from "@/utils/authDebugClient";
-import { resolveAuthApiBase } from "@/utils/authApiBase";
 import { buildAuthCallbackUrl } from "@/utils/authRedirect";
 
 export function buildOAuthLaunchUrl(options: {
@@ -9,17 +8,13 @@ export function buildOAuthLaunchUrl(options: {
   callbackUrl: string;
   currentOrigin: string;
 }): URL {
-  const authOrigin = resolveAuthApiBase({
-    configuredBase: process.env.NEXT_PUBLIC_AUTH_API_BASE,
-    fallbackOrigin: options.currentOrigin,
-  });
   const redirectUrl = buildAuthCallbackUrl(
     options.callbackUrl,
     options.providerId,
   );
   const launchUrl = new URL(
     `/api/auth/launch/${options.providerId}`,
-    authOrigin,
+    options.currentOrigin,
   );
   launchUrl.searchParams.set("callbackUrl", redirectUrl);
   return launchUrl;
