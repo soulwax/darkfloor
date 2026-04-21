@@ -2,10 +2,49 @@
 
 const DEFAULT_AUTH_API_BASE = "https://www.darkfloor.one";
 const CANONICAL_AUTH_API_HOSTNAME = "www.darkfloor.one";
+const LOOPBACK_HOSTNAMES = new Set([
+  "0.0.0.0",
+  "127.0.0.1",
+  "localhost",
+  "::1",
+]);
 const AUTH_API_HOST_ALIASES = new Set([
   "darkfloor.one",
   CANONICAL_AUTH_API_HOSTNAME,
 ]);
+
+function parseOrigin(value: string | null | undefined): URL | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  try {
+    return new URL(trimmed);
+  } catch {
+    return null;
+  }
+}
+
+function isLoopbackOrigin(url: URL): boolean {
+  return LOOPBACK_HOSTNAMES.has(url.hostname.toLowerCase());
+}
+
+function shouldUseConfiguredAuthBase(
+  configuredBase: string,
+  fallbackOrigin: string | null | undefined,
+): boolean {
+  const configuredUrl = parseOrigin(configuredBase);
+  const fallbackUrl = parseOrigin(fallbackOrigin);
+
+  if (!configuredUrl || !isLoopbackOrigin(configuredUrl)) {
+    return true;
+  }
+
+  if (!fallbackUrl || !isLoopbackOrigin(fallbackUrl)) {
+    return false;
+  }
+
+  return configuredUrl.port === fallbackUrl.port;
+}
 
 export function normalizeAuthApiBase(value: string): string {
   const trimmed = value.trim().replace(/\/+$/, "");
@@ -27,7 +66,10 @@ export function resolveAuthApiBase(options: {
   fallbackOrigin?: string | null;
 }): string {
   const configuredBase = options.configuredBase?.trim();
-  if (configuredBase) {
+  if (
+    configuredBase &&
+    shouldUseConfiguredAuthBase(configuredBase, options.fallbackOrigin)
+  ) {
     return normalizeAuthApiBase(configuredBase);
   }
 

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.27] - 2026-04-17
 
+### Fixed
 
 - **Signed-in greeter settings now save to account preferences**: Reopened greeter changes for language, mood, and preferred genre now write through the same tRPC preference and taste-profile paths as Settings/Home, while guests keep the existing local fallback.
 - **Tauri MSI builds now leave the working release artifacts signed as well as the installer**: The MSI bundle scripts now run the same post-sign artifact pass as the NSIS lane, so both `target/release/starchild.exe` and the generated `.msi` stay signed after the build finishes.
