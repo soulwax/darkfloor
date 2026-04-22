@@ -1,9 +1,11 @@
 allowBuilds:
   '@parcel/watcher': true
+  '@prisma/engines': true
   '@soulwax/d-fi': true
   '@swc/core': true
   electron: true
   electron-winstaller: true
   esbuild: true
+  prisma: true
   sharp: true
   unrs-resolver: true

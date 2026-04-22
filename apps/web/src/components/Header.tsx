@@ -225,6 +225,8 @@ export default function Header() {
   const headerSearchQuery = searchParams.get("q") ?? "";
   const isHomeActive = pathname === "/";
   const isLibraryActive = pathname.startsWith("/library");
+  const { isElectronRuntime, isLinuxElectron, isTauriDesktop } =
+    desktopRuntime;
 
   const { data: recentSearches = [] } = api.music.getRecentSearches.useQuery(
     { limit: 12 },
@@ -315,7 +317,7 @@ export default function Header() {
     }
   };
 
-  if (isMobile && desktopRuntime.isElectronRuntime) {
+  if (isMobile && isElectronRuntime) {
     return null;
   }
 
@@ -327,12 +329,12 @@ export default function Header() {
     <header
       ref={desktopHeaderRef}
       className={`electron-app-header fixed right-0 z-30 hidden px-2 pb-1 md:block ${
-        desktopRuntime.isTauriDesktop ? "tauri-app-header" : ""
+        isTauriDesktop ? "tauri-app-header" : ""
       }`}
       style={{
-        top: desktopRuntime.isLinuxElectron
+        top: isLinuxElectron
           ? "36px"
-          : desktopRuntime.isTauriDesktop
+          : isTauriDesktop
             ? "var(--desktop-top-chrome-offset, 0px)"
             : "0",
         paddingTop: "0.5rem",
@@ -344,7 +346,7 @@ export default function Header() {
     >
       <div
         className={`theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[0.95rem] border py-2 ${
-          desktopRuntime.isTauriDesktop ? "tauri-header-main" : ""
+          isTauriDesktop ? "tauri-header-main" : ""
         }`}
       >
         <div className="electron-no-drag relative flex min-w-0 flex-1 items-center">
