@@ -58,11 +58,10 @@ const DESKTOP_QUEUE_WIDTH = "min(100vw, 28rem)";
 export default function PersistentPlayer() {
   const player = useGlobalPlayer();
   const isMobile = useIsMobile();
-  const isElectronRuntime =
-    typeof window !== "undefined" && window.electron?.isElectron === true;
-  const isTauriDesktop =
-    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
-  const shouldDockQueueBelowDesktopHeader = isElectronRuntime || isTauriDesktop;
+  const [desktopRuntime, setDesktopRuntime] = useState({
+    isElectronRuntime: false,
+    isTauriDesktop: false,
+  });
   const tq = useTranslations("queue");
   const tt = useTranslations("trackMenu");
 
@@ -93,6 +92,16 @@ export default function PersistentPlayer() {
   const [queuePreferenceOverride, setQueuePreferenceOverride] = useState<
     boolean | null
   >(null);
+
+  useEffect(() => {
+    setDesktopRuntime({
+      isElectronRuntime: window.electron?.isElectron === true,
+      isTauriDesktop: window.starchildTauri?.isTauri === true,
+    });
+  }, []);
+
+  const { isElectronRuntime, isTauriDesktop } = desktopRuntime;
+  const shouldDockQueueBelowDesktopHeader = isElectronRuntime || isTauriDesktop;
 
   // Sync panel state from server preferences - intentional initialization
   /* eslint-disable react-hooks/set-state-in-effect -- Intentional: sync from server prefs */

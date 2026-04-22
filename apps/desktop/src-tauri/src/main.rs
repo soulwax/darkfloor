@@ -24,8 +24,10 @@ use std::os::windows::process::CommandExt;
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 // Packaged Tauri auth must stay on the exact loopback origin registered with
-// the OAuth providers.
-const TAURI_LOOPBACK_HOST: &str = "127.0.0.1";
+// the OAuth providers. Dev uses localhost so Auth.js cookies and provider
+// callbacks stay on one host while the Next dev server is bound to 0.0.0.0.
+const TAURI_DEV_LOOPBACK_HOST: &str = "localhost";
+const TAURI_PACKAGED_LOOPBACK_HOST: &str = "127.0.0.1";
 const TAURI_RUNTIME_PORT: u16 = 3222;
 
 const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
@@ -140,7 +142,11 @@ fn tauri_window_state(window: tauri::WebviewWindow) -> Result<TauriWindowState, 
 }
 
 fn resolve_loopback_host() -> &'static str {
-    TAURI_LOOPBACK_HOST
+    if cfg!(debug_assertions) {
+        TAURI_DEV_LOOPBACK_HOST
+    } else {
+        TAURI_PACKAGED_LOOPBACK_HOST
+    }
 }
 
 fn build_runtime_origin(host: &str, port: u16) -> String {
@@ -384,15 +390,15 @@ mod tests {
     use super::{build_runtime_origin, resolve_loopback_host, TAURI_RUNTIME_PORT};
 
     #[test]
-    fn packaged_tauri_oauth_uses_registered_loopback_host() {
-        assert_eq!(resolve_loopback_host(), "127.0.0.1");
+    fn tauri_dev_oauth_uses_localhost_loopback_host() {
+        assert_eq!(resolve_loopback_host(), "localhost");
     }
 
     #[test]
-    fn packaged_tauri_runtime_origin_matches_registered_redirect_origin() {
+    fn tauri_dev_runtime_origin_matches_localhost_redirect_origin() {
         assert_eq!(
             build_runtime_origin(resolve_loopback_host(), TAURI_RUNTIME_PORT),
-            "http://127.0.0.1:3222"
+            "http://localhost:3222"
         );
     }
 }

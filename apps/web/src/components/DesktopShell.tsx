@@ -3,18 +3,28 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/useMediaQuery";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { DesktopSidebar } from "./DesktopSidebar";
 
 export function DesktopShell({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
-  const isLinuxElectron =
-    typeof window !== "undefined" &&
-    window.electron?.isElectron === true &&
-    window.electron?.platform === "linux";
-  const isTauriDesktop =
-    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
+  const [desktopRuntime, setDesktopRuntime] = useState<{
+    isLinuxElectron: boolean;
+    isTauriDesktop: boolean;
+  }>({
+    isLinuxElectron: false,
+    isTauriDesktop: false,
+  });
+
+  useEffect(() => {
+    setDesktopRuntime({
+      isLinuxElectron:
+        window.electron?.isElectron === true &&
+        window.electron?.platform === "linux",
+      isTauriDesktop: window.starchildTauri?.isTauri === true,
+    });
+  }, []);
 
   useEffect(() => {
     if (isMobile) {
@@ -43,9 +53,9 @@ export function DesktopShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={`desktop-shell flex h-screen w-full overflow-hidden ${
-        isTauriDesktop ? "is-tauri-desktop-shell" : ""
+        desktopRuntime.isTauriDesktop ? "is-tauri-desktop-shell" : ""
       }`}
-      style={isLinuxElectron ? { paddingTop: "36px" } : undefined}
+      style={desktopRuntime.isLinuxElectron ? { paddingTop: "36px" } : undefined}
     >
       <Suspense fallback={null}>
         <DesktopSidebar />

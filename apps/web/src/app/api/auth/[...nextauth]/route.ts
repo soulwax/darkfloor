@@ -107,6 +107,9 @@ function resolveRequestOrigin(request: Request): string | null {
 function resolveLoopbackAuthOrigin(request: Request): string | null {
   try {
     const requestUrl = new URL(request.url);
+    const protoHeader =
+      request.headers.get("x-forwarded-proto") ??
+      requestUrl.protocol.replace(":", "");
     const requestHost =
       request.headers.get("x-forwarded-host") ??
       request.headers.get("host") ??
@@ -116,6 +119,12 @@ function resolveLoopbackAuthOrigin(request: Request): string | null {
 
     if (!isLoopbackHostname(requestHostname)) {
       return null;
+    }
+
+    // For local desktop shells, prefer the actual request host so localhost and
+    // 127.0.0.1 stay consistent across the full PKCE round-trip.
+    if (requestHostname !== "0.0.0.0" && normalizedRequestHost.length > 0) {
+      return `${protoHeader}://${normalizedRequestHost}`;
     }
 
     const configuredOrigin =

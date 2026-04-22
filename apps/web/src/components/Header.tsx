@@ -48,16 +48,29 @@ export default function Header() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const isLinuxElectron =
-    typeof window !== "undefined" &&
-    window.electron?.isElectron === true &&
-    window.electron?.platform === "linux";
-  const isTauriDesktop =
-    typeof window !== "undefined" && window.starchildTauri?.isTauri === true;
+  const [desktopRuntime, setDesktopRuntime] = useState<{
+    isLinuxElectron: boolean;
+    isTauriDesktop: boolean;
+    isElectronRuntime: boolean;
+  }>({
+    isLinuxElectron: false,
+    isTauriDesktop: false,
+    isElectronRuntime: false,
+  });
   const lastHealthErrorLogRef = useRef(0);
   const headerSearchInputRef = useRef<HTMLInputElement>(null);
   const desktopHeaderRef = useRef<HTMLElement>(null);
   const searchBlurTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setDesktopRuntime({
+      isLinuxElectron:
+        window.electron?.isElectron === true &&
+        window.electron?.platform === "linux",
+      isTauriDesktop: window.starchildTauri?.isTauri === true,
+      isElectronRuntime: Boolean(window.electron?.isElectron),
+    });
+  }, []);
 
   useEffect(() => {
     if (!isMoreMenuOpen) return;
@@ -207,7 +220,7 @@ export default function Header() {
       resizeObserver?.disconnect();
       document.documentElement.style.removeProperty("--electron-header-height");
     };
-  }, [isMobile, isTauriDesktop]);
+  }, [desktopRuntime.isTauriDesktop, isMobile]);
 
   const headerSearchQuery = searchParams.get("q") ?? "";
   const isHomeActive = pathname === "/";
@@ -302,10 +315,7 @@ export default function Header() {
     }
   };
 
-  const isElectronRuntime =
-    typeof window !== "undefined" && Boolean(window.electron?.isElectron);
-
-  if (isMobile && isElectronRuntime) {
+  if (isMobile && desktopRuntime.isElectronRuntime) {
     return null;
   }
 
@@ -317,12 +327,12 @@ export default function Header() {
     <header
       ref={desktopHeaderRef}
       className={`electron-app-header fixed right-0 z-30 hidden px-2 pb-1 md:block ${
-        isTauriDesktop ? "tauri-app-header" : ""
+        desktopRuntime.isTauriDesktop ? "tauri-app-header" : ""
       }`}
       style={{
-        top: isLinuxElectron
+        top: desktopRuntime.isLinuxElectron
           ? "36px"
-          : isTauriDesktop
+          : desktopRuntime.isTauriDesktop
             ? "var(--desktop-top-chrome-offset, 0px)"
             : "0",
         paddingTop: "0.5rem",
@@ -334,7 +344,7 @@ export default function Header() {
     >
       <div
         className={`theme-chrome-header electron-header-main relative z-10 grid grid-cols-[minmax(0,1fr)_auto] grid-rows-1 items-center gap-3 rounded-[0.95rem] border py-2 ${
-          isTauriDesktop ? "tauri-header-main" : ""
+          desktopRuntime.isTauriDesktop ? "tauri-header-main" : ""
         }`}
       >
         <div className="electron-no-drag relative flex min-w-0 flex-1 items-center">

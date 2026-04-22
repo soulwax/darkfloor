@@ -58,12 +58,14 @@ export function TauriTitlebar() {
   const ts = useTranslations("search");
   const tsh = useTranslations("shell");
   const { currentTrack, isPlaying, queue, togglePlay } = useGlobalPlayer();
-  const [isTauri] = useState(
-    () =>
-      typeof window !== "undefined" && window.starchildTauri?.isTauri === true,
-  );
-  const [platform] = useState<TauriPlatform>(() => detectTauriPlatform());
+  const [isTauri, setIsTauri] = useState(false);
+  const [platform, setPlatform] = useState<TauriPlatform>("unknown");
   const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    setIsTauri(window.starchildTauri?.isTauri === true);
+    setPlatform(detectTauriPlatform());
+  }, []);
 
   useEffect(() => {
     if (!isTauri) return;
