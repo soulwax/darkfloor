@@ -27,6 +27,11 @@ const INVALID_ORIGIN_HOSTNAMES = new Set([
   "::1",
 ]);
 
+function isLoopbackHostname(hostname: string | null | undefined): boolean {
+  if (!hostname) return false;
+  return INVALID_ORIGIN_HOSTNAMES.has(hostname.toLowerCase());
+}
+
 function isTrackedOAuthProvider(provider: string | null): boolean {
   return provider !== null && TRACKED_OAUTH_PROVIDERS.has(provider);
 }
@@ -90,7 +95,7 @@ function resolveRequestOrigin(request: Request): string | null {
 
     const origin = `${protoHeader}://${hostHeader}`;
     const parsed = new URL(origin);
-    if (INVALID_ORIGIN_HOSTNAMES.has(parsed.hostname)) {
+    if (isLoopbackHostname(parsed.hostname)) {
       return null;
     }
     return parsed.origin;
@@ -99,8 +104,43 @@ function resolveRequestOrigin(request: Request): string | null {
   }
 }
 
+function resolveLoopbackAuthOrigin(request: Request): string | null {
+  try {
+    const requestUrl = new URL(request.url);
+    const requestHost =
+      request.headers.get("x-forwarded-host") ??
+      request.headers.get("host") ??
+      requestUrl.host;
+    const normalizedRequestHost = requestHost.split(",")[0]?.trim() ?? "";
+    const requestHostname = normalizedRequestHost.split(":")[0] ?? "";
+
+    if (!isLoopbackHostname(requestHostname)) {
+      return null;
+    }
+
+    const configuredOrigin =
+      process.env.AUTH_URL ??
+      process.env.NEXTAUTH_URL ??
+      process.env.NEXTAUTH_URL_INTERNAL;
+
+    if (!configuredOrigin) {
+      return null;
+    }
+
+    const parsedConfiguredOrigin = new URL(configuredOrigin);
+    if (!isLoopbackHostname(parsedConfiguredOrigin.hostname)) {
+      return null;
+    }
+
+    return parsedConfiguredOrigin.origin;
+  } catch {
+    return null;
+  }
+}
+
 function applyDynamicAuthOrigin(request: Request): void {
-  const requestOrigin = resolveRequestOrigin(request);
+  const requestOrigin =
+    resolveRequestOrigin(request) ?? resolveLoopbackAuthOrigin(request);
   if (!requestOrigin) return;
 
   try {

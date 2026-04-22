@@ -146,4 +146,42 @@ describe("NextAuth route wrapper", () => {
     expect(response.headers.get("location")).toBe("https://darkfloor.org/library");
     expect(response.headers.get("cache-control")).toContain("no-store");
   });
+
+  it("re-applies the configured loopback auth origin for desktop OAuth requests", async () => {
+    vi.resetModules();
+
+    const originalAuthUrl = process.env.AUTH_URL;
+    const originalNextAuthUrl = process.env.NEXTAUTH_URL;
+    const originalNextAuthUrlInternal = process.env.NEXTAUTH_URL_INTERNAL;
+
+    process.env.AUTH_URL = undefined;
+    process.env.NEXTAUTH_URL = "http://127.0.0.1:3222";
+    process.env.NEXTAUTH_URL_INTERNAL = "http://127.0.0.1:3222";
+
+    const handlerGet = vi.fn(async () => {
+      return Response.redirect("https://discord.com/oauth2/authorize", 302);
+    });
+
+    vi.doMock("@/server/auth", () => ({
+      handlers: {
+        GET: handlerGet,
+        POST: vi.fn(),
+      },
+    }));
+
+    try {
+      const route = await loadRoute();
+      await route.GET(makeRequest("/api/auth/signin/discord"), {
+        params: Promise.resolve({ nextauth: ["signin", "discord"] }),
+      });
+
+      expect(process.env.AUTH_URL).toBe("http://127.0.0.1:3222");
+      expect(process.env.NEXTAUTH_URL).toBe("http://127.0.0.1:3222");
+      expect(process.env.NEXTAUTH_URL_INTERNAL).toBe("http://127.0.0.1:3222");
+    } finally {
+      process.env.AUTH_URL = originalAuthUrl;
+      process.env.NEXTAUTH_URL = originalNextAuthUrl;
+      process.env.NEXTAUTH_URL_INTERNAL = originalNextAuthUrlInternal;
+    }
+  });
 });
