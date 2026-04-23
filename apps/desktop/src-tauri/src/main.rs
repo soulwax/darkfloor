@@ -23,11 +23,11 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-// Packaged Tauri auth must stay on the exact loopback origin registered with
-// the OAuth providers. Dev uses localhost so Auth.js cookies and provider
-// callbacks stay on one host while the Next dev server is bound to 0.0.0.0.
+// Tauri auth must stay on one exact loopback origin for the full PKCE round
+// trip. Using localhost in both dev and packaged modes keeps desktop cookies
+// and provider callbacks on the same host without affecting web/mobile auth.
 const TAURI_DEV_LOOPBACK_HOST: &str = "localhost";
-const TAURI_PACKAGED_LOOPBACK_HOST: &str = "127.0.0.1";
+const TAURI_PACKAGED_LOOPBACK_HOST: &str = "localhost";
 const TAURI_RUNTIME_PORT: u16 = 3222;
 
 const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
