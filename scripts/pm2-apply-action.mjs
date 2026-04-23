@@ -18,10 +18,11 @@ if (!validActions.has(action) || appNames.length === 0) {
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const ecosystemConfigPath = path.join(repoRoot, "ecosystem.config.cjs");
-const pm2Command =
+const pm2Command = action === "reload" ? "reload" : "restart";
+const ecosystemFallbackCommand =
   action === "reload" ? "startOrReload" : "startOrRestart";
 
-function runPm2(args, appName) {
+function runPm2(args, appName, commandLabel) {
   const result = spawnSync("pm2", args, {
     cwd: repoRoot,
     encoding: "utf8",
@@ -48,17 +49,51 @@ function runPm2(args, appName) {
 
   if (result.status !== 0) {
     console.error(
-      `PM2 ${pm2Command} failed for ${appName} with exit code ${result.status ?? 1}.`,
+      `PM2 ${commandLabel} failed for ${appName} with exit code ${result.status ?? 1}.`,
     );
     process.exit(result.status ?? 1);
   }
 }
 
+function hasPm2Process(appName) {
+  const result = spawnSync("pm2", ["describe", appName], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  });
+
+  if (result.error) {
+    if (result.error.code === "ENOENT") {
+      console.error(
+        "PM2 is not available in PATH. Install PM2 or run this command in the deployment environment where PM2 is installed.",
+      );
+    } else {
+      console.error(
+        `Failed to inspect PM2 process ${appName}: ${result.error.message}`,
+      );
+    }
+    process.exit(1);
+  }
+
+  return result.status === 0;
+}
+
 for (const appName of appNames) {
-  console.log(`Applying PM2 ${pm2Command} for ${appName} (${envName})...`);
+  if (hasPm2Process(appName)) {
+    console.log(`Applying PM2 ${pm2Command} for ${appName} (${envName})...`);
+    runPm2(
+      [pm2Command, appName, "--update-env"],
+      appName,
+      pm2Command,
+    );
+    continue;
+  }
+
+  console.log(
+    `PM2 process ${appName} is not running, using ecosystem ${ecosystemFallbackCommand} (${envName})...`,
+  );
   runPm2(
     [
-      pm2Command,
+      ecosystemFallbackCommand,
       ecosystemConfigPath,
       "--only",
       appName,
@@ -67,5 +102,6 @@ for (const appName of appNames) {
       "--update-env",
     ],
     appName,
+    ecosystemFallbackCommand,
   );
 }
