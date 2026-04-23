@@ -26,6 +26,35 @@ function Write-Success {
     Write-Host "[tauri:sign:win:self] $Message" -ForegroundColor Green
 }
 
+function Find-SignToolPath {
+    $override = [Environment]::GetEnvironmentVariable("STARCHILD_TAURI_SIGNTOOL_PATH")
+    if (-not [string]::IsNullOrWhiteSpace($override) -and (Test-Path -LiteralPath $override -PathType Leaf)) {
+        return (Resolve-Path -LiteralPath $override).Path
+    }
+
+    $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
+    if ($null -ne $command -and -not [string]::IsNullOrWhiteSpace($command.Source)) {
+        return $command.Source
+    }
+
+    $sdkRoots = @(
+        "${env:ProgramFiles(x86)}\Windows Kits\10\bin",
+        "${env:ProgramFiles}\Windows Kits\10\bin",
+        "${env:ProgramFiles(x86)}\Windows Kits\11\bin",
+        "${env:ProgramFiles}\Windows Kits\11\bin"
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path -LiteralPath $_) }
+
+    foreach ($root in $sdkRoots) {
+        $matches = Get-ChildItem -Path $root -Filter signtool.exe -File -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending
+        if ($matches.Count -gt 0) {
+            return $matches[0].FullName
+        }
+    }
+
+    throw "signtool.exe was not found. Install the Windows SDK Signing Tools or set STARCHILD_TAURI_SIGNTOOL_PATH to the SignTool executable."
+}
+
 function Test-OpenSSLInstallation {
     $openSSLPath = (Get-Command openssl -ErrorAction SilentlyContinue).Source
     if ($null -eq $openSSLPath) {
@@ -88,6 +117,18 @@ function Add-CertificateIfMissing {
     }
     finally {
         $store.Close()
+    }
+}
+
+function Invoke-SignTool {
+    param(
+        [string]$SignToolPath,
+        [string[]]$Arguments
+    )
+
+    & $SignToolPath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "SignTool failed with exit code ${LASTEXITCODE}: signtool $($Arguments -join ' ')"
     }
 }
 
@@ -358,6 +399,7 @@ if ($resolvedTargets.Length -eq 0) {
 }
 
 $openSSLPath = Test-OpenSSLInstallation
+$signToolPath = Find-SignToolPath
 $material = Ensure-CodeSigningMaterial `
     -RepoRoot $repoRoot `
     -OpenSSLPath $openSSLPath `
@@ -385,6 +427,10 @@ if (-not $SkipTrustStoreInstall) {
 
 $timestampServer = [Environment]::GetEnvironmentVariable("STARCHILD_TAURI_TIMESTAMP_URL")
 $signingCertificate = $material.LeafCertificateWithPrivateKey
+$signingThumbprint = ($signingCertificate.Thumbprint ?? "").Replace(" ", "")
+
+Write-Info "Using SignTool: $signToolPath"
+Write-Info "Using signing certificate thumbprint: $signingThumbprint"
 
 foreach ($target in $resolvedTargets) {
     $existingSignature = Get-AuthenticodeSignature -LiteralPath $target
@@ -402,16 +448,39 @@ foreach ($target in $resolvedTargets) {
     }
 
     Write-Info "Signing $target"
-    $signatureParams = @{
-        FilePath = $target
-        Certificate = $signingCertificate
-        HashAlgorithm = "SHA256"
-    }
+
+    $signatureArgs = @(
+        "sign",
+        "/sha1", $signingThumbprint,
+        "/fd", "SHA256",
+        "/s", "My",
+        "/debug",
+        $target
+    )
     if (-not [string]::IsNullOrWhiteSpace($timestampServer)) {
-        $signatureParams.TimestampServer = $timestampServer
+        $signatureArgs = @(
+            "sign",
+            "/sha1", $signingThumbprint,
+            "/fd", "SHA256",
+            "/td", "SHA256",
+            "/tr", $timestampServer,
+            "/s", "My",
+            "/debug",
+            $target
+        )
     }
 
-    $result = Set-AuthenticodeSignature @signatureParams
+    Invoke-SignTool -SignToolPath $signToolPath -Arguments $signatureArgs
+
+    $verifyArgs = @(
+        "verify",
+        "/pa",
+        "/v",
+        $target
+    )
+    Invoke-SignTool -SignToolPath $signToolPath -Arguments $verifyArgs
+
+    $result = Get-AuthenticodeSignature -LiteralPath $target
     if ($result.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
         throw "Signing failed for $target with status '$($result.Status)': $($result.StatusMessage)"
     }

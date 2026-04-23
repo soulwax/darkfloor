@@ -36,6 +36,9 @@ Notes:
   bundle pass, and then self-signs the generated Tauri executable and installer
   with a local code-signing leaf certificate issued from `certs/ca.pem` and
   `certs/ca.key`.
+- The Windows Tauri signing script now uses `signtool.exe` for both signing and
+  verification. It auto-discovers the Windows SDK SignTool binary, or you can
+  point it explicitly with `STARCHILD_TAURI_SIGNTOOL_PATH`.
 - This Windows signing path is free and useful for local or internal
   distribution, but it is not publicly trusted like a commercial code-signing
   certificate. Other machines would need to trust the local CA manually.
