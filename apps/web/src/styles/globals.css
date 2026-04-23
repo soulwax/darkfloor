@@ -2785,21 +2785,42 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .tauri-titlebar-shell {
-  --tauri-traffic-width: 3.35rem;
+  --tauri-window-controls-width: 8.4rem;
   pointer-events: auto;
   min-height: var(--tauri-titlebar-height);
   border-color: var(--tauri-frame-border);
   background:
-    linear-gradient(180deg, rgba(10, 14, 21, 0.96), rgba(9, 13, 20, 0.82)),
+    radial-gradient(
+      120% 160% at 0% 0%,
+      rgba(244, 178, 102, 0.18) 0%,
+      rgba(244, 178, 102, 0.02) 34%,
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 140% at 100% 0%,
+      rgba(88, 198, 177, 0.18) 0%,
+      rgba(88, 198, 177, 0.03) 30%,
+      transparent 56%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(17, 24, 34, 0.98) 0%,
+      rgba(10, 15, 24, 0.95) 24%,
+      rgba(22, 18, 34, 0.9) 48%,
+      rgba(9, 14, 23, 0.94) 70%,
+      rgba(8, 12, 20, 0.98) 100%
+    ),
     var(--tauri-frame-sheen);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(22px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 30px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(24px);
 }
 
 .tauri-titlebar-inner {
   display: grid;
-  grid-template-columns: var(--tauri-traffic-width) minmax(0, 1fr) var(
-      --tauri-traffic-width
+  grid-template-columns: var(--tauri-window-controls-width) minmax(0, 1fr) var(
+      --tauri-window-controls-width
     );
   align-items: center;
   gap: 0.9rem;
@@ -2885,13 +2906,13 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .tauri-titlebar-actions-spacer {
-  width: var(--tauri-traffic-width);
+  width: var(--tauri-window-controls-width);
 }
 
 .tauri-window-controls {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .tauri-window-controls-shell {
@@ -2899,8 +2920,13 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   align-items: center;
 }
 
-.tauri-window-controls-shell-traffic {
-  gap: 0.35rem;
+.tauri-window-controls-shell-windows {
+  gap: 0;
+  overflow: hidden;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .tauri-window-control {
@@ -2918,20 +2944,25 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
     border-color 120ms ease;
 }
 
-.tauri-window-control-traffic {
-  width: 12px;
-  height: 12px;
+.tauri-window-control-windows {
+  width: 2.8rem;
+  height: 2.1rem;
   border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.02);
+  color: rgba(236, 240, 247, 0.9);
   box-shadow: none;
-  color: rgba(24, 28, 34, 0.78);
 }
 
 .tauri-window-glyph {
   position: relative;
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  opacity: 0.72;
+  width: 10px;
+  height: 10px;
+  opacity: 0.92;
   transition:
     opacity 120ms ease,
     transform 140ms ease,
@@ -2949,35 +2980,34 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 }
 
 .tauri-window-glyph-minimize::before {
-  width: 7px;
-  height: 1.8px;
+  width: 10px;
+  height: 1.5px;
   border-radius: 999px;
-  transform: translate(-50%, 1.8px);
-  box-shadow: 0 0 0 0.45px rgba(0, 0, 0, 0.08);
+  transform: translate(-50%, 2.4px);
 }
 
 .tauri-window-glyph-maximize::before,
 .tauri-window-glyph-maximize::after {
-  width: 5.5px;
-  height: 5.5px;
-  border: 1.4px solid currentColor;
+  width: 8px;
+  height: 8px;
+  border: 1.35px solid currentColor;
   background: transparent;
-  border-radius: 1.4px;
-  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 0;
+  transform: translate(-50%, -50%);
 }
 
 .tauri-window-glyph-maximize.is-maximized::before {
-  transform: translate(-1.2px, -1.2px) rotate(45deg);
+  transform: translate(-1.6px, -1.6px);
 }
 
 .tauri-window-glyph-maximize.is-maximized::after {
-  transform: translate(1.2px, 1.2px) rotate(45deg);
+  transform: translate(1.6px, 1.6px);
 }
 
 .tauri-window-glyph-close::before,
 .tauri-window-glyph-close::after {
-  width: 7px;
-  height: 1.8px;
+  width: 10px;
+  height: 1.5px;
   border-radius: 999px;
 }
 
@@ -2989,49 +3019,28 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-.tauri-window-control-minimize {
-  background: #f4be4f;
-}
-
-.tauri-window-control-maximize {
-  background: #61c554;
-}
-
-.tauri-window-control-close {
-  background: #ec6a5f;
-}
-
 .tauri-window-control:hover {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
-.tauri-window-control-traffic:hover,
-.tauri-window-control-traffic:focus-visible {
-  border-color: transparent;
-  color: rgba(26, 28, 32, 0.72);
+.tauri-window-control-windows:hover,
+.tauri-window-control-windows:focus-visible {
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.08);
 }
 
-.tauri-window-control-traffic:hover .tauri-window-glyph,
-.tauri-window-control-traffic:focus-visible .tauri-window-glyph {
+.tauri-window-control-windows:hover .tauri-window-glyph,
+.tauri-window-control-windows:focus-visible .tauri-window-glyph {
   opacity: 1;
   filter: saturate(1.08);
 }
 
-.tauri-window-control-minimize:hover,
-.tauri-window-control-minimize:focus-visible {
-  background: #f4be4f;
-}
-
-.tauri-window-control-maximize:hover,
-.tauri-window-control-maximize:focus-visible {
-  background: #61c554;
-}
-
-.tauri-window-control-close:hover,
-.tauri-window-control-close:focus-visible {
-  background: #ec6a5f;
+.tauri-window-control-windows:last-child {
+  border-right: none;
 }
 
 .tauri-window-control:active {
@@ -3050,19 +3059,30 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   transform: rotate(-8deg) scale(0.94);
 }
 
-.tauri-window-control-close:hover {
-  background: #dc5c64;
-  border-color: #dc5c64;
-}
-
-.tauri-window-control-traffic:focus-visible {
+.tauri-window-control-windows:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.22);
   outline-offset: 2px;
 }
 
 .tauri-window-control-close:hover,
 .tauri-window-control-close:focus-visible {
-  background: #ec6a5f;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    #d3485c;
+}
+
+.tauri-window-control-close:active {
+  background: #bf334b;
+}
+
+html.is-tauri.is-tauri-maximized .tauri-titlebar-shell {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.tauri-window-control-close:hover,
+.tauri-window-control-close:focus-visible {
   border-color: transparent;
 }
 

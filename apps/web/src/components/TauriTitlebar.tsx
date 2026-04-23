@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -16,6 +17,13 @@ type TauriWindowState = {
 };
 
 type TauriPlatform = "windows" | "macos" | "linux" | "unknown";
+type DragIntent = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+};
+
+const WINDOW_DRAG_THRESHOLD_PX = 4;
 
 const isTauriWindowState = (value: unknown): value is TauriWindowState => {
   if (!value || typeof value !== "object") return false;
@@ -54,6 +62,8 @@ export function TauriTitlebar() {
   const [isTauri, setIsTauri] = useState(false);
   const [platform, setPlatform] = useState<TauriPlatform>("unknown");
   const [isMaximized, setIsMaximized] = useState(false);
+  const dragIntentRef = useRef<DragIntent | null>(null);
+  const isStartingDragRef = useRef(false);
 
   useEffect(() => {
     setIsTauri(window.starchildTauri?.isTauri === true);
@@ -160,15 +170,81 @@ export function TauriTitlebar() {
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || shouldSkipWindowDrag(event.target)) {
+      return;
+    }
+
+    dragIntentRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Best effort only.
+    }
+  };
+
+  const clearDragIntent = (
+    event?: ReactPointerEvent<HTMLDivElement>,
+    options?: { releasePointerCapture?: boolean },
+  ) => {
+    const pointerId = dragIntentRef.current?.pointerId;
+    dragIntentRef.current = null;
+
     if (
-      event.button !== 0 ||
-      event.detail > 1 ||
-      shouldSkipWindowDrag(event.target)
+      options?.releasePointerCapture &&
+      event &&
+      pointerId !== undefined &&
+      event.currentTarget.hasPointerCapture(pointerId)
+    ) {
+      try {
+        event.currentTarget.releasePointerCapture(pointerId);
+      } catch {
+        // Best effort only.
+      }
+    }
+  };
+
+  const handlePointerMove = async (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const dragIntent = dragIntentRef.current;
+    if (
+      !dragIntent ||
+      dragIntent.pointerId !== event.pointerId ||
+      isStartingDragRef.current
     ) {
       return;
     }
 
-    void invokeWindowAction("startDragging");
+    const deltaX = event.clientX - dragIntent.startX;
+    const deltaY = event.clientY - dragIntent.startY;
+    if (Math.hypot(deltaX, deltaY) < WINDOW_DRAG_THRESHOLD_PX) {
+      return;
+    }
+
+    isStartingDragRef.current = true;
+    clearDragIntent(event, { releasePointerCapture: true });
+
+    try {
+      if (platform === "windows" && isMaximized) {
+        const nextState = await window.starchildTauri?.toggleMaximize();
+        if (isTauriWindowState(nextState)) {
+          setIsMaximized(nextState.isMaximized);
+        }
+      }
+
+      await invokeWindowAction("startDragging");
+    } finally {
+      isStartingDragRef.current = false;
+    }
   };
 
   const handleDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -176,6 +252,7 @@ export function TauriTitlebar() {
       return;
     }
 
+    dragIntentRef.current = null;
     void invokeWindowAction("toggleMaximize");
   };
 
@@ -185,6 +262,15 @@ export function TauriTitlebar() {
         className="tauri-titlebar-shell theme-chrome-header rounded-[calc(var(--desktop-window-radius)-1px)] border px-3 py-2"
         data-tauri-drag-region
         onPointerDown={handlePointerDown}
+        onPointerMove={(event) => {
+          void handlePointerMove(event);
+        }}
+        onPointerUp={(event) => {
+          clearDragIntent(event, { releasePointerCapture: true });
+        }}
+        onPointerCancel={(event) => {
+          clearDragIntent(event, { releasePointerCapture: true });
+        }}
         onDoubleClick={handleDoubleClick}
       >
         <div className="tauri-titlebar-inner">

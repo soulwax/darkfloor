@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.35] - 2026-04-23
+
+### Changed
+
+- **The interface is now broadly 50% less rounded across the app**: Shared shell and window radius tokens were halved, and the common non-circular `rounded-*` utility classes now resolve to flatter corners as well, so drawers, panels, headers, cards, inputs, and buttons all read noticeably sharper without changing intentionally circular UI elements.
+
 ## [1.15.34] - 2026-04-23
 
 ### Fixed
