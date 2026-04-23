@@ -74,6 +74,7 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
       minimize: () => invoke("tauri_window_minimize"),
       close: () => invoke("tauri_window_close"),
       startDragging: () => invoke("tauri_window_start_dragging"),
+      toggleDevtools: () => invoke("tauri_window_toggle_devtools"),
       toggleMaximize: async () => {
         await invoke("tauri_window_toggle_maximize");
         return syncWindowState();
@@ -91,6 +92,20 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
   });
   window.addEventListener("resize", () => {
     void syncWindowState();
+  });
+  window.addEventListener("keydown", (event) => {
+    const isToggleDevtoolsShortcut =
+      event.key === "F12" ||
+      ((event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "i");
+
+    if (!isToggleDevtoolsShortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    void invoke("tauri_window_toggle_devtools");
   });
 })();
 "###;
@@ -141,6 +156,17 @@ fn tauri_window_state(window: tauri::WebviewWindow) -> Result<TauriWindowState, 
     Ok(TauriWindowState { is_maximized })
 }
 
+#[tauri::command]
+fn tauri_window_toggle_devtools(window: tauri::WebviewWindow) -> Result<(), String> {
+    if window.is_devtools_open() {
+        window.close_devtools();
+    } else {
+        window.open_devtools();
+    }
+
+    Ok(())
+}
+
 fn resolve_loopback_host() -> &'static str {
     if cfg!(debug_assertions) {
         TAURI_DEV_LOOPBACK_HOST
@@ -161,7 +187,8 @@ fn main() {
             tauri_window_toggle_maximize,
             tauri_window_close,
             tauri_window_start_dragging,
-            tauri_window_state
+            tauri_window_state,
+            tauri_window_toggle_devtools
         ])
         .setup(|app| {
             let handle = app.handle();
