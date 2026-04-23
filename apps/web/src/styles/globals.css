@@ -2864,13 +2864,67 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   color: rgba(24, 28, 34, 0.78);
 }
 
-.tauri-window-control-traffic svg {
+.tauri-window-glyph {
+  position: relative;
+  display: inline-block;
   width: 8px;
   height: 8px;
-  opacity: 0.64;
+  opacity: 0.72;
   transition:
     opacity 120ms ease,
-    transform 120ms ease;
+    transform 140ms ease,
+    filter 120ms ease;
+}
+
+.tauri-window-glyph::before,
+.tauri-window-glyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+}
+
+.tauri-window-glyph-minimize::before {
+  width: 7px;
+  height: 1.8px;
+  border-radius: 999px;
+  transform: translate(-50%, 1.8px);
+  box-shadow: 0 0 0 0.45px rgba(0, 0, 0, 0.08);
+}
+
+.tauri-window-glyph-maximize::before,
+.tauri-window-glyph-maximize::after {
+  width: 5.5px;
+  height: 5.5px;
+  border: 1.4px solid currentColor;
+  background: transparent;
+  border-radius: 1.4px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tauri-window-glyph-maximize.is-maximized::before {
+  transform: translate(-1.2px, -1.2px) rotate(45deg);
+}
+
+.tauri-window-glyph-maximize.is-maximized::after {
+  transform: translate(1.2px, 1.2px) rotate(45deg);
+}
+
+.tauri-window-glyph-close::before,
+.tauri-window-glyph-close::after {
+  width: 7px;
+  height: 1.8px;
+  border-radius: 999px;
+}
+
+.tauri-window-glyph-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tauri-window-glyph-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .tauri-window-control-minimize {
@@ -2897,9 +2951,10 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
   color: rgba(26, 28, 32, 0.72);
 }
 
-.tauri-window-control-traffic:hover svg,
-.tauri-window-control-traffic:focus-visible svg {
+.tauri-window-control-traffic:hover .tauri-window-glyph,
+.tauri-window-control-traffic:focus-visible .tauri-window-glyph {
   opacity: 1;
+  filter: saturate(1.08);
 }
 
 .tauri-window-control-minimize:hover,
@@ -2919,6 +2974,18 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 
 .tauri-window-control:active {
   transform: scale(0.96);
+}
+
+.tauri-window-control:active .tauri-window-glyph-minimize {
+  transform: translateY(0.5px) scaleX(0.92);
+}
+
+.tauri-window-control:active .tauri-window-glyph-maximize {
+  transform: rotate(8deg) scale(0.94);
+}
+
+.tauri-window-control:active .tauri-window-glyph-close {
+  transform: rotate(-8deg) scale(0.94);
 }
 
 .tauri-window-control-close:hover {

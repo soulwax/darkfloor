@@ -1,7 +1,6 @@
 "use client";
 
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
-import { Minus, Plus, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -203,7 +202,7 @@ export function TauriTitlebar() {
                 onClick={() => void invokeWindowAction("close")}
                 data-no-window-drag="true"
               >
-                <X className="h-[8px] w-[8px] stroke-[2.6]" />
+                <span className="tauri-window-glyph tauri-window-glyph-close" />
               </button>
               <button
                 type="button"
@@ -213,7 +212,7 @@ export function TauriTitlebar() {
                 onClick={() => void invokeWindowAction("minimize")}
                 data-no-window-drag="true"
               >
-                <Minus className="h-[8px] w-[8px] stroke-[2.6]" />
+                <span className="tauri-window-glyph tauri-window-glyph-minimize" />
               </button>
               <button
                 type="button"
@@ -225,11 +224,11 @@ export function TauriTitlebar() {
                 onClick={() => void invokeWindowAction("toggleMaximize")}
                 data-no-window-drag="true"
               >
-                {isMaximized ? (
-                  <Plus className="h-[8px] w-[8px] rotate-45 stroke-[2.6]" />
-                ) : (
-                  <Plus className="h-[8px] w-[8px] stroke-[2.6]" />
-                )}
+                <span
+                  className={`tauri-window-glyph tauri-window-glyph-maximize ${
+                    isMaximized ? "is-maximized" : ""
+                  }`}
+                />
               </button>
             </div>
           </div>
