@@ -183,55 +183,12 @@ export function TauriTitlebar() {
     <header className="tauri-titlebar fixed inset-x-0 top-0 z-40 px-[var(--desktop-window-frame-gap)] pt-[var(--desktop-window-frame-gap)]">
       <div
         className="tauri-titlebar-shell theme-chrome-header rounded-[calc(var(--desktop-window-radius)-1px)] border px-3 py-2"
+        data-tauri-drag-region
         onPointerDown={handlePointerDown}
         onDoubleClick={handleDoubleClick}
       >
         <div className="tauri-titlebar-inner">
-          <div
-            className="tauri-window-controls"
-            role="group"
-            aria-label={tsh("windowControls")}
-            data-no-window-drag="true"
-          >
-            <div className="tauri-window-controls-shell tauri-window-controls-shell-traffic">
-              <button
-                type="button"
-                className="tauri-window-control tauri-window-control-traffic tauri-window-control-close"
-                aria-label={tsh("closeWindow")}
-                title={tsh("close")}
-                onClick={() => void invokeWindowAction("close")}
-                data-no-window-drag="true"
-              >
-                <span className="tauri-window-glyph tauri-window-glyph-close" />
-              </button>
-              <button
-                type="button"
-                className="tauri-window-control tauri-window-control-traffic tauri-window-control-minimize"
-                aria-label={tsh("minimizeWindow")}
-                title={tsh("minimize")}
-                onClick={() => void invokeWindowAction("minimize")}
-                data-no-window-drag="true"
-              >
-                <span className="tauri-window-glyph tauri-window-glyph-minimize" />
-              </button>
-              <button
-                type="button"
-                className="tauri-window-control tauri-window-control-traffic tauri-window-control-maximize"
-                aria-label={
-                  isMaximized ? tsh("restoreWindow") : tsh("maximizeWindow")
-                }
-                title={isMaximized ? tsh("restore") : tsh("maximize")}
-                onClick={() => void invokeWindowAction("toggleMaximize")}
-                data-no-window-drag="true"
-              >
-                <span
-                  className={`tauri-window-glyph tauri-window-glyph-maximize ${
-                    isMaximized ? "is-maximized" : ""
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
+          <div className="tauri-titlebar-actions tauri-titlebar-actions-spacer" />
 
           <div
             className="tauri-titlebar-drag-zone flex min-w-0 flex-1 items-center justify-center"
@@ -257,10 +214,50 @@ export function TauriTitlebar() {
           </div>
 
           <div
-            className="tauri-titlebar-actions tauri-titlebar-actions-spacer"
+            className="tauri-window-controls tauri-window-controls-windows"
+            role="group"
+            aria-label={tsh("windowControls")}
             data-no-window-drag="true"
-            aria-hidden="true"
-          />
+          >
+            <div className="tauri-window-controls-shell tauri-window-controls-shell-windows">
+              <button
+                type="button"
+                className="tauri-window-control tauri-window-control-windows tauri-window-control-minimize"
+                aria-label={tsh("minimizeWindow")}
+                title={tsh("minimize")}
+                onClick={() => void invokeWindowAction("minimize")}
+                data-no-window-drag="true"
+              >
+                <span className="tauri-window-glyph tauri-window-glyph-minimize" />
+              </button>
+              <button
+                type="button"
+                className="tauri-window-control tauri-window-control-windows tauri-window-control-maximize"
+                aria-label={
+                  isMaximized ? tsh("restoreWindow") : tsh("maximizeWindow")
+                }
+                title={isMaximized ? tsh("restore") : tsh("maximize")}
+                onClick={() => void invokeWindowAction("toggleMaximize")}
+                data-no-window-drag="true"
+              >
+                <span
+                  className={`tauri-window-glyph tauri-window-glyph-maximize ${
+                    isMaximized ? "is-maximized" : ""
+                  }`}
+                />
+              </button>
+              <button
+                type="button"
+                className="tauri-window-control tauri-window-control-windows tauri-window-control-close"
+                aria-label={tsh("closeWindow")}
+                title={tsh("close")}
+                onClick={() => void invokeWindowAction("close")}
+                data-no-window-drag="true"
+              >
+                <span className="tauri-window-glyph tauri-window-glyph-close" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
