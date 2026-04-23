@@ -85,6 +85,15 @@ interface QueueItemProps {
   onReorder: (newIndex: number) => void;
 }
 
+const handleQueueActionTouch = (
+  event: React.TouchEvent<HTMLButtonElement>,
+  action: () => void,
+): void => {
+  event.preventDefault();
+  event.stopPropagation();
+  action();
+};
+
 function QueueItem({
   track,
   index,
@@ -261,6 +270,7 @@ function QueueItem({
 
       {/* Drag handle */}
       <button
+        type="button"
         className="flex-shrink-0 text-[var(--color-muted)] transition-colors active:text-[var(--color-text)]"
         onClick={(e) => {
           e.stopPropagation();
@@ -310,7 +320,9 @@ function QueueItem({
         )}
         {/* Play button overlay */}
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onPlay();
           }}
@@ -346,7 +358,9 @@ function QueueItem({
       {/* Play-next button */}
       {canPlayNext && onPlayNext ? (
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onPlayNext();
           }}
@@ -354,7 +368,7 @@ function QueueItem({
             e.stopPropagation();
           }}
           onTouchEnd={(e) => {
-            e.stopPropagation();
+            handleQueueActionTouch(e, onPlayNext);
           }}
           className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-white/6 active:text-[var(--color-text)]"
           aria-label={tm("movePlayNext")}
@@ -367,7 +381,9 @@ function QueueItem({
       {/* Remove button */}
       {canRemove && (
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onRemove();
           }}
@@ -375,7 +391,7 @@ function QueueItem({
             e.stopPropagation();
           }}
           onTouchEnd={(e) => {
-            e.stopPropagation();
+            handleQueueActionTouch(e, onRemove);
           }}
           className="flex-shrink-0 rounded p-1.5 text-[var(--color-subtext)] transition-colors active:bg-white/6 active:text-[var(--color-text)]"
           aria-label={t("removeFromQueue")}

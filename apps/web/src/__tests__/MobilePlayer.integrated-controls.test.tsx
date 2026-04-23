@@ -448,6 +448,7 @@ describe("MobilePlayer - Integrated Controls", () => {
         );
       });
     });
+
   });
 
   describe("Add to Playlist Button - Authentication", () => {

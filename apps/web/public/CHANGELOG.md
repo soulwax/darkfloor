@@ -5,6 +5,18 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.31] - 2026-04-23
+
+### Fixed
+
+- **`pnpm pm2:restart` now follows the same safe PM2 path as the manual production fix**: The PM2 wrapper now restarts or reloads already-running apps by process name with `--update-env`, and only falls back to the ecosystem file when a process is missing, so the frontend restart path matches the manual `pm2 restart bluesix-frontend-prod --update-env` behavior that avoids the post-restart 502 state.
+
+## [1.15.30] - 2026-04-23
+
+### Changed
+
+- **Firefox now renders the live visualizer at half internal resolution for smoother playback**: The FlowField canvas keeps the same on-screen size, but its backing render surface is scaled to 50% on Firefox only so fullscreen and embedded visualizer modes push far fewer pixels while preserving the existing visual layout.
+
 ## [1.15.29] - 2026-04-22
 
 ### Fixed

@@ -269,9 +269,14 @@ function SortableQueueItem({
       {}
       {canRemove && (
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onRemove();
+          }}
+          onTouchEnd={(e) => {
+            handleQueueActionTouch(e, onRemove);
           }}
           className="flex-shrink-0 rounded p-1.5 opacity-0 transition-colors group-hover:opacity-100 hover:bg-white/6"
           aria-label={t("removeFromQueue")}
@@ -304,6 +309,15 @@ interface EnhancedQueueProps {
   onClearSmartTracks?: () => void;
   dockBelowDesktopHeader?: boolean;
 }
+
+const handleQueueActionTouch = (
+  event: React.TouchEvent<HTMLButtonElement>,
+  action: () => void,
+): void => {
+  event.preventDefault();
+  event.stopPropagation();
+  action();
+};
 
 export function EnhancedQueue({
   queue,
