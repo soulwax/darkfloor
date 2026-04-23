@@ -5,6 +5,18 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.36] - 2026-04-23
+
+### Changed
+
+- **Tauri and Electron desktop chrome now share a much closer Windows-inspired custom titlebar treatment**: Both desktop shells now use thinner rectangular titlebars with richer steel-like textured gradients, centered live track titles, and more consistent segmented caption controls so the Electron and Tauri window chrome feels much more aligned.
+- **The Tauri desktop titlebar now behaves more like a native Windows frame in edge cases**: Dragging now waits for a small pointer-movement threshold instead of starting immediately on mouse down, double-click maximize/restore is more reliable, and maximized-window drag behavior is handled more defensively so the custom chrome feels less brittle.
+- **Electron on Windows now uses renderer-owned custom chrome instead of the native framed window**: The Electron shell now runs frameless on Windows and renders its own desktop titlebar, which brings it much closer to the current Tauri presentation and makes future desktop chrome changes easier to keep in sync.
+
+### Fixed
+
+- **Tauri Windows signing now uses SignTool-compatible signing and verification instead of a mixed Authenticode-only path**: The Windows Tauri signing helper now auto-discovers `signtool.exe`, supports `STARCHILD_TAURI_SIGNTOOL_PATH`, signs artifacts from the current-user certificate store, and verifies them with SignTool so the desktop release lane matches the Windows signing expectations more closely.
+
 ## [1.15.35] - 2026-04-23
 
 ### Changed
