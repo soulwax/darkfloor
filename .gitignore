@@ -141,4 +141,5 @@ logs/**/*.log
 logs/**/**/*.log
 logs/**/**/**/*.log
 
-apps/web/public/CHANGELOG.md
+/apps/web/public/CHANGELOG.md
+/apps/desktop/src-tauri/Cargo.lock
