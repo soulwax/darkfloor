@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.30] - 2026-04-23
+
+### Changed
+
+- **Firefox now renders the live visualizer at half internal resolution for smoother playback**: The FlowField canvas keeps the same on-screen size, but its backing render surface is scaled to 50% on Firefox only so fullscreen and embedded visualizer modes push far fewer pixels while preserving the existing visual layout.
+
 ## [1.15.29] - 2026-04-22
 
 ### Fixed
