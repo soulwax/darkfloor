@@ -1,5 +1,6 @@
 // File: packages/visualizers/src/browser.ts
 
+export const DEFAULT_VISUALIZER_RESOLUTION_SCALE = 0.5;
 export const FIREFOX_VISUALIZER_RESOLUTION_SCALE = 0.5;
 
 export const isFirefoxBrowser = (): boolean => {
@@ -9,4 +10,5 @@ export const isFirefoxBrowser = (): boolean => {
 };
 
 export const getVisualizerResolutionScale = (): number =>
-  isFirefoxBrowser() ? FIREFOX_VISUALIZER_RESOLUTION_SCALE : 1;
+  DEFAULT_VISUALIZER_RESOLUTION_SCALE *
+  (isFirefoxBrowser() ? FIREFOX_VISUALIZER_RESOLUTION_SCALE : 1);

@@ -5,6 +5,19 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.33] - 2026-04-23
+
+### Changed
+
+- **The live visualizer now renders at half internal resolution on every device, with Firefox staying further reduced**: The shared canvas scale now defaults to `0.5x` globally and still applies Firefox’s extra `0.5x` multiplier, so most devices render at `50%` internal resolution while Firefox now renders at `25%` to keep playback smoother.
+
+## [1.15.32] - 2026-04-23
+
+### Fixed
+
+- **Mobile queue items can be removed reliably with a direct tap again**: The expanded mobile player now treats queue action buttons as explicit touch activations instead of waiting on a synthetic click, so single-track remove and play-next actions no longer get swallowed by the surrounding touch/selection handlers.
+- **Share-copy feedback now appears above the mobile player at the bottom of the screen**: The shared toast stack is now anchored to the mobile safe area with a much higher z-index, so copy/share success feedback no longer shows at the top or hides behind player chrome.
+
 ## [1.15.31] - 2026-04-23
 
 ### Fixed
