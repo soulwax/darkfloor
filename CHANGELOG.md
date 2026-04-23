@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.34] - 2026-04-23
+
+### Fixed
+
+- **Packaged Tauri desktop OAuth now completes on one loopback host again**: The Tauri desktop runtime now stays on `http://localhost:3222` end-to-end for packaged OAuth, which keeps the PKCE cookie host aligned with the Discord/GitHub callback host and prevents the desktop-only `Configuration` auth failure after a successful provider redirect.
+
+### Changed
+
+- **The Tauri desktop build now includes a built-in devtools shortcut for debugging release/runtime issues**: Tauri desktop windows can now toggle devtools with `Ctrl+Shift+I` or `F12`, making it much easier to inspect console errors, network traffic, and stack traces inside the installed shell.
+- **The custom Tauri titlebar now behaves more like native Windows chrome while still showing playback context**: The desktop shell now uses a slimmer draggable titlebar with live track-title fallback to `Starchild`, centered window text, round traffic-light controls, and Windows-style double-click maximize/restore behavior only on the actual drag region.
+
 ## [1.15.33] - 2026-04-23
 
 ### Changed
