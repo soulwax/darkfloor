@@ -18,9 +18,7 @@ if (shouldRelaunchWithoutRunAsNode) {
       const relaunchEnv = { ...process.env };
       delete relaunchEnv[RUN_AS_NODE_ENV_KEY];
       relaunchEnv[RELAUNCH_MARKER_ENV_KEY] = "1";
-      const isPackagedMainScript = __dirname
-        .toLowerCase()
-        .includes("app.asar");
+      const isPackagedMainScript = __dirname.toLowerCase().includes("app.asar");
       const relaunchArgs = isPackagedMainScript
         ? []
         : [path.resolve(__dirname, "../../.."), ...process.argv.slice(2)];
@@ -447,8 +445,7 @@ bootLog(
 );
 
 const shouldDisableGpu =
-  process.platform === "win32" &&
-  process.env.ELECTRON_DISABLE_GPU !== "false";
+  process.platform === "win32" && process.env.ELECTRON_DISABLE_GPU !== "false";
 
 if (shouldDisableGpu) {
   // Windows builds can intermittently show blank renderer windows on some
@@ -463,10 +460,7 @@ bootLog(
   process.env.ELECTRON_DISABLE_GPU ??
     "(not set; defaulting to enabled on win32)",
 );
-bootLog(
-  "  Hardware acceleration:",
-  shouldDisableGpu ? "disabled" : "enabled",
-);
+bootLog("  Hardware acceleration:", shouldDisableGpu ? "disabled" : "enabled");
 
 const {
   BrowserWindow,
@@ -1313,7 +1307,7 @@ const createWindowImpl = async () => {
     minHeight: 600,
     ...(isWindows
       ? {
-          frame: true,
+          frame: false,
         }
       : {}),
     ...(isLinux
@@ -1462,13 +1456,7 @@ const createWindowImpl = async () => {
 
   mainWindow.webContents.on(
     "console-message",
-    (
-      _event,
-      level,
-      message,
-      line,
-      sourceId,
-    ) => {
+    (_event, level, message, line, sourceId) => {
       // Avoid overwhelming logs with low-value info-level browser output.
       if (level <= 1) return;
       log("[Renderer Console]", {

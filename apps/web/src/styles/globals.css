@@ -2634,7 +2634,7 @@ html.is-electron .theme-chrome-header .container {
 
 html.is-electron .electron-titlebar-row {
   display: grid;
-  grid-template-columns: minmax(88px, 1fr) auto minmax(88px, 1fr);
+  grid-template-columns: minmax(8.2rem, 1fr) auto minmax(8.2rem, 1fr);
   min-height: 31px;
   align-items: center;
   margin: 0 0 0.28rem;
@@ -2677,6 +2677,44 @@ html.is-electron .electron-titlebar-row {
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   -webkit-app-region: drag;
   user-select: none;
+}
+
+html.is-electron .electron-desktop-titlebar {
+  position: relative;
+  overflow: hidden;
+}
+
+html.is-electron .electron-titlebar-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+html.is-electron .electron-titlebar-trackline {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(100%, 44rem);
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+html.is-electron .electron-titlebar-signal {
+  width: 0.38rem;
+  height: 0.38rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
+}
+
+html.is-electron .electron-titlebar-signal.is-playing {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(244, 178, 102, 0.11);
+  animation: tauri-titlebar-pulse 1.8s ease-in-out infinite;
 }
 
 html.theme-light.is-electron .electron-titlebar-row {
@@ -2722,8 +2760,23 @@ html.is-electron .electron-titlebar-title {
   opacity: 0.98;
 }
 
+html.is-electron .electron-titlebar-subtitle {
+  max-width: min(100%, 28rem);
+  overflow: hidden;
+  color: rgba(214, 219, 228, 0.65);
+  font-size: 0.63rem;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 html.theme-light.is-electron .electron-titlebar-title {
   color: rgba(23, 27, 32, 0.9);
+}
+
+html.theme-light.is-electron .electron-titlebar-subtitle {
+  color: rgba(23, 27, 32, 0.56);
 }
 
 html.is-electron .electron-titlebar-actions {
@@ -3424,10 +3477,17 @@ html.is-electron .electron-window-controls {
 html.is-electron .electron-window-controls-shell {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.3rem;
   -webkit-app-region: no-drag;
   cursor: default;
+}
+
+html.is-electron .electron-window-controls-shell-windows {
+  gap: 0;
+  overflow: hidden;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 html.is-electron .electron-window-controls-shell:active {
@@ -3435,14 +3495,9 @@ html.is-electron .electron-window-controls-shell:active {
 }
 
 html.is-electron .electron-window-control {
-  width: 21px;
-  height: 21px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.08);
   color: rgba(245, 246, 250, 0.86);
   transition:
     background-color 100ms ease,
@@ -3453,10 +3508,105 @@ html.is-electron .electron-window-control {
   opacity: 0.98;
 }
 
+html.is-electron .electron-window-control-windows {
+  width: 2.55rem;
+  height: 1.7rem;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.02);
+  color: rgba(236, 240, 247, 0.9);
+  box-shadow: none;
+}
+
+html.is-electron .electron-window-control-windows:last-child {
+  border-right: none;
+}
+
+html.is-electron .electron-window-glyph {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  opacity: 0.92;
+  transition:
+    opacity 120ms ease,
+    transform 140ms ease,
+    filter 120ms ease;
+}
+
+html.is-electron .electron-window-glyph::before,
+html.is-electron .electron-window-glyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+}
+
+html.is-electron .electron-window-glyph-minimize::before {
+  width: 10px;
+  height: 1.5px;
+  border-radius: 999px;
+  transform: translate(-50%, 2.4px);
+}
+
+html.is-electron .electron-window-glyph-maximize::before,
+html.is-electron .electron-window-glyph-maximize::after {
+  width: 8px;
+  height: 8px;
+  border: 1.35px solid currentColor;
+  background: transparent;
+  border-radius: 0;
+  transform: translate(-50%, -50%);
+}
+
+html.is-electron .electron-window-glyph-maximize.is-maximized::before {
+  transform: translate(-1.6px, -1.6px);
+}
+
+html.is-electron .electron-window-glyph-maximize.is-maximized::after {
+  transform: translate(1.6px, 1.6px);
+}
+
+html.is-electron .electron-window-glyph-close::before,
+html.is-electron .electron-window-glyph-close::after {
+  width: 10px;
+  height: 1.5px;
+  border-radius: 999px;
+}
+
+html.is-electron .electron-window-glyph-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+html.is-electron .electron-window-glyph-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
 html.is-electron .electron-window-control:hover {
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
   opacity: 1;
+}
+
+html.is-electron .electron-window-control-windows:hover,
+html.is-electron .electron-window-control-windows:focus-visible {
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.08);
+}
+
+html.is-electron .electron-window-control-windows:hover .electron-window-glyph,
+html.is-electron
+  .electron-window-control-windows:focus-visible
+  .electron-window-glyph {
+  opacity: 1;
+  filter: saturate(1.08);
 }
 
 html.is-electron .electron-window-control:active {
@@ -3465,27 +3615,32 @@ html.is-electron .electron-window-control:active {
 }
 
 html.theme-light.is-electron .electron-window-control {
-  border-color: rgba(15, 20, 25, 0.14);
-  background: rgba(15, 20, 25, 0.08);
   color: rgba(15, 20, 25, 0.76);
   opacity: 0.9;
 }
 
 html.theme-light.is-electron .electron-window-control:hover {
-  background: rgba(15, 20, 25, 0.14);
   color: rgba(15, 20, 25, 0.92);
   opacity: 1;
 }
 
-html.theme-light.is-electron .electron-window-control:active {
-  background: rgba(15, 20, 25, 0.18);
+html.theme-light.is-electron .electron-window-control-windows {
+  color: rgba(15, 20, 25, 0.82);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0)),
+    rgba(15, 20, 25, 0.035);
 }
 
 html.is-electron .electron-window-control-close:hover {
-  background: #dc5c64;
-  border-color: #dc5c64;
   color: #ffffff;
   opacity: 1;
+}
+
+html.is-electron .electron-window-control-close:hover,
+html.is-electron .electron-window-control-close:focus-visible {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    #d3485c;
 }
 
 html.theme-light.is-tauri .tauri-titlebar-shell {
