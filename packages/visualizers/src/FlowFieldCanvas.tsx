@@ -7,6 +7,7 @@ import {
   getOrCreateAudioConnection,
 } from "@starchild/audio-adapters/web/audioContextManager";
 import { useEffect, useRef } from "react";
+import { getVisualizerResolutionScale, isFirefoxBrowser } from "./browser";
 import { FlowFieldRenderer } from "./FlowFieldRenderer";
 import type { Pattern } from "./flowfieldPatterns/patternIds";
 
@@ -188,9 +189,7 @@ const VALID_PATTERNS = new Set<string>([
 ]);
 
 const isFirefoxPatternBlocked = (pattern: string): boolean =>
-  pattern === "kaleidoscope" &&
-  typeof navigator !== "undefined" &&
-  /firefox/i.test(navigator.userAgent ?? "");
+  pattern === "kaleidoscope" && isFirefoxBrowser();
 
 const isSupportedPattern = (pattern: string): boolean =>
   VALID_PATTERNS.has(pattern) && !isFirefoxPatternBlocked(pattern);
@@ -262,11 +261,15 @@ export function FlowFieldCanvas({
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w <= 0 || h <= 0) return;
-      canvas.width = w;
-      canvas.height = h;
+      const resolutionScale = getVisualizerResolutionScale();
+      const renderWidth = Math.max(1, Math.round(w * resolutionScale));
+      const renderHeight = Math.max(1, Math.round(h * resolutionScale));
+
+      canvas.width = renderWidth;
+      canvas.height = renderHeight;
 
       if (rendererRef.current) {
-        rendererRef.current.resize(w, h);
+        rendererRef.current.resize(renderWidth, renderHeight);
       } else {
         rendererRef.current = new FlowFieldRenderer(canvas);
         if (

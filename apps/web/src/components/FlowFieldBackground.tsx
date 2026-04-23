@@ -8,6 +8,7 @@ import {
   releaseAudioConnection,
 } from "@starchild/audio-adapters/web/audioContextManager";
 import { useEffect, useRef, useState } from "react";
+import { getVisualizerResolutionScale } from "@starchild/visualizers/browser";
 import { FlowFieldRenderer } from "@starchild/visualizers/FlowFieldRenderer";
 
 interface FlowFieldBackgroundProps {
@@ -109,11 +110,21 @@ export function FlowFieldBackground({
     if (!canvas) return;
 
     const updateSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const resolutionScale = getVisualizerResolutionScale();
+      const renderWidth = Math.max(
+        1,
+        Math.round(window.innerWidth * resolutionScale),
+      );
+      const renderHeight = Math.max(
+        1,
+        Math.round(window.innerHeight * resolutionScale),
+      );
+
+      canvas.width = renderWidth;
+      canvas.height = renderHeight;
 
       if (rendererRef.current) {
-        rendererRef.current.resize(window.innerWidth, window.innerHeight);
+        rendererRef.current.resize(renderWidth, renderHeight);
       } else {
         rendererRef.current = new FlowFieldRenderer(canvas);
       }
