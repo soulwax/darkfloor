@@ -34,20 +34,27 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
 (() => {
   const internals = window.__TAURI_INTERNALS__;
   const invoke = internals?.invoke;
+  const withRootElement = (callback) => {
+    const root = document.documentElement;
+    if (!root) {
+      return null;
+    }
+
+    return callback(root);
+  };
 
   if (!invoke) {
     return;
   }
 
-  const syncWindowState = async () => {
+    const syncWindowState = async () => {
     try {
       const detail = await invoke("tauri_window_state");
 
-      document.documentElement.classList.add("is-tauri");
-      document.documentElement.classList.toggle(
-        "is-tauri-maximized",
-        Boolean(detail?.isMaximized),
-      );
+      withRootElement((root) => {
+        root.classList.add("is-tauri");
+        root.classList.toggle("is-tauri-maximized", Boolean(detail?.isMaximized));
+      });
       window.dispatchEvent(
         new CustomEvent("starchild:tauri-window-state", { detail }),
       );
@@ -57,8 +64,10 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
       console.warn("[Tauri] Failed to sync window state", error);
 
       const detail = { isMaximized: false };
-      document.documentElement.classList.add("is-tauri");
-      document.documentElement.classList.remove("is-tauri-maximized");
+      withRootElement((root) => {
+        root.classList.add("is-tauri");
+        root.classList.remove("is-tauri-maximized");
+      });
       window.dispatchEvent(
         new CustomEvent("starchild:tauri-window-state", { detail }),
       );
@@ -83,7 +92,9 @@ const TAURI_WINDOW_BOOTSTRAP_SCRIPT: &str = r###"
     },
   });
 
-  document.documentElement.classList.add("is-tauri");
+  withRootElement((root) => {
+    root.classList.add("is-tauri");
+  });
   queueMicrotask(() => {
     void syncWindowState();
   });

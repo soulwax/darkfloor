@@ -34,7 +34,7 @@ import {
   type ReactNode,
 } from "react";
 
-interface AudioPlayerContextType {
+export interface AudioPlayerContextType {
   currentTrack: Track | null;
   queue: Track[];
   queuedTracks: QueuedTrack[];
@@ -96,8 +96,74 @@ interface AudioPlayerContextType {
   };
 }
 
-export const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(
-  undefined,
+const noop = () => undefined;
+const noopAsync = async () => undefined;
+const noopAsyncTracks = async () => [] as Track[];
+const emptyQueueSections = () => ({
+  userTracks: [] as QueuedTrack[],
+  smartTracks: [] as QueuedTrack[],
+});
+const isTrackLike = (track: Track | null | undefined): track is Track =>
+  Boolean(track && typeof track === "object");
+
+export const EMPTY_AUDIO_PLAYER_CONTEXT: AudioPlayerContextType = {
+  currentTrack: null,
+  queue: [],
+  queuedTracks: [],
+  failedTrackIds: new Set<number>(),
+  smartQueueState: {
+    isActive: false,
+    lastRefreshedAt: null,
+    seedTrackId: null,
+    trackCount: 0,
+    isLoading: false,
+  },
+  isPlaying: false,
+  currentTime: 0,
+  duration: 0,
+  volume: 1,
+  isMuted: false,
+  isShuffled: false,
+  repeatMode: "none",
+  isLoading: false,
+  lastAutoQueueCount: 0,
+  showMobilePlayer: false,
+  setShowMobilePlayer: noop,
+  hideUI: false,
+  setHideUI: noop,
+  audioElement: null,
+  play: noop,
+  playTrack: noop,
+  togglePlay: async () => undefined,
+  addToQueue: noop,
+  addToPlayNext: noop,
+  playNext: noop,
+  playPrevious: noop,
+  playFromQueue: noop,
+  clearQueue: noop,
+  removeFromQueue: noop,
+  reorderQueue: noop,
+  seek: noop,
+  setVolume: noop,
+  setIsMuted: noop,
+  toggleShuffle: noop,
+  cycleRepeatMode: noop,
+  skipForward: noop,
+  skipBackward: noop,
+  saveQueueAsPlaylist: noopAsync,
+  removeDuplicates: noop,
+  cleanInvalidTracks: noop,
+  cleanQueue: noop,
+  clearQueueAndHistory: noop,
+  isValidTrack: isTrackLike,
+  addSmartTracks: noopAsyncTracks,
+  refreshSmartTracks: noopAsync,
+  clearSmartTracks: noop,
+  getQueueSections: emptyQueueSections,
+};
+
+export const AudioPlayerContext = createContext<AudioPlayerContextType>(
+  EMPTY_AUDIO_PLAYER_CONTEXT,
 );
 
 const isRepeatMode = (value: unknown): value is "none" | "one" | "all" =>
@@ -1038,11 +1104,5 @@ export function AudioPlayerProvider({
 }
 
 export function useGlobalPlayer() {
-  const context = useContext(AudioPlayerContext);
-  if (context === undefined) {
-    throw new Error(
-      "useGlobalPlayer must be used within an AudioPlayerProvider",
-    );
-  }
-  return context;
+  return useContext(AudioPlayerContext);
 }

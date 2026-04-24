@@ -1,10 +1,11 @@
 "use client";
 
-import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { AudioPlayerContext } from "@starchild/player-react/AudioPlayerContext";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   useEffect,
+  useContext,
   useMemo,
   useRef,
   useState,
@@ -58,7 +59,9 @@ export function TauriTitlebar() {
   const pathname = usePathname();
   const tc = useTranslations("common");
   const tsh = useTranslations("shell");
-  const { currentTrack, isPlaying } = useGlobalPlayer();
+  const player = useContext(AudioPlayerContext);
+  const currentTrack = player?.currentTrack ?? null;
+  const isPlaying = player?.isPlaying ?? false;
   const [isTauri, setIsTauri] = useState(false);
   const [platform, setPlatform] = useState<TauriPlatform>("unknown");
   const [isMaximized, setIsMaximized] = useState(false);

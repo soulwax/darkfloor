@@ -145,7 +145,6 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <LinuxTitlebar />
           <SuppressExtensionErrors />
           <ElectronStorageInit />
           <RegisterServiceWorker />
@@ -158,6 +157,9 @@ export default async function RootLayout({
                     <ToastProvider>
                       <AudioPlayerProvider>
                         <KeyboardShortcutsProvider>
+                          <Suspense fallback={null}>
+                            <LinuxTitlebar />
+                          </Suspense>
                           {}
                           <DynamicTitle />
                           <MenuProvider>

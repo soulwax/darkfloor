@@ -2,16 +2,17 @@
 
 "use client";
 
-import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { AudioPlayerContext } from "@starchild/player-react/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
-import { type ReactNode } from "react";
+import { type ReactNode, useContext } from "react";
 
 interface UIWrapperProps {
   children: ReactNode;
 }
 
 export function UIWrapper({ children }: UIWrapperProps) {
-  const { hideUI } = useGlobalPlayer();
+  const player = useContext(AudioPlayerContext);
+  const hideUI = player?.hideUI ?? false;
   const isMobile = useIsMobile();
 
   if (isMobile) {

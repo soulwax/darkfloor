@@ -1,8 +1,13 @@
 "use client";
 
-import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { AudioPlayerContext } from "@starchild/player-react/AudioPlayerContext";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useContext,
+  useEffect,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 
 type WindowStateMessage = {
   type: "windowState";
@@ -19,7 +24,9 @@ const isWindowStateMessage = (value: unknown): value is WindowStateMessage => {
 
 export function LinuxTitlebar() {
   const t = useTranslations("shell");
-  const { currentTrack, isPlaying } = useGlobalPlayer();
+  const player = useContext(AudioPlayerContext);
+  const currentTrack = player?.currentTrack ?? null;
+  const isPlaying = player?.isPlaying ?? false;
   const [isElectronDesktop, setIsElectronDesktop] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 

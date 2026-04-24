@@ -2,12 +2,14 @@
 
 "use client";
 
-import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { AudioPlayerContext } from "@starchild/player-react/AudioPlayerContext";
 import { useIsElectron } from "@/hooks/useIsElectron";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 
 export function DynamicTitle() {
-  const { currentTrack, isPlaying } = useGlobalPlayer();
+  const player = useContext(AudioPlayerContext);
+  const currentTrack = player?.currentTrack ?? null;
+  const isPlaying = player?.isPlaying ?? false;
   const isElectron = useIsElectron();
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 // File: apps/web/src/i18n/request.ts
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { routing } from "./routing";
 
@@ -13,18 +13,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   // During static prerender of internal Next.js pages (e.g. /_global-error)
   // that context does not exist, so we fall back to undefined gracefully.
   let cookieLocale: (typeof routing.locales)[number] | undefined = undefined;
-  let acceptedLocale: (typeof routing.locales)[number] | undefined = undefined;
 
   try {
     const cookieStore = await cookies();
     cookieLocale = normalizeLocale(cookieStore.get("NEXT_LOCALE")?.value);
-  } catch {
-    // no request context — static prerender path
-  }
-
-  try {
-    const requestHeaders = await headers();
-    acceptedLocale = normalizeLocale(requestHeaders.get("accept-language"));
   } catch {
     // no request context — static prerender path
   }
@@ -34,7 +26,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const locale =
     cookieLocale ??
     requestedLocale ??
-    acceptedLocale ??
     routing.defaultLocale;
   const messagesModule = await loadMessages(locale);
 

@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.37] - 2026-04-25
+
+### Fixed
+
+- **Electron release startup no longer fails hard when desktop shell components briefly render without the global player provider**: The shared audio-player context now exposes a safe no-op fallback, and the always-mounted desktop shell chrome reads playback state defensively so packaged Electron builds do not abort startup with `useGlobalPlayer must be used within an AudioPlayerProvider`.
+- **Packaged desktop startup is more resilient to early bootstrap timing issues**: The injected Tauri window bootstrap now guards access to the document root before mutating window classes, which prevents the release shell from tripping over `classList` reads before the DOM is ready.
+
+### Changed
+
+- **Desktop shell title and wrapper components now tolerate provider-unavailable render paths more gracefully**: The dynamic window title, Tauri titlebar, Electron titlebar, and UI wrapper all fall back cleanly when playback context is not yet attached, which makes the standalone desktop boot path less brittle without changing normal web or mobile behavior.
+
 ## [1.15.36] - 2026-04-23
 
 ### Changed
