@@ -13,6 +13,7 @@ import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, ListMusic } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+import type { VisualizerFidelity } from "@starchild/types/settings";
 import {
   SETTINGS_UPDATED_EVENT,
   settingsStorage,
@@ -87,6 +88,8 @@ export default function PersistentPlayer() {
   const [showEqualizer, setShowEqualizer] = useState(false);
   const [visualizerEnabled, setVisualizerEnabled] = useState(true);
   const [showFpsCounter, setShowFpsCounter] = useState(false);
+  const [visualizerFidelity, setVisualizerFidelity] =
+    useState<VisualizerFidelity>("balanced");
   const [showPatternControls, setShowPatternControls] = useState(false);
   const [renderer, setRenderer] = useState<FlowFieldRenderer | null>(null);
   const [queuePreferenceOverride, setQueuePreferenceOverride] = useState<
@@ -146,6 +149,9 @@ export default function PersistentPlayer() {
 
     const syncFpsCounterPreference = () => {
       setShowFpsCounter(settingsStorage.getSetting("showFpsCounter", false));
+      setVisualizerFidelity(
+        settingsStorage.getSetting("visualizerFidelity", "balanced"),
+      );
     };
 
     syncFpsCounterPreference();
@@ -468,6 +474,7 @@ export default function PersistentPlayer() {
       {player.currentTrack && visualizerEnabled && !isMobile && (
         <FlowFieldBackground
           audioElement={player.audioElement}
+          visualizerFidelity={visualizerFidelity}
           showFpsCounter={showFpsCounter}
           onRendererReady={setRenderer}
           allowPointerInteraction={player.hideUI}

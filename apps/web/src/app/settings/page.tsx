@@ -32,6 +32,7 @@ import {
   normalizeColorSchemeId,
   type StreamQuality,
   type UserSettings,
+  type VisualizerFidelity,
 } from "@starchild/types/settings";
 import type { SpotifyFeatureSettings } from "@starchild/types/spotifySettings";
 import { hapticLight, hapticToggle } from "@/utils/haptics";
@@ -81,7 +82,9 @@ interface SettingsItem {
 }
 
 type ServerPreferenceInput = RouterInputs["music"]["updatePreferences"];
-type UserPreferencesData = RouterOutputs["music"]["getUserPreferences"] | undefined;
+type UserPreferencesData =
+  | RouterOutputs["music"]["getUserPreferences"]
+  | undefined;
 type UserPreferencesRecord = NonNullable<UserPreferencesData>;
 
 type SpotifyCredentialTestDiagnostics = {
@@ -225,6 +228,12 @@ export default function SettingsPage() {
     { label: t("flowField"), value: "flowfield" },
     { label: t("kaleidoscope"), value: "kaleidoscope" },
   ];
+  const visualizerFidelityOptions = [
+    { label: t("visualizerFidelityPerformance"), value: "performance" },
+    { label: t("visualizerFidelityBalanced"), value: "balanced" },
+    { label: t("visualizerFidelityQuality"), value: "quality" },
+    { label: t("visualizerFidelityUltra"), value: "ultra" },
+  ];
   const similarityOptions = [
     { label: t("similarityStrict"), value: "strict" },
     { label: t("similarityBalanced"), value: "balanced" },
@@ -260,7 +269,8 @@ export default function SettingsPage() {
     const optimisticKeys = Object.keys(optimisticPatch) as Array<
       keyof UserPreferencesRecord
     >;
-    const previousPreferences = utils.music.getUserPreferences.getData(undefined);
+    const previousPreferences =
+      utils.music.getUserPreferences.getData(undefined);
 
     setOptimisticPreferences((prev) => ({ ...prev, ...optimisticPatch }));
     utils.music.getUserPreferences.setData(undefined, (previous) =>
@@ -358,7 +368,7 @@ export default function SettingsPage() {
       applyColorSchemeToDocument(
         normalizeColorSchemeId(
           session
-            ? preferences?.colorScheme ?? localSettings.colorScheme
+            ? (preferences?.colorScheme ?? localSettings.colorScheme)
             : localSettings.colorScheme,
         ),
       );
@@ -370,6 +380,13 @@ export default function SettingsPage() {
       } else {
         showToast(t("savedLocally"), "success");
       }
+      return;
+    }
+    if (key === "visualizerFidelity") {
+      syncLocalSettings({
+        visualizerFidelity: value as VisualizerFidelity,
+      });
+      showToast(t("visualizerFidelityUpdated"), "success");
       return;
     }
     if (session) {
@@ -816,6 +833,20 @@ export default function SettingsPage() {
             },
           ]
         : []),
+      {
+        id: "visualizerFidelity",
+        label: t("visualizerFidelity"),
+        description: getOptionLabel(
+          visualizerFidelityOptions,
+          localSettings.visualizerFidelity ?? "balanced",
+          t("visualizerFidelityBalanced"),
+        ),
+        type: "select",
+        value: localSettings.visualizerFidelity ?? "balanced",
+        options: visualizerFidelityOptions,
+        onChange: (value) =>
+          handleSelect("visualizerFidelity", value as string),
+      },
       {
         id: "showFpsCounter",
         label: t("showFpsCounter"),

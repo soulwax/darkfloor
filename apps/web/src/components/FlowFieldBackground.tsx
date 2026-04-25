@@ -7,12 +7,14 @@ import {
   getOrCreateAudioConnection,
   releaseAudioConnection,
 } from "@starchild/audio-adapters/web/audioContextManager";
+import type { VisualizerFidelity } from "@starchild/types/settings";
 import { useEffect, useRef, useState } from "react";
 import { getVisualizerResolutionScale } from "@starchild/visualizers/browser";
 import { FlowFieldRenderer } from "@starchild/visualizers/FlowFieldRenderer";
 
 interface FlowFieldBackgroundProps {
   audioElement: HTMLAudioElement | null;
+  visualizerFidelity?: VisualizerFidelity;
   showFpsCounter?: boolean;
   onRendererReady?: (renderer: FlowFieldRenderer | null) => void;
   allowPointerInteraction?: boolean;
@@ -21,6 +23,7 @@ interface FlowFieldBackgroundProps {
 
 export function FlowFieldBackground({
   audioElement,
+  visualizerFidelity = "balanced",
   showFpsCounter = false,
   onRendererReady,
   allowPointerInteraction = false,
@@ -110,7 +113,7 @@ export function FlowFieldBackground({
     if (!canvas) return;
 
     const updateSize = () => {
-      const resolutionScale = getVisualizerResolutionScale();
+      const resolutionScale = getVisualizerResolutionScale(visualizerFidelity);
       const renderWidth = Math.max(
         1,
         Math.round(window.innerWidth * resolutionScale),
@@ -139,7 +142,7 @@ export function FlowFieldBackground({
       onRendererReady?.(null);
       rendererRef.current = null;
     };
-  }, [onRendererReady]);
+  }, [onRendererReady, visualizerFidelity]);
 
   useEffect(() => {
     rendererRef.current?.setShowFpsCounter(showFpsCounter);

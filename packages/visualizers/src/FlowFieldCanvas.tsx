@@ -6,6 +6,7 @@ import {
   ensureConnectionChain,
   getOrCreateAudioConnection,
 } from "@starchild/audio-adapters/web/audioContextManager";
+import type { VisualizerFidelity } from "@starchild/types/settings";
 import { useEffect, useRef } from "react";
 import { getVisualizerResolutionScale, isFirefoxBrowser } from "./browser";
 import { FlowFieldRenderer } from "./FlowFieldRenderer";
@@ -16,6 +17,7 @@ interface FlowFieldCanvasProps {
   isPlaying: boolean;
   visualizerMode?: "random" | "off" | "specific";
   visualizerType?: string;
+  visualizerFidelity?: VisualizerFidelity;
   showFpsCounter?: boolean;
   className?: string;
 }
@@ -199,6 +201,7 @@ export function FlowFieldCanvas({
   isPlaying,
   visualizerMode = "random",
   visualizerType = "flowfield",
+  visualizerFidelity = "balanced",
   showFpsCounter = false,
   className,
 }: FlowFieldCanvasProps) {
@@ -261,7 +264,7 @@ export function FlowFieldCanvas({
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w <= 0 || h <= 0) return;
-      const resolutionScale = getVisualizerResolutionScale();
+      const resolutionScale = getVisualizerResolutionScale(visualizerFidelity);
       const renderWidth = Math.max(1, Math.round(w * resolutionScale));
       const renderHeight = Math.max(1, Math.round(h * resolutionScale));
 
@@ -293,7 +296,7 @@ export function FlowFieldCanvas({
       ro.disconnect();
       rendererRef.current = null;
     };
-  }, [visualizerMode, visualizerType]);
+  }, [visualizerFidelity, visualizerMode, visualizerType]);
 
   useEffect(() => {
     rendererRef.current?.setShowFpsCounter(showFpsCounter);

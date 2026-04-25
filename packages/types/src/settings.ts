@@ -37,6 +37,7 @@ export interface UserSettings {
   equalizerPreset: string;
   visualizerMode: "random" | "off" | "specific";
   visualizerType: string;
+  visualizerFidelity: VisualizerFidelity;
   showFpsCounter: boolean;
   compactMode: boolean;
   theme: "light" | "dark";
@@ -47,6 +48,17 @@ export interface UserSettings {
   smartMixEnabled: boolean;
   similarityPreference: "strict" | "balanced" | "diverse";
 }
+
+export const VISUALIZER_FIDELITY_OPTIONS = [
+  "performance",
+  "balanced",
+  "quality",
+  "ultra",
+] as const;
+
+export type VisualizerFidelity = (typeof VISUALIZER_FIDELITY_OPTIONS)[number];
+
+export const DEFAULT_VISUALIZER_FIDELITY: VisualizerFidelity = "balanced";
 
 export const STREAM_QUALITY_OPTIONS = [
   "128",
@@ -69,6 +81,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   equalizerPreset: "Flat",
   visualizerMode: "random",
   visualizerType: "flowfield",
+  visualizerFidelity: DEFAULT_VISUALIZER_FIDELITY,
   showFpsCounter: false,
   compactMode: false,
   theme: "dark",
