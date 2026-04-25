@@ -103,7 +103,7 @@
   --desktop-window-edge-offset: 0px;
   --desktop-window-frame-gap: 0px;
   --desktop-window-radius: 0.55rem;
-  --tauri-titlebar-height: 1.175rem;
+  --tauri-titlebar-height: 2.2rem;
   --tauri-frame-border: rgba(244, 178, 102, 0.14);
   --tauri-frame-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
   --tauri-frame-sheen: linear-gradient(
@@ -2997,16 +2997,16 @@ html.is-electron .desktop-shell .theme-chrome-header .container {
 .tauri-titlebar-track {
   min-width: 0;
   color: var(--color-text);
-  font-size: 0.4rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 1;
 }
 
 .tauri-titlebar-track-meta {
   min-width: 0;
   color: var(--color-subtext);
-  font-size: 0.32rem;
+  font-size: 0.58rem;
 }
 
 .tauri-titlebar-track-meta-centered {
