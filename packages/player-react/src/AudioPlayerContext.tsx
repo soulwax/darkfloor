@@ -270,7 +270,11 @@ export function AudioPlayerProvider({
   const [showMobilePlayer, setShowMobilePlayer] = useState(false);
   const [hideUI, setHideUI] = useState(false);
   const [lastUserId, setLastUserId] = useState<string | null>(null);
-  const addToHistory = api.music.addToHistory.useMutation();
+  const addToHistory = api.music.addToHistory.useMutation({
+    onSuccess: async () => {
+      await utils.music.getHistory.invalidate();
+    },
+  });
   const createPlaylistMutation = api.music.createPlaylist.useMutation();
   const addToPlaylistMutation = api.music.addToPlaylist.useMutation();
   const { data: preferences } = api.music.getUserPreferences.useQuery(
