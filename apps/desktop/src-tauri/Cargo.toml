@@ -1,6 +1,6 @@
 [package]
 name = "starchild"
-version = "1.15.37"
+version = "1.15.38"
 description = "Starchild Music desktop app"
 authors = ["Christian <soulwax@cock.li>"]
 license = "GPL-3.0-only"

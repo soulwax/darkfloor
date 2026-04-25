@@ -5,6 +5,20 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.38] - 2026-04-25
+
+### Added
+
+- **Visualizer fidelity can now be tuned directly from Settings**: The visual settings now include `Performance`, `Balanced`, `Quality`, and `Ultra` fidelity presets, and the selected mode applies live to the desktop visualizer render scale so users can trade sharpness for performance without changing code.
+
+### Fixed
+
+- **The home and library `Recently Played` views now refresh when playback writes new listening-history entries**: Successful history mutations now invalidate the cached history query immediately, so recently played content updates in-app instead of appearing stale until a reload or route change.
+
+### Changed
+
+- **The Tauri desktop titlebar title is now dramatically more readable**: The custom Tauri window chrome now gives the centered title line much more visual weight and height, making the currently playing track or `Starchild` title usable at a glance instead of rendering as tiny caption text.
+
 ## [1.15.37] - 2026-04-25
 
 ### Fixed
