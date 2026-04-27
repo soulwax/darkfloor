@@ -270,9 +270,29 @@ export function AudioPlayerProvider({
   const [showMobilePlayer, setShowMobilePlayer] = useState(false);
   const [hideUI, setHideUI] = useState(false);
   const [lastUserId, setLastUserId] = useState<string | null>(null);
+  const utils = api.useUtils();
+  const { data: currentUserHash } = api.music.getCurrentUserHash.useQuery(
+    undefined,
+    {
+      enabled: isAuthenticated && !optionalReadsDisabled,
+      staleTime: 5 * 60 * 1000,
+    },
+  );
   const addToHistory = api.music.addToHistory.useMutation({
     onSuccess: async () => {
-      await utils.music.getHistory.invalidate();
+      await Promise.all([
+        utils.music.getHistory.invalidate(),
+        currentUserHash
+          ? utils.music.getPublicListeningHistory.invalidate({
+              userHash: currentUserHash,
+            })
+          : Promise.resolve(),
+        currentUserHash
+          ? utils.music.getPublicProfile.invalidate({
+              userHash: currentUserHash,
+            })
+          : Promise.resolve(),
+      ]);
     },
   });
   const createPlaylistMutation = api.music.createPlaylist.useMutation();
@@ -347,8 +367,6 @@ export function AudioPlayerProvider({
         } as SmartQueueSettings;
       })()
     : undefined;
-
-  const utils = api.useUtils();
 
   const hasCompleteTrackData = (
     track: Track | null | undefined,

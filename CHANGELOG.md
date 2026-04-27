@@ -5,6 +5,12 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.39] - 2026-04-27
+
+### Fixed
+
+- **Public profile `Recently Played` now refreshes after playback updates listening history**: Successful history writes now invalidate the current user's public profile history and stats queries, so `/<profilehash>` reflects newly played tracks without waiting for stale cache expiry.
+
 ## [1.15.38] - 2026-04-25
 
 ### Added
