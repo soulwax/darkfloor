@@ -1,10 +1,10 @@
 [package]
 name = "starchild"
-version = "1.15.38"
+version = "1.15.39"
 description = "Starchild Music desktop app"
 authors = ["Christian <soulwax@cock.li>"]
 license = "GPL-3.0-only"
-edition = "2021"
+edition = "2026"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
