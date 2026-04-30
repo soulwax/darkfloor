@@ -4,6 +4,7 @@
 
 import Button from "@starchild/ui/Button";
 import EnhancedTrackCard from "@/components/EnhancedTrackCard";
+import { PlaylistArtwork } from "@/components/PlaylistArtwork";
 import ProfileHeader from "@/components/ProfileHeader";
 import { usePlaylistContextMenu } from "@/contexts/PlaylistContextMenuContext";
 import Section from "@starchild/ui/Section";
@@ -336,68 +337,14 @@ export default function PublicProfilePage({
                 }}
                 className="surface-panel group p-4 transition-transform hover:-translate-y-1"
               >
-                <div className="mb-3 aspect-square overflow-hidden rounded-lg bg-[linear-gradient(135deg,rgba(244,178,102,0.3),rgba(88,198,177,0.3))]">
-                  {(() => {
-                    let albumCovers: string[] = [];
-                    try {
-                      if (playlist.coverImage?.startsWith("[")) {
-                        albumCovers = JSON.parse(
-                          playlist.coverImage,
-                        ) as string[];
-                      }
-                    } catch {}
-
-                    if (albumCovers.length > 0) {
-                      return (
-                        <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
-                          {albumCovers.slice(0, 4).map((cover, i) => (
-                            <div
-                              key={i}
-                              className="relative h-full w-full overflow-hidden"
-                            >
-                              <Image
-                                src={cover}
-                                alt={`${playlist.name} track ${i + 1}`}
-                                fill
-                                sizes="(max-width: 768px) 100px, 125px"
-                                className="object-cover transition-transform group-hover:scale-110"
-                                quality={80}
-                                loading="lazy"
-                              />
-                            </div>
-                          ))}
-                          {}
-                          {Array.from({ length: 4 - albumCovers.length }).map(
-                            (_, i) => (
-                              <div
-                                key={`placeholder-${i}`}
-                                className="flex h-full w-full items-center justify-center bg-[var(--color-surface-hover)] text-2xl text-[var(--color-muted)]"
-                              >
-                                🎵
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      );
-                    } else if (playlist.coverImage) {
-                      return (
-                        <Image
-                          src={playlist.coverImage}
-                          alt={playlist.name}
-                          width={200}
-                          height={200}
-                          className="h-full w-full object-cover transition-transform group-hover:scale-110"
-                        />
-                      );
-                    } else {
-                      return (
-                        <div className="flex h-full items-center justify-center text-6xl text-[var(--color-muted)]">
-                          🎵
-                        </div>
-                      );
-                    }
-                  })()}
-                </div>
+                <PlaylistArtwork
+                  name={playlist.name}
+                  coverImage={playlist.coverImage}
+                  className="relative mb-3 aspect-square overflow-hidden rounded-lg bg-[linear-gradient(135deg,rgba(244,178,102,0.3),rgba(88,198,177,0.3))]"
+                  imageClassName="object-cover transition-transform group-hover:scale-105"
+                  iconClassName="h-12 w-12 text-[var(--color-muted)]"
+                  sizes="(max-width: 768px) 100px, 125px"
+                />
                 <h3 className="mb-1 line-clamp-1 font-semibold text-[var(--color-text)]">
                   {playlist.name}
                 </h3>

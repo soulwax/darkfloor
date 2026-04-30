@@ -5,6 +5,28 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.42] - 2026-04-30
+
+### Added
+
+- **Friends and playlist collaborator controls now have their first UI pass**: Settings now includes a Friends panel for search, requests, removal, and blocking, while playlist owners can invite accepted friends as collaborators from the playlist page.
+
+### Changed
+
+- **Collaborative playlist editing now distinguishes owners from editors in the UI**: Collaborators can use shared track editing affordances, while owner-only actions such as metadata, visibility, collaborators, and delete remain owner-scoped.
+
+## [1.15.41] - 2026-04-30
+
+### Added
+
+- **Friends and collaborative playlist foundations are now in place**: Added the first social graph schema, friend request/block tRPC procedures, playlist collaborator invitations, collaborator-aware playlist write permissions, and real `addedByUserId` storage for future “Added by” playlist rows.
+
+## [1.15.40] - 2026-04-30
+
+### Changed
+
+- **Playlists now use Spotify-like artwork and track rows**: Playlist thumbnails now render a 2x2 cover collage from the first four different albums, falling back to the first album cover when fewer distinct albums are available, and the detail view now uses compact track rows with added-by/added-at metadata plus a selected-track info panel.
+
 ## [1.15.39] - 2026-04-27
 
 ### Fixed

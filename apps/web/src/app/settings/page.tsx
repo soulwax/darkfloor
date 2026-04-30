@@ -3,6 +3,7 @@
 "use client";
 
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
+import { FriendsPanel } from "@/components/FriendsPanel";
 import {
   applyColorSchemeToDocument,
   COLOR_SCHEME_TRANSLATION_KEYS,
@@ -1341,6 +1342,17 @@ export default function SettingsPage() {
           transition={{
             ...springPresets.gentle,
             delay: (sections.length + 2) * 0.04,
+          }}
+        >
+          <FriendsPanel />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            ...springPresets.gentle,
+            delay: (sections.length + 3) * 0.04,
           }}
           className="flex justify-center pt-2"
         >

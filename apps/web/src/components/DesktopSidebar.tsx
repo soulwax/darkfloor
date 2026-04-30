@@ -5,6 +5,7 @@
 import { APP_VERSION } from "@/config/version";
 import { STORAGE_KEYS } from "@starchild/config/storage";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
+import { PlaylistArtwork } from "@/components/PlaylistArtwork";
 import { api } from "@starchild/api-client/trpc/react";
 import { appSignOut } from "@/services/authSignOut";
 import { localStorage } from "@/services/storage";
@@ -480,9 +481,14 @@ export function DesktopSidebar() {
                               title={collapsed ? playlist.name : undefined}
                               aria-label={collapsed ? playlist.name : undefined}
                             >
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.1)] text-xs font-bold text-[var(--color-text)]">
-                                {playlist.name?.charAt(0)?.toUpperCase() ?? "P"}
-                              </div>
+                              <PlaylistArtwork
+                                name={playlist.name}
+                                tracks={playlist.tracks}
+                                coverImage={playlist.coverImage}
+                                className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md bg-[rgba(255,255,255,0.1)]"
+                                iconClassName="h-4 w-4 text-[var(--color-muted)]"
+                                sizes="28px"
+                              />
                               {!collapsed && (
                                 <div className="min-w-0 flex-1">
                                   <div className="truncate">

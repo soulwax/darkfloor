@@ -1,10 +1,12 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { Track } from "@starchild/types";
 
 import type { DatabaseClient } from "@/server/db";
 import {
+  playlistCollaborators,
   playlistTracks,
   playlists,
+  userBlocks,
   userPreferences,
 } from "@/server/db/schema";
 import type { AppDataStore } from "@/server/data/appDataStore";
@@ -110,6 +112,13 @@ function mapPlaylistTracks(
     trackData: unknown;
     position: number;
     addedAt: Date;
+    addedByUserId?: string | null;
+    addedBy?: {
+      id: string;
+      name: string | null;
+      image: string | null;
+      userHash: string | null;
+    } | null;
   }>,
 ) {
   return tracks.map((track) => ({
@@ -117,7 +126,86 @@ function mapPlaylistTracks(
     track: track.trackData as Track,
     position: track.position,
     addedAt: track.addedAt,
+    addedByUserId: track.addedByUserId ?? null,
+    addedBy: mapPlaylistOwner(track.addedBy),
   }));
+}
+
+function mapPlaylistOwner(
+  user:
+    | {
+        id: string;
+        name: string | null;
+        image: string | null;
+        userHash: string | null;
+      }
+    | null
+    | undefined,
+) {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    image: user.image,
+    userHash: user.userHash,
+  };
+}
+
+async function getEditablePlaylistIds(
+  database: DatabaseClient,
+  userId: string,
+): Promise<number[]> {
+  const collaboratorRows = await database.query.playlistCollaborators.findMany({
+    where: and(
+      eq(playlistCollaborators.userId, userId),
+      eq(playlistCollaborators.status, "active"),
+    ),
+    columns: {
+      playlistId: true,
+    },
+  });
+
+  return collaboratorRows.map((row) => row.playlistId);
+}
+
+async function getEditablePlaylist(
+  database: DatabaseClient,
+  input: { userId: string; playlistId: number },
+) {
+  const playlist = await database.query.playlists.findFirst({
+    where: eq(playlists.id, input.playlistId),
+  });
+
+  if (!playlist) return null;
+  if (playlist.userId === input.userId) return playlist;
+
+  const collaborator = await database.query.playlistCollaborators.findFirst({
+    where: and(
+      eq(playlistCollaborators.playlistId, input.playlistId),
+      eq(playlistCollaborators.userId, input.userId),
+      eq(playlistCollaborators.status, "active"),
+    ),
+  });
+
+  if (collaborator) {
+    const block = await database.query.userBlocks.findFirst({
+      where: or(
+        and(
+          eq(userBlocks.blockerUserId, playlist.userId),
+          eq(userBlocks.blockedUserId, input.userId),
+        ),
+        and(
+          eq(userBlocks.blockerUserId, input.userId),
+          eq(userBlocks.blockedUserId, playlist.userId),
+        ),
+      ),
+    });
+
+    if (block) return null;
+  }
+
+  return collaborator ? playlist : null;
 }
 
 async function getUiPreferences(
@@ -142,7 +230,9 @@ async function ensureUserPreferences(
     .onConflictDoNothing({ target: userPreferences.userId });
 }
 
-export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStore {
+export function createDrizzleAppDataStore(
+  database: DatabaseClient,
+): AppDataStore {
   const upsertUserPreferences = async (
     userId: string,
     values: Partial<UserPreferencesInsert>,
@@ -186,7 +276,9 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
           }
           return playlist;
         } catch (error) {
-          if (!isUniqueConstraintError(error, "hexmusic-stream_playlist_pkey")) {
+          if (
+            !isUniqueConstraintError(error, "hexmusic-stream_playlist_pkey")
+          ) {
             throw error;
           }
 
@@ -272,13 +364,33 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
       },
 
       async listOwnedByUser(userId) {
+        const editablePlaylistIds = await getEditablePlaylistIds(
+          database,
+          userId,
+        );
         const playlistsResult = await database.query.playlists.findMany({
-          where: eq(playlists.userId, userId),
+          where:
+            editablePlaylistIds.length > 0
+              ? or(
+                  eq(playlists.userId, userId),
+                  inArray(playlists.id, editablePlaylistIds),
+                )
+              : eq(playlists.userId, userId),
           orderBy: [desc(playlists.createdAt)],
           with: {
             tracks: {
-              orderBy: [desc(playlistTracks.position)],
-              limit: 4,
+              orderBy: [playlistTracks.position],
+              limit: 20,
+              with: {
+                addedBy: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    userHash: true,
+                  },
+                },
+              },
             },
           },
         });
@@ -310,14 +422,42 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
       },
 
       async listOwnedByUserWithTrackStatus(input) {
+        const editablePlaylistIds = await getEditablePlaylistIds(
+          database,
+          input.userId,
+        );
+        const accessiblePlaylistWhere =
+          editablePlaylistIds.length > 0
+            ? or(
+                eq(playlists.userId, input.userId),
+                inArray(playlists.id, editablePlaylistIds),
+              )
+            : eq(playlists.userId, input.userId);
+
         const playlistsResult = await database.query.playlists.findMany({
           where: input.excludePlaylistId
             ? and(
-                eq(playlists.userId, input.userId),
+                accessiblePlaylistWhere,
                 sql`${playlists.id} != ${input.excludePlaylistId}`,
               )
-            : eq(playlists.userId, input.userId),
+            : accessiblePlaylistWhere,
           orderBy: [desc(playlists.createdAt)],
+          with: {
+            tracks: {
+              orderBy: [playlistTracks.position],
+              limit: 20,
+              with: {
+                addedBy: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    userHash: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         const statusResults = await Promise.all(
@@ -339,6 +479,7 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
               ...playlist,
               trackCount: totalTracks[0]?.count ?? 0,
               hasTrack: !!trackInPlaylist,
+              tracks: mapPlaylistTracks(playlist.tracks),
             } satisfies PlaylistWithTrackStatus;
           }),
         );
@@ -348,13 +489,31 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
 
       async getOwnedDetails(input) {
         const playlist = await database.query.playlists.findFirst({
-          where: and(
-            eq(playlists.id, input.playlistId),
-            eq(playlists.userId, input.userId),
-          ),
+          where: eq(playlists.id, input.playlistId),
           with: {
+            user: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+                userHash: true,
+              },
+            },
             tracks: {
-              orderBy: [desc(playlistTracks.position)],
+              orderBy: [playlistTracks.position],
+              with: {
+                addedBy: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    userHash: true,
+                  },
+                },
+              },
+            },
+            collaborators: {
+              where: eq(playlistCollaborators.status, "active"),
             },
           },
         });
@@ -363,18 +522,50 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
           return null;
         }
 
+        const canRead =
+          playlist.userId === input.userId ||
+          playlist.collaborators.some(
+            (collaborator) => collaborator.userId === input.userId,
+          );
+
+        if (!canRead) {
+          return null;
+        }
+
         return {
           ...playlist,
+          owner: mapPlaylistOwner(playlist.user),
           tracks: mapPlaylistTracks(playlist.tracks),
         } satisfies PlaylistDetails;
       },
 
       async getPublicDetails(playlistId) {
         const playlist = await database.query.playlists.findFirst({
-          where: and(eq(playlists.id, playlistId), eq(playlists.isPublic, true)),
+          where: and(
+            eq(playlists.id, playlistId),
+            eq(playlists.isPublic, true),
+          ),
           with: {
+            user: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+                userHash: true,
+              },
+            },
             tracks: {
-              orderBy: [desc(playlistTracks.position)],
+              orderBy: [playlistTracks.position],
+              with: {
+                addedBy: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    image: true,
+                    userHash: true,
+                  },
+                },
+              },
             },
           },
         });
@@ -385,17 +576,13 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
 
         return {
           ...playlist,
+          owner: mapPlaylistOwner(playlist.user),
           tracks: mapPlaylistTracks(playlist.tracks),
         } satisfies PlaylistDetails;
       },
 
       async addTrackToOwnedPlaylist(input) {
-        const playlist = await database.query.playlists.findFirst({
-          where: and(
-            eq(playlists.id, input.playlistId),
-            eq(playlists.userId, input.userId),
-          ),
-        });
+        const playlist = await getEditablePlaylist(database, input);
 
         if (!playlist) {
           return { status: "playlist-not-found" };
@@ -424,6 +611,8 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
           deezerId: getDeezerId(input.track),
           trackData: input.track,
           position: nextPosition,
+          addedByUserId: input.userId,
+          updatedByUserId: input.userId,
         };
 
         const insertTrack = async () =>
@@ -441,7 +630,10 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
           inserted = await insertTrack();
         } catch (error) {
           if (
-            !isUniqueConstraintError(error, "hexmusic-stream_playlist_track_pkey")
+            !isUniqueConstraintError(
+              error,
+              "hexmusic-stream_playlist_track_pkey",
+            )
           ) {
             throw error;
           }
@@ -456,12 +648,7 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
       },
 
       async removeTrackFromOwnedPlaylist(input) {
-        const playlist = await database.query.playlists.findFirst({
-          where: and(
-            eq(playlists.id, input.playlistId),
-            eq(playlists.userId, input.userId),
-          ),
-        });
+        const playlist = await getEditablePlaylist(database, input);
 
         if (!playlist) {
           return false;
@@ -491,12 +678,7 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
       },
 
       async reorderOwnedPlaylist(input) {
-        const playlist = await database.query.playlists.findFirst({
-          where: and(
-            eq(playlists.id, input.playlistId),
-            eq(playlists.userId, input.userId),
-          ),
-        });
+        const playlist = await getEditablePlaylist(database, input);
 
         if (!playlist) {
           return false;
@@ -505,7 +687,10 @@ export function createDrizzleAppDataStore(database: DatabaseClient): AppDataStor
         for (const update of input.trackUpdates) {
           await database
             .update(playlistTracks)
-            .set({ position: update.newPosition })
+            .set({
+              position: update.newPosition,
+              updatedByUserId: input.userId,
+            })
             .where(
               and(
                 eq(playlistTracks.id, update.trackEntryId),

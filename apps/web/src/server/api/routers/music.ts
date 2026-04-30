@@ -1322,11 +1322,12 @@ export const musicRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const removed = await ctx.dataStore.playlists.removeTrackFromOwnedPlaylist({
-        userId: ctx.session.user.id,
-        playlistId: input.playlistId,
-        trackEntryId: input.trackEntryId,
-      });
+      const removed =
+        await ctx.dataStore.playlists.removeTrackFromOwnedPlaylist({
+          userId: ctx.session.user.id,
+          playlistId: input.playlistId,
+          trackEntryId: input.trackEntryId,
+        });
 
       if (!removed) {
         throw new Error("Playlist not found");
@@ -3201,8 +3202,8 @@ export const musicRouter = createTRPCRouter({
         orderBy: desc(playlists.createdAt),
         with: {
           tracks: {
-            limit: 4,
             orderBy: playlistTracks.position,
+            limit: 20,
           },
         },
       });
@@ -3216,15 +3217,35 @@ export const musicRouter = createTRPCRouter({
           let coverImage = playlist.coverImage;
 
           if (!coverImage && playlist.tracks && playlist.tracks.length > 0) {
-            const albumCovers = playlist.tracks
-              .map((pt: { trackData: unknown }) => {
-                const track = pt.trackData as Track;
-                return track.album?.cover_medium ?? track.album?.cover;
-              })
-              .filter(Boolean)
-              .slice(0, 4);
+            const albumCovers: string[] = [];
+            const seenAlbumKeys = new Set<string>();
 
-            coverImage = JSON.stringify(albumCovers);
+            for (const playlistTrack of playlist.tracks) {
+              const track = playlistTrack.trackData as Track;
+              const cover =
+                track.album?.cover_medium ??
+                track.album?.cover_small ??
+                track.album?.cover ??
+                null;
+              if (!cover) continue;
+
+              const albumKey = String(
+                track.album?.id ?? track.album?.md5_image ?? cover,
+              );
+              if (seenAlbumKeys.has(albumKey)) continue;
+
+              seenAlbumKeys.add(albumKey);
+              albumCovers.push(cover);
+
+              if (albumCovers.length === 4) {
+                break;
+              }
+            }
+
+            coverImage =
+              albumCovers.length === 4
+                ? JSON.stringify(albumCovers)
+                : (albumCovers[0] ?? null);
           }
 
           return {

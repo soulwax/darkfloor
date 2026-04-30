@@ -77,7 +77,93 @@ export const users = createTable(
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
+  blockedUsers: many(userBlocks, { relationName: "blocker" }),
+  blockedByUsers: many(userBlocks, { relationName: "blocked" }),
+  friendRequestsSent: many(friendRequests, { relationName: "requester" }),
+  friendRequestsReceived: many(friendRequests, { relationName: "recipient" }),
+  playlistCollaborations: many(playlistCollaborators),
 }));
+
+export const friendRequests = createTable(
+  "friend_request",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    requesterUserId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    recipientUserId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: d.varchar({ length: 20 }).default("pending").notNull(),
+    message: d.varchar({ length: 500 }),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    respondedAt: d.timestamp({ withTimezone: true }),
+  }),
+  (t) => [
+    index("friend_request_requester_idx").on(t.requesterUserId),
+    index("friend_request_recipient_idx").on(t.recipientUserId),
+    index("friend_request_status_idx").on(t.status),
+    uniqueIndex("friend_request_pending_pair_idx")
+      .on(t.requesterUserId, t.recipientUserId)
+      .where(sql`${t.status} = 'pending'`),
+  ],
+);
+
+export const friendships = createTable(
+  "friendship",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    userAId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    userBId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdByUserId: d
+      .varchar({ length: 255 })
+      .references(() => users.id, { onDelete: "set null" }),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  }),
+  (t) => [
+    index("friendship_user_a_idx").on(t.userAId),
+    index("friendship_user_b_idx").on(t.userBId),
+    unique("friendship_pair_unique").on(t.userAId, t.userBId),
+  ],
+);
+
+export const userBlocks = createTable(
+  "user_block",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    blockerUserId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedUserId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  }),
+  (t) => [
+    index("user_block_blocker_idx").on(t.blockerUserId),
+    index("user_block_blocked_idx").on(t.blockedUserId),
+    unique("user_block_pair_unique").on(t.blockerUserId, t.blockedUserId),
+  ],
+);
 
 export const sessions = createTable(
   "session",
@@ -143,6 +229,12 @@ export const playlists = createTable(
     description: d.text(),
     coverImage: d.varchar({ length: 512 }),
     isPublic: d.boolean().default(false).notNull(),
+    isCollaborative: d.boolean().default(false).notNull(),
+    collaborationMode: d
+      .varchar({ length: 40 })
+      .default("owner_invite_only")
+      .notNull(),
+    collaborationUpdatedAt: d.timestamp({ withTimezone: true }),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -167,6 +259,12 @@ export const playlistTracks = createTable(
     deezerId: d.bigint({ mode: "number" }),
     trackData: d.jsonb().$type<Track>().notNull(),
     position: d.integer().notNull(),
+    addedByUserId: d
+      .varchar({ length: 255 })
+      .references(() => users.id, { onDelete: "set null" }),
+    updatedByUserId: d
+      .varchar({ length: 255 })
+      .references(() => users.id, { onDelete: "set null" }),
     addedAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -176,7 +274,43 @@ export const playlistTracks = createTable(
     index("playlist_track_playlist_idx").on(t.playlistId),
     index("playlist_track_position_idx").on(t.playlistId, t.position),
     index("playlist_track_deezer_id_idx").on(t.deezerId),
+    index("playlist_track_added_by_idx").on(t.addedByUserId),
     unique("playlist_track_unique").on(t.playlistId, t.trackId),
+  ],
+);
+
+export const playlistCollaborators = createTable(
+  "playlist_collaborator",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    playlistId: d
+      .integer()
+      .notNull()
+      .references(() => playlists.id, { onDelete: "cascade" }),
+    userId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: d.varchar({ length: 20 }).default("editor").notNull(),
+    status: d.varchar({ length: 20 }).default("invited").notNull(),
+    invitedByUserId: d
+      .varchar({ length: 255 })
+      .references(() => users.id, { onDelete: "set null" }),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    acceptedAt: d.timestamp({ withTimezone: true }),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("playlist_collaborator_playlist_idx").on(t.playlistId),
+    index("playlist_collaborator_user_idx").on(t.userId),
+    index("playlist_collaborator_status_idx").on(t.status),
+    unique("playlist_collaborator_playlist_user_unique").on(
+      t.playlistId,
+      t.userId,
+    ),
   ],
 );
 
@@ -524,6 +658,7 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
 export const playlistsRelations = relations(playlists, ({ one, many }) => ({
   user: one(users, { fields: [playlists.userId], references: [users.id] }),
   tracks: many(playlistTracks),
+  collaborators: many(playlistCollaborators),
 }));
 
 export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
@@ -531,7 +666,68 @@ export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
     fields: [playlistTracks.playlistId],
     references: [playlists.id],
   }),
+  addedBy: one(users, {
+    fields: [playlistTracks.addedByUserId],
+    references: [users.id],
+  }),
+  updatedBy: one(users, {
+    fields: [playlistTracks.updatedByUserId],
+    references: [users.id],
+  }),
 }));
+
+export const friendRequestsRelations = relations(friendRequests, ({ one }) => ({
+  requester: one(users, {
+    fields: [friendRequests.requesterUserId],
+    references: [users.id],
+    relationName: "requester",
+  }),
+  recipient: one(users, {
+    fields: [friendRequests.recipientUserId],
+    references: [users.id],
+    relationName: "recipient",
+  }),
+}));
+
+export const friendshipsRelations = relations(friendships, ({ one }) => ({
+  userA: one(users, { fields: [friendships.userAId], references: [users.id] }),
+  userB: one(users, { fields: [friendships.userBId], references: [users.id] }),
+  createdBy: one(users, {
+    fields: [friendships.createdByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const userBlocksRelations = relations(userBlocks, ({ one }) => ({
+  blocker: one(users, {
+    fields: [userBlocks.blockerUserId],
+    references: [users.id],
+    relationName: "blocker",
+  }),
+  blocked: one(users, {
+    fields: [userBlocks.blockedUserId],
+    references: [users.id],
+    relationName: "blocked",
+  }),
+}));
+
+export const playlistCollaboratorsRelations = relations(
+  playlistCollaborators,
+  ({ one }) => ({
+    playlist: one(playlists, {
+      fields: [playlistCollaborators.playlistId],
+      references: [playlists.id],
+    }),
+    user: one(users, {
+      fields: [playlistCollaborators.userId],
+      references: [users.id],
+    }),
+    invitedBy: one(users, {
+      fields: [playlistCollaborators.invitedByUserId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const listeningHistoryRelations = relations(
   listeningHistory,

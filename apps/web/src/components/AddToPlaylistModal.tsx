@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 
 import { useToast } from "@/contexts/ToastContext";
 import { useAuthModal } from "@/contexts/AuthModalContext";
+import { PlaylistArtwork } from "@/components/PlaylistArtwork";
 import { api } from "@starchild/api-client/trpc/react";
 import type { Track } from "@starchild/types";
 import { hapticLight, hapticSuccess } from "@/utils/haptics";
@@ -28,6 +29,7 @@ type PlaylistWithTrackStatus = {
   createdAt: Date;
   updatedAt: Date | null;
   userId: string;
+  tracks?: Array<{ track?: Track | null }> | null;
 };
 
 interface AddToPlaylistModalProps {
@@ -331,9 +333,14 @@ function PlaylistItem({
     >
       <div className="flex items-center gap-3">
         {}
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md bg-[rgba(244,178,102,0.1)]">
-          <Music className="h-6 w-6 text-[var(--color-accent)]" />
-        </div>
+        <PlaylistArtwork
+          name={playlist.name}
+          tracks={playlist.tracks}
+          coverImage={playlist.coverImage}
+          className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-[rgba(244,178,102,0.1)]"
+          iconClassName="h-6 w-6 text-[var(--color-accent)]"
+          sizes="48px"
+        />
 
         {}
         <div className="min-w-0 flex-1">

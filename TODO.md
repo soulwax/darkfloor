@@ -1,6 +1,6 @@
 # Platform TODO
 
-Last updated: 2026-04-19
+Last updated: 2026-04-30
 
 This roadmap is the next-level plan for Starchild/Darkfloor as a music platform, not just a frontend maintenance queue. The default owner is the frontend monorepo (`apps/web`, `apps/mobile`, and `packages/*`). Backend/API work should stay contract-first and only enter the external service or `api/` submodule when a task explicitly requires coordinated full-stack changes.
 
@@ -26,6 +26,56 @@ Make Starchild feel like a durable personal music OS: import anything, match it 
 - [ ] Add a manual match editor for M3U/M3U8 imports that mirrors the Spotify unresolved-track review flow.
 - [ ] Expand import tests around timeout recovery, invalid upstream payloads, duplicate playlist retries, unmatched candidates, and zero-match imports.
 - [ ] Add import observability with structured logs that include source type, track count, matched count, unmatched count, duration, and failure class without leaking tokens or playlist contents.
+
+## P1 - Build Friends And Collaborative Playlists
+
+Collaborative playlists need a social trust layer before write access is safe. The first version should use mutual friendships rather than open follows: a user sends a friend request, the recipient accepts or declines, and accepted friends can be invited to collaborate on playlists. Public profile browsing can remain separate from friendship so profile visibility and playlist editing do not get tangled too early.
+
+Recommended first model:
+
+- [x] Add a `friend_requests` table with `id`, `requesterUserId`, `recipientUserId`, `status` (`pending`, `accepted`, `declined`, `cancelled`, `blocked`), `message`, `createdAt`, `respondedAt`, and unique pending-request protection for each user pair.
+- [x] Add a `friendships` table with two canonical user IDs (`userAId`, `userBId` sorted lexicographically), `createdAt`, and `createdByUserId`, so mutual friendship checks are fast and duplicate direction rows cannot exist.
+- [x] Add a `user_blocks` table before broad social discovery ships, with `blockerUserId`, `blockedUserId`, `createdAt`, and hard checks that block requests, invitations, profile social actions, and collaborator writes.
+- [ ] Keep the existing `profilePublic` behavior unchanged for now; add `profileVisibility: public | friends | private` only after friend checks exist and are tested.
+- [x] Expose tRPC procedures for searching users by exact user hash/name, sending requests, accepting/declining/cancelling requests, listing friends, and removing a friend.
+- [ ] Add notification-ready event records for friend request sent/accepted/declined, but keep the first UI simple: a Friends panel in Settings/Profile and a compact request inbox.
+- [x] Add the first Friends panel in Settings with user search, outgoing requests, incoming request accept/decline, friend removal, and blocking.
+
+Collaborative playlist model:
+
+- [x] Add playlist-level collaboration fields: `isCollaborative`, `collaborationMode` (`owner_invite_only` first), and optional `collaborationUpdatedAt`.
+- [x] Add a `playlist_collaborators` table with `playlistId`, `userId`, `role` (`owner`, `editor`, `viewer`), `status` (`invited`, `active`, `removed`, `left`), `invitedByUserId`, `createdAt`, `acceptedAt`, and `updatedAt`.
+- [x] Add `addedByUserId` to `playlist_track` so “who added this song” is real data instead of falling back to the playlist owner.
+- [x] Add `updatedByUserId` for reorder operations.
+- [ ] Add lightweight action metadata for reorder/remove operations if audit/history becomes important after the first release.
+- [x] Keep playlist ownership as-is: the existing `playlists.userId` remains the canonical owner and only owners can delete playlists, transfer ownership, or remove collaborators.
+- [x] Gate collaborator write permissions through one shared server helper used by add/remove/reorder playlist procedures, rather than duplicating role checks in each mutation.
+
+Playlist collaboration UX:
+
+- [ ] Add a “Make collaborative” action for playlist owners with clear copy that collaborators can add, remove, and reorder tracks.
+- [x] Add an invite dialog scoped to accepted friends first; do not allow arbitrary public invites until blocking, abuse controls, and invite limits exist.
+- [ ] Show collaborator avatars/names in the playlist header once collaborator read models are polished.
+- [x] Show a real “Added by” column in the track table once `addedByUserId` exists.
+- [ ] Preserve the current graceful fallback: if `addedByUserId` or user profile data is missing, display `addedAt` rather than leaving the row visually broken.
+- [ ] Add collaborator management: resend invite, revoke invite, remove collaborator, leave playlist, and copy public share link when the playlist is public.
+- [ ] Add conflict-safe reorder behavior before multiple editors are common: include playlist track IDs and positions in mutation payloads, and refetch after successful writes.
+
+Open product questions:
+
+- [ ] Decide whether Starchild should also support one-way following later. Recommendation: defer follows until after mutual friendships because follows are better for public activity feeds, while collaboration needs consent and trust.
+- [ ] Decide whether friends can see private playlists by default. Recommendation: no; private playlists stay private unless explicitly shared or collaborative.
+- [ ] Decide whether collaboration requires both users to be friends forever. Recommendation: a collaborator may remain after friendship removal until the owner removes them, but blocked users immediately lose access.
+- [ ] Decide whether imported Spotify collaborative playlists should preserve contributor identity. Recommendation: import tracks first, then add contributor mapping only if the upstream payload includes stable contributor data.
+- [ ] Decide whether activity feeds should show friend playlist edits. Recommendation: do not ship activity feeds in the first collaboration milestone; log events privately first.
+
+Implementation phases:
+
+- [x] Phase 1: Data model and server permissions for friend requests, friendships, blocks, collaborators, and `playlist_track.addedByUserId`.
+- [ ] Phase 2: Friends UI in Settings/Profile plus invite/accept flows using existing auth sessions and public user hashes. Settings is in place; Profile entry points and playlist invite accept UI remain.
+- [ ] Phase 3: Collaborative playlist owner controls and collaborator-gated add/remove/reorder mutations. Server gating and first owner invite dialog are in place.
+- [ ] Phase 4: Playlist detail polish: collaborator header, real “Added by”, friend invite dialog, empty states, and removal/leave flows. Real “Added by” and the first invite dialog are in place.
+- [ ] Phase 5: Tests and abuse controls: permission matrix tests, blocked-user tests, invite limits, duplicate request handling, collaborator removal, and reorder conflict recovery.
 
 ## P1 - Build The Music Intelligence Layer
 
@@ -111,7 +161,7 @@ Make Starchild feel like a durable personal music OS: import anything, match it 
 ## Later Bets
 
 - [ ] Offline-ready playlist snapshots for desktop and mobile with explicit licensing and stream-source constraints.
-- [ ] Collaborative playlist sessions with presence, voting, host controls, and conflict-safe queue edits.
+- [ ] Collaborative playlist sessions with live presence, voting, host controls, and conflict-safe queue edits after the basic friend/collaborator model is stable.
 - [ ] A listener repair assistant that can explain missing tracks and propose high-confidence replacements.
 - [ ] A personal music graph that connects artists, albums, playlists, imports, listens, skips, saves, and manual corrections.
 - [ ] Native mobile builds with production auth, deep links, playback lifecycle handling, and crash reporting.

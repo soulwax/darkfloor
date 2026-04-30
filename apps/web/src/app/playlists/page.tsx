@@ -4,6 +4,7 @@
 
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@starchild/ui/LoadingSpinner";
+import { PlaylistArtwork } from "@/components/PlaylistArtwork";
 import { useToast } from "@/contexts/ToastContext";
 import { usePlaylistContextMenu } from "@/contexts/PlaylistContextMenuContext";
 import {
@@ -26,7 +27,6 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ChangeEvent } from "react";
@@ -156,10 +156,10 @@ function M3u8ImportDialog(props: {
     payload?.playlistName ?? result?.importReport.sourcePlaylistName ?? "";
   const canCreate = Boolean(
     payload &&
-      result &&
-      !result.playlistCreated &&
-      result.importReport.matchedCount > 0 &&
-      !isSubmitting,
+    result &&
+    !result.playlistCreated &&
+    result.importReport.matchedCount > 0 &&
+    !isSubmitting,
   );
 
   return (
@@ -203,7 +203,7 @@ function M3u8ImportDialog(props: {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
-            {(isReadingFile || (isSubmitting && !result)) ? (
+            {isReadingFile || (isSubmitting && !result) ? (
               <div className="rounded-[1.25rem] border border-[rgba(244,178,102,0.24)] bg-[linear-gradient(160deg,rgba(244,178,102,0.16),rgba(15,23,42,0.78))] p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(244,178,102,0.28)] bg-[rgba(244,178,102,0.14)]">
@@ -375,17 +375,19 @@ function M3u8ImportDialog(props: {
                             </div>
                             {track.candidates && track.candidates.length > 0 ? (
                               <div className="mt-3 space-y-1">
-                                {track.candidates.slice(0, 3).map((candidate) => (
-                                  <p
-                                    key={candidate.deezerTrackId}
-                                    className="truncate rounded-xl border border-[rgba(244,178,102,0.2)] bg-[rgba(244,178,102,0.08)] px-3 py-2 text-xs text-[var(--color-subtext)]"
-                                  >
-                                    {candidate.title}
-                                    {candidate.artist
-                                      ? ` - ${candidate.artist}`
-                                      : ""}
-                                  </p>
-                                ))}
+                                {track.candidates
+                                  .slice(0, 3)
+                                  .map((candidate) => (
+                                    <p
+                                      key={candidate.deezerTrackId}
+                                      className="truncate rounded-xl border border-[rgba(244,178,102,0.2)] bg-[rgba(244,178,102,0.08)] px-3 py-2 text-xs text-[var(--color-subtext)]"
+                                    >
+                                      {candidate.title}
+                                      {candidate.artist
+                                        ? ` - ${candidate.artist}`
+                                        : ""}
+                                    </p>
+                                  ))}
                               </div>
                             ) : null}
                           </div>
@@ -500,7 +502,10 @@ export default function PlaylistsPage() {
           variables.playlistName ??
           variables.sourcePlaylistName ??
           t("importM3u8");
-        showToast(t("m3u8ImportCreatedToast", { name: playlistName }), "success");
+        showToast(
+          t("m3u8ImportCreatedToast", { name: playlistName }),
+          "success",
+        );
         hapticSuccess();
       }
     },
@@ -682,88 +687,15 @@ export default function PlaylistsPage() {
               }}
             >
               <div className="relative aspect-square overflow-hidden rounded-xl bg-[linear-gradient(135deg,rgba(244,178,102,0.28),rgba(88,198,177,0.22))]">
-                {playlist.tracks && playlist.tracks.length > 0 ? (
-                  (() => {
-                    const covers = playlist.tracks
-                      .map((t) => t.track?.album?.cover_medium)
-                      .filter((cover): cover is string => !!cover);
-
-                    const uniqueCovers = Array.from(new Set(covers));
-
-                    if (playlist.tracks.length < 4) {
-                      return (
-                        <div className="relative h-full w-full overflow-hidden rounded-xl bg-[var(--color-surface)]">
-                          <Image
-                            src={
-                              playlist.tracks[0]?.track?.album?.cover_medium ??
-                              "/placeholder.png"
-                            }
-                            alt=""
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      );
-                    }
-
-                    if (playlist.tracks.length > 3 && uniqueCovers.length > 3) {
-                      return (
-                        <div className="grid h-full grid-cols-2 grid-rows-2 gap-0.5">
-                          {playlist.tracks
-                            .slice(0, 4)
-                            .map((playlistTrack, idx) => (
-                              <div
-                                key={idx}
-                                className="relative h-full w-full overflow-hidden rounded-[0.65rem] bg-[var(--color-surface)]"
-                              >
-                                <Image
-                                  src={
-                                    playlistTrack.track?.album?.cover_medium ??
-                                    "/placeholder.png"
-                                  }
-                                  alt=""
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-                            ))}
-                        </div>
-                      );
-                    }
-
-                    const coverFrequency = new Map<string, number>();
-                    covers.forEach((cover) => {
-                      coverFrequency.set(
-                        cover,
-                        (coverFrequency.get(cover) ?? 0) + 1,
-                      );
-                    });
-
-                    let dominantCover = covers[0] ?? "/placeholder.png";
-                    let maxFrequency = 0;
-                    coverFrequency.forEach((frequency, cover) => {
-                      if (frequency > maxFrequency) {
-                        maxFrequency = frequency;
-                        dominantCover = cover;
-                      }
-                    });
-
-                    return (
-                      <div className="relative h-full w-full overflow-hidden rounded-xl bg-[var(--color-surface)]">
-                        <Image
-                          src={dominantCover}
-                          alt=""
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[var(--color-text)]/60">
-                    <Music className="h-12 w-12 md:h-16 md:w-16" />
-                  </div>
-                )}
+                <PlaylistArtwork
+                  name={playlist.name}
+                  tracks={playlist.tracks}
+                  coverImage={playlist.coverImage}
+                  className="relative h-full w-full overflow-hidden rounded-xl bg-[var(--color-surface)]"
+                  imageClassName="object-cover transition-transform group-hover:scale-105"
+                  iconClassName="h-12 w-12 text-[var(--color-text)]/60 md:h-16 md:w-16"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                />
                 <div className="theme-card-overlay absolute inset-0 opacity-0 transition group-hover:opacity-100" />
               </div>
               <div className="p-3 md:p-4">

@@ -204,6 +204,13 @@
       "when": 1776340831940,
       "tag": "0028_restore_deezer_id_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1777526745177,
+      "tag": "0029_cold_rage",
+      "breakpoints": true
     }
   ]
 }
