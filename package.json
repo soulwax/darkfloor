@@ -183,7 +183,7 @@
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.548.0",
-    "next": "^16.3.0",
+    "next": "^16.2.4",
     "next-auth": "^5.0.0-beta.30",
     "next-intl": "^4.8.3",
     "pg": "^8.18.0",
@@ -327,5 +327,5 @@
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.2+sha512.a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8"
 }

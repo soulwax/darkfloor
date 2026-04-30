@@ -90,7 +90,7 @@ importers:
         specifier: ^8.18.0
         version: 8.20.0
       postcss:
-        specifier: ^8.5.6
+        specifier: ^8.5.9
         version: 8.5.9
       postgres:
         specifier: ^3.4.8
