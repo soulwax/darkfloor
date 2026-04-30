@@ -1,6 +1,6 @@
 # Codex Task Checklist
 
-Last updated: 2026-04-06
+Last updated: 2026-04-30
 
 ## For Every Task
 
@@ -23,15 +23,16 @@ Last updated: 2026-04-06
 4. Summarize the ownership decision before making multi-file changes.
 5. Add targeted tests for redirect/callback/cookie behavior when practical.
 
-## Enter `api/` Only When
+## Enter `api/` When
 
 - The user explicitly asks for backend or full-stack work.
 - The frontend code clearly delegates the broken behavior to backend endpoints.
 - A contract mismatch cannot be fixed safely from the frontend alone.
+- The task involves backend API behavior, backend auth, domain logic, migrations, upstream response shape, or coordinated frontend/backend changes.
 
 ## Avoid Repeating
 
 - Do not treat “auth” as automatically backend.
-- Do not treat the `api/` submodule as part of the default implementation path.
+- Do not avoid `api/` when it owns the behavior; it is the full backend checkout for coordinated work.
 - Do not mix Next.js/Auth.js assumptions with backend service assumptions.
 - Do not assume the frontend is deployed on Vercel; the main frontend runtime is PM2-hosted.

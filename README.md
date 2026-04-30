@@ -1,10 +1,10 @@
-# Starchild Music Frontend
+# Starchild Music Workspace
 
-Frontend-first monorepo for the Starchild / Darkfloor music product.
+Product workspace for the Starchild / Darkfloor music product.
 
 The primary runtime is `apps/web`, a Next.js App Router application backed by tRPC, NextAuth, and Drizzle/Postgres. Desktop shells live in `apps/desktop` with Electron as the main path and Tauri as an experimental parallel track. `apps/mobile` is an Expo-based React Native Web shell that already uses a durable mobile controller architecture.
 
-The Darkfloor API V2 backend is consumed through `API_V2_URL`. The `api/` directory remains a Git submodule for explicit backend or coordinated full-stack work, not the default frontend implementation path.
+The Darkfloor API V2 backend is consumed through `API_V2_URL`, and the full backend source checkout lives in `api/` as a Git submodule. Frontend and backend changes can be coordinated from this workspace: use `apps/web` for web/runtime behavior and `api/` for backend API behavior.
 
 ## Current Snapshot
 
@@ -108,20 +108,20 @@ Important current behavior:
 
 ## Common Commands
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start the main web runtime through the custom server wrapper without launching the `api/` submodule |
-| `pnpm dev:api` | Start the backend `api/` submodule explicitly when coordinated backend work is needed |
-| `pnpm dev:next` | Run plain Next.js dev server on port `3222` |
-| `pnpm build` | Build the web app and the `api/` submodule |
-| `pnpm start` | Start the production custom server |
-| `pnpm check` | Boundary check plus web lint/typecheck |
-| `pnpm test` | Run the web Vitest suite |
-| `pnpm mobile:check` | Type-check the Expo mobile workspace |
-| `pnpm dev:mobile` | Start the Expo web shell |
-| `pnpm electron:dev` | Run the web dev server and Electron together |
-| `pnpm tauri:dev` | Start the experimental Tauri shell |
-| `pnpm ws:check` | Run workspace checks with Turborepo |
+| Command             | Purpose                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| `pnpm dev`          | Start the main web runtime through the custom server wrapper without launching the `api/` submodule |
+| `pnpm dev:api`      | Start the backend API from the `api/` submodule                                                     |
+| `pnpm dev:next`     | Run plain Next.js dev server on port `3222`                                                         |
+| `pnpm build`        | Build the web app and the `api/` submodule                                                          |
+| `pnpm start`        | Start the production custom server                                                                  |
+| `pnpm check`        | Boundary check plus web lint/typecheck                                                              |
+| `pnpm test`         | Run the web Vitest suite                                                                            |
+| `pnpm mobile:check` | Type-check the Expo mobile workspace                                                                |
+| `pnpm dev:mobile`   | Start the Expo web shell                                                                            |
+| `pnpm electron:dev` | Run the web dev server and Electron together                                                        |
+| `pnpm tauri:dev`    | Start the experimental Tauri shell                                                                  |
+| `pnpm ws:check`     | Run workspace checks with Turborepo                                                                 |
 
 ## Key Source Paths
 
@@ -143,6 +143,10 @@ Important current behavior:
 
 - [`apps/desktop/electron`](./apps/desktop/electron)
 - [`apps/desktop/src-tauri`](./apps/desktop/src-tauri)
+
+### Backend runtime
+
+- [`api`](./api): full Darkfloor API V2 backend checkout/submodule. Read `api/AGENTS.md` and `api/.codex` before changing backend behavior.
 - [`apps/desktop/scripts`](./apps/desktop/scripts)
 
 ### Shared packages

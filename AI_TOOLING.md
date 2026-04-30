@@ -1,6 +1,6 @@
 # AI Tooling Guide
 
-Last updated: 2026-04-12
+Last updated: 2026-04-30
 
 This is the tool-neutral companion to `AGENTS.md`.
 
@@ -16,8 +16,8 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 6. `.codex/tasks.md` for recurring task checklists and auth/frontend ownership rules
 7. `.codex/acceptance.md` for definition-of-done guidance
 8. `apps/mobile/README.md` when the task touches mobile
-9. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
-10. `api/AGENTS.md` and `api/.codex` only when full-stack/backend work is explicitly required
+9. `api/AGENTS.md` and `api/.codex` when the task touches backend behavior or coordinated frontend/backend behavior
+10. Backend contract docs when the task touches API shape, transport, or integration behavior
 11. `CHANGELOG.md` when the task is user-visible and release notes matter
 
 ## Reality checks
@@ -26,15 +26,15 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 - Do not assume `docs/` or tool-specific config folders exist just because an older snapshot mentions them.
 - `AGENTS.md` is the canonical workflow file. Tool-specific files should stay thin and point back to it.
 - Root `pnpm install --frozen-lockfile` runs `install:api` in `postinstall`, so initialize the `api/` submodule before first install in a normal checkout.
-- Treat `apps/web` as the default home for auth, OAuth, cookies, redirects, and Next.js behavior.
-- Treat `api/` as an opt-in backend submodule. Do not enter it unless the task clearly requires backend or coordinated full-stack work.
+- Treat `apps/web` as the default home for browser auth, OAuth callbacks, cookies, redirects, and Next.js behavior.
+- Treat `api/` as the full backend source checkout. Enter it whenever backend behavior, API contracts, upstream response shape, backend auth, or coordinated full-stack work is in scope.
 - Do not use backend/API env vars as the source of truth for frontend Auth.js provider behavior unless the code path explicitly consumes them.
 - Treat the frontend production runtime as PM2-hosted on Ubuntu, not Vercel. For frontend incidents, default to PM2 logs and local process/runtime inspection before any Vercel-specific tooling.
 
 ## Quick commands
 
 - `pnpm dev`: start the main web runtime through the custom server, without launching `api/`
-- `pnpm dev:api`: start the `api/` submodule explicitly when backend work is needed
+- `pnpm dev:api`: start the backend API from the `api/` submodule
 - `pnpm dev:mobile`: start the Expo web runtime
 - `pnpm dev:mobile:native`: start Expo for native targets
 - `pnpm dev:mobile:ios`: launch the iOS Expo target
@@ -64,10 +64,11 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
   - `packages/player-core/src`
   - `packages/player-react/src`
   - `packages/visualizers/src`
-- Backend only when necessary:
+- Backend:
   - `api/`
   - `api/AGENTS.md`
   - `api/.codex`
+
 ## Working rules
 
 - Keep package boundaries clean: `packages/*` must not import app code.
@@ -76,7 +77,7 @@ Use it when working in Codex, Claude Code, Cursor, GitHub Copilot, or any other 
 - In the web runtime, use `apps/web/src/env.js` instead of introducing fresh direct `process.env` reads.
 - For mobile work, keep view-only state in `apps/mobile` and leave reusable runtime contracts in shared packages.
 - When a change is user-visible, bump version metadata and update `CHANGELOG.md`.
-- For auth/OAuth tasks, decide up front whether the work belongs to frontend Auth.js/Next.js or the backend API; do not mix them by assumption.
+- For auth/OAuth tasks, decide up front whether the work belongs to frontend Auth.js/Next.js, backend API behavior in `api/`, or a coordinated change across both.
 
 ## Validation defaults
 

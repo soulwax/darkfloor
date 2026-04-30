@@ -15,10 +15,10 @@ This file is intentionally thin. Use [`AGENTS.md`](./AGENTS.md) and [`AI_TOOLING
 
 ## Current Guardrails
 
-- Treat this repository as frontend-first.
-- Default to `apps/web`, `apps/mobile`, and `packages/*`.
+- Treat this repository as a coordinated frontend/backend workspace.
+- Default to the workspace that owns the behavior: `apps/web`, `apps/mobile`, `packages/*`, or `api/`.
 - `apps/web` owns Next.js routing, Auth.js/NextAuth, OAuth, redirects, and cookie behavior.
-- `api/` is a Git submodule for explicit backend or coordinated full-stack work, not the normal frontend path.
+- `api/` is the full backend source checkout/submodule for backend API behavior and coordinated full-stack work.
 - The main frontend production runtime is PM2 on Ubuntu, not Vercel.
 - Root `pnpm install --frozen-lockfile` runs `install:api` in `postinstall`, so initialize submodules before first install.
 

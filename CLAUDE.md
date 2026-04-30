@@ -8,27 +8,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All commands run from repo root unless noted.
 
-| Command | Purpose |
-|---|---|
+| Command                          | Purpose                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------- |
 | `pnpm install --frozen-lockfile` | Install deps (runs `install:api` for the `api/` submodule via postinstall) |
-| `pnpm dev` | Start web runtime via custom server wrapper (auto-generates SSL) |
-| `pnpm dev:next` | Plain Next.js dev server on port 3222 (no SSL, no custom server) |
-| `pnpm build` | Build web app + `api/` submodule |
-| `pnpm check` | Boundary check + web lint + typecheck |
-| `pnpm test` | Run Vitest suite for `apps/web` |
-| `pnpm test:watch` | Vitest in watch mode |
-| `pnpm test:e2e` | Playwright end-to-end tests |
-| `pnpm format:write` | Prettier format all TS/TSX/JS/MDX |
-| `pnpm ws:check` | Turborepo-wide check across all workspaces |
-| `pnpm electron:dev` | Run web dev server + Electron together |
-| `pnpm tauri:dev` | Start experimental Tauri shell |
-| `pnpm dev:mobile` | Start Expo web shell |
-| `pnpm mobile:check` | Type-check mobile workspace |
-| `pnpm db:generate` | Generate Drizzle migration from schema changes |
-| `pnpm db:migrate` | Apply pending migrations |
-| `pnpm db:studio` | Open Drizzle Studio |
+| `pnpm dev`                       | Start web runtime via custom server wrapper (auto-generates SSL)           |
+| `pnpm dev:next`                  | Plain Next.js dev server on port 3222 (no SSL, no custom server)           |
+| `pnpm build`                     | Build web app + `api/` submodule                                           |
+| `pnpm check`                     | Boundary check + web lint + typecheck                                      |
+| `pnpm test`                      | Run Vitest suite for `apps/web`                                            |
+| `pnpm test:watch`                | Vitest in watch mode                                                       |
+| `pnpm test:e2e`                  | Playwright end-to-end tests                                                |
+| `pnpm format:write`              | Prettier format all TS/TSX/JS/MDX                                          |
+| `pnpm ws:check`                  | Turborepo-wide check across all workspaces                                 |
+| `pnpm electron:dev`              | Run web dev server + Electron together                                     |
+| `pnpm tauri:dev`                 | Start experimental Tauri shell                                             |
+| `pnpm dev:mobile`                | Start Expo web shell                                                       |
+| `pnpm mobile:check`              | Type-check mobile workspace                                                |
+| `pnpm db:generate`               | Generate Drizzle migration from schema changes                             |
+| `pnpm db:migrate`                | Apply pending migrations                                                   |
+| `pnpm db:studio`                 | Open Drizzle Studio                                                        |
 
 Production (PM2):
+
 - `pnpm pm2:logs` — tail frontend prod logs
 - `pnpm deploy` — build + pm2 reload (zero-downtime)
 - `pnpm pub` — build + pm2 restart
@@ -42,7 +43,7 @@ Production (PM2):
 - `apps/web` — primary Next.js App Router runtime (tRPC + NextAuth v5 + Drizzle/Postgres). **Default implementation target.**
 - `apps/desktop` — Electron shell (main path) + experimental Tauri parallel track
 - `apps/mobile` — Expo React Native Web shell; durable state in `src/mobile-shell/*`
-- `api/` — Git submodule for the external Darkfloor API V2 backend. **Only enter for explicit backend/full-stack work.**
+- `api/` — full Darkfloor API V2 backend source checkout/submodule. Use it for backend API behavior and coordinated full-stack work.
 
 ### Shared Packages (imported as `@starchild/*`)
 
@@ -74,30 +75,35 @@ Production (PM2):
 
 ## Boundaries and Rules
 
-**Frontend-first:** Default all work to `apps/web`. Only enter `api/` when a task explicitly requires backend or coordinated full-stack behavior. Call this out before implementing.
+**Owning layer first:** Default work to the workspace that owns the behavior. Use `apps/web` for web/runtime behavior, `packages/*` for shared contracts/runtime code, and `api/` for backend API behavior. For coordinated full-stack work, inspect and validate both sides.
 
 **Import aliases:**
+
 - Within `apps/web`: use `@/` for app-local imports, `@starchild/*` for shared packages
 - Within `packages/*`: never import from `apps/web`
 - Boundary check: `pnpm check:boundaries`
 
 **tRPC vs route handlers:**
+
 - First-party app data + DB-backed state → tRPC routers in `src/server/api/routers/`, registered in `root.ts`
 - External proxy/transport (Songbird, Spotify, Deezer, V2 API) → route handlers in `src/app/api/`
 - New routers must be registered in `root.ts` to become active
 
 **Auth:**
+
 - Frontend auth (NextAuth, OAuth callbacks, session cookies) lives in `apps/web`
 - Do not infer frontend Auth.js behavior from backend env vars
 - For Spotify OAuth in cross-origin setups: initiate login on `${NEXT_PUBLIC_AUTH_API_ORIGIN}/api/auth/spotify?...` (PKCE cookies must be on the callback origin)
 
 **Env vars:**
+
 - Add new vars to both `.env.example` and `apps/web/src/env.js`
 - `DATABASE_URL` — canonical DB key
 - `API_V2_URL` — canonical upstream API base (alias: `SONGBIRD_API_URL` still supported)
 - `NEXTAUTH_URL` — single app/auth base URL
 
 **Production:**
+
 - PM2 process: `bluesix-frontend-prod`
 - Debug frontend incidents via PM2 logs, not Vercel tooling
 - Default local frontend: `http://127.0.0.1:3222`

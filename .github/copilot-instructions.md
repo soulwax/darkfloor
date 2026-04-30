@@ -4,10 +4,10 @@ Use [`AGENTS.md`](../AGENTS.md), [`CONTEXT.md`](../CONTEXT.md), [`README.md`](..
 
 ## Important repo rules
 
-- Treat the repo as frontend-first.
-- Default to `apps/web`, `apps/mobile`, and `packages/*`.
+- Treat the repo as a coordinated frontend/backend workspace.
+- Default to the workspace that owns the behavior: `apps/web`, `apps/mobile`, `packages/*`, or `api/`.
 - `apps/web` owns Next.js routing, Auth.js/NextAuth, OAuth, cookies, and redirect behavior.
-- `api/` is a Git submodule for explicit backend or coordinated full-stack work only.
+- `api/` is the full backend source checkout/submodule for backend API behavior and coordinated full-stack work.
 - The main frontend production runtime is PM2 on Ubuntu, not Vercel.
 - Use `apps/web/src/env.js` for validated env access.
 - Keep `.env.example` updated when env keys change.

@@ -1,6 +1,6 @@
 # Agent Guide (songbird-frontend / Starchild Monorepo)
 
-Last updated: 2026-04-06
+Last updated: 2026-04-30
 
 This is the primary project context for coding agents in this repository. Read this file before making changes.
 
@@ -14,8 +14,8 @@ This is the primary project context for coding agents in this repository. Read t
 6. `.codex/prompt.md` for current workspace state and boundary reminders
 7. `.codex/tasks.md` for recurring task checklists and auth/frontend ownership rules
 8. `.codex/acceptance.md` for definition-of-done guidance
-9. External Darkfloor API V2 repo or contract docs when the task touches backend behavior
-10. `api/AGENTS.md` and `api/.codex` only when full-stack/backend work is explicitly required
+9. `api/AGENTS.md` and `api/.codex` when the task touches backend behavior or coordinated frontend/backend behavior
+10. Backend contract docs when the task touches API shape, transport, or integration behavior
 11. `CHANGELOG.md` when the task is user-visible or release-sensitive
 12. `tree.txt` only as a rough snapshot; verify the live filesystem before trusting it
 
@@ -37,12 +37,12 @@ Contributors and coding agents should demonstrate:
 
 ## High-Level Architecture
 
-This repo is a Turborepo-style frontend monorepo with app runtimes under `apps/` and shared code under `packages/`. The Darkfloor API V2 backend is consumed as an external service via `API_V2_URL`; it is no longer vendored in this repository.
+This repo is a Turborepo-style product workspace with frontend runtimes under `apps/`, shared code under `packages/`, and the full Darkfloor API V2 backend checkout under `api/`. The web runtime consumes that backend as a service via `API_V2_URL`; locally, both sides can be inspected and changed from this workspace.
 
 Important boundary:
 
-- Treat this repository as frontend-first. Normal auth, OAuth, routing, cookie, tRPC, and Next.js work should stay in `apps/web` unless the user explicitly asks for coordinated full-stack changes.
-- The `api/` directory is a Git submodule for the external backend service. Do not treat it as part of the normal frontend implementation path.
+- Default to the owning layer, not to frontend-only fixes by habit. Normal Next.js routing, browser OAuth/cookies, tRPC, UI state, and web-only behavior live in `apps/web`; backend API contracts, upstream service behavior, backend auth endpoints, and server-side domain logic live in `api/`.
+- The `api/` directory is the full backend source checkout, kept as a Git submodule in this repository. When a change spans frontend and backend behavior, coordinate both sides directly: inspect `api/AGENTS.md` and `api/.codex`, make compatible changes in each workspace, and validate each touched side with its own commands.
 - Do not infer frontend auth behavior from backend auth env vars. Frontend Auth.js/NextAuth behavior is owned by the web runtime unless a task explicitly spans both systems.
 - Frontend production hosting is PM2 on Ubuntu, not Vercel. Do not assume Vercel deployment, Vercel runtime logs, or Vercel-specific debugging paths for the main frontend unless the task explicitly targets one of the separate Vercel-hosted API replicas.
 
@@ -59,10 +59,10 @@ Important boundary:
 - Infra and runtime config:
   - Root runtime/build config in `package.json`, `turbo.json`, `vercel.json`, `Dockerfile`, `ecosystem*.cjs`
   - DB migrations in `apps/web/drizzle`
-Note on upstream APIs:
+    Note on upstream APIs:
 
 - The frontend still consumes the backend through route handlers under `apps/web/src/app/api/**`.
-- The backend source is maintained outside this repo; consult the external backend repository or contract docs when behavior-level backend work is required.
+- The backend implementation is available in `api/`. Consult and edit it for backend behavior, API contracts, migrations, or coordinated full-stack work instead of guessing from the frontend proxy layer alone.
 - `docs/API_V2_SWAGGER.yaml` may exist as a vendored contract copy in some checkouts.
 
 ## Where Core Logic Lives
@@ -102,6 +102,7 @@ Note on upstream APIs:
   - Config/constants/storage keys: `packages/config/src/*`
   - Auth helpers/logging/provider factories: `packages/auth/src/*`
   - App-local utilities: `apps/web/src/utils/*`
+
 ## Routing, tRPC, and API Module Conventions
 
 - Next.js routing:
@@ -146,8 +147,8 @@ Note on upstream APIs:
 - Prefer cross-file navigation and existing implementations over duplication.
 - Before multi-module edits, identify key files and each file's role.
 - Search for existing patterns first (router style, proxy style, error/logging style, DB handling) and follow them.
-- Default to the frontend workspace first. Only inspect `api/` when the task explicitly requires backend behavior, contracts, or coordinated full-stack changes.
-- If a task spans frontend and backend behavior, inspect the root docs first and then consult the external backend repository or contract docs as needed.
+- Start in the workspace that owns the behavior. Inspect `api/` whenever the task involves backend behavior, contracts, upstream responses, or coordinated full-stack changes.
+- If a task spans frontend and backend behavior, inspect the root docs first, then read `api/AGENTS.md` and `api/.codex` before editing backend files.
 
 ## Repo-Specific Patterns to Reuse
 
@@ -168,7 +169,7 @@ Note on upstream APIs:
   - frontend Auth.js / Next.js behavior in `apps/web`
   - backend API/submodule behavior in `api/`
   - coordinated full-stack behavior across both
-- If a task also requires backend changes, call out that the implementation lives in a separate repository/service.
+- If a task also requires backend changes, call out the coordinated frontend/backend scope and validate both sides where practical.
 - Keep changes minimal and localized.
 - Avoid global architecture/config changes unless explicitly requested.
 - Add concise comments only where logic is non-obvious.

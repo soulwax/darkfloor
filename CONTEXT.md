@@ -1,10 +1,10 @@
 # Context (songbird-frontend / Starchild Music)
 
-Last updated: 2026-04-05
+Last updated: 2026-04-30
 
 ## What This Repo Is
 
-- Turborepo-style monorepo with a Next.js web runtime and an Electron desktop wrapper.
+- Turborepo-style product workspace with a Next.js web runtime, Electron desktop wrapper, and full backend checkout.
 - Primary product: `apps/web` (App Router + tRPC + NextAuth + Drizzle/Postgres).
 - Frontend production deployment model: PM2 on Ubuntu for the main web runtime, not Vercel.
 - Desktop runtime: `apps/desktop/electron` (legacy compatibility wrappers also exist under root `electron/`).
@@ -12,7 +12,7 @@ Last updated: 2026-04-05
 - API model:
   - Internal app data: tRPC at `/api/trpc`.
   - External integrations: Next.js route handlers under `apps/web/src/app/api/**` (Songbird/Bluesix V2 + Deezer).
-  - Backend contract target: external Darkfloor API V2 service via `API_V2_URL`.
+  - Backend implementation: full Darkfloor API V2 source under `api/`, consumed by the web runtime via `API_V2_URL`.
 
 ## Read First
 
@@ -21,7 +21,7 @@ Last updated: 2026-04-05
 3. `README.md`
 4. `AI_TOOLING.md`
 5. `apps/mobile/README.md` for mobile-facing work
-6. External Darkfloor API V2 repo or contract docs for backend-facing work
+6. `api/AGENTS.md` and `api/.codex` for backend-facing or coordinated frontend/backend work
 7. `CHANGELOG.md` for user-visible change context
 
 ## Workspace Map
@@ -47,11 +47,12 @@ Last updated: 2026-04-05
   - `apps/web/drizzle/` SQL migrations
 - `apps/desktop/electron/` Electron main/preload + builder helpers
 - `apps/mobile/src/mobile-shell/` mobile runtime composition, state, and persistence
+- `api/` full Darkfloor API V2 backend source checkout/submodule
 - `packages/*` shared workspace libraries (import via `@starchild/*`)
   - `api-client`, `types`, `config`, `auth`
   - `player-core`, `player-react`, `audio-adapters`
   - `ui`, `visualizers`
-Player internals live in shared packages:
+    Player internals live in shared packages:
 
 - `packages/player-react/src/AudioPlayerContext.tsx`
 - `packages/player-react/src/useAudioPlayer.ts`
@@ -61,7 +62,7 @@ Player internals live in shared packages:
 
 - UI -> `@starchild/api-client/trpc/react` -> `/api/trpc` -> `apps/web/src/server/api/*` -> Postgres (Drizzle).
 - UI -> `/api/*` proxy routes -> Songbird/Bluesix V2 and Deezer.
-- Proxy contract/debugging work may require consulting the external backend repo or contract docs.
+- Proxy contract/debugging work should inspect `api/` directly when backend behavior or response shape matters.
 - Auth -> `/api/auth/*` -> NextAuth -> DB-backed sessions.
 - Electron -> loads the local web server (default `http://localhost:3222` in dev).
 
@@ -69,7 +70,7 @@ Player internals live in shared packages:
 
 - Install deps: `pnpm install --frozen-lockfile`
 - Dev (custom server wrapper, frontend only): `pnpm dev`
-- Dev (backend submodule, explicit opt-in): `pnpm dev:api`
+- Dev (backend API): `pnpm dev:api`
 - Dev (Next.js only): `pnpm dev:next`
 - Build: `pnpm build`
 - Start (prod custom server): `pnpm start`
@@ -95,6 +96,7 @@ Player internals live in shared packages:
 
 - Add first-party app data API: update/add tRPC router in `apps/web/src/server/api/routers/*`, then register in `apps/web/src/server/api/root.ts`.
 - Add external proxy endpoint: create route handler in `apps/web/src/app/api/**/route.ts` and reuse the relevant `_lib.ts` helper.
+- Change backend API behavior: read `api/AGENTS.md` and `api/.codex`, then edit the backend source under `api/` and validate with backend-local commands.
 - Change DB schema: edit `apps/web/src/server/db/schema.ts`, then run Drizzle commands.
 - Change playback behavior: edit `packages/player-react/*` and/or `packages/player-core/*`.
 - Change shared types: edit `packages/types/src/*`.

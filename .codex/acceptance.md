@@ -1,6 +1,6 @@
 # Codex Acceptance
 
-Last updated: 2026-04-06
+Last updated: 2026-04-30
 
 Use this as the definition of done for normal work in this repository.
 
@@ -8,7 +8,8 @@ Use this as the definition of done for normal work in this repository.
 
 - The owning layer is correct:
   - frontend work stays in `apps/web`, `apps/mobile`, or `packages/*`
-  - backend work only touches `api/` when truly required
+  - backend work uses `api/`, the full backend checkout/submodule
+  - coordinated full-stack work keeps frontend and backend contracts compatible
 - The change follows existing repo patterns and boundaries.
 - Validation was run for the touched path, or any blocker is stated explicitly.
 - The summary names the owner of the behavior that changed.
