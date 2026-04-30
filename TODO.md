@@ -55,10 +55,10 @@ Playlist collaboration UX:
 
 - [ ] Add a “Make collaborative” action for playlist owners with clear copy that collaborators can add, remove, and reorder tracks.
 - [x] Add an invite dialog scoped to accepted friends first; do not allow arbitrary public invites until blocking, abuse controls, and invite limits exist.
-- [ ] Show collaborator avatars/names in the playlist header once collaborator read models are polished.
+- [x] Show collaborator avatars/names in the playlist header once collaborator read models are polished.
 - [x] Show a real “Added by” column in the track table once `addedByUserId` exists.
-- [ ] Preserve the current graceful fallback: if `addedByUserId` or user profile data is missing, display `addedAt` rather than leaving the row visually broken.
-- [ ] Add collaborator management: resend invite, revoke invite, remove collaborator, leave playlist, and copy public share link when the playlist is public.
+- [x] Preserve the current graceful fallback: if `addedByUserId` or user profile data is missing, display `addedAt` rather than leaving the row visually broken.
+- [ ] Add collaborator management: resend invite, revoke invite, remove collaborator, leave playlist, and copy public share link when the playlist is public. Owner remove and collaborator leave are in place; resend/revoke-specific copy and collaborator share affordances remain.
 - [ ] Add conflict-safe reorder behavior before multiple editors are common: include playlist track IDs and positions in mutation payloads, and refetch after successful writes.
 
 Open product questions:
@@ -72,9 +72,9 @@ Open product questions:
 Implementation phases:
 
 - [x] Phase 1: Data model and server permissions for friend requests, friendships, blocks, collaborators, and `playlist_track.addedByUserId`.
-- [ ] Phase 2: Friends UI in Settings/Profile plus invite/accept flows using existing auth sessions and public user hashes. Settings is in place; Profile entry points and playlist invite accept UI remain.
+- [ ] Phase 2: Friends UI in Settings/Profile plus invite/accept flows using existing auth sessions and public user hashes. Settings and playlist invite accept/decline are in place; Profile entry points remain.
 - [ ] Phase 3: Collaborative playlist owner controls and collaborator-gated add/remove/reorder mutations. Server gating and first owner invite dialog are in place.
-- [ ] Phase 4: Playlist detail polish: collaborator header, real “Added by”, friend invite dialog, empty states, and removal/leave flows. Real “Added by” and the first invite dialog are in place.
+- [ ] Phase 4: Playlist detail polish: collaborator header, real “Added by”, friend invite dialog, empty states, and removal/leave flows. Collaborator header, real “Added by”, the first invite dialog, and leave flow are in place.
 - [ ] Phase 5: Tests and abuse controls: permission matrix tests, blocked-user tests, invite limits, duplicate request handling, collaborator removal, and reorder conflict recovery.
 
 ## P1 - Build The Music Intelligence Layer

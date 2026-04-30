@@ -448,7 +448,7 @@ export const socialRouter = createTRPCRouter({
               createdAt: true,
             },
             with: {
-              owner: { columns: userSummaryColumns },
+              user: { columns: userSummaryColumns },
             },
           },
           invitedBy: { columns: userSummaryColumns },

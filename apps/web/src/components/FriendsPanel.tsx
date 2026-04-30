@@ -17,8 +17,6 @@ import { useSession } from "next-auth/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-type UserSummary = RouterOutputs["social"]["searchUsers"][number];
-type FriendEntry = RouterOutputs["social"]["listFriends"][number];
 type FriendRequest = RouterOutputs["social"]["listFriendRequests"][number];
 type PlaylistInvite =
   RouterOutputs["social"]["listMyPlaylistCollaboratorInvites"][number];
@@ -345,7 +343,9 @@ export function FriendsPanel() {
                         {invite.playlist.name}
                       </div>
                       <div className="truncate text-xs text-[var(--color-subtext)]">
-                        {getDisplayName(invite.invitedBy ?? invite.playlist.owner)}
+                        {getDisplayName(
+                          invite.invitedBy ?? invite.playlist.user,
+                        )}
                       </div>
                     </div>
                   </div>

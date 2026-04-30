@@ -5,6 +5,17 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.43] - 2026-04-30
+
+### Added
+
+- **Collaborative playlist invites can now be accepted from Settings**: The Friends panel now includes playlist collaborator invites, with accept/decline controls that activate shared playlists in the listener's playlist library.
+- **Playlist headers now show active collaborators**: Collaborative playlist pages display collaborator avatar/name context, and collaborators can leave a shared playlist from the playlist action row.
+
+### Fixed
+
+- **Playlist “Added by” cells now fall back to the added date when contributor data is missing**: Rows and the selected-track panel no longer fall back to the owner when `addedBy` profile data is unavailable.
+
 ## [1.15.42] - 2026-04-30
 
 ### Added

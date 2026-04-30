@@ -5,7 +5,7 @@ import { PlaylistArtwork } from "@/components/PlaylistArtwork";
 import { useGlobalPlayer } from "@starchild/player-react/AudioPlayerContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
-import { api } from "@starchild/api-client/trpc/react";
+import { api, type RouterOutputs } from "@starchild/api-client/trpc/react";
 import { cn } from "@/lib/utils";
 import { getCoverImage } from "@/utils/images";
 import { formatDuration } from "@/utils/time";
@@ -21,6 +21,7 @@ import {
   GripVertical,
   ListPlus,
   Lock,
+  LogOut,
   MoreHorizontal,
   Play,
   Save,
@@ -44,6 +45,10 @@ type PlaylistTrackEntry = {
   } | null;
 };
 
+type PlaylistCollaboratorEntry =
+  RouterOutputs["social"]["listPlaylistCollaborators"][number];
+type UserSummary = PlaylistCollaboratorEntry["user"];
+
 function formatAddedDate(value: Date | string | null | undefined): string {
   if (!value) return "—";
   const date = value instanceof Date ? value : new Date(value);
@@ -54,6 +59,44 @@ function formatAddedDate(value: Date | string | null | undefined): string {
     day: "numeric",
     year: "numeric",
   }).format(date);
+}
+
+function getUserDisplayName(user: UserSummary | null | undefined) {
+  return user?.name ?? user?.userHash ?? "Unknown user";
+}
+
+function CollaboratorAvatar({
+  user,
+  index,
+}: {
+  user: UserSummary;
+  index: number;
+}) {
+  const name = getUserDisplayName(user);
+
+  if (user.image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- Auth avatars can come from several provider domains.
+      <img
+        src={user.image}
+        alt=""
+        referrerPolicy="no-referrer"
+        title={name}
+        className="relative h-7 w-7 rounded-full border border-[var(--color-bg)] object-cover"
+        style={{ zIndex: 20 - index }}
+      />
+    );
+  }
+
+  return (
+    <div
+      title={name}
+      className="relative flex h-7 w-7 items-center justify-center rounded-full border border-[var(--color-bg)] bg-[var(--color-surface-hover)] text-xs font-semibold text-[var(--color-subtext)]"
+      style={{ zIndex: 20 - index }}
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </div>
+  );
 }
 
 export default function PlaylistDetailPage() {
@@ -119,6 +162,13 @@ export default function PlaylistDetailPage() {
   const canEditTracks = !!session && !!privatePlaylist;
 
   const utils = api.useUtils();
+  const collaboratorsQuery = api.social.listPlaylistCollaborators.useQuery(
+    { playlistId },
+    {
+      enabled: !!session && !!privatePlaylist && !isNaN(playlistId),
+      retry: false,
+    },
+  );
   const updateVisibilityMutation =
     api.music.updatePlaylistVisibility.useMutation();
   const updateMetadataMutation = api.music.updatePlaylistMetadata.useMutation();
@@ -159,6 +209,21 @@ export default function PlaylistDetailPage() {
     onError: (error) => {
       console.error("Failed to delete playlist:", error);
       alert(t("failedToDeletePlaylist"));
+    },
+  });
+
+  const leavePlaylist = api.social.leavePlaylistCollaborator.useMutation({
+    onSuccess: async () => {
+      showToast("You left the playlist.", "success");
+      await Promise.all([
+        utils.music.getPlaylist.invalidate({ id: playlistId }),
+        utils.music.getPlaylists.invalidate(),
+        utils.social.listMyPlaylistCollaboratorInvites.invalidate(),
+      ]);
+      router.push("/playlists");
+    },
+    onError: (error) => {
+      showToast(error.message, "error");
     },
   });
 
@@ -375,7 +440,10 @@ export default function PlaylistDetailPage() {
     null;
   const ownerLabel =
     playlist.owner?.name ?? session?.user?.name ?? session?.user?.email ?? null;
-  const fallbackAddedByLabel = ownerLabel ?? "—";
+  const activeCollaborators = (collaboratorsQuery.data ?? []).filter(
+    (collaborator) => collaborator.status === "active",
+  );
+  const isCollaborator = canEditTracks && !isOwner;
 
   return (
     <div className="flex min-h-screen flex-col pb-32">
@@ -484,6 +552,26 @@ export default function PlaylistDetailPage() {
                   </span>
                 )}
                 <span>{tc("tracks", { count: sortedTracks.length })}</span>
+                {activeCollaborators.length > 0 && (
+                  <span className="flex items-center gap-2">
+                    <span className="flex -space-x-2">
+                      {activeCollaborators
+                        .slice(0, 4)
+                        .map((collaborator, index) => (
+                          <CollaboratorAvatar
+                            key={collaborator.id}
+                            user={collaborator.user}
+                            index={index}
+                          />
+                        ))}
+                    </span>
+                    <span>
+                      {activeCollaborators.length === 1
+                        ? "1 collaborator"
+                        : `${activeCollaborators.length} collaborators`}
+                    </span>
+                  </span>
+                )}
                 <span
                   className={
                     effectiveIsPublic
@@ -531,6 +619,26 @@ export default function PlaylistDetailPage() {
                   <Unlock className="h-5 w-5" />
                 ) : (
                   <Lock className="h-5 w-5" />
+                )}
+              </button>
+            )}
+
+            {isCollaborator && (
+              <button
+                onClick={() => {
+                  if (confirm("Leave this collaborative playlist?")) {
+                    leavePlaylist.mutate({ playlistId });
+                  }
+                }}
+                className="btn-secondary flex h-11 w-11 items-center justify-center rounded-full p-0"
+                disabled={leavePlaylist.isPending}
+                title="Leave playlist"
+                aria-label="Leave playlist"
+              >
+                {leavePlaylist.isPending ? (
+                  <div className="spinner spinner-sm h-5 w-5" />
+                ) : (
+                  <LogOut className="h-5 w-5" />
                 )}
               </button>
             )}
@@ -620,7 +728,7 @@ export default function PlaylistDetailPage() {
                   const rowAddedByLabel =
                     item.addedBy?.name ??
                     item.addedBy?.userHash ??
-                    fallbackAddedByLabel;
+                    trackAddedAt;
 
                   return (
                     <div
@@ -817,7 +925,7 @@ export default function PlaylistDetailPage() {
                         <dd className="mt-1 text-[var(--color-text)]">
                           {selectedTrack.addedBy?.name ??
                             selectedTrack.addedBy?.userHash ??
-                            fallbackAddedByLabel}
+                            formatAddedDate(selectedTrack.addedAt)}
                         </dd>
                       </div>
                       <div>
