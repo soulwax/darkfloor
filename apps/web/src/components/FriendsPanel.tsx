@@ -6,6 +6,7 @@ import {
   Ban,
   Check,
   Loader2,
+  Music2,
   Search,
   UserMinus,
   UserPlus,
@@ -19,8 +20,16 @@ import { useState } from "react";
 type UserSummary = RouterOutputs["social"]["searchUsers"][number];
 type FriendEntry = RouterOutputs["social"]["listFriends"][number];
 type FriendRequest = RouterOutputs["social"]["listFriendRequests"][number];
+type PlaylistInvite =
+  RouterOutputs["social"]["listMyPlaylistCollaboratorInvites"][number];
+type UserLike = {
+  id: string;
+  name: string | null;
+  image: string | null;
+  userHash: string | null;
+};
 
-function getDisplayName(user: UserSummary | FriendEntry["friend"] | null) {
+function getDisplayName(user: UserLike | null) {
   return user?.name ?? user?.userHash ?? "Unknown user";
 }
 
@@ -28,7 +37,7 @@ function UserAvatar({
   user,
   size = "md",
 }: {
-  user: UserSummary | FriendEntry["friend"] | null;
+  user: UserLike | null;
   size?: "sm" | "md";
 }) {
   const name = getDisplayName(user);
@@ -60,7 +69,7 @@ function UserLine({
   meta,
   action,
 }: {
-  user: UserSummary | FriendEntry["friend"] | null;
+  user: UserLike | null;
   meta?: string;
   action?: ReactNode;
 }) {
@@ -129,6 +138,8 @@ export function FriendsPanel() {
   const requestsQuery = api.social.listFriendRequests.useQuery({
     status: "pending",
   });
+  const playlistInvitesQuery =
+    api.social.listMyPlaylistCollaboratorInvites.useQuery();
   const searchQuery = api.social.searchUsers.useQuery(
     { query: trimmedSearch },
     { enabled: trimmedSearch.length >= 2 },
@@ -152,7 +163,9 @@ export function FriendsPanel() {
     await Promise.all([
       utils.social.listFriends.invalidate(),
       utils.social.listFriendRequests.invalidate(),
+      utils.social.listMyPlaylistCollaboratorInvites.invalidate(),
       utils.social.searchUsers.invalidate(),
+      utils.music.getPlaylists.invalidate(),
     ]);
   };
 
@@ -201,14 +214,30 @@ export function FriendsPanel() {
     onError: (error) => showToast(error.message, "error"),
   });
 
+  const respondPlaylistInvite =
+    api.social.respondToPlaylistCollaboratorInvite.useMutation({
+      onSuccess: async (_, variables) => {
+        showToast(
+          variables.status === "active"
+            ? "Playlist invite accepted."
+            : "Playlist invite declined.",
+          "success",
+        );
+        await refreshSocialData();
+      },
+      onError: (error) => showToast(error.message, "error"),
+    });
+
   const isMutating =
     sendRequest.isPending ||
     respondRequest.isPending ||
     cancelRequest.isPending ||
     removeFriend.isPending ||
-    blockUser.isPending;
+    blockUser.isPending ||
+    respondPlaylistInvite.isPending;
 
   const searchResults = searchQuery.data ?? [];
+  const playlistInvites = playlistInvitesQuery.data ?? [];
 
   return (
     <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-lg backdrop-blur-sm">
@@ -231,7 +260,7 @@ export function FriendsPanel() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-3">
+      <div className="grid gap-5 xl:grid-cols-4">
         <div>
           <div className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
             Search
@@ -284,6 +313,71 @@ export function FriendsPanel() {
                   />
                 );
               })
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 text-xs font-semibold tracking-[0.14em] text-[var(--color-subtext)] uppercase">
+            Playlist Invites
+          </div>
+          <div className="min-h-24 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]/35 p-2">
+            {playlistInvitesQuery.isLoading ? (
+              <div className="flex h-20 items-center justify-center text-[var(--color-subtext)]">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : playlistInvites.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-[var(--color-subtext)]">
+                No playlist invites.
+              </p>
+            ) : (
+              playlistInvites.map((invite: PlaylistInvite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between gap-3 rounded-md px-3 py-2 transition hover:bg-[var(--color-surface-hover)]/60"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-surface-hover)] text-[var(--color-accent)]">
+                      <Music2 className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-[var(--color-text)]">
+                        {invite.playlist.name}
+                      </div>
+                      <div className="truncate text-xs text-[var(--color-subtext)]">
+                        {getDisplayName(invite.invitedBy ?? invite.playlist.owner)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <IconButton
+                      label={`Accept ${invite.playlist.name}`}
+                      onClick={() =>
+                        respondPlaylistInvite.mutate({
+                          playlistId: invite.playlistId,
+                          status: "active",
+                        })
+                      }
+                      disabled={isMutating}
+                      variant="success"
+                    >
+                      <Check className="h-4 w-4" />
+                    </IconButton>
+                    <IconButton
+                      label={`Decline ${invite.playlist.name}`}
+                      onClick={() =>
+                        respondPlaylistInvite.mutate({
+                          playlistId: invite.playlistId,
+                          status: "left",
+                        })
+                      }
+                      disabled={isMutating}
+                    >
+                      <X className="h-4 w-4" />
+                    </IconButton>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>

@@ -429,6 +429,34 @@ export const socialRouter = createTRPCRouter({
       });
     }),
 
+  listMyPlaylistCollaboratorInvites: protectedProcedure.query(
+    async ({ ctx }) => {
+      return ctx.db.query.playlistCollaborators.findMany({
+        where: and(
+          eq(playlistCollaborators.userId, ctx.session.user.id),
+          eq(playlistCollaborators.status, "invited"),
+        ),
+        orderBy: [asc(playlistCollaborators.createdAt)],
+        with: {
+          playlist: {
+            columns: {
+              id: true,
+              name: true,
+              description: true,
+              coverImage: true,
+              userId: true,
+              createdAt: true,
+            },
+            with: {
+              owner: { columns: userSummaryColumns },
+            },
+          },
+          invitedBy: { columns: userSummaryColumns },
+        },
+      });
+    },
+  ),
+
   invitePlaylistCollaborator: protectedProcedure
     .input(
       z.object({
@@ -558,6 +586,31 @@ export const socialRouter = createTRPCRouter({
           updatedAt: new Date(),
         })
         .where(eq(playlistCollaborators.id, collaborator.id));
+
+      return { success: true };
+    }),
+
+  leavePlaylistCollaborator: protectedProcedure
+    .input(z.object({ playlistId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(playlistCollaborators)
+        .set({ status: "left", updatedAt: new Date() })
+        .where(
+          and(
+            eq(playlistCollaborators.playlistId, input.playlistId),
+            eq(playlistCollaborators.userId, ctx.session.user.id),
+            eq(playlistCollaborators.status, "active"),
+          ),
+        )
+        .returning({ id: playlistCollaborators.id });
+
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Active collaborator membership not found.",
+        });
+      }
 
       return { success: true };
     }),
